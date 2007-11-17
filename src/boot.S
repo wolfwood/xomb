@@ -108,6 +108,10 @@ multiboot_entry:
 		pushq $0
 		popf
 
+				sti
+				call syscall_init
+
+				
 		/* Push the pointer to the Multiboot information structure. */
 		pushq   %rsi
 		/* Push the magic value. */
@@ -123,6 +127,49 @@ multiboot_entry:
 loop:   hlt
 		jmp     loop
 
+#define IA32_STAR  0xC0000081
+				#define IA32_LSTAR 0xC0000082
+				#define IA32_FMASK 0xC0000084
+
+				// SYSCALL works (If CPUID.80000001.EDX.[bit 11])
+
+
+syscall_init:
+				// check if this shite is supported
+				mov $0x80000001,%rax
+				cpuid
+
+				        and $0x00000400, %edx
+
+
+				        jnz  worky
+
+				        pushq   $syscall_err_message
+				        call    _D3vga7Console7kprintfFAaYv
+
+worky:
+				        //mv star,$0x0608020400000000
+				        mov $0x060802040, %edx
+				        xor %eax, %eax // zero out eax
+
+				        mov  $IA32_STAR, %ecx
+
+
+				        //set LSTAR
+
+				        //set FMASK
+
+
+test:
+				        movq $target, %rcx
+				        sysretq
+
+target:
+				        cli
+
+syscall_err_message:
+				        .asciz  "We require SYSCALL and SYSRET, your CPU isn't cool enough."
+				
 halt_message:
 		.asciz  "Halted."
 
