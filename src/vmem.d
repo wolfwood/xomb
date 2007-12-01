@@ -91,10 +91,8 @@ struct pageTable {
 	// Page table entry
 	ulong pte;
 	
-	mixin(Bitfield!(pmle, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1, 
-			"ign",1 , "mbz", 2, "avl", 3, "pdpba", 41, "available", 10, "nx", 1));
-	
-	
+	mixin(Bitfield!(pmle, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
+		"ign", 1, "mbz", 2, "avl", 3, "pdpba", 41, "available", 10, "nx", 1));
 }
 
 

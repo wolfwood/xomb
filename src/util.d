@@ -19,6 +19,8 @@ template Bitfield(alias data, Args...)
 {
 	static assert(!(Args.length & 1), "Bitfield arguments must be an even number");
 	const char[] Bitfield = BitfieldShim!((typeof(data)).stringof, data, Args).Ret;
+	
+	pragma(msg, Bitfield);
 }
 
 // Odd bug in D templates -- putting "data.stringof" as a template argument gives it the
@@ -35,9 +37,9 @@ template BitfieldImpl(char[] typeStr, char[] nameStr, int offset, Args...)
 		const char[] Ret = "";
 	else
 	{
-		const char[] Name = Args[0];
-		const int Size = Args[1];
-		const int Mask = Bitmask!(Size);
+		const Name = Args[0];
+		const Size = Args[1];
+		const Mask = Bitmask!(Size);
 
 		const char[] Getter = "public " ~ typeStr ~ " " ~ Name ~ "() { return ( " ~
 			nameStr ~ " >> " ~ Itoh!(offset) ~ " ) & " ~ Itoh!(Mask) ~ "; }";
@@ -50,7 +52,7 @@ template BitfieldImpl(char[] typeStr, char[] nameStr, int offset, Args...)
 	}
 }
 
-template Itoa(int i)
+template Itoa(long i)
 {
 	static if(i < 0)
 		const char[] Itoa = "-" ~ IntToStr!(-i, 10);
@@ -58,12 +60,12 @@ template Itoa(int i)
 		const char[] Itoa = IntToStr!(i, 10);
 }
 
-template Itoh(int i)
+template Itoh(long i)
 {
 	const char[] Itoh = "0x" ~ IntToStr!(i, 16);
 }
 
-template Digits(int i)
+template Digits(long i)
 {
 	const char[] Digits = "0123456789abcdefghijklmnopqrstuvwxyz"[0 .. i];
 }
@@ -76,7 +78,7 @@ template IntToStr(ulong i, int base)
 		const char[] IntToStr = "" ~ Digits!(base)[i % base];
 }
 
-template Bitmask(int size)
+template Bitmask(long size)
 {
-	const int Bitmask = (1 << size) - 1;
+	const long Bitmask = (1L << size) - 1;
 }
