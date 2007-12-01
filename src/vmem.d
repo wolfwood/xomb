@@ -81,18 +81,43 @@ uint CHECK_FLAG(uint flags, uint bit)
 
 
 // Page table structures
-struct pageTable {
+align(1) union pmle {
+	ulong[4096] padding;
 	// Page map level 4 entry
-	ulong pmle;
-	// Page directory pointer entry
-	ulong pdpe;
-	// Page directory entry
-	ulong pde;
-	// Page table entry
-	ulong pte;
-	
-	mixin(Bitfield!(pmle, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
+	align(1) struct {
+		ulong pmle;
+		mixin(Bitfield!(pmle, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
 		"ign", 1, "mbz", 2, "avl", 3, "pdpba", 41, "available", 10, "nx", 1));
+	}
+}
+
+align(1) union pdpe {
+	ulong[4096] padding;
+	// Page directory pointer entry
+	align(1) struct {
+		ulong pdpe;
+		mixin(Bitfield!(pdpe, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
+		"ign", 1, "o", 1, "mbz", 1, "avl", 3, "pdba", 41, "available", 10, "nx", 1));
+	}
+}
+
+align(1) union pde {
+	ulong[4096] padding;
+	// Page directory entry
+	align(1) struct {
+		ulong pde;
+		mixin(Bitfield!(pde, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
+		"ign1", 1, "o", 1, "ign2", 1, "avl", 3, "pdba", 41, "available", 10, "nx", 1));
+	}
+}
+
+align(1) union pte {
+	// Page table entry
+	align(1) struct {
+		ulong pte;
+		mixin(Bitfield!(pte, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
+		"d", 1, "pat", 1, "g", 1, "avl", 3, "pdba", 41, "available", 10, "nx", 1));
+	}
 }
 
 
@@ -107,7 +132,7 @@ void fourK_pages(uint addr) {
 	multiboot_info_t *mbi;
 	
 	mbi = cast(multiboot_info_t*)addr;
-	
+	uint pages_start_addr; // Address of where to start pages
 	module_t* mod;
 		
 	if(CHECK_FLAG(mbi.flags, 6))
@@ -119,7 +144,10 @@ void fourK_pages(uint addr) {
 		kprintfln("mods_count = %d, mods_addr = 0x%x", cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
 		kprintfln("mods_end = 0x%x", endAddr);
 		
-
+		// If endAddr is aligned already we'll just add 0, so no biggie
+		pages_start_addr = endAddr + (endAddr % 4096);
+		
+		kprintfln("pages_start_addr = 0x%x", pages_start_addr);
 	} else {
 		kprintfln("The multi-boot struct was wrong!");
 	}

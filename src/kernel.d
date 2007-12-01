@@ -1,28 +1,11 @@
 /** kernel.d
-	This file declares the main kernel code for PGOS.
+	This file declares the main kernel code for XOmB.
 	The original purpose of this code is to boot the system, check for memory errors in booting,
 	and print out information to assist in debugging processor problems.
 
 	Written: 2007
  */
 
-/**
-	License: Copyright (C) 1999  Free Software Foundation, Inc.
-
-	This program is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
-
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with this program; if not, write to the Free Software
-	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-*/
 
 import multiboot;
 import vga;
@@ -178,7 +161,6 @@ extern(C) void cmain(uint magic, uint addr)
 		return;
 	}
 
-	/+
 	/// Set MBI to the address of the Multiboot information structure, passed to the kernel
 	/// by GRUB.
 	mbi = cast(multiboot_info_t*)addr;
@@ -220,8 +202,8 @@ extern(C) void cmain(uint magic, uint addr)
 		}
 
 		/// Use the jumpTo() method (see below) to execute the first module.
-		jumpTo(0, mbi);
-		return;
+		//jumpTo(0, mbi);
+		//return;
 	}
 
 	/// Bits 4 and 5 are mutually exclusive!
@@ -282,6 +264,9 @@ extern(C) void cmain(uint magic, uint addr)
 	/// Print out memory information, including the size of system integers. This
 	/// will let us debug problems in changing from 32-bit to 64-bit.
 	kprintfln("(int*).sizeof == %d", (int*).sizeof);
+	
+	fourK_pages(addr);
+	
 
 	/// This value prints out an indication that the operating system is purposely throwing
 	/// a 128 interrupt (system call interrupt).
@@ -292,7 +277,7 @@ extern(C) void cmain(uint magic, uint addr)
 	// first, set a syscall type into eax.
 	kprintf("SETTING EAX TO 0\n");
 
-	/+asm {
+	asm {
 		"mov %0, %%eax":
 		/* no output */:
 		"r" 1:
@@ -302,7 +287,7 @@ extern(C) void cmain(uint magic, uint addr)
 	kprintf("CALLING THE SYSCALL.\n");
 	asm {
 		"syscall";
-	}+/+/
+	}
 	
 	if(cpuid(0x8000_0001) & 0b1000_0000_0000)
 	{
