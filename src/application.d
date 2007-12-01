@@ -9,9 +9,5 @@ moves some attribute information into the RAX register and throws a system call 
 */
 void main()
 {
-	asm
-	{
-		"movq $5, %%rax" ::: "rax";
-		int 128;
-	}
+ return;
 }

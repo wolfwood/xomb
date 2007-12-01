@@ -321,9 +321,6 @@ extern(C) void fault_handler(interrupt_stack* r)
 {
 	switch(r.int_no)
 	{
-		case 128:
-			kprintfln("Interrupt-based Syscall, RAX = %d.", r.rax);
-			break;
 
 		case 14:
 			handle_faults(r);	// Call our fault handler in vmem
@@ -340,7 +337,6 @@ extern(C) void fault_handler(interrupt_stack* r)
 				kprintfln("%s Exception. Code = %d, IP = %x", exceptionMessages[r.int_no], r.err_code, r.rip);
 			else
 				kprintfln("Unknown exception %d.", r.int_no);
-
 
 			asm{cli; hlt;}
 			break;

@@ -125,5 +125,5 @@ hiddenmenu
 
 title		PAGAN OS
 kernel		/boot/paganos
-#module		/boot/application
+module		/boot/application
 ### END PITTGEEKS AUTOMAGIC KERNELS LIST
