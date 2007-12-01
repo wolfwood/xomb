@@ -76,10 +76,11 @@ multiboot_entry:
 		movl $pml4_base, %eax
 		movl %eax, %cr3
 
-		/* Enable Long mode */
+		/* Enable Long mode and SYSCALL/SYSRET instructions */
 		movl $0xc0000080, %ecx
 		rdmsr
 		bts $8, %eax
+		bts $0, %eax
 		wrmsr
 
 		/* enable paging to activate long mode */
@@ -93,9 +94,7 @@ multiboot_entry:
 		/* Load the GDT */
 		lgdt	pGDT32
 
-		// set the segment registers
-		
-	
+		// make the jump to long mode!
 		ljmp $CS_KERNEL, $start64
 
 	.code64
@@ -108,10 +107,10 @@ multiboot_entry:
 		pushq $0
 		popf
 
-				sti
-				call syscall_init
+// 		sti
+// 		call syscall_init
 
-				
+
 		/* Push the pointer to the Multiboot information structure. */
 		pushq   %rsi
 		/* Push the magic value. */
@@ -127,51 +126,48 @@ multiboot_entry:
 loop:   hlt
 		jmp     loop
 
+/*
 #define IA32_STAR  0xC0000081
-				#define IA32_LSTAR 0xC0000082
-				#define IA32_FMASK 0xC0000084
+#define IA32_LSTAR 0xC0000082
+#define IA32_FMASK 0xC0000084
 
-				// SYSCALL works (If CPUID.80000001.EDX.[bit 11])
-
+// SYSCALL works (If CPUID.80000001.EDX.[bit 11])
 
 syscall_init:
-				// check if this shite is supported
-				mov $0x80000001,%rax
-				cpuid
+	// check if this shite is supported
+	mov $0x80000001,%rax
+	cpuid
+	and $0x00000400, %edx
+	jnz  worky
 
-				        and $0x00000400, %edx
+	//pushq   $syscall_err_message
+	//call    EXT_C(kprintString)
 
-
-				        jnz  worky
-
-				        pushq   $syscall_err_message
-				        call    _D3vga7Console7kprintfFAaYv
+	cli
+	hlt
 
 worky:
-				        //mv star,$0x0608020400000000
-				        mov $0x060802040, %edx
-				        xor %eax, %eax // zero out eax
-
-				        mov  $IA32_STAR, %ecx
-
-
-				        //set LSTAR
-
-				        //set FMASK
-
+	//mv star,$0x0608020400000000
+	mov $0x060802040, %edx
+	xor %eax, %eax // zero out eax
+	mov  $IA32_STAR, %ecx
+	
+	//set LSTAR
+	//set FMASK
 
 test:
-				        movq $target, %rcx
-				        sysretq
+	movq $target, %rcx
+	sysretq
 
 target:
-				        cli
+	cli
 
 syscall_err_message:
-				        .asciz  "We require SYSCALL and SYSRET, your CPU isn't cool enough."
-				
+	.asciz  "We require SYSCALL and SYSRET, your CPU isn't cool enough."
+*/
+
 halt_message:
-		.asciz  "Halted."
+	.asciz  "Halted."
 
 pGDT32:
 	.word	GDT_END - GDT_TABLE - 1

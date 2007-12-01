@@ -21,7 +21,7 @@
 
 	You should have received a copy of the GNU General Public License
 	along with this program; if not, write to the Free Software
-	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. 
+	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
 import multiboot;
@@ -66,6 +66,62 @@ void set_rflags_iopl()
 		"popf";
 	}
 }
+
+uint cpuid(uint func)
+{
+	asm
+	{
+		naked;
+		"movl %%edi, %%eax";
+		"cpuid";
+		"movl %%edx, %%eax";
+		"retq";
+	}
+}
+
+/*
+Func 0: 69746e65
+Func 80000001: 2bd0ab7b = 0010_1011_1101_0000_1010_1011_0111_1011
+	31: n 3dnow
+	30: n 3dnowext
+	29: y longmode
+	28: - reserved
+
+	27: y rdtscp inst
+	26: n page1gb
+	25: y FFXSR
+	24: y FXSR
+	
+	23: y MMX
+	22: y MmxExt
+	21: - reserved
+	20: y NX
+
+	19: - reserved
+	18: - reserved
+	17: n PSE36
+	16: n PAT
+
+	15: y CMOV
+	14: n MCA
+	13: y PGE
+	12: n MTRR
+
+	11: y SYSCALL/RET
+	10: - reserved
+	 9: y
+	 8: y
+	 
+	 7: n
+	 6: y
+	 5: y
+	 4: y
+	 
+	 3: y
+	 2: n
+	 1: y
+	 0: y
+*/
 
 /**
 This is the main function of PGOS. It is executed once GRUB loads
@@ -122,6 +178,7 @@ extern(C) void cmain(uint magic, uint addr)
 		return;
 	}
 
+	/+
 	/// Set MBI to the address of the Multiboot information structure, passed to the kernel
 	/// by GRUB.
 	mbi = cast(multiboot_info_t*)addr;
@@ -234,8 +291,8 @@ extern(C) void cmain(uint magic, uint addr)
 	/// This is alternate code, attempting to call a system call without a 128 interrupt.
 	// first, set a syscall type into eax.
 	kprintf("SETTING EAX TO 0\n");
-	
-	asm {
+
+	/+asm {
 		"mov %0, %%eax":
 		/* no output */:
 		"r" 1:
@@ -245,15 +302,79 @@ extern(C) void cmain(uint magic, uint addr)
 	kprintf("CALLING THE SYSCALL.\n");
 	asm {
 		"syscall";
-	}
+	}+/+/
 	
+	if(cpuid(0x8000_0001) & 0b1000_0000_0000)
+	{
+		//ulong STAR = 0b0000_0000_0011_1011_0000_0000_0001_0000_00000000000000000000000000000000;
+		const ulong STAR = 0x003b_0010_0000_0000;
+		//const ulong LSTAR = cast(ulong)&sysCallHandler;
+
+		//const uint LSTARHI = LSTAR >> 32;
+		//const uint LSTARLO = LSTAR & 0xFFFFFFFF;
+		
+		const uint STARHI = STAR >> 32;
+		const uint STARLO = STAR & 0xFFFFFFFF;
+
+		asm
+		{
+			"movq $sysCallHandler, %%rdx" ::: "rdx";
+			"xorq %%rax, %%rax";
+			"movl %%edx, %%eax";
+			"shrq $32, %%rdx";
+			"wrmsr";
+
+			"movl $0xC0000081, %%ecx" ::: "ecx";
+			"movl %0, %%edx" :: "i" STARHI : "edx";
+			"movl %0, %%eax" :: "i" STARLO : "eax";
+			"wrmsr";
+			
+			"xorl %%eax, %%eax" ::: "eax";
+			"xorl %%edx, %%edx" ::: "edx";
+			"movl $0xC0000084, %%ecx" ::: "ecx";
+			"wrmsr";
+
+			"movq $testUser, %%rcx" ::: "rcx";
+			"movq $0, %%r11" ::: "r11";
+			"sysretq";
+		}
+
+
+		asm { cli; hlt; }
+	}
+	else
+	{
+		kprintfln("Your computer is not cool enough, we need SYSCALL and SYSRET.");
+		asm { cli; hlt; }
+	}
+
 	/// CURRENT TEST CODE
 	// int a = 0, b = cast(int) addr;
 	// int foo = b/a;
 	// kprintfln("%d", foo);
 }
 
-/** 
+extern(C) void sysCallHandler()
+{
+	asm
+	{
+		naked;
+		"sysretq";
+	}
+}
+
+void* p;
+
+extern(C) void testUser()
+{
+	asm
+	{
+		naked;
+		"syscall";
+	}
+}
+
+/**
 This method allows the kernel to execute a module loaded using GRUB multiboot. It accepts 
 a pointer to the GRUB Multiboot header as well as an integer, indicating the number of the module being loaded.
 It then goes through the ELF header of the loaded module, finds the location of the _start section, and

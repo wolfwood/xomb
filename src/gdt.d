@@ -126,7 +126,7 @@ static:
 
 	// Since an entry can be 8 or 16 bytes long, we have to do some scary shit to make this
 	// work right.  Pointer hacking and such.
-	public ulong[16] Entries;
+	public ulong[64] Entries;
 
 	void setCodeSegment64(int num, bool conforming, ubyte DPL, bool present, bool longMode, bool opSize)
 	{
@@ -196,8 +196,13 @@ static:
 		setNull(0);
 		setNull(1);
 		setCodeSegment64(2, true, 0, true, true, false);
+		setDataSegment64(3, true);
 		setDataSegment64(4, true);
 		setSysSegment64(6, 0x67, cast(ulong)&tss_struct, SysSegType64.AvailTSS, 0, true, false, 0);
+
+		// for SYSCALL and SYSRET
+		setDataSegment64(8, true);
+		setCodeSegment64(9, true, 3, true, true, false);
 
 		// WTF do we set the RSP0-2 members to?!
 		//tss_struct.rsp0 = tss_struct.rsp1 = tss_struct.rsp2 =

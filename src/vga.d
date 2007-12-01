@@ -282,6 +282,11 @@ static:
 alias Console.kprintf kprintf;
 alias Console.kprintfln kprintfln;
 
+extern(C) void kprintString(char* s)
+{
+	kprintfln("%s", toString(s));	
+}
+
 /**
 This function converts an integer to a string, depending on the base passed in.
 	Params:
