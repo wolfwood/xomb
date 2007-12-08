@@ -16,6 +16,9 @@ import multiboot;
 
 static import idt;
 
+
+
+
 void handle_faults(idt.interrupt_stack* ir_stack) 
 {
 	// First we need to determine why the page fault happened
@@ -127,7 +130,12 @@ align(1) union pte {
 // Step 3: Claim the rest for ourselves
 
 // Paramemters = addr: addr is an address passed to us by grub that contains the address to the multi-boot info :)
-void fourK_pages(uint addr) {
+// Return a ulong (the ptr to our bitmap)
+ulong fourK_pages(uint addr) {
+	
+	// CONST for page size
+	const uint PAGE_SIZE = 4096;			// 4k pages for us right now
+	
 	
 	multiboot_info_t *mbi;
 	
@@ -140,16 +148,71 @@ void fourK_pages(uint addr) {
 		mod = cast(module_t*)mbi.mods_addr;
 		mod = cast(module_t*)(cast(int)mod + (cast(int)mbi.mods_count - 1));
 		uint endAddr = mod.mod_end;
+		uint pages_free_size;			// Free space avail for pages
+		uint num_pages;					// Total number of pages in teh system
+		uint bitmap_size;				// Size the bitmap needs to be	
+		byte *bitmap;					// The bitmap :)	
+		uint num_used;					// Number of used pages to init the mapping
+				
 		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
 		kprintfln("mods_count = %d, mods_addr = 0x%x", cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
 		kprintfln("mods_end = 0x%x", endAddr);
 		
 		// If endAddr is aligned already we'll just add 0, so no biggie
-		pages_start_addr = endAddr + (endAddr % 4096);
+		pages_start_addr = endAddr + (endAddr % PAGE_SIZE);						// Available start address for paging
+		pages_free_size = (cast(uint)mbi.mem_upper * 1024) - pages_start_addr;		// Free space available to us
+		
+		kprintfln("Free space avail : %dKB", pages_free_size / 1024);
+		
 		
 		kprintfln("pages_start_addr = 0x%x", pages_start_addr);
+		kprintfln("Mem upper = %uKB", mbi.mem_upper);
+		
+		// Page allocator
+		// Find the total number of pages in the system
+		// Determine bitmap size
+
+		num_pages =  (mbi.mem_upper * 1024) / PAGE_SIZE;
+		kprintfln("Num of pages = %d", num_pages);
+		
+		bitmap_size = (num_pages / 8);			// Bitmap size in bytes
+		if(bitmap_size % PAGE_SIZE != 0) {			// If it is not 4k aligned
+			bitmap_size += PAGE_SIZE - (bitmap_size % PAGE_SIZE);	// Pad the size off to keep things page aligned
+			
+		}
+		
+		kprintfln("Bitmap size in bytes = %d", bitmap_size);		
+		
+		// Set up bitmap
+		// Return a ulong a ptr to the bitmap
+		
+		bitmap = cast(byte*)pages_start_addr;			// Pages start addr
+		// Make the bitmap all 0s
+		bitmap[0..bitmap_size] = 0;						// I can has bitmap?
+		// Now we need to properly set the used pages
+		// First find the number of pages that are used
+		
+		num_used = (pages_start_addr + bitmap_size) / PAGE_SIZE;	// Find number of used pages so far
+		kprintfln("Number of used pages = %d", num_used);
+		byte *temp = bitmap;
+		int i;
+		
+		for(i = 0; i <= (num_used - 8); i+=8) {			// Set full bytes of pages used
+			*temp = cast(byte)0xFF;
+			temp += 1;
+		}		
+		if(num_used - i > 0) {
+			*temp = 0xFF >> (8 - (num_used - i));			// Set the remaining bits
+		}
+		
+		kprintfln("i was last seen indexing bit: %d", i);
+		
+		return cast(ulong)bitmap;
+		
 	} else {
 		kprintfln("The multi-boot struct was wrong!");
 	}
+	
+	return 0;
 	
 }
