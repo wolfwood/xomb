@@ -319,26 +319,16 @@ void setCustomHandler(size_t i, InterruptHandler h, int ist = -1)
 
 extern(C) void fault_handler(interrupt_stack* r)
 {
-	switch(r.int_no)
+	if(InterruptHandlers[r.int_no])
 	{
-
-		case 14:
-			handle_faults(r);	// Call our fault handler in vmem
-			break;
-
-		default:
-			if(InterruptHandlers[r.int_no])
-			{
-				InterruptHandlers[r.int_no](r);
-				break;
-			}
-
-			if(r.int_no < 32)
-				kprintfln("%s Exception. Code = %d, IP = %x", exceptionMessages[r.int_no], r.err_code, r.rip);
-			else
-				kprintfln("Unknown exception %d.", r.int_no);
-
-			asm{cli; hlt;}
-			break;
+		InterruptHandlers[r.int_no](r);
+		return;
 	}
+
+	if(r.int_no < 32)
+		kprintfln("%s Exception. Code = %d, IP = %x", exceptionMessages[r.int_no], r.err_code, r.rip);
+	else
+		kprintfln("Unknown exception %d.", r.int_no);
+
+	asm{cli; hlt;}
 }

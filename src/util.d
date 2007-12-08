@@ -19,8 +19,6 @@ template Bitfield(alias data, Args...)
 {
 	static assert(!(Args.length & 1), "Bitfield arguments must be an even number");
 	const char[] Bitfield = BitfieldShim!((typeof(data)).stringof, data, Args).Ret;
-	
-	pragma(msg, Bitfield);
 }
 
 // Odd bug in D templates -- putting "data.stringof" as a template argument gives it the

@@ -208,7 +208,7 @@ level2_ident_pgt:
 	// 40MB for bootup.
 	i = 0
 	.rept 20
-	.quad	i << 21 | 0x083
+	.quad	i << 21 | 0x087
 	i = i + 1
 	.endr
 	// Temporary mappings for the super early allocator in arch/x86_64/mm/init.c

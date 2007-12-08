@@ -68,7 +68,7 @@ void handle_faults(idt.interrupt_stack* ir_stack)
 		{
 			kprintfln("Tried to read from a reserved field in PTE!");
 		}
-	
+
 		if((ir_stack.err_code & 16) != 0)
 		{
 			kprintfln("Instruction fetch error!");
@@ -80,8 +80,6 @@ uint CHECK_FLAG(uint flags, uint bit)
 {
 	return ((flags) & (1 << (bit)));
 }
-
-
 
 // Page table structures
 align(1) union pmle {
@@ -123,7 +121,6 @@ align(1) union pte {
 	}
 }
 
-
 // Function to establish 4k pages in memory
 // Step 1: Get end of kernel / modules
 // Step 2: Round to next 4096 mark
@@ -132,17 +129,17 @@ align(1) union pte {
 // Paramemters = addr: addr is an address passed to us by grub that contains the address to the multi-boot info :)
 // Return a ulong (the ptr to our bitmap)
 ulong fourK_pages(uint addr) {
-	
+
 	// CONST for page size
 	const uint PAGE_SIZE = 4096;			// 4k pages for us right now
 	
 	
 	multiboot_info_t *mbi;
-	
+
 	mbi = cast(multiboot_info_t*)addr;
 	uint pages_start_addr; // Address of where to start pages
 	module_t* mod;
-		
+
 	if(CHECK_FLAG(mbi.flags, 6))
 	{
 		mod = cast(module_t*)mbi.mods_addr;
@@ -157,11 +154,11 @@ ulong fourK_pages(uint addr) {
 		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
 		kprintfln("mods_count = %d, mods_addr = 0x%x", cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
 		kprintfln("mods_end = 0x%x", endAddr);
-		
+
 		// If endAddr is aligned already we'll just add 0, so no biggie
 		pages_start_addr = endAddr + (endAddr % PAGE_SIZE);						// Available start address for paging
 		pages_free_size = (cast(uint)mbi.mem_upper * 1024) - pages_start_addr;		// Free space available to us
-		
+
 		kprintfln("Free space avail : %dKB", pages_free_size / 1024);
 		
 		
@@ -212,7 +209,6 @@ ulong fourK_pages(uint addr) {
 	} else {
 		kprintfln("The multi-boot struct was wrong!");
 	}
-	
 	return 0;
 	
 }

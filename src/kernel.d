@@ -62,50 +62,6 @@ uint cpuid(uint func)
 	}
 }
 
-/*
-Func 0: 69746e65
-Func 80000001: 2bd0ab7b = 0010_1011_1101_0000_1010_1011_0111_1011
-	31: n 3dnow
-	30: n 3dnowext
-	29: y longmode
-	28: - reserved
-
-	27: y rdtscp inst
-	26: n page1gb
-	25: y FFXSR
-	24: y FXSR
-	
-	23: y MMX
-	22: y MmxExt
-	21: - reserved
-	20: y NX
-
-	19: - reserved
-	18: - reserved
-	17: n PSE36
-	16: n PAT
-
-	15: y CMOV
-	14: n MCA
-	13: y PGE
-	12: n MTRR
-
-	11: y SYSCALL/RET
-	10: - reserved
-	 9: y
-	 8: y
-	 
-	 7: n
-	 6: y
-	 5: y
-	 4: y
-	 
-	 3: y
-	 2: n
-	 1: y
-	 0: y
-*/
-
 /**
 This is the main function of PGOS. It is executed once GRUB loads
 fully. It accepts "magic," the magic number of the GRUB bootloader,
@@ -117,43 +73,40 @@ and "addr," the address of the multiboot variable, passed by the GRUB bootloader
 */
 extern(C) void cmain(uint magic, uint addr)
 {
-	/// declare a pointer to the multiboot header.
+	// declare a pointer to the multiboot header.
 	multiboot_info_t *mbi;
 
-	/// set flags.
+	// set flags.
 	set_rflags_iopl();
 
-	/// install the Global Descriptor Table (GDT) and the Interrupt Descriptor Table (IDT)
+	// install the Global Descriptor Table (GDT) and the Interrupt Descriptor Table (IDT)
 	GDT.install();
 	idt.install();
 
 	idt.setCustomHandler(idt.Type.PageFault, &handle_faults);
 
-	if( enable_kgdb ){
+	if(enable_kgdb)
+	{
 		set_debug_traps();
 		breakpoint();
 	}
 
-	/// Create a handler to deal with data in the LSTAR memory location. This handler
-	/// will deal with system interrupts.
-	lstar.set_handler(&lstar.syscallHandler);
+	// Turn general interrupts on, so the computer can deal with errors and faults.
+	asm { sti; }
 
-	/// Turn general interrupts on, so the computer can deal with errors and faults.
-	asm{sti;}
+	// Clear the screen in order to begin printing.
+	// Console.cls();
 
-	/// Clear the screen in order to begin printing.
-	/// Console.cls();
-
-	/// Print initial booting information.
+	// Print initial booting information.
 	kprintf("Booting ");
 	Console.setColors(Color.Black, Color.HighRed);
 	kprintf("PaGanOS");
 	Console.resetColors();
 	kprintfln("...\n");
 
-	/// Make sure that the magic number, passed to the kernel, is a valid GRUB magic number.
-	/// If it is not, print to the screen that the magic number is invalid and end execution.
-	/// Invalid magic numbers can indicate that the system was illegally booted, or that the 
+	// Make sure that the magic number, passed to the kernel, is a valid GRUB magic number.
+	// If it is not, print to the screen that the magic number is invalid and end execution.
+	// Invalid magic numbers can indicate that the system was illegally booted, or that the
 	// system was booted by a bootloader other than GRUB.
 	if(magic != MULTIBOOT_BOOTLOADER_MAGIC)
 	{
@@ -161,83 +114,83 @@ extern(C) void cmain(uint magic, uint addr)
 		return;
 	}
 
-	/// Set MBI to the address of the Multiboot information structure, passed to the kernel
-	/// by GRUB.
+	// Set MBI to the address of the Multiboot information structure, passed to the kernel
+	// by GRUB.
 	mbi = cast(multiboot_info_t*)addr;
 
-	/// Print out all the values of the flags presented to the operating system by GRUB.
+	// Print out all the values of the flags presented to the operating system by GRUB.
 	kprintfln("flags = 0x%x", cast(uint)mbi.flags);
 
-	/// Are mem_* valid
+	// Are mem_* valid
 	if(CHECK_FLAG(mbi.flags, 0))
 		kprintfln("mem_lower = %uKB, mem_upper = %uKB", cast(uint)mbi.mem_lower, cast(uint)mbi.mem_upper);
 
-	/// Check to make sure the boot device is valid.
+	// Check to make sure the boot device is valid.
 	if(CHECK_FLAG(mbi.flags, 1))
 		kprintfln("boot_device = 0x%x", cast(uint)mbi.boot_device);
 
-	/// Is the command line passed?
+	// Is the command line passed?
 	if(CHECK_FLAG(mbi.flags, 2))
 		kprintfln("cmdline = %s", system.toString(cast(char*)mbi.cmdline));
 
-	/// This if statement calls the function CHECK_FLAG on the flags of the GRUB multiboot header.
-	/// It then checks to make sure the flags are valid (indicating proper, secure booting).
+	// This if statement calls the function CHECK_FLAG on the flags of the GRUB multiboot header.
+	// It then checks to make sure the flags are valid (indicating proper, secure booting).
 	if(CHECK_FLAG(mbi.flags, 3))
 	{
-		/// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
+		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
 		kprintfln("mods_count = %d, mods_addr = 0x%x", cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
 
 		module_t* mod;
 		int i;
 
-		/// Go through all of the modules loaded by GRUB.
+		// Go through all of the modules loaded by GRUB.
 		for(i = 0, mod = cast(module_t*)mbi.mods_addr; i < mbi.mods_count; i++, mod++)
 		{
-			/// print out the memory address of the beginning of that module, the address of the end of that module,
-			/// and the name of that module.
+			// print out the memory address of the beginning of that module, the address of the end of that module,
+			// and the name of that module.
 			kprintfln(" mod_start = 0x%x, mod_end = 0x%x, string = %s",
 				cast(uint)mod.mod_start,
 				cast(uint)mod.mod_end,
 				system.toString(cast(char*)mod.string));
 		}
 
-		/// Use the jumpTo() method (see below) to execute the first module.
+		// Use the jumpTo() method (see below) to execute the first module.
 		//jumpTo(0, mbi);
 		//return;
 	}
 
-	/// Bits 4 and 5 are mutually exclusive!
+	// Bits 4 and 5 are mutually exclusive!
 	if(CHECK_FLAG(mbi.flags, 4) && CHECK_FLAG(mbi.flags, 5))
 	{
 		kprintfln("Both bits 4 and 5 are set.");
 		return;
 	}
 
-	/// Check to make sure the symbol table of the compiled kernel file is valid.
+	// Check to make sure the symbol table of the compiled kernel file is valid.
 	if(CHECK_FLAG(mbi.flags, 4))
 	{
-		/// get a pointer to the symbol table, returned by GRUB in the multiboot header.
+		// get a pointer to the symbol table, returned by GRUB in the multiboot header.
 		aout_symbol_table_t* aout_sym = &(mbi.aout_sym);
 
-		/// If it is valid, print out information about the compiled kernel's symbol table.
+		// If it is valid, print out information about the compiled kernel's symbol table.
 		kprintfln("aout_symbol_table: tabsize = 0x%0x, strsize = 0x%x, addr = 0x%x",
 			cast(uint)aout_sym.tabsize,
 			cast(uint)aout_sym.strsize,
 			cast(uint)aout_sym.addr);
 	}
 
-	/// Check to make sure the section header of the compiled kernel is valid.
+	// Check to make sure the section header of the compiled kernel is valid.
 	if(CHECK_FLAG(mbi.flags, 5))
 	{
 		elf_section_header_table_t* elf_sec = &(mbi.elf_sec);
 
-		/// If it is valid, print out information about the compiled kernel's section table.
+		// If it is valid, print out information about the compiled kernel's section table.
 		kprintfln("elf_sec: num = %u, size = 0x%x, addr = 0x%x, shndx = 0x%x",
 			cast(uint)elf_sec.num, cast(uint)elf_sec.size,
 			cast(uint)elf_sec.addr, cast(uint)elf_sec.shndx);
 	}
 
-	/// This checks to make sure that the memory map of the bootloader is valid.
+	// This checks to make sure that the memory map of the bootloader is valid.
 	if(CHECK_FLAG(mbi.flags, 6))
 	{
 		kprintfln("mmap_addr = 0x%x, mmap_length = 0x%x", cast(uint)mbi.mmap_addr, cast(uint)mbi.mmap_length);
@@ -256,90 +209,48 @@ extern(C) void cmain(uint magic, uint addr)
 		}
 	}
 
-	/// Print out our slogan. Literally, "We came, we saw, we conquered."
+	// Print out our slogan. Literally, "We came, we saw, we conquered."
 	Console.setColors(Color.Yellow, Color.LowBlue);
 	kprintfln("\nVenimus, vidimus, vicimus!  --PittGeeks");
 	Console.resetColors();
 
-	/// Print out memory information, including the size of system integers. This
-	/// will let us debug problems in changing from 32-bit to 64-bit.
-	kprintfln("(int*).sizeof == %d", (int*).sizeof);
-	
-	fourK_pages(addr);
-	
+	//fourK_pages(addr);
 
-	/// This value prints out an indication that the operating system is purposely throwing
-	/// a 128 interrupt (system call interrupt).
-	// kprintfln("TESTING SYSCALL INTERRUPT");
-	// asm{int 128;}
-	
-	/// This is alternate code, attempting to call a system call without a 128 interrupt.
-	// first, set a syscall type into eax.
-	kprintf("SETTING EAX TO 0\n");
-
-	asm {
-		"mov %0, %%eax":
-		/* no output */:
-		"r" 1:
-		"eax";
-	}
-
-	kprintf("CALLING THE SYSCALL.\n");
-	asm {
-		"syscall";
-	}
-	
-	if(cpuid(0x8000_0001) & 0b1000_0000_0000)
-	{
-		//ulong STAR = 0b0000_0000_0011_1011_0000_0000_0001_0000_00000000000000000000000000000000;
-		const ulong STAR = 0x003b_0010_0000_0000;
-		//const ulong LSTAR = cast(ulong)&sysCallHandler;
-
-		//const uint LSTARHI = LSTAR >> 32;
-		//const uint LSTARLO = LSTAR & 0xFFFFFFFF;
-		
-		const uint STARHI = STAR >> 32;
-		const uint STARLO = STAR & 0xFFFFFFFF;
-
-		asm
-		{
-			"movq $sysCallHandler, %%rdx" ::: "rdx";
-			"xorq %%rax, %%rax";
-			"movl %%edx, %%eax";
-			"shrq $32, %%rdx";
-			"wrmsr";
-
-			"movl $0xC0000081, %%ecx" ::: "ecx";
-			"movl %0, %%edx" :: "i" STARHI : "edx";
-			"movl %0, %%eax" :: "i" STARLO : "eax";
-			"wrmsr";
-			
-			"xorl %%eax, %%eax" ::: "eax";
-			"xorl %%edx, %%edx" ::: "edx";
-			"movl $0xC0000084, %%ecx" ::: "ecx";
-			"wrmsr";
-
-			"movq $testUser, %%rcx" ::: "rcx";
-			"movq $0, %%r11" ::: "r11";
-			"sysretq";
-		}
-
-
-		asm { cli; hlt; }
-	}
-	else
+	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
 	{
 		kprintfln("Your computer is not cool enough, we need SYSCALL and SYSRET.");
 		asm { cli; hlt; }
 	}
 
-	/// CURRENT TEST CODE
-	// int a = 0, b = cast(int) addr;
-	// int foo = b/a;
-	// kprintfln("%d", foo);
+	const ulong STAR = 0x003b_0010_0000_0000;
+	const uint STARHI = STAR >> 32;
+	const uint STARLO = STAR & 0xFFFFFFFF;
+
+	lstar.set_handler(&sysCallHandler);
+
+	asm
+	{
+		// Set the STAR register.
+		"movl $0xC0000081, %%ecx" ::: "ecx";
+		"movl %0, %%edx" :: "i" STARHI : "edx";
+		"movl %0, %%eax" :: "i" STARLO : "eax";
+		"wrmsr";
+
+		// Set the SF_MASK register.  Top should be 0, bottom is our mask,
+		// but we're not masking anything (yet).
+		"xorl %%eax, %%eax" ::: "eax";
+		"xorl %%edx, %%edx" ::: "edx";
+		"movl $0xC0000084, %%ecx" ::: "ecx";
+		"wrmsr";
+
+		// Jump to user mode.
+		"movq $testUser, %%rcx" ::: "rcx";
+		"movq $0, %%r11" ::: "r11";
+		"sysretq";
+	}
 }
 
-extern(C) void sysCallHandler()
+void sysCallHandler()
 {
 	asm
 	{
@@ -347,8 +258,6 @@ extern(C) void sysCallHandler()
 		"sysretq";
 	}
 }
-
-void* p;
 
 extern(C) void testUser()
 {
@@ -364,10 +273,11 @@ This method allows the kernel to execute a module loaded using GRUB multiboot. I
 a pointer to the GRUB Multiboot header as well as an integer, indicating the number of the module being loaded.
 It then goes through the ELF header of the loaded module, finds the location of the _start section, and
 jumps to it, thus beginning execution.
-	Params:
-		moduleNumber = The number of the module the kernel wishes to execute. Integer value.
-		mbi = A pointer to the multiboot information structure, allowing this function
-			to interperet the module data properly.
+
+Params:
+	moduleNumber = The number of the module the kernel wishes to execute. Integer value.
+	mbi = A pointer to the multiboot information structure, allowing this function
+		to interperet the module data properly.
 */
 void jumpTo(uint moduleNumber, multiboot_info_t* mbi)
 {
