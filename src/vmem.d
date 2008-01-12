@@ -128,7 +128,7 @@ align(1) union pte {
 
 // Paramemters = addr: addr is an address passed to us by grub that contains the address to the multi-boot info :)
 // Return a ulong (the ptr to our bitmap)
-ulong fourK_pages(uint addr) {
+byte* setup_vmem_bitmap(uint addr) {
 
 	// CONST for page size
 	const uint PAGE_SIZE = 4096;			// 4k pages for us right now
@@ -212,3 +212,9 @@ ulong fourK_pages(uint addr) {
 	return 0;
 	
 }
+
+
+// Request a page (or more)
+// request_pages(int => Number of pages to request, boolean => should they be contiguous?)
+// returns => uint pointer to block of pages
+
