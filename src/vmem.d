@@ -204,12 +204,12 @@ byte* setup_vmem_bitmap(uint addr) {
 		
 		kprintfln("i was last seen indexing bit: %d", i);
 		
-		return cast(ulong)bitmap;
+		return bitmap;
 		
 	} else {
 		kprintfln("The multi-boot struct was wrong!");
 	}
-	return 0;
+	return null;
 	
 }
 

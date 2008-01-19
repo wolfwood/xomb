@@ -226,7 +226,7 @@ extern(C) void cmain(uint magic, uint addr)
 	const uint STARHI = STAR >> 32;
 	const uint STARLO = STAR & 0xFFFFFFFF;
 
-	lstar.set_handler(&sysCallHandler);
+	lstar.setHandler(&sysCallHandler);
 
 	asm
 	{

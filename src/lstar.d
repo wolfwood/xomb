@@ -24,7 +24,7 @@ void setHandler(void* h)
 		"mov 0xC0000082, %%ecx\n\t"
 		"wrmsr"
 		: /* no output */
-		: "r" hi, "r" lo, "r" code
+		: "r" hi, "r" lo
 		: "edx", "eax", "ecx";
 	}
 }
