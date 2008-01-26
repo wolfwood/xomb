@@ -23,7 +23,7 @@ void handle_faults(idt.interrupt_stack* ir_stack)
 {
 	// First we need to determine why the page fault happened
 	// This ulong will contain the address of the section of memory being faulted on
-	ulong addr;
+	void* addr;
 	// This is the dirty asm that gets the address for us...
 	asm { "mov %%cr2, %%rax" ::: "rax"; "movq %%rax, %0" :: "m" addr; }
 	// And this is a print to show us whats going on
@@ -83,7 +83,7 @@ uint CHECK_FLAG(uint flags, uint bit)
 
 // Page table structures
 align(1) union pmle {
-	ulong[4096] padding;
+	ubyte[4096] padding;
 	// Page map level 4 entry
 	align(1) struct {
 		ulong pmle;
@@ -93,7 +93,7 @@ align(1) union pmle {
 }
 
 align(1) union pdpe {
-	ulong[4096] padding;
+	ubyte[4096] padding;
 	// Page directory pointer entry
 	align(1) struct {
 		ulong pdpe;
@@ -103,7 +103,7 @@ align(1) union pdpe {
 }
 
 align(1) union pde {
-	ulong[4096] padding;
+	ubyte[4096] padding;
 	// Page directory entry
 	align(1) struct {
 		ulong pde;
@@ -128,36 +128,26 @@ align(1) union pte {
 
 // Paramemters = addr: addr is an address passed to us by grub that contains the address to the multi-boot info :)
 // Return a ulong (the ptr to our bitmap)
-byte* setup_vmem_bitmap(uint addr) {
-
+void* setup_vmem_bitmap(uint addr) {
 	// CONST for page size
-	const uint PAGE_SIZE = 4096;			// 4k pages for us right now
-	
-	
-	multiboot_info_t *mbi;
+	const ulong PAGE_SIZE = 4096;			// 4k pages for us right now
 
-	mbi = cast(multiboot_info_t*)addr;
-	uint pages_start_addr; // Address of where to start pages
-	module_t* mod;
+	auto mbi = cast(multiboot_info_t*)addr;
 
 	if(CHECK_FLAG(mbi.flags, 6))
 	{
-		mod = cast(module_t*)mbi.mods_addr;
-		mod = cast(module_t*)(cast(int)mod + (cast(int)mbi.mods_count - 1));
-		uint endAddr = mod.mod_end;
-		uint pages_free_size;			// Free space avail for pages
-		uint num_pages;					// Total number of pages in teh system
-		uint bitmap_size;				// Size the bitmap needs to be	
-		byte *bitmap;					// The bitmap :)	
-		uint num_used;					// Number of used pages to init the mapping
-				
+		auto mod = cast(module_t*)(cast(module_t*)mbi.mods_addr + mbi.mods_count - 1);
+		ulong endAddr = mod.mod_end;
+
 		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
 		kprintfln("mods_count = %d, mods_addr = 0x%x", cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
 		kprintfln("mods_end = 0x%x", endAddr);
 
 		// If endAddr is aligned already we'll just add 0, so no biggie
-		pages_start_addr = endAddr + (endAddr % PAGE_SIZE);						// Available start address for paging
-		pages_free_size = (cast(uint)mbi.mem_upper * 1024) - pages_start_addr;		// Free space available to us
+		// Address of where to start pages
+		void* pages_start_addr = cast(void*)(endAddr + (endAddr % PAGE_SIZE));			// Available start address for paging
+		// Free space avail for pages
+		ulong pages_free_size = (cast(ulong)mbi.mem_upper * 1024) - cast(ulong)pages_start_addr;		// Free space available to us
 
 		kprintfln("Free space avail : %dKB", pages_free_size / 1024);
 		
@@ -168,49 +158,44 @@ byte* setup_vmem_bitmap(uint addr) {
 		// Page allocator
 		// Find the total number of pages in the system
 		// Determine bitmap size
-
-		num_pages =  (mbi.mem_upper * 1024) / PAGE_SIZE;
+		// Total number of pages in teh system
+		ulong num_pages =  (mbi.mem_upper * 1024) / PAGE_SIZE;
 		kprintfln("Num of pages = %d", num_pages);
 		
-		bitmap_size = (num_pages / 8);			// Bitmap size in bytes
+		// Size the bitmap needs to be
+		ulong bitmap_size = (num_pages / 8);			// Bitmap size in bytes
 		if(bitmap_size % PAGE_SIZE != 0) {			// If it is not 4k aligned
 			bitmap_size += PAGE_SIZE - (bitmap_size % PAGE_SIZE);	// Pad the size off to keep things page aligned
-			
 		}
 		
 		kprintfln("Bitmap size in bytes = %d", bitmap_size);		
-		
+
 		// Set up bitmap
 		// Return a ulong a ptr to the bitmap
-		
-		bitmap = cast(byte*)pages_start_addr;			// Pages start addr
-		// Make the bitmap all 0s
-		bitmap[0..bitmap_size] = 0;						// I can has bitmap?
+
+		// The bitmap :)
+		byte[] bitmap = (cast(byte*)pages_start_addr)[0 .. bitmap_size];
+
 		// Now we need to properly set the used pages
 		// First find the number of pages that are used
-		
-		num_used = (pages_start_addr + bitmap_size) / PAGE_SIZE;	// Find number of used pages so far
+		// Number of used pages to init the mapping
+		ulong num_used = (cast(ulong)pages_start_addr + bitmap_size) / PAGE_SIZE;	// Find number of used pages so far
 		kprintfln("Number of used pages = %d", num_used);
-		byte *temp = bitmap;
-		int i;
+
+		// Set the first part of the bitmap to all used
+		bitmap[0 .. num_used / 8] = cast(byte)0xFF;
 		
-		for(i = 0; i <= (num_used - 8); i+=8) {			// Set full bytes of pages used
-			*temp = cast(byte)0xFF;
-			temp += 1;
-		}		
-		if(num_used - i > 0) {
-			*temp = 0xFF >> (8 - (num_used - i));			// Set the remaining bits
-		}
+		// Where we change from used to unused, figure out the bit pattern to put in that slot
+		bitmap[num_used / 8] = 0xFF >> (8 - (num_used % 8));
 		
-		kprintfln("i was last seen indexing bit: %d", i);
-		
-		return bitmap;
-		
+		// The reset of the bitmap is 0 to mean unused
+		bitmap[num_used / 8 + 1 .. $] = 0;
+
+		return bitmap.ptr;
 	} else {
 		kprintfln("The multi-boot struct was wrong!");
 	}
 	return null;
-	
 }
 
 
