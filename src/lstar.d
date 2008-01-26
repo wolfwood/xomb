@@ -12,6 +12,7 @@ void setHandler(void* h)
 	ulong addy = cast(ulong) h;
 	uint hi = addy >> 32;
 	uint lo = addy & 0xFFFFFFFF;
+	const ulong msr = 0xc0000082;
 
 	kprintfln("Setting the Handler.");
 
@@ -19,13 +20,10 @@ void setHandler(void* h)
 	/// the kernel requires it.
 	asm
 	{
-		"mov %0, %%edx\n\t"
-		"mov %1, %%eax\n\t"
-		"mov 0xC0000082, %%ecx\n\t"
-		"wrmsr"
-		: /* no output */
-		: "r" hi, "r" lo
-		: "edx", "eax", "ecx";
+		"movl %0, %%edx" :: "r" hi : "edx";
+		"movl %0, %%eax" :: "r" lo : "eax";
+		"movq %0, %%rcx" :: "i" msr : "rcx";
+		"wrmsr";
 	}
 }
 
