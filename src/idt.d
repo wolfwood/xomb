@@ -315,10 +315,17 @@ void setCustomHandler(size_t i, InterruptHandler h, int ist = -1)
 		Entries[i].ist = ist;
 }
 
-void stack_dump() {
-	kprintfln("r15: 0x%x\n  r14: 0x%x\n  r13: 0x%x\n r12: 0x%x\n r11: 0x%x\n
-			r10: 0x%x\n r9: 0x%x\n r8: 0x%x\n rbp: 0x%x\n rdi: 0x%x\n rsi: 0x%x\n
-			rdx: 0x%x\n rcx: 0x%x\n rbx: 0x%x\n rax: 0x%x\n");
+void stack_dump(interrupt_stack* r) {
+	kprintfln("r15: 0x%x\nr14: 0x%x\nr13: 0x%x\nr12: 0x%x\nr11: 0x%x" , 
+			r.r15, r.r14, r.r13, r.r12, r.r11);
+			
+	kprintfln("r10: 0x%x\n r9: 0x%x\n r8: 0x%x\nrbp: 0x%x\nrdi: 0x%x", 
+			r.r10, r.r9, r.r8, r.rbp, r.rdi);
+			
+	kprintfln("rsi: 0x%x\nrdx: 0x%x\nrcx: 0x%x\nrbx: 0x%x\nrax: 0x%x", 
+			r.rsi, r.rdx, r.rcx, r.rbx, r.rax);
+			
+	kprintfln("ss: 0x%x\nrsp: 0x%x\ncs: 0x%x", r.ss, r.rsp, r.cs);
 }
 
 /* All of our Exception handling Interrupt Service Routines will
@@ -336,10 +343,13 @@ extern(C) void fault_handler(interrupt_stack* r)
 		return;
 	}
 
-	if(r.int_no < 32)
+	if(r.int_no < 32) {
 		kprintfln("%s. Code = %d, IP = %x", exceptionMessages[r.int_no], r.err_code, r.rip);
-	else
+		kprintfln("Stack dump:");
+		stack_dump(r);
+	} else {
 		kprintfln("Unknown exception %d.", r.int_no);
+	}
 
-	asm{cli; hlt;}
+	asm{hlt;}
 }
