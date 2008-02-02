@@ -214,7 +214,21 @@ extern(C) void cmain(uint magic, uint addr)
 	kprintfln("\nVenimus, vidimus, vicimus!  --PittGeeks");
 	Console.resetColors();
 
-	//fourK_pages(addr);
+////////////////////////////////////////////////////////////////////////////////
+	// Set up the heap memory allocator
+	setup_vmem_bitmap(addr);
+	// Request a page for testing
+	void* someAddr = request_page();
+	void* someAddr2 = request_page();
+	// Print the address for debug
+	kprintfln("The address is 0x%x\n", someAddr);
+	kprintfln("The address is 0x%x\n", someAddr2);
+	
+	free_page(someAddr2);
+	
+	void* someAddr3 = request_page();
+	kprintfln("The address is 0x%x\n", someAddr3);
+////////////////////////////////////////////////////////////////////////////////
 
 	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
 	{
@@ -248,6 +262,7 @@ extern(C) void cmain(uint magic, uint addr)
 		"movq $0, %%r11" ::: "r11";
 		"sysretq";
 	}
+	
 }
 
 void sysCallHandler()

@@ -9,6 +9,9 @@ Params:
 */
 void setHandler(void* h)
 {
+	/* We commented this out because it is causing infinite 
+		page faults. */
+		
 	ulong addy = cast(ulong) h;
 	uint hi = addy >> 32;
 	uint lo = addy & 0xFFFFFFFF;
@@ -20,10 +23,12 @@ void setHandler(void* h)
 	/// the kernel requires it.
 	asm
 	{
+
 		"movl %0, %%edx" :: "r" hi : "edx";
 		"movl %0, %%eax" :: "r" lo : "eax";
 		"movq %0, %%rcx" :: "i" msr : "rcx";
 		"wrmsr";
+		
 	}
 }
 

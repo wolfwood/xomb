@@ -214,6 +214,11 @@ extern(C) void isr_common()
 		"popq %%rcx";
 		"popq %%rbx";
 		"popq %%rax";
+		
+		// A haiku
+		// We need to print a stack trace
+		// I hate a-s-m
+		// This is a job for Jarrett
 
 		// Cleans up the pushed error code and pushed ISR num
 		"add $16, %%rsp";
@@ -310,6 +315,12 @@ void setCustomHandler(size_t i, InterruptHandler h, int ist = -1)
 		Entries[i].ist = ist;
 }
 
+void stack_dump() {
+	kprintfln("r15: 0x%x\n  r14: 0x%x\n  r13: 0x%x\n r12: 0x%x\n r11: 0x%x\n
+			r10: 0x%x\n r9: 0x%x\n r8: 0x%x\n rbp: 0x%x\n rdi: 0x%x\n rsi: 0x%x\n
+			rdx: 0x%x\n rcx: 0x%x\n rbx: 0x%x\n rax: 0x%x\n");
+}
+
 /* All of our Exception handling Interrupt Service Routines will
 *  point to this function. This will tell us what exception has
 *  happened! Right now, we simply halt the system by hitting an
@@ -326,7 +337,7 @@ extern(C) void fault_handler(interrupt_stack* r)
 	}
 
 	if(r.int_no < 32)
-		kprintfln("%s Exception. Code = %d, IP = %x", exceptionMessages[r.int_no], r.err_code, r.rip);
+		kprintfln("%s. Code = %d, IP = %x", exceptionMessages[r.int_no], r.err_code, r.rip);
 	else
 		kprintfln("Unknown exception %d.", r.int_no);
 
