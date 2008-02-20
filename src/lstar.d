@@ -23,10 +23,9 @@ void setHandler(void* h)
 	/// the kernel requires it.
 	asm
 	{
-
-		"movl %0, %%edx" :: "r" hi : "edx";
-		"movl %0, %%eax" :: "r" lo : "eax";
-		"movq %0, %%rcx" :: "i" msr : "rcx";
+		"movl %0, %%edx\n"
+		"movl %1, %%eax\n"
+		"movq %2, %%rcx\n" :: "r" hi, "r" lo, "i" msr : "edx", "eax", "rcx";
 		"wrmsr";
 		
 	}

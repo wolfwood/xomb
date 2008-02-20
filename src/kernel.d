@@ -245,9 +245,12 @@ extern(C) void cmain(uint magic, uint addr)
 	asm
 	{
 		// Set the STAR register.
-		"movl $0xC0000081, %%ecx" ::: "ecx";
-		"movl %0, %%edx" :: "i" STARHI : "edx";
-		"movl %0, %%eax" :: "i" STARLO : "eax";
+		"movl $0xC0000081, %%ecx\n"
+		"movl %0, %%edx\n"
+		"movl %1, %%eax" :: "i"STARHI, "i"STARLO : "ecx", "edx", "eax";
+		//"movl $0xC0000081, %%ecx" ::: "ecx";
+		//"movl %0, %%edx" :: "i" STARHI : "edx";
+		//"movl %0, %%eax" :: "i" STARLO : "eax";
 		"wrmsr";
 
 		// Set the SF_MASK register.  Top should be 0, bottom is our mask,

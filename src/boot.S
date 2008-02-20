@@ -105,6 +105,7 @@ multiboot_entry:
 
 		/* Clear cpu flags */
 		pushq $0
+		lss (%rsp), %eax
 		popf
 
 // 		sti
