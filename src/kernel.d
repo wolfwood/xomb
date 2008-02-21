@@ -270,19 +270,41 @@ extern(C) void cmain(uint magic, uint addr)
 
 void sysCallHandler()
 {
+	// we should get arguments and retain %rcx
 	asm
 	{
 		naked;
+		// etc: "popq %rdi";
+
+		// push program counter to stack
+		"pushq %%rcx";
+	}
+
+	kprintfln("In sysCall Handler");
+
+	asm
+	{
+		naked;		
+		"popq %%rcx";
 		"sysretq";
 	}
 }
 
 extern(C) void testUser()
 {
+	kprintfln("In User Mode.");
+
+	for (;;)
+	{
+
 	asm
 	{
 		naked;
 		"syscall";
+	}
+
+	kprintfln("Once more in user mode.");
+
 	}
 }
 
