@@ -82,11 +82,6 @@ void handle_faults(idt.interrupt_stack* ir_stack)
 	}
 }
 
-uint CHECK_FLAG(uint flags, uint bit)
-{
-	return ((flags) & (1 << (bit)));
-}
-
 // Page table structures
 align(1) union pmle {
 	ubyte[4096] padding;

@@ -3,9 +3,9 @@
 import vga;
 import util;
 import vmem;
-import gdt;
+static import gdt;
 
-alias GDT.IntGateDesc64 IDTEntry;
+alias gdt.IntGateDesc64 IDTEntry;
 
 public align(1) struct IDTPtr
 {
@@ -32,7 +32,7 @@ public enum StackType : uint
 *  "Unhandled Interrupt" exception */
 IDTEntry[256] Entries;
 
-public void setGate(uint num, GDT.SysSegType64 gateType, ulong funcPtr, uint dplFlags, uint istFlags)
+public void setGate(uint num, gdt.SysSegType64 gateType, ulong funcPtr, uint dplFlags, uint istFlags)
 {
 	with(Entries[num])
 	{
@@ -49,12 +49,12 @@ public void setGate(uint num, GDT.SysSegType64 gateType, ulong funcPtr, uint dpl
 
 void setIntGate(uint num, void* funcPtr, uint ist = 0)
 {
-	setGate(num, GDT.SysSegType64.IntGate, cast(ulong)funcPtr, 0, ist);
+	setGate(num, gdt.SysSegType64.IntGate, cast(ulong)funcPtr, 0, ist);
 }
 
 void setSysGate(uint num, void* funcPtr, uint ist = 0)
 {
-	setGate(num, GDT.SysSegType64.IntGate, cast(ulong)funcPtr, 3, ist);
+	setGate(num, gdt.SysSegType64.IntGate, cast(ulong)funcPtr, 3, ist);
 }
 
 void install()
