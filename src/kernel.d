@@ -129,9 +129,12 @@ extern(C) void testUser()
 	{
 		asm
 		{
+			naked;
 			"syscall";
 		}
 
-		kprintfln("Once more in user mode.");
+		kprintfln("Once more in user mode. %d, %d", i, numIters);
 	}
+
+	asm { cli; hlt; }
 }
