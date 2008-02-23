@@ -10,7 +10,7 @@ module kernel;
 import config;
 import elf;
 import kgdb_stub;
-import lstar;
+import syscall;
 import multiboot;
 import system;
 import util;
@@ -92,18 +92,8 @@ extern(C) void cmain(uint magic, uint addr)
 	Console.resetColors();
 
 	// Set up the heap memory allocator
-	setup_vmem_bitmap(addr);
-	// Request a page for testing
-	void* someAddr = request_page();
-	void* someAddr2 = request_page();
-	// Print the address for debug
-	kprintfln("The address is 0x%x\n", someAddr);
-	kprintfln("The address is 0x%x\n", someAddr2);
-
-	free_page(someAddr2);
-
-	void* someAddr3 = request_page();
-	kprintfln("The address is 0x%x\n", someAddr3);
+	vmem.setup_vmem_bitmap(addr);
+        vmem.test_vmem();
 
 	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
 	{
@@ -111,39 +101,11 @@ extern(C) void cmain(uint magic, uint addr)
 		asm { cli; hlt; }
 	}
 
-	const ulong STAR = 0x003b_0010_0000_0000;
-	const uint STARHI = STAR >> 32;
-	const uint STARLO = STAR & 0xFFFFFFFF;
+	kprintfln("Setting lstar, star and SF_MASK...");
 
-	kprintfln("Setting lstar and star...");
+	syscall.setHandler(&syscall.sysCallHandler);
 
-	lstar.setHandler(&sysCallHandler);
-
-	asm
-	{
-		// Set the STAR register.
-		"movl $0xC0000081, %%ecx\n"
-		"movl %0, %%edx\n"
-		"movl %1, %%eax" :: "i"STARHI, "i"STARLO : "ecx", "edx", "eax";
-		//"movl $0xC0000081, %%ecx" ::: "ecx";
-		//"movl %0, %%edx" :: "i" STARHI : "edx";
-		//"movl %0, %%eax" :: "i" STARLO : "eax";
-		"wrmsr";
-	}
-
-	kprintfln("Setting SF_MASK...");
-
-	asm
-	{
-		// Set the SF_MASK register.  Top should be 0, bottom is our mask,
-		// but we're not masking anything (yet).
-		"xorl %%eax, %%eax" ::: "eax";
-		"xorl %%edx, %%edx" ::: "edx";
-		"movl $0xC0000084, %%ecx" ::: "ecx";
-		"wrmsr";
-	}
-
-	kprintfln("JUMPING TO USER MODE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	kprintfln("JUMPING TO USER MODE!!!");
 
 	asm
 	{
@@ -153,80 +115,30 @@ extern(C) void cmain(uint magic, uint addr)
 		"sysretq";
 	}
 
-	kprintfln("BACK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	kprintfln("BACK!!!");
 	
 }
 
-void sysCallHandler()
-{
-	// we should get arguments and retain %rcx
-	asm
-	{
-		naked;
-		// etc: "popq %rdi";
 
-		// push program counter to stack
-		"pushq %%rcx";
-	}
-
-	kprintfln("In sysCall Handler");
-
-	asm
-	{
-		naked;		
-		"popq %%rcx";
-		"sysretq";
-	}
-}
 
 extern(C) void testUser()
 {
+        // let's not loop forever.  Do not want (yet).
+        int numIters = 10;
+        
 	kprintfln("In User Mode.");
 
-	for (;;)
+	for (int i = 0; i<numIters; i++)
 	{
 
-	asm
-	{
+	    asm
+	    {
 		naked;
 		"syscall";
+	    }
+
+	    kprintfln("Once more in user mode.");
+
 	}
-
-	kprintfln("Once more in user mode.");
-
-	}
-}
-
-/**
-This method allows the kernel to execute a module loaded using GRUB multiboot. It accepts 
-a pointer to the GRUB Multiboot header as well as an integer, indicating the number of the module being loaded.
-It then goes through the ELF header of the loaded module, finds the location of the _start section, and
-jumps to it, thus beginning execution.
-
-Params:
-	moduleNumber = The number of the module the kernel wishes to execute. Integer value.
-	mbi = A pointer to the multiboot information structure, allowing this function
-		to interperet the module data properly.
-*/
-void jumpTo(uint moduleNumber, multiboot_info_t* mbi)
-{
-	// get a pointer to the loaded module.
-	module_t* mod = &(cast(module_t*)mbi.mods_addr)[moduleNumber];
-
-	// get the memory address of the module's starting point.
-	// also, get a pointer to the module's ELF header.
-	void* start = cast(void*)mod.mod_start;
-	Elf64_Ehdr* header = cast(Elf64_Ehdr*)start;
-
-	// find all the sections in the module's ELF Section header.
-	Elf64_Shdr[] sections = (cast(Elf64_Shdr*)(start + header.e_shoff))[0 .. header.e_shnum];
-	Elf64_Shdr* strTable = &sections[header.e_shstrndx];
-
-	// go to the first section in the section header.
-	Elf64_Shdr* text = &sections[1];
-
-	// declare a void function which can be called to jump to the memory position of
-	// __start().
-	void function() entry = cast(void function())(start + text.sh_offset);
-	entry();
+		
 }

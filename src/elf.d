@@ -9,6 +9,9 @@ The following definitions declare sizes for various types of Elf64-specific
 variables. These types are defined using 64-bit specific datatypes.
 They are individually commented with their corresponding number of bytes.
  */
+
+import multiboot;
+
 alias void* Elf64_Addr;	   // size 8
 alias ulong Elf64_Off;	   // size 8
 alias ushort Elf64_Half;   // size 2
@@ -515,4 +518,38 @@ int elf64_check_magic(char *elf_start)
 	{
 		return 0;
 	}
+}
+
+/**
+This method allows the kernel to execute a module loaded using GRUB multiboot. It accepts 
+a pointer to the GRUB Multiboot header as well as an integer, indicating the number of the module being loaded.
+It then goes through the ELF header of the loaded module, finds the location of the _start section, and
+jumps to it, thus beginning execution.
+
+Params:
+	moduleNumber = The number of the module the kernel wishes to execute. Integer value.
+	mbi = A pointer to the multiboot information structure, allowing this function
+		to interperet the module data properly.
+*/
+void jumpTo(uint moduleNumber, multiboot_info_t* mbi)
+{
+	// get a pointer to the loaded module.
+	module_t* mod = &(cast(module_t*)mbi.mods_addr)[moduleNumber];
+
+	// get the memory address of the module's starting point.
+	// also, get a pointer to the module's ELF header.
+	void* start = cast(void*)mod.mod_start;
+	Elf64_Ehdr* header = cast(Elf64_Ehdr*)start;
+
+	// find all the sections in the module's ELF Section header.
+	Elf64_Shdr[] sections = (cast(Elf64_Shdr*)(start + header.e_shoff))[0 .. header.e_shnum];
+	Elf64_Shdr* strTable = &sections[header.e_shstrndx];
+
+	// go to the first section in the section header.
+	Elf64_Shdr* text = &sections[1];
+
+	// declare a void function which can be called to jump to the memory position of
+	// __start().
+	void function() entry = cast(void function())(start + text.sh_offset);
+	entry();
 }

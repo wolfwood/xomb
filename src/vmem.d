@@ -236,3 +236,18 @@ void free_page(void* address) {
 	
 	kprintfln("Returning bit %d; in byte %d of page %d\n", bit_num, byte_num, page);
 }
+
+void test_vmem()
+{
+	// Request a page for testing
+	void* someAddr = request_page();
+	void* someAddr2 = request_page();
+	// Print the address for debug
+	kprintfln("The address is 0x%x\n", someAddr);
+	kprintfln("The address is 0x%x\n", someAddr2);
+
+	free_page(someAddr2);
+
+	void* someAddr3 = request_page();
+	kprintfln("The address is 0x%x\n", someAddr3);
+}

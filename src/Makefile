@@ -20,7 +20,7 @@ DFLAGS = -nostdlib -nodefaultlibs -g -fdebug -I .
 LDFLAGS = -nostdlib -nodefaultlibs -b elf64-x86-64
 
 ASM = boot.S
-DFILES = kernel.d vga.d system.d multiboot.d idt.d gdt.d lstar.d kgdb_support.d vmem.d kgdb_stub.d config.d util.d
+DFILES = kernel.d vga.d system.d multiboot.d idt.d gdt.d syscall.d kgdb_support.d vmem.d kgdb_stub.d config.d util.d
 RTFILES := $(shell ls std/typeinfo/*.d) object.d invariant.d dstubs.d std/c/stdarg.d
 APP := application.d
 OBJS = $(ASM:.S=.o) $(DFILES:.d=.o) $(RTFILES:.d=.o)
