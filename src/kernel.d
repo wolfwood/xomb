@@ -48,7 +48,7 @@ and "addr," the address of the multiboot variable, passed by the GRUB bootloader
 */
 extern(C) void cmain(uint magic, uint addr)
 {
-        int mb_flag = 0;
+	int mb_flag = 0;
 
 	// set flags.
 	set_rflags_iopl();
@@ -78,13 +78,13 @@ extern(C) void cmain(uint magic, uint addr)
 	Console.resetColors();
 	kprintfln("...\n");
 
-        // Make sure the multiboot header is valid
-        // and print out memory info, etc
+	// Make sure the multiboot header is valid
+	// and print out memory info, etc
 	mb_flag = multiboot.test_mb_header(magic, addr);
-        if (mb_flag) { // The mb header is bad!!!! Die!!!!
-            kprintfln("Multiboot header is bad... DIE!");
-            return;
-        }
+	if (mb_flag) { // The mb header is bad!!!! Die!!!!
+		kprintfln("Multiboot header is bad... DIE!");
+		return;
+	}
 
 	// Print out our slogan. Literally, "We came, we saw, we conquered."
 	Console.setColors(Color.Yellow, Color.LowBlue);
@@ -93,7 +93,7 @@ extern(C) void cmain(uint magic, uint addr)
 
 	// Set up the heap memory allocator
 	vmem.setup_vmem_bitmap(addr);
-        vmem.test_vmem();
+	vmem.test_vmem();
 
 	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
 	{
@@ -116,29 +116,22 @@ extern(C) void cmain(uint magic, uint addr)
 	}
 
 	kprintfln("BACK!!!");
-	
 }
-
-
 
 extern(C) void testUser()
 {
-        // let's not loop forever.  Do not want (yet).
-        int numIters = 10;
-        
+	// let's not loop forever.  Do not want (yet).
+	int numIters = 10;
+
 	kprintfln("In User Mode.");
 
-	for (int i = 0; i<numIters; i++)
+	for(int i = 0; i < numIters; i++)
 	{
+		asm
+		{
+			"syscall";
+		}
 
-	    asm
-	    {
-		naked;
-		"syscall";
-	    }
-
-	    kprintfln("Once more in user mode.");
-
+		kprintfln("Once more in user mode.");
 	}
-		
 }
