@@ -14,18 +14,6 @@ uint CHECK_FLAG(uint flags, uint bit)
 	return ((flags) & (1 << (bit)));
 }
 
-uint cpuid(uint func)
-{
-	asm
-	{
-		naked;
-		"movl %%edi, %%eax";
-		"cpuid";
-		"movl %%edx, %%eax";
-		"retq";
-	}
-}
-
 template Tuple(T...)
 {
 	alias T Tuple;
