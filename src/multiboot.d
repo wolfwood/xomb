@@ -1,5 +1,8 @@
 module multiboot;
 
+import vga;
+import util;
+
 /** multiboot.d
 	This file declares structures and constants used by GRUB for the multiboot header.
 	The multiboot header allows GRUB to load multiple kernels and kernel modules
@@ -145,4 +148,119 @@ struct memory_map_t
 	uint length_low;
 	uint length_high;
 	uint type;
+}
+
+// Tests the multiboot header, prints out relevant mem info, etc
+// return: 0 good, -1 bad.
+int test_mb_header(uint magic, uint addr)
+{
+    	// declare a pointer to the multiboot header.
+	multiboot_info_t *mbi;
+
+// Make sure that the magic number, passed to the kernel, is a valid GRUB magic number.
+	// If it is not, print to the screen that the magic number is invalid and end execution.
+	// Invalid magic numbers can indicate that the system was illegally booted, or that the
+	// system was booted by a bootloader other than GRUB.
+	if(magic != MULTIBOOT_BOOTLOADER_MAGIC)
+	{
+		kprintfln("Invalid magic number: 0x%x", cast(uint)magic);
+		return -1;
+	}
+
+	// Set MBI to the address of the Multiboot information structure, passed to the kernel
+	// by GRUB.
+	mbi = cast(multiboot_info_t*)addr;
+
+	// Print out all the values of the flags presented to the operating system by GRUB.
+	kprintfln("flags = 0x%x", cast(uint)mbi.flags);
+
+	// Are mem_* valid
+	if(CHECK_FLAG(mbi.flags, 0))
+		kprintfln("mem_lower = %uKB, mem_upper = %uKB", cast(uint)mbi.mem_lower, cast(uint)mbi.mem_upper);
+
+	// Check to make sure the boot device is valid.
+	if(CHECK_FLAG(mbi.flags, 1))
+		kprintfln("boot_device = 0x%x", cast(uint)mbi.boot_device);
+
+	// Is the command line passed?
+	if(CHECK_FLAG(mbi.flags, 2))
+		kprintfln("cmdline = %s", system.toString(cast(char*)mbi.cmdline));
+
+	// This if statement calls the function CHECK_FLAG on the flags of the GRUB multiboot header.
+	// It then checks to make sure the flags are valid (indicating proper, secure booting).
+	if(CHECK_FLAG(mbi.flags, 3))
+	{
+		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
+		kprintfln("mods_count = %d, mods_addr = 0x%x", cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
+
+		module_t* mod;
+		int i;
+
+		// Go through all of the modules loaded by GRUB.
+		for(i = 0, mod = cast(module_t*)mbi.mods_addr; i < mbi.mods_count; i++, mod++)
+		{
+			// print out the memory address of the beginning of that module, the address of the end of that module,
+			// and the name of that module.
+			kprintfln(" mod_start = 0x%x, mod_end = 0x%x, string = %s",
+				cast(uint)mod.mod_start,
+				cast(uint)mod.mod_end,
+				system.toString(cast(char*)mod.string));
+		}
+
+		// Use the jumpTo() method (see below) to execute the first module.
+		//jumpTo(0, mbi);
+		//return;
+	}
+
+	// Bits 4 and 5 are mutually exclusive!
+	if(CHECK_FLAG(mbi.flags, 4) && CHECK_FLAG(mbi.flags, 5))
+	{
+		kprintfln("Both bits 4 and 5 are set.");
+		return -1;
+	}
+
+	// Check to make sure the symbol table of the compiled kernel file is valid.
+	if(CHECK_FLAG(mbi.flags, 4))
+	{
+		// get a pointer to the symbol table, returned by GRUB in the multiboot header.
+		aout_symbol_table_t* aout_sym = &(mbi.aout_sym);
+
+		// If it is valid, print out information about the compiled kernel's symbol table.
+		kprintfln("aout_symbol_table: tabsize = 0x%0x, strsize = 0x%x, addr = 0x%x",
+			cast(uint)aout_sym.tabsize,
+			cast(uint)aout_sym.strsize,
+			cast(uint)aout_sym.addr);
+	}
+
+	// Check to make sure the section header of the compiled kernel is valid.
+	if(CHECK_FLAG(mbi.flags, 5))
+	{
+		elf_section_header_table_t* elf_sec = &(mbi.elf_sec);
+
+		// If it is valid, print out information about the compiled kernel's section table.
+		kprintfln("elf_sec: num = %u, size = 0x%x, addr = 0x%x, shndx = 0x%x",
+			cast(uint)elf_sec.num, cast(uint)elf_sec.size,
+			cast(uint)elf_sec.addr, cast(uint)elf_sec.shndx);
+	}
+
+	// This checks to make sure that the memory map of the bootloader is valid.
+	if(CHECK_FLAG(mbi.flags, 6))
+	{
+		kprintfln("mmap_addr = 0x%x, mmap_length = 0x%x", cast(uint)mbi.mmap_addr, cast(uint)mbi.mmap_length);
+
+		for(memory_map_t* mmap = cast(memory_map_t*)mbi.mmap_addr;
+			cast(uint)mmap < mbi.mmap_addr + mbi.mmap_length;
+			mmap = cast(memory_map_t*)(cast(uint)mmap + mmap.size + uint.sizeof))
+		{
+			kprintfln(" size = 0x%x, base_addr = 0x%x%x, length = 0x%x%x, type = 0x%x",
+				cast(uint)mmap.size,
+				cast(uint)mmap.base_addr_high,
+				cast(uint)mmap.base_addr_low,
+				cast(uint)mmap.length_high,
+				cast(uint)mmap.length_low,
+				cast(uint)mmap.type);
+		}
+	}
+	
+	return 0;
 }
