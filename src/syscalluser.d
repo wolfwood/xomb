@@ -31,6 +31,8 @@ struct ExitArgs
 	long retVal;
 }
 
+import vga;
+
 extern(C) long nativeSyscall(ulong ID, void* ret, void* params)
 {
 	// arguments for x86-64:
