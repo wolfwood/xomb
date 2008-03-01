@@ -43,6 +43,7 @@ struct Console
 static:
 	/// The number of columns a standard screen is wide.
 	const uint Columns = 80;
+	
 	/// The number of lines contained in a standard screen.
 	const uint Lines = 24;
 	// The default color for the text the kernel will use when first printing out.
@@ -230,7 +231,7 @@ static:
 					case 'd':
 					case 'u':
 					case 'x':
-						p = itoa(buf, c, va_arg!(int)(argptr));
+						p = itoa(buf, c, va_arg!(long)(argptr));
 						goto string;
 
 					case 's':

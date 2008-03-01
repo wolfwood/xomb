@@ -49,19 +49,41 @@ void setHandler(void* h)
 	}
 }
 
+// alright, so %rdi, %rsi, %rdx are the registers loaded by NativeSyscall()
+// 
+
 void sysCallHandler()
 {
 	// we should get arguments and retain %rcx
 	asm
 	{
 		naked;
-		// etc: "popq %rdi";
+		
+		"mov 0xfffffffffffffff8(%%rbp), %%rdi";// :: "r" ID;      //rdi
+		"mov 0xfffffffffffffff0(%%rbp), %%rsi";// :: "r" ret;     //rsi
+		"mov 0xffffffffffffffe8(%%rbp), %%rdx";// :: "r" params;  //rdx
 
 		// push program counter to stack
 		"pushq %%rcx";
 	}
+		
+	ulong ID;
+        void* ret;
+        void* params;
 
-	kprintfln("In sysCall Handler");
+	asm
+	{
+		"mov %%rdi, %0" :: "o" ID;      //rdi
+		"mov %%rsi, %0" :: "o" ret;     //rsi
+		"mov %%rdx, %0" :: "o" params;  //rdx
+	}
+
+	AddArgs* addargs;
+
+	addargs = cast(AddArgs*)params;
+
+	kprintfln("Syscall: ID = 0x%x, ret = 0x%x, params = 0x%x", ID, ret, params);
+	kprintfln("Add args: a=%d, b=%d", addargs.a, addargs.b);
 
 	asm
 	{

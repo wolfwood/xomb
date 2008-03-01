@@ -33,7 +33,19 @@ struct ExitArgs
 
 extern(C) long nativeSyscall(ulong ID, void* ret, void* params)
 {
-	// ...
+	// arguments for x86-64:
+	// %rdi, %rsi, %rdx, %rcx, %r8, %r9
+	// %rcx is also used for the return address for the syscall
+	//   but we only need three arguments
+	//   so these should be in stack already!
+
+	// I assume such in the syscall handler
+	// so allow a non-naked function here
+
+	asm {
+		"syscall";
+	}
+
 	return 0;
 }
 
@@ -44,8 +56,13 @@ RetType.stringof ~ ` ` ~ name ~ `(Tuple!` ~ typeof(ParamStruct.tupleof).stringof
 {
 	` ~ RetType.stringof ~ ` ret;
 	` ~ ParamStruct.stringof ~ ` argStruct;
-	foreach(i, arg; args)
+
+	foreach(i, arg; args) {
+		kprintfln("arg=%d", arg);
 		argStruct.tupleof[i] = arg;
+	}
+									
+	kprintfln("ARGSTRUCT: 0x%x", &argStruct);
 
 	auto err = nativeSyscall(` ~ Itoa!(cast(ulong)ID) ~ `, &ret, &argStruct);
 
