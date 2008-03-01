@@ -44,40 +44,40 @@ void handle_faults(idt.interrupt_stack* ir_stack)
 
 	// The easiest way to find if a bit is set is by & it with a mask and check for ! 0
 
-	kprintfln("\n Page fault. Code = %d, IP = 0x%x, VA = 0x%x, RBP = 0x%x\n", ir_stack.err_code, ir_stack.rip, addr, ir_stack.rbp);
+	kprintfln!("\n Page fault. Code = {}, IP = 0x{x}, VA = 0x{x}, RBP = 0x{x}\n")(ir_stack.err_code, ir_stack.rip, addr, ir_stack.rbp);
 
 	if((ir_stack.err_code & 1) == 0) 
 	{
-		kprintfln("Error due to page not present!");
+		kprintfln!("Error due to page not present!")();
 
 		if((ir_stack.err_code & 2) != 0)
 		{
-			kprintfln("Error due to write fault.");
+			kprintfln!("Error due to write fault.")();
 		}
 		else
 		{
-			kprintfln("Error due to read fault.");
+			kprintfln!("Error due to read fault.")();
 		}
 
 		if((ir_stack.err_code & 4) != 0)
 		{
-			kprintfln("Error occurred in usermode.");
+			kprintfln!("Error occurred in usermode.")();
 			// In this case we need to send a signal to the libOS handler
 		}
 		else
 		{
-			kprintfln("Error occurred in supervised mode.");
+			kprintfln!("Error occurred in supervised mode.")();
 			// In this case we're super concerned and need to handle the fault
 		}
 
 		if((ir_stack.err_code & 8) != 0)
 		{
-			kprintfln("Tried to read from a reserved field in PTE!");
+			kprintfln!("Tried to read from a reserved field in PTE!")();
 		}
 
 		if((ir_stack.err_code & 16) != 0)
 		{
-			kprintfln("Instruction fetch error!");
+			kprintfln!("Instruction fetch error!")();
 		}
 	}
 }
@@ -138,8 +138,8 @@ void setup_vmem_bitmap(uint addr) {
 		ulong endAddr = mod.mod_end;
 
 		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
-		kprintfln("mods_count = %d, mods_addr = 0x%x", cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
-		kprintfln("mods_end = 0x%x", endAddr);
+		kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
+		kprintfln!("mods_end = 0x{x}")(endAddr);
 
 		// If endAddr is aligned already we'll just add 0, so no biggie
 		// Address of where to start pages
@@ -147,18 +147,18 @@ void setup_vmem_bitmap(uint addr) {
 		// Free space avail for pages
 		ulong pages_free_size = (cast(ulong)mbi.mem_upper * 1024) - cast(ulong)pages_start_addr;		// Free space available to us
 
-		kprintfln("Free space avail : %dKB", pages_free_size / 1024);
+		kprintfln!("Free space avail : {}KB")(pages_free_size / 1024);
 		
 		
-		kprintfln("pages_start_addr = 0x%x", pages_start_addr);
-		kprintfln("Mem upper = %uKB", mbi.mem_upper);
+		kprintfln!("pages_start_addr = 0x{x}")(pages_start_addr);
+		kprintfln!("Mem upper = {u}KB")(mbi.mem_upper);
 		
 		// Page allocator
 		// Find the total number of pages in the system
 		// Determine bitmap size
 		// Total number of pages in teh system
 		ulong num_pages =  (mbi.mem_upper * 1024) / PAGE_SIZE;
-		kprintfln("Num of pages = %d", num_pages);
+		kprintfln!("Num of pages = {}")(num_pages);
 		
 		// Size the bitmap needs to be
 		ulong bitmap_size = (num_pages / 8);			// Bitmap size in bytes
@@ -166,7 +166,7 @@ void setup_vmem_bitmap(uint addr) {
 			bitmap_size += PAGE_SIZE - (bitmap_size % PAGE_SIZE);	// Pad the size off to keep things page aligned
 		}
 		
-		kprintfln("Bitmap size in bytes = %d", bitmap_size);		
+		kprintfln!("Bitmap size in bytes = {}")(bitmap_size);		
 
 		// Set up bitmap
 		// Return a ulong a ptr to the bitmap
@@ -178,7 +178,7 @@ void setup_vmem_bitmap(uint addr) {
 		// First find the number of pages that are used
 		// Number of used pages to init the mapping
 		ulong num_used = (cast(ulong)pages_start_addr + bitmap_size) / PAGE_SIZE;	// Find number of used pages so far
-		kprintfln("Number of used pages = %d", num_used);
+		kprintfln!("Number of used pages = {}")(num_used);
 
 		// Set the first part of the bitmap to all used
 		bitmap[0 .. num_used / 8] = cast(ubyte)0xFF;
@@ -190,7 +190,7 @@ void setup_vmem_bitmap(uint addr) {
 		bitmap[num_used / 8 + 1 .. $] = 0;
 
 	} else {
-		kprintfln("The multi-boot struct was wrong!");
+		kprintfln!("The multi-boot struct was wrong!")();
 	}
 }
 
@@ -234,7 +234,7 @@ void free_page(void* address) {
 	
 	bitmap[byte_num] &= (~mask);
 	
-	kprintfln("Returning bit %d; in byte %d of page %d\n", bit_num, byte_num, page);
+	kprintfln!("Returning bit {}; in byte {} of page {}\n")(bit_num, byte_num, page);
 }
 
 void test_vmem()
@@ -243,11 +243,11 @@ void test_vmem()
 	void* someAddr = request_page();
 	void* someAddr2 = request_page();
 	// Print the address for debug
-	kprintfln("The address is 0x%x\n", someAddr);
-	kprintfln("The address is 0x%x\n", someAddr2);
+	kprintfln!("The address is 0x{x}\n")(someAddr);
+	kprintfln!("The address is 0x{x}\n")(someAddr2);
 
 	free_page(someAddr2);
 
 	void* someAddr3 = request_page();
-	kprintfln("The address is 0x%x\n", someAddr3);
+	kprintfln!("The address is 0x{x}\n")(someAddr3);
 }

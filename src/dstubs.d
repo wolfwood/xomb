@@ -433,25 +433,25 @@ private import vga;
 
 private void onAssertError(char[] file, size_t line)
 {
-	kprintfln("Error in %s, line %d: assertion failed.", file, line);
+	kprintfln!("Error in {}, line {}: assertion failed.")(file, line);
 	asm { l: hlt; jmp l; }
 }
 
 private void onAssertErrorMsg(char[] file, size_t line, char[] msg)
 {
-	kprintfln("Error in %s, line %d: assertion failed: \"%s\"", file, line, msg);
+	kprintfln!("Error in {}, line {}: assertion failed: \"{}\"")(file, line, msg);
 	asm { l: hlt; jmp l; }
 }
 
 private void onArrayBoundsError(char[] file, size_t line)
 {
-	kprintfln("Error in %s, line %d: array index out of bounds.", file, line);
+	kprintfln!("Error in {}, line {}: array index out of bounds.")(file, line);
 	asm { l: hlt; jmp l; }
 }
 
 private void onSwitchError(char[] file, size_t line)
 {
-	kprintfln("Error in %s, line %d: switch has no case or default to handle the switched-upon value.", file, line);
+	kprintfln!("Error in {}, line {}: switch has no case or default to handle the switched-upon value.")(file, line);
 	asm { l: hlt; jmp l; }
 }
 

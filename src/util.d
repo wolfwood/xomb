@@ -40,16 +40,6 @@ template Tuple(T...)
 	alias T Tuple;
 }
 
-template isArrayType(T : T[])
-{
-	const isArrayType = true;
-}
-
-template isArrayType(T)
-{
-	const isArrayType = false;
-}
-
 template Bitfield(alias data, Args...)
 {
 	static assert(!(Args.length & 1), "Bitfield arguments must be an even number");
@@ -114,4 +104,74 @@ template IntToStr(ulong i, int base)
 template Bitmask(long size)
 {
 	const long Bitmask = (1L << size) - 1;
+}
+
+template isStringType(T)
+{
+	const bool isStringType = is(T : char[]) || is(T : wchar[]) || is(T : dchar[]);
+}
+
+/**
+Sees if a type is char, wchar, or dchar.
+*/
+template isCharType(T)
+{
+	const bool isCharType = is(T == char) || is(T == wchar) || is(T == dchar);
+}
+
+/**
+Sees if a type is a signed or unsigned byte, short, int, or long.
+*/
+template isIntType(T)
+{
+	const bool isIntType = is(T == int) || is(T == uint) || is(T == long) || is(T == ulong) ||
+							is(T == short) || is(T == ushort) || is(T == byte) || is(T == ubyte) /* || is(T == cent) || is(T == ucent) */;
+}
+
+/**
+Sees if a type is float, double, or real.
+*/
+template isFloatType(T)
+{
+	const bool isFloatType = is(T == float) || is(T == double) || is(T == real);
+}
+
+/**
+Sees if a type is an array.
+*/
+template isArrayType(T)
+{
+	const bool isArrayType = false;
+}
+
+template isArrayType(T : T[])
+{
+	const bool isArrayType = true;
+}
+
+/**
+Sees if a type is an associative array.
+*/
+template isAAType(T)
+{
+	const bool isAAType = is(typeof(T.init.values[0])[typeof(T.init.keys[0])] == T);
+}
+
+/**
+Sees if a type is a pointer.
+*/
+template isPointerType(T)
+{
+	const bool isPointerType = (is(typeof(*T)) && !isArrayType!(T)) || is(T == void*);
+}
+
+/**
+Get to the bottom of any chain of typedefs!  Returns the first non-typedef'ed type.
+*/
+template realType(T)
+{
+	static if(is(T Base == typedef) || is(T Base == enum))
+		alias realType!(Base) realType;
+	else
+		alias T realType;
 }

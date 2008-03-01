@@ -85,7 +85,7 @@ void handle_exception(idt.interrupt_stack* ir_stack){
 
 	// If kgdb remote (target) debugging is on
 	if (remote_debug)
-		kprintfln("vector=%d, sr=0x%x, pc=0x%x\n", ir_stack.int_no,
+		kprintfln!("vector={}, sr=0x{x}, pc=0x{x}\n")(ir_stack.int_no,
 							ir_stack.rsp, ir_stack.rip);
 
 	// Signal value (interrupt in terms of a unix signal value)
@@ -133,7 +133,7 @@ void handle_exception(idt.interrupt_stack* ir_stack){
 						
 						if(mem_err){
 							setMessage("E03");
-							if (remote_debug) kprintfln("Memory Fault.");
+							if (remote_debug) kprintfln!("Memory Fault.")();
 						}
 					}
 				}
@@ -143,7 +143,7 @@ void handle_exception(idt.interrupt_stack* ir_stack){
 				setMessage("E01");
 
 				if (remote_debug)
-					kprintfln("Malformed read memory command: %s", toString(cast(char*)inMessage.ptr));
+					kprintfln!("Malformed read memory command: {}")(toString(cast(char*)inMessage.ptr));
 			}
 			break;
 			
@@ -167,7 +167,7 @@ void handle_exception(idt.interrupt_stack* ir_stack){
 
 							if(mem_err){
 								setMessage("E03");
-								if (remote_debug) kprintfln("Memory Fault.");
+								if (remote_debug) kprintfln!("Memory Fault.")();
 							}else{
 								setMessage("OK");
 							}
@@ -181,7 +181,7 @@ void handle_exception(idt.interrupt_stack* ir_stack){
 				setMessage("E02");
 
 				if (remote_debug)
-					kprintfln("Malformed read memory command: %s", toString(cast(char*)inMessage.ptr));
+					kprintfln!("Malformed read memory command: {}")(toString(cast(char*)inMessage.ptr));
 			}
 
 			break;
@@ -276,8 +276,8 @@ void getpacket(ubyte[] packet){
 				putDebugChar('-');	/* failed checksum */
 
 				if(remote_debug){
-					kprintf ("bad checksum.  My count = 0x%x, sent=0x%x. buf=%s\n",
-									 checksum, xmitcsum, packet);
+					kprintf!("bad checksum.  My count = 0x{x}, sent=0x{x}. buf={}\n")(
+									 checksum, xmitcsum, packet.ptr);
 				}
 			}else{
 				putDebugChar('+');	/* successful transfer */

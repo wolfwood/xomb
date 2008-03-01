@@ -316,16 +316,16 @@ void setCustomHandler(size_t i, InterruptHandler h, int ist = -1)
 }
 
 void stack_dump(interrupt_stack* r) {
-	kprintfln("r15: 0x%x / r14: 0x%x / r13: 0x%x / r12: 0x%x / r11: 0x%x" , 
-			r.r15, r.r14, r.r13, r.r12, r.r11);
-			
-	kprintfln("r10: 0x%x / r9: 0x%x / r8: 0x%x / rbp: 0x%x / rdi: 0x%x", 
-			r.r10, r.r9, r.r8, r.rbp, r.rdi);
-			
-	kprintfln("rsi: 0x%x / rdx: 0x%x / rcx: 0x%x / rbx: 0x%x / rax: 0x%x", 
-			r.rsi, r.rdx, r.rcx, r.rbx, r.rax);
-			
-	kprintfln("ss: 0x%x / rsp: 0x%x / cs: 0x%x", r.ss, r.rsp, r.cs);
+	kprintfln!("r15: 0x{x} / r14: 0x{x} / r13: 0x{x} / r12: 0x{x} / r11: 0x{x}")
+			(r.r15, r.r14, r.r13, r.r12, r.r11);
+
+	kprintfln!("r10: 0x{x} / r9: 0x{x} / r8: 0x{x} / rbp: 0x{x} / rdi: 0x{x}")
+			(r.r10, r.r9, r.r8, r.rbp, r.rdi);
+
+	kprintfln!("rsi: 0x{x} / rdx: 0x{x} / rcx: 0x{x} / rbx: 0x{x} / rax: 0x{x}")
+			(r.rsi, r.rdx, r.rcx, r.rbx, r.rax);
+
+	kprintfln!("ss: 0x{x} / rsp: 0x{x} / cs: 0x{x}")(r.ss, r.rsp, r.cs);
 }
 
 /* All of our Exception handling Interrupt Service Routines will
@@ -344,11 +344,11 @@ extern(C) void fault_handler(interrupt_stack* r)
 	}
 
 	if(r.int_no < 32) {
-		kprintfln("%s. Code = %d, IP = %x", exceptionMessages[r.int_no], r.err_code, r.rip);
-		kprintfln("Stack dump:");
+		kprintfln!("{}. Code = {}, IP = {x}")(exceptionMessages[r.int_no], r.err_code, r.rip);
+		kprintfln!("Stack dump:")();
 		stack_dump(r);
 	} else {
-		kprintfln("Unknown exception %d.", r.int_no);
+		kprintfln!("Unknown exception {}.")(r.int_no);
 	}
 
 	asm{hlt;}

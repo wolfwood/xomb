@@ -62,10 +62,10 @@ RetType.stringof ~ ` ` ~ name ~ `(Tuple!` ~ typeof(ParamStruct.tupleof).stringof
 
 	foreach(i, arg; args) {
 		argStruct.tupleof[i] = arg;
-		kprintfln("arg %d = %d", i, argStruct.tupleof[i]);
+		//kprintfln("arg %d = %d", i, argStruct.tupleof[i]);
 	}
 									
-	kprintfln("ARGSTRUCT: 0x%x", &argStruct);
+	kprintfln!("ARGSTRUCT: 0x{}")(&argStruct);
 
 	auto err = nativeSyscall(` ~ Itoa!(cast(ulong)ID) ~ `, &ret, &argStruct);
 

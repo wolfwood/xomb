@@ -163,7 +163,7 @@ int test_mb_header(uint magic, uint addr)
 	// system was booted by a bootloader other than GRUB.
 	if(magic != MULTIBOOT_BOOTLOADER_MAGIC)
 	{
-		kprintfln("Invalid magic number: 0x%x", cast(uint)magic);
+		kprintfln!("Invalid magic number: 0x{x}")(cast(uint)magic);
 		return -1;
 	}
 
@@ -172,26 +172,26 @@ int test_mb_header(uint magic, uint addr)
 	mbi = cast(multiboot_info_t*)addr;
 
 	// Print out all the values of the flags presented to the operating system by GRUB.
-	kprintfln("flags = 0x%x", cast(uint)mbi.flags);
+	kprintfln!("flags = 0x{x}")(cast(uint)mbi.flags);
 
 	// Are mem_* valid
 	if(CHECK_FLAG(mbi.flags, 0))
-		kprintfln("mem_lower = %uKB, mem_upper = %uKB", cast(uint)mbi.mem_lower, cast(uint)mbi.mem_upper);
+		kprintfln!("mem_lower = {u}KB, mem_upper = {u}KB")(cast(uint)mbi.mem_lower, cast(uint)mbi.mem_upper);
 
 	// Check to make sure the boot device is valid.
 	if(CHECK_FLAG(mbi.flags, 1))
-		kprintfln("boot_device = 0x%x", cast(uint)mbi.boot_device);
+		kprintfln!("boot_device = 0x{x}")(cast(uint)mbi.boot_device);
 
 	// Is the command line passed?
 	if(CHECK_FLAG(mbi.flags, 2))
-		kprintfln("cmdline = %s", system.toString(cast(char*)mbi.cmdline));
+		kprintfln!("cmdline = {}")(system.toString(cast(char*)mbi.cmdline));
 
 	// This if statement calls the function CHECK_FLAG on the flags of the GRUB multiboot header.
 	// It then checks to make sure the flags are valid (indicating proper, secure booting).
 	if(CHECK_FLAG(mbi.flags, 3))
 	{
 		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
-		kprintfln("mods_count = %d, mods_addr = 0x%x", cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
+		kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
 
 		module_t* mod;
 		int i;
@@ -201,7 +201,7 @@ int test_mb_header(uint magic, uint addr)
 		{
 			// print out the memory address of the beginning of that module, the address of the end of that module,
 			// and the name of that module.
-			kprintfln(" mod_start = 0x%x, mod_end = 0x%x, string = %s",
+			kprintfln!(" mod_start = 0x{x}, mod_end = 0x{x}, string = {}")(
 				cast(uint)mod.mod_start,
 				cast(uint)mod.mod_end,
 				system.toString(cast(char*)mod.string));
@@ -215,7 +215,7 @@ int test_mb_header(uint magic, uint addr)
 	// Bits 4 and 5 are mutually exclusive!
 	if(CHECK_FLAG(mbi.flags, 4) && CHECK_FLAG(mbi.flags, 5))
 	{
-		kprintfln("Both bits 4 and 5 are set.");
+		kprintfln!("Both bits 4 and 5 are set.")();
 		return -1;
 	}
 
@@ -226,7 +226,7 @@ int test_mb_header(uint magic, uint addr)
 		aout_symbol_table_t* aout_sym = &(mbi.aout_sym);
 
 		// If it is valid, print out information about the compiled kernel's symbol table.
-		kprintfln("aout_symbol_table: tabsize = 0x%0x, strsize = 0x%x, addr = 0x%x",
+		kprintfln!("aout_symbol_table: tabsize = 0x{x}, strsize = 0x{x}, addr = 0x{x}")(
 			cast(uint)aout_sym.tabsize,
 			cast(uint)aout_sym.strsize,
 			cast(uint)aout_sym.addr);
@@ -238,7 +238,7 @@ int test_mb_header(uint magic, uint addr)
 		elf_section_header_table_t* elf_sec = &(mbi.elf_sec);
 
 		// If it is valid, print out information about the compiled kernel's section table.
-		kprintfln("elf_sec: num = %u, size = 0x%x, addr = 0x%x, shndx = 0x%x",
+		kprintfln!("elf_sec: num = {u}, size = 0x{x}, addr = 0x{x}, shndx = 0x{x}")(
 			cast(uint)elf_sec.num, cast(uint)elf_sec.size,
 			cast(uint)elf_sec.addr, cast(uint)elf_sec.shndx);
 	}
@@ -246,13 +246,13 @@ int test_mb_header(uint magic, uint addr)
 	// This checks to make sure that the memory map of the bootloader is valid.
 	if(CHECK_FLAG(mbi.flags, 6))
 	{
-		kprintfln("mmap_addr = 0x%x, mmap_length = 0x%x", cast(uint)mbi.mmap_addr, cast(uint)mbi.mmap_length);
+		kprintfln!("mmap_addr = 0x{x}, mmap_length = 0x{x}")(cast(uint)mbi.mmap_addr, cast(uint)mbi.mmap_length);
 
 		for(memory_map_t* mmap = cast(memory_map_t*)mbi.mmap_addr;
 			cast(uint)mmap < mbi.mmap_addr + mbi.mmap_length;
 			mmap = cast(memory_map_t*)(cast(uint)mmap + mmap.size + uint.sizeof))
 		{
-			kprintfln(" size = 0x%x, base_addr = 0x%x%x, length = 0x%x%x, type = 0x%x",
+			kprintfln!(" size = 0x{x}, base_addr = 0x{x}{x}, length = 0x{x}{x}, type = 0x{x}")(
 				cast(uint)mmap.size,
 				cast(uint)mmap.base_addr_high,
 				cast(uint)mmap.base_addr_low,

@@ -8,6 +8,7 @@ module vga;
 import system;
 import std.c.stdarg;
 import gcc.builtins;
+import util;
 
 /** This structure contains hexadecimal values equivalent to various types
 of colors for printing to the screen, allowing the kernel to switch colors easily
@@ -33,9 +34,132 @@ enum Color : ubyte
 	White        = 0x0F
 }
 
+private
+{
+	template ExtractString(char[] format)
+	{
+		static if(format.length == 0)
+		{
+			const size_t ExtractString = 0;
+		}
+		else static if(format[0] is '{')
+		{
+			static if(format.length > 1 && format[1] is '{')
+				const size_t ExtractString = 2 + ExtractString!(format[2 .. $]);
+			else
+				const size_t ExtractString = 0;
+		}
+		else
+			const size_t ExtractString = 1 + ExtractString!(format[1 .. $]);
+	}
+	
+	template ExtractFormatStringImpl(char[] format)
+	{
+		static assert(format.length !is 0, "Unterminated format specifier");
+	
+		static if(format[0] is '}')
+			const ExtractFormatStringImpl = 0;
+		else
+			const ExtractFormatStringImpl = 1 + ExtractFormatStringImpl!(format[1 .. $]);
+	}
+	
+	template CheckFormatAgainstType(char[] rawFormat, size_t idx, T)
+	{
+		const char[] format = rawFormat[1 .. idx];
+		
+		static if(isIntType!(T))
+		{
+			static assert(format == "" || format == "x" || format == "X" || format == "u" || format == "U",
+				"Invalid integer format specifier '" ~ format ~ "'");
+		}
+	
+		const size_t res = idx;
+	}
+	
+	template ExtractFormatString(char[] format, T)
+	{
+		const ExtractFormatString = CheckFormatAgainstType!(format, ExtractFormatStringImpl!(format), T).res;
+	}
+	
+	template StripDoubleLeftBrace(char[] s)
+	{
+		static if(s.length is 0)
+			const char[] StripDoubleLeftBrace = "";
+		else static if(s.length is 1)
+			const char[] StripDoubleLeftBrace = s;
+		else
+		{
+			static if(s[0 .. 2] == "{{")
+				const char[] StripDoubleLeftBrace = "{" ~ StripDoubleLeftBrace!(s[2 .. $]);
+			else
+				const char[] StripDoubleLeftBrace = s[0] ~ StripDoubleLeftBrace!(s[1 .. $]);
+		}
+	}
+	
+	template MakePrintString(char[] s)
+	{
+		const char[] MakePrintString = "printString(\"" ~ StripDoubleLeftBrace!(s) ~ "\", \"\");\n";
+	}
+	
+	template MakePrintOther(T, char[] fmt, size_t idx)
+	{
+		static if(isIntType!(T))
+			const char[] MakePrintOther = "printInt(args[" ~ Itoa!(idx) ~ "], \"" ~ fmt ~ "\");\n";
+		else static if(isCharType!(T))
+			const char[] MakePrintOther = "printChar(args[" ~ Itoa!(idx) ~ "], \"" ~ fmt ~ "\");\n";
+		else static if(isStringType!(T))
+			const char[] MakePrintOther = "printString(args[" ~ Itoa!(idx) ~ "], \"" ~ fmt ~ "\");\n";
+		else static if(isFloatType!(T))
+			const char[] MakePrintOther = "printFloat(args[" ~ Itoa!(idx) ~ "], \"" ~ fmt ~ "\");\n";
+		else static if(isPointerType!(T))
+			const char[] MakePrintOther = "printPointer(args[" ~ Itoa!(idx) ~ "], \"" ~ fmt ~ "\");\n";
+		else
+			static assert(false, "I don't know how to handle argument " ~ Itoa!(idx) ~ " of type '" ~ T.stringof ~ "'.");
+	}
+	
+	template ConvertFormatImpl(char[] format, size_t argIdx, Types...)
+	{
+		static if(format.length == 0)
+		{
+			static assert(argIdx == Types.length, "More parameters than format specifiers");
+			const char[] res = "";
+		}
+		else
+		{
+			static if(format[0] is '{')
+			{
+				static if(format.length > 1 && format[1] is '{')
+				{
+					const idx = ExtractString!(format);
+					const char[] res = MakePrintString!(format[0 .. idx]) ~
+						ConvertFormatImpl!(format[idx .. $], argIdx, Types).res;
+				}
+				else
+				{
+					static assert(argIdx < Types.length, "More format specifiers than parameters");
+					const idx = ExtractFormatString!(format, Types[argIdx]);
+					const char[] res = MakePrintOther!(Types[argIdx], format[1 .. idx], argIdx) ~
+						ConvertFormatImpl!(format[idx + 1 .. $], argIdx + 1, Types).res;
+				}
+			}
+			else
+			{
+				const idx = ExtractString!(format);
+				const char[] res = MakePrintString!(format[0 .. idx]) ~
+					ConvertFormatImpl!(format[idx .. $], argIdx, Types).res;
+			}
+		}
+	}
+	
+	template ConvertFormat(char[] format, Types...)
+	{
+		const char[] ConvertFormat = ConvertFormatImpl!(format, 0, Types).res;
+	}
+}
+
 /** This structure contains informatino aobut the console, including
 the number of columns and lines a standard screen should contain.
-Also, it contains information about the standard and default colors, as well as the 
+Also, it contains information about the standard and default colors, as well as the
 initial position for the cursor when the kernel first executes.
 */
 struct Console
@@ -102,6 +226,18 @@ static:
 		/// If you have reached the end of the screen, create a new line (declared above).
 		if(xpos >= Columns)
 			goto newline;
+	}
+	
+	/**
+	Put some raw, unformatted string data to the screen.
+	
+	Params:
+		s = The string to output.
+	*/
+	void putstr(char[] s)
+	{
+		foreach(c; s)
+			putchar(c);
 	}
 	
 	/**
@@ -199,83 +335,58 @@ static:
 			ypos = 0;
 	}
 
-	/**
-	This function formats a string before printing it to the screen.
-		Params:
-			format = A set of characters designed to declare a format for the string being printed.
-			arguments = A set of arguments that should be printed into the string, depending on which escape sequences have been used.
-				E.G. if a %d escape sequence is included in the string, an integer should be passed as an argument.
-			argptr = A variatic list pointing to the actual values of the arguments. Because this is variatic, it has an indeterminant length
-				at runtime.
-	*/
-	void kvprintf(char[] format, TypeInfo[] arguments, va_list argptr)
+	void printInt(long i, char[] fmt)
 	{
 		char[20] buf;
+		
+		if(fmt.length is 0)
+			putstr(itoa(buf, 'd', i));
+		else if(fmt[0] is 'd' || fmt[0] is 'D')
+			putstr(itoa(buf, 'd', i));
+		else if(fmt[0] is 'u' || fmt[0] is 'U')
+			putstr(itoa(buf, 'u', i));
+		else if(fmt[0] is 'x' || fmt[0] is 'X')
+			putstr(itoa(buf, 'x', i));
+	}
+	
+	void printFloat(real f, char[] fmt)
+	{
+		putstr("?float?");
+	}
+	
+	void printChar(dchar c, char[] fmt)
+	{
+		putchar(c);
+	}
 
-		for(int i = 0; i < format.length; i++)
+	void printString(T)(T s, char[] fmt)
+	{
+		static assert(isStringType!(T));
+		putstr(s);
+	}
+
+	void printPointer(void* p, char[] fmt)
+	{
+		//putstr("0x");
+		char[20] buf;
+		putstr(itoa(buf, 'x', cast(ulong)p));
+	}
+
+	template kprintf(char[] Format)
+	{
+		void kprintf(Args...)(Args args)
 		{
-			char c = format[i];
-
-			if(c != '%')
-				putchar(c);
-			else
-			{
-				char[] p;
-				c = format[++i];
-
-				/// For each escape sequence, determine the escape sequence and
-				/// act accordingly. We have "d" (integer)", "u" (unsigned int), "x" (hexadecimal value),
-				/// and "s" (string). 
-				switch (c)
-				{
-					case 'd':
-					case 'u':
-					case 'x':
-						p = itoa(buf, c, va_arg!(long)(argptr));
-						goto string;
-
-					case 's':
-						p = va_arg!(char[])(argptr);
-						if(p.ptr is null)
-							p = "(null)";
-
-						string:
-							foreach(ch; p)
-								putchar(ch);
-							break;
-
-					default:
-						/// This is unknown. Print out nothing.
-						break;
-				}
-			}
+			mixin(ConvertFormat!(Format, Args));
 		}
 	}
-	
-	/**
-	This function is available to the kernel and prints a string to the screen.
-		Params:
-			format = the actual string, containing information and escape sequences.
-			... = a variatic list containing the variables that correspond to the escape sequences in "format."
-				E.G. in the "format" string "The number is %d," %d must have an integer tied to it to be printed.
-	*/
-	void kprintf(char[] format, ...)
+
+	template kprintfln(char[] Format)
 	{
-		va_list begin = void;
-		va_start(begin, format);
-		kvprintf(format, _arguments, begin);
-	}
-	
-	/*
-	This function works in much the same way as kprintf, but adds a newline after printing.
-	See kprintf for information on input and output values.
-	*/
-	void kprintfln(char[] format, ...)
-	{
-		va_list begin = void;
-		va_start(begin, format);
-		kvprintf(format, _arguments, begin);
-		putchar('\n');
+		void kprintfln(Args...)(Args args)
+		{
+			mixin(ConvertFormat!(Format, Args));
+			putchar('\n');
+		}
 	}
 }
 
@@ -285,7 +396,7 @@ alias Console.kprintfln kprintfln;
 
 extern(C) void kprintString(char* s)
 {
-	kprintfln("%s", toString(s));	
+	kprintfln!("{}")(toString(s));
 }
 
 /**

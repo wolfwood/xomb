@@ -81,23 +81,23 @@ extern(C) void cmain(uint magic, uint addr)
 	// Console.cls();
 
 	// Print initial booting information.
-	kprintf("Booting ");
+	kprintf!("Booting ")();
 	Console.setColors(Color.Black, Color.HighRed);
-	kprintf("PaGanOS");
+	kprintf!("PaGanOS")();
 	Console.resetColors();
-	kprintfln("...\n");
+	kprintfln!("...\n")();
 
 	// Make sure the multiboot header is valid
 	// and print out memory info, etc
 	mb_flag = multiboot.test_mb_header(magic, addr);
 	if (mb_flag) { // The mb header is bad!!!! Die!!!!
-		kprintfln("Multiboot header is bad... DIE!");
+		kprintfln!("Multiboot header is bad... DIE!")();
 		return;
 	}
 
 	// Print out our slogan. Literally, "We came, we saw, we conquered."
 	Console.setColors(Color.Yellow, Color.LowBlue);
-	kprintfln("\nVenimus, vidimus, vicimus!  --PittGeeks");
+	kprintfln!("\nVenimus, vidimus, vicimus!  --PittGeeks")();
 	Console.resetColors();
 
 	// Set up the heap memory allocator
@@ -106,15 +106,15 @@ extern(C) void cmain(uint magic, uint addr)
 
 	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
 	{
-		kprintfln("Your computer is not cool enough, we need SYSCALL and SYSRET.");
+		kprintfln!("Your computer is not cool enough, we need SYSCALL and SYSRET.")();
 		asm { cli; hlt; }
 	}
 
-	kprintfln("Setting lstar, star and SF_MASK...");
+	kprintfln!("Setting lstar, star and SF_MASK...")();
 
 	syscall.setHandler(&syscall.sysCallHandler);
 
-	kprintfln("JUMPING TO USER MODE!!!");
+	kprintfln!("JUMPING TO USER MODE!!!")();
 
 	asm
 	{
@@ -124,7 +124,7 @@ extern(C) void cmain(uint magic, uint addr)
 		"sysretq";
 	}
 
-	kprintfln("BACK!!!");
+	kprintfln!("BACK!!!")();
 }
 
 import syscalluser;
@@ -134,13 +134,13 @@ extern(C) void testUser()
 	// let's not loop forever.  Do not want (yet).
 	int numIters = 10;
 
-	kprintfln("In User Mode.");
+	kprintfln!("In User Mode.")();
 
 	//for(int i = 0; i < numIters; i++)
 	{
 		syscalluser.add(3, 4);
-		kprintfln("Once more in user mode.");
+		kprintfln!("Once more in user mode.")();
 	}
 
-	asm { cli; hlt; }
+	while(true){}
 }

@@ -23,7 +23,7 @@ void setHandler(void* h)
 	uint hi = addy >> 32;
 	uint lo = addy & 0xFFFFFFFF;
 
-	kprintfln("Setting the Handler.");
+	kprintfln!("Setting the Handler.")();
 
 	asm
 	{
@@ -54,39 +54,25 @@ void setHandler(void* h)
 
 void sysCallHandler()
 {
-	// we should get arguments and retain %rcx
-// 	asm
-// 	{
-// 		naked;
-// 		
-// 		"mov 0xfffffffffffffff8(%%rbp), %%rdi";// :: "r" ID;      //rdi
-// 		"mov 0xfffffffffffffff0(%%rbp), %%rsi";// :: "r" ret;     //rsi
-// 		"mov 0xffffffffffffffe8(%%rbp), %%rdx";// :: "r" params;  //rdx
-// 
-// 		// push program counter to stack
-// 		"pushq %%rcx";
-// 	}
-
-	ulong ID;
-	void* ret;
-	void* params;
-
 	asm
 	{
-		"mov %%rdi, %0" :: "o" ID;      //rdi
-		"mov %%rsi, %0" :: "o" ret;     //rsi
-		"mov %%rdx, %0" :: "o" params;  //rdx
-	}
-
-	auto addargs = cast(AddArgs*)params;
-
-	kprintfln("Syscall: ID = 0x%x, ret = 0x%x, params = 0x%x", ID, ret, params);
-	kprintfln("Add args: a=%d, b=%d", addargs.a, addargs.b);
-
-	asm
-	{
-		naked;		
+		naked;
+		// push program counter to stack
+		"pushq %%rcx";
+		"pushq %%r11";
+		"callq sysCallDispatcher";
+		"popq %%r11";
 		"popq %%rcx";
 		"sysretq";
 	}
+}
+
+extern(C) void sysCallDispatcher(ulong ID, void* ret, void* params)
+{
+	auto addargs = cast(AddArgs*)params;
+
+	kprintfln!("Add args!")();
+	kprintfln!("Add args: a = {}, b = {}")(addargs.a, addargs.b);
+	kprintfln!("Syscall: ID = 0x{x}, ret = 0x{x}, params = 0x{x} (args = 0x{x})")(ID, ret, params, addargs);
+	kprintfln!("Add args: a = {}, b = {}")(addargs.a, addargs.b);
 }
