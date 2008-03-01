@@ -9,7 +9,7 @@ enum SyscallID : ulong
 	Exit
 }
 
-char[][] SyscallNames =
+static const char[][] SyscallNames =
 [
 	SyscallID.Add: "add",
 	SyscallID.AllocPage: "allocPage",
