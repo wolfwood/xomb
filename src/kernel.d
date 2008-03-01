@@ -66,7 +66,16 @@ extern(C) void cmain(uint magic, uint addr)
 	}
 
 	// Turn general interrupts on, so the computer can deal with errors and faults.
-	asm { sti; }
+	
+	asm { 
+	
+		sti; 
+
+		"pushq $0";
+		"lss (%%rsp), %%eax";
+		"popq %%rax";
+
+	}
 
 	// Clear the screen in order to begin printing.
 	// Console.cls();
