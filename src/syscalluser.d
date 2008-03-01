@@ -44,7 +44,8 @@ extern(C) long nativeSyscall(ulong ID, void* ret, void* params)
 	// I assume such in the syscall handler
 	// so allow a non-naked function here
 
-	asm {
+	asm
+	{
 		"syscall";
 	}
 
@@ -60,8 +61,8 @@ RetType.stringof ~ ` ` ~ name ~ `(Tuple!` ~ typeof(ParamStruct.tupleof).stringof
 	` ~ ParamStruct.stringof ~ ` argStruct;
 
 	foreach(i, arg; args) {
-		kprintfln("arg=%d", arg);
 		argStruct.tupleof[i] = arg;
+		kprintfln("arg %d = %d", i, argStruct.tupleof[i]);
 	}
 									
 	kprintfln("ARGSTRUCT: 0x%x", &argStruct);

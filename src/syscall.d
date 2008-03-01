@@ -55,21 +55,21 @@ void setHandler(void* h)
 void sysCallHandler()
 {
 	// we should get arguments and retain %rcx
-	asm
-	{
-		naked;
-		
-		"mov 0xfffffffffffffff8(%%rbp), %%rdi";// :: "r" ID;      //rdi
-		"mov 0xfffffffffffffff0(%%rbp), %%rsi";// :: "r" ret;     //rsi
-		"mov 0xffffffffffffffe8(%%rbp), %%rdx";// :: "r" params;  //rdx
+// 	asm
+// 	{
+// 		naked;
+// 		
+// 		"mov 0xfffffffffffffff8(%%rbp), %%rdi";// :: "r" ID;      //rdi
+// 		"mov 0xfffffffffffffff0(%%rbp), %%rsi";// :: "r" ret;     //rsi
+// 		"mov 0xffffffffffffffe8(%%rbp), %%rdx";// :: "r" params;  //rdx
+// 
+// 		// push program counter to stack
+// 		"pushq %%rcx";
+// 	}
 
-		// push program counter to stack
-		"pushq %%rcx";
-	}
-		
 	ulong ID;
-        void* ret;
-        void* params;
+	void* ret;
+	void* params;
 
 	asm
 	{
@@ -78,9 +78,7 @@ void sysCallHandler()
 		"mov %%rdx, %0" :: "o" params;  //rdx
 	}
 
-	AddArgs* addargs;
-
-	addargs = cast(AddArgs*)params;
+	auto addargs = cast(AddArgs*)params;
 
 	kprintfln("Syscall: ID = 0x%x, ret = 0x%x, params = 0x%x", ID, ret, params);
 	kprintfln("Add args: a=%d, b=%d", addargs.a, addargs.b);

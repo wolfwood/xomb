@@ -127,6 +127,8 @@ extern(C) void cmain(uint magic, uint addr)
 	kprintfln("BACK!!!");
 }
 
+import syscalluser;
+
 extern(C) void testUser()
 {
 	// let's not loop forever.  Do not want (yet).
@@ -134,15 +136,10 @@ extern(C) void testUser()
 
 	kprintfln("In User Mode.");
 
-	for(int i = 0; i < numIters; i++)
+	//for(int i = 0; i < numIters; i++)
 	{
-		asm
-		{
-			naked;
-			"syscall";
-		}
-
-		kprintfln("Once more in user mode. %d, %d", i, numIters);
+		syscalluser.add(3, 4);
+		kprintfln("Once more in user mode.");
 	}
 
 	asm { cli; hlt; }
