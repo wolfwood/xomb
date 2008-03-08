@@ -16,17 +16,17 @@ static const char[][] SyscallNames =
 	SyscallID.Exit: "exit"
 ];
 
-struct AddArgs
+struct addArgs
 {
 	long a, b;
 }
 
-struct AllocPageArgs
+struct allocPageArgs
 {
 	long num;
 }
 
-struct ExitArgs
+struct exitArgs
 {
 	long retVal;
 }
@@ -57,15 +57,11 @@ template MakeSyscall(SyscallID ID, char[] name, RetType, ParamStruct)
 	const char[] MakeSyscall =
 RetType.stringof ~ ` ` ~ name ~ `(Tuple!` ~ typeof(ParamStruct.tupleof).stringof ~ ` args)
 {
-	` ~ RetType.stringof ~ ` ret;
-	` ~ ParamStruct.stringof ~ ` argStruct;
+	` ~ (is(RetType == void) ? "ulong ret;" : RetType.stringof ~ ` ret;  `)
+	 ~ ParamStruct.stringof ~ ` argStruct;
 
-	foreach(i, arg; args) {
+	foreach(i, arg; args)
 		argStruct.tupleof[i] = arg;
-		//kprintfln("arg %d = %d", i, argStruct.tupleof[i]);
-	}
-									
-	kprintfln!("ARGSTRUCT: 0x{}")(&argStruct);
 
 	auto err = nativeSyscall(` ~ Itoa!(cast(ulong)ID) ~ `, &ret, &argStruct);
 
@@ -75,6 +71,6 @@ RetType.stringof ~ ` ` ~ name ~ `(Tuple!` ~ typeof(ParamStruct.tupleof).stringof
 }`;
 }
 
-mixin(MakeSyscall!(SyscallID.Add, "add", ulong, AddArgs));
-mixin(MakeSyscall!(SyscallID.AllocPage, "allocPage", void*, AllocPageArgs));
-mixin(MakeSyscall!(SyscallID.Exit, "exit", void, ExitArgs));
+mixin(MakeSyscall!(SyscallID.Add, "add", ulong, addArgs));
+mixin(MakeSyscall!(SyscallID.AllocPage, "allocPage", void*, allocPageArgs));
+mixin(MakeSyscall!(SyscallID.Exit, "exit", void, exitArgs));

@@ -138,12 +138,12 @@ extern(C) void testUser()
 
 	ulong ret;
 
-        ret = syscalluser.add(3, 4);
+	ret = syscalluser.add(3, 4);
 	kprintfln!("Once more in user mode. Add: 3 + 4 = {}")(ret);
 
-        exit(0);
+	exit(0);
 
 	while(true)
-        {
-        }
+	{
+	}
 }

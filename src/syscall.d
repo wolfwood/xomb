@@ -58,7 +58,7 @@ void syscallHandler()
 	asm
 	{
 		naked;
-		// push program counter to stack
+		// make sure to preserve the return address and flags
 		"pushq %%rcx";
 		"pushq %%r11";
 		"callq syscallDispatcher";
@@ -70,74 +70,52 @@ void syscallHandler()
 
 template MakeSyscallDispatchListCase(SyscallID idx, char[] name)
 {
- const char[] MakeSyscallDispatchListCase =
- `
-	case ` ~ Itoa!(idx) ~ `:
-	
-	     kprintfln!("Syscall Identified: ` ~ name ~ `")();
+	const char[] MakeSyscallDispatchListCase =
+	`case ` ~ Itoa!(idx) ~ `:
 
-	     syscall` ~ SyscallID.tupleof ~ `(ret, cast(` ~ name ~ `Args*)params);
-	     break;
-
-`;
+		kprintfln!("Syscall Identified: ` ~ name ~ `")();
+		syscall_` ~ name ~ `(ret, cast(` ~ name ~ `Args*)params);
+		break;`;
 }
-
 
 template MakeSyscallDispatchList()
 {
- const char[] MakeSyscallDispatchList =
-
- `      switch(ID)
-	{
-
- ` 
- 
- ~ MakeSyscallDispatchListCase!(SyscallID.Add,"Add")
- ~ MakeSyscallDispatchListCase!(SyscallID.AllocPage,"AllocPage")
- ~ MakeSyscallDispatchListCase!(SyscallID.Exit,"Exit")
-
- ~ `
-
-        default:
-             kprintfln!("Syscall not supported!")();
- }`;
-
+	const char[] MakeSyscallDispatchList =
+	`switch(ID)
+	{`
+		~ MakeSyscallDispatchListCase!(SyscallID.Add, "add")
+		~ MakeSyscallDispatchListCase!(SyscallID.AllocPage, "allocPage")
+		~ MakeSyscallDispatchListCase!(SyscallID.Exit, "exit")
+		~
+	`default:
+		kprintfln!("Syscall not supported!")();
+	}`;
 }
 
 extern(C) void syscallDispatcher(ulong ID, void* ret, void* params)
 {
 	kprintfln!("Syscall: ID = 0x{x}, ret = 0x{x}, params = 0x{x}")(ID, ret, params);
-
 	mixin(MakeSyscallDispatchList!());
 }
 
 // Syscall Implementations
 
 // ulong add(long a, long b)
-void syscallAdd(void* ret, AddArgs* params)
+void syscall_add(void* ret, addArgs* params)
 {
-// add two numbers, a and b, and return the result
- ulong val = params.a + params.b;
-
- (cast(ulong*)ret)[0] = val;
+	// add two numbers, a and b, and return the result
+	*(cast(long*)ret) = params.a + params.b;
 }
 
 // allocPage
-void syscallAllocPage(void* ret, AllocPageArgs* params)
+void syscall_allocPage(void* ret, allocPageArgs* params)
 {
- ulong val = 0;
-
- kprintfln!("WARNING: allocPage() not yet implemented")();
-
- (cast(ulong*)ret)[0] = val;
+	kprintfln!("WARNING: allocPage() not yet implemented")();
+	*(cast(void**)ret) = null;
 }
 
 // void exit(ulong retval)
-void syscallExit(void* ret, ExitArgs* params)
+void syscall_exit(void* ret, exitArgs* params)
 {
- ulong val = 0;
-
- kprintfln!("WARNING: exit() not yet implemented")();
-
- (cast(ulong*)ret)[0] = val;
+	kprintfln!("WARNING: exit() not yet implemented")();
 }
