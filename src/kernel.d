@@ -136,7 +136,7 @@ extern(C) void testUser()
 
 	kprintfln!("In User Mode.")();
 
-	ulong ret;
+	long ret;
 
 	ret = syscalluser.add(3, 4);
 	kprintfln!("Once more in user mode. Add: 3 + 4 = {}")(ret);

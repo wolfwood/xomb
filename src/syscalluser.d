@@ -47,9 +47,9 @@ extern(C) long nativeSyscall(ulong ID, void* ret, void* params)
 	{	
 		naked;
 		"syscall";
+		"xorq %%rax, %%rax";
+		"retq";
 	}
-
-	return 0;
 }
 
 template MakeSyscall(SyscallID ID, char[] name, RetType, ParamStruct)

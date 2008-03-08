@@ -59,11 +59,14 @@ void syscallHandler()
 	{
 		naked;
 		// make sure to preserve the return address and flags
+		"pushq %%rbp";
+		"movq %%rbp, %%rsp";
 		"pushq %%rcx";
 		"pushq %%r11";
 		"callq syscallDispatcher";
 		"popq %%r11";
 		"popq %%rcx";
+		"popq %%rbp";
 		"sysretq";
 	}
 }
