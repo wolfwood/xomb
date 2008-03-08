@@ -1,6 +1,7 @@
 import vga;
 
 import syscalluser;
+import util;
 
 /**
 This function declares a handler for system calls. It accepts a pointer to a function (h).
@@ -50,9 +51,9 @@ void setHandler(void* h)
 }
 
 // alright, so %rdi, %rsi, %rdx are the registers loaded by NativeSyscall()
-// 
+//
 
-void sysCallHandler()
+void syscallHandler()
 {
 	asm
 	{
@@ -60,19 +61,83 @@ void sysCallHandler()
 		// push program counter to stack
 		"pushq %%rcx";
 		"pushq %%r11";
-		"callq sysCallDispatcher";
+		"callq syscallDispatcher";
 		"popq %%r11";
 		"popq %%rcx";
 		"sysretq";
 	}
 }
 
-extern(C) void sysCallDispatcher(ulong ID, void* ret, void* params)
+template MakeSyscallDispatchListCase(SyscallID idx, char[] name)
 {
-	auto addargs = cast(AddArgs*)params;
+ const char[] MakeSyscallDispatchListCase =
+ `
+	case ` ~ Itoa!(idx) ~ `:
+	
+	     kprintfln!("Syscall Identified: ` ~ name ~ `")();
 
-	kprintfln!("Add args!")();
-	kprintfln!("Add args: a = {}, b = {}")(addargs.a, addargs.b);
-	kprintfln!("Syscall: ID = 0x{x}, ret = 0x{x}, params = 0x{x} (args = 0x{x})")(ID, ret, params, addargs);
-	kprintfln!("Add args: a = {}, b = {}")(addargs.a, addargs.b);
+	     syscall` ~ SyscallID.tupleof ~ `(ret, cast(` ~ name ~ `Args*)params);
+	     break;
+
+`;
+}
+
+
+template MakeSyscallDispatchList()
+{
+ const char[] MakeSyscallDispatchList =
+
+ `      switch(ID)
+	{
+
+ ` 
+ 
+ ~ MakeSyscallDispatchListCase!(SyscallID.Add,"Add")
+ ~ MakeSyscallDispatchListCase!(SyscallID.AllocPage,"AllocPage")
+ ~ MakeSyscallDispatchListCase!(SyscallID.Exit,"Exit")
+
+ ~ `
+
+        default:
+             kprintfln!("Syscall not supported!")();
+ }`;
+
+}
+
+extern(C) void syscallDispatcher(ulong ID, void* ret, void* params)
+{
+	kprintfln!("Syscall: ID = 0x{x}, ret = 0x{x}, params = 0x{x}")(ID, ret, params);
+
+	mixin(MakeSyscallDispatchList!());
+}
+
+// Syscall Implementations
+
+// ulong add(long a, long b)
+void syscallAdd(void* ret, AddArgs* params)
+{
+// add two numbers, a and b, and return the result
+ ulong val = params.a + params.b;
+
+ (cast(ulong*)ret)[0] = val;
+}
+
+// allocPage
+void syscallAllocPage(void* ret, AllocPageArgs* params)
+{
+ ulong val = 0;
+
+ kprintfln!("WARNING: allocPage() not yet implemented")();
+
+ (cast(ulong*)ret)[0] = val;
+}
+
+// void exit(ulong retval)
+void syscallExit(void* ret, ExitArgs* params)
+{
+ ulong val = 0;
+
+ kprintfln!("WARNING: exit() not yet implemented")();
+
+ (cast(ulong*)ret)[0] = val;
 }

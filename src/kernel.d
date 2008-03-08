@@ -69,7 +69,7 @@ extern(C) void cmain(uint magic, uint addr)
 	
 	asm { 
 	
-		sti; 
+		sti;
 
 		"pushq $0";
 		"lss (%%rsp), %%eax";
@@ -112,7 +112,7 @@ extern(C) void cmain(uint magic, uint addr)
 
 	kprintfln!("Setting lstar, star and SF_MASK...")();
 
-	syscall.setHandler(&syscall.sysCallHandler);
+	syscall.setHandler(&syscall.syscallHandler);
 
 	kprintfln!("JUMPING TO USER MODE!!!")();
 
@@ -136,11 +136,14 @@ extern(C) void testUser()
 
 	kprintfln!("In User Mode.")();
 
-	//for(int i = 0; i < numIters; i++)
-	{
-		syscalluser.add(3, 4);
-		kprintfln!("Once more in user mode.")();
-	}
+	ulong ret;
 
-	while(true){}
+        ret = syscalluser.add(3, 4);
+	kprintfln!("Once more in user mode. Add: 3 + 4 = {}")(ret);
+
+        exit(0);
+
+	while(true)
+        {
+        }
 }

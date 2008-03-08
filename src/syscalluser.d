@@ -39,13 +39,13 @@ extern(C) long nativeSyscall(ulong ID, void* ret, void* params)
 	// %rdi, %rsi, %rdx, %rcx, %r8, %r9
 	// %rcx is also used for the return address for the syscall
 	//   but we only need three arguments
-	//   so these should be in stack already!
+	//   so these should be there!
 
 	// I assume such in the syscall handler
-	// so allow a non-naked function here
 
 	asm
-	{
+	{	
+		naked;
 		"syscall";
 	}
 
@@ -76,3 +76,5 @@ RetType.stringof ~ ` ` ~ name ~ `(Tuple!` ~ typeof(ParamStruct.tupleof).stringof
 }
 
 mixin(MakeSyscall!(SyscallID.Add, "add", ulong, AddArgs));
+mixin(MakeSyscall!(SyscallID.AllocPage, "allocPage", void*, AllocPageArgs));
+mixin(MakeSyscall!(SyscallID.Exit, "exit", void, ExitArgs));
