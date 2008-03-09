@@ -126,13 +126,13 @@ Exception#	Description								Error Code?
 template ISR(int num, bool needDummyError = true)
 {
 	const char[] ISR =
-	"extern(C) void isr" ~ Itoa!(num) ~ "()
+	"extern(C) void isr" ~ num.stringof ~ "()
 	{
 		asm
 		{
 			naked; " ~
 			(needDummyError ? "`pushq $0`;" : "") ~
-			"`pushq $" ~ Itoa!(num) ~ "`;
+			"`pushq $" ~ num.stringof ~ "`;
 			`jmp isr_common`;
 		}
 	}";

@@ -104,17 +104,17 @@ private
 	template MakePrintOther(T, char[] fmt, size_t idx)
 	{
 		static if(isIntType!(T))
-			const char[] MakePrintOther = "printInt(args[" ~ Itoa!(idx) ~ "], \"" ~ fmt ~ "\");\n";
+			const char[] MakePrintOther = "printInt(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
 		else static if(isCharType!(T))
-			const char[] MakePrintOther = "printChar(args[" ~ Itoa!(idx) ~ "], \"" ~ fmt ~ "\");\n";
+			const char[] MakePrintOther = "printChar(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
 		else static if(isStringType!(T))
-			const char[] MakePrintOther = "printString(args[" ~ Itoa!(idx) ~ "], \"" ~ fmt ~ "\");\n";
+			const char[] MakePrintOther = "printString(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
 		else static if(isFloatType!(T))
-			const char[] MakePrintOther = "printFloat(args[" ~ Itoa!(idx) ~ "], \"" ~ fmt ~ "\");\n";
+			const char[] MakePrintOther = "printFloat(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
 		else static if(isPointerType!(T))
-			const char[] MakePrintOther = "printPointer(args[" ~ Itoa!(idx) ~ "], \"" ~ fmt ~ "\");\n";
+			const char[] MakePrintOther = "printPointer(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
 		else
-			static assert(false, "I don't know how to handle argument " ~ Itoa!(idx) ~ " of type '" ~ T.stringof ~ "'.");
+			static assert(false, "I don't know how to handle argument " ~ idx.stringof ~ " of type '" ~ T.stringof ~ "'.");
 	}
 	
 	template ConvertFormatImpl(char[] format, size_t argIdx, Types...)

@@ -71,54 +71,57 @@ void syscallHandler()
 	}
 }
 
-template MakeSyscallDispatchListCase(SyscallID idx, char[] name)
+template MakeSyscallDispatchCase(uint idx)
 {
-	const char[] MakeSyscallDispatchListCase =
-	`case ` ~ Itoa!(idx) ~ `:
-
-		kprintfln!("Syscall Identified: ` ~ name ~ `")();
-		syscall_` ~ name ~ `(ret, cast(` ~ name ~ `Args*)params);
-		break;`;
+	static if(!is(SyscallRetTypes[idx] == void))
+		const char[] MakeSyscallDispatchCase =
+`case ` ~ idx.stringof ~ `:
+	return syscall` ~ Capitalize!(SyscallName!(idx)) ~ `(*(cast(` ~ SyscallRetTypes[idx].stringof ~
+	`*)ret), cast(` ~ ArgsStruct!(idx) ~ `*)params);`;
+	else
+		const char[] MakeSyscallDispatchCase =
+`case ` ~ idx.stringof ~ `:
+	return syscall` ~ Capitalize!(SyscallName!(idx)) ~ `(cast(` ~ ArgsStruct!(idx) ~ `*)params);`;
 }
 
 template MakeSyscallDispatchList()
 {
 	const char[] MakeSyscallDispatchList =
-	`switch(ID)
-	{`
-		~ MakeSyscallDispatchListCase!(SyscallID.Add, "add")
-		~ MakeSyscallDispatchListCase!(SyscallID.AllocPage, "allocPage")
-		~ MakeSyscallDispatchListCase!(SyscallID.Exit, "exit")
-		~
-	`default:
-		kprintfln!("Syscall not supported!")();
-	}`;
+`switch(ID)
+{`
+	~ Reduce!(Cat, Map!(MakeSyscallDispatchCase, Range!(SyscallID.max + 1))) ~
+`default:
+	kprintfln!("Syscall not supported!")();
+}`;
 }
 
 extern(C) void syscallDispatcher(ulong ID, void* ret, void* params)
 {
-	kprintfln!("Syscall: ID = 0x{x}, ret = 0x{x}, params = 0x{x}")(ID, ret, params);
+	//kprintfln!("Syscall: ID = 0x{x}, ret = 0x{x}, params = 0x{x}")(ID, ret, params);
 	mixin(MakeSyscallDispatchList!());
 }
 
 // Syscall Implementations
 
+// add two numbers, a and b, and return the result
 // ulong add(long a, long b)
-void syscall_add(void* ret, addArgs* params)
+SyscallError syscallAdd(out long ret, AddArgs* params)
 {
-	// add two numbers, a and b, and return the result
-	*(cast(long*)ret) = params.a + params.b;
+	ret = params.a + params.b;
+	return SyscallError.OK;
 }
 
-// allocPage
-void syscall_allocPage(void* ret, allocPageArgs* params)
+// void* allocPage(ulong num)
+SyscallError syscallAllocPage(out void* ret, AllocPageArgs* params)
 {
 	kprintfln!("WARNING: allocPage() not yet implemented")();
-	*(cast(void**)ret) = null;
+	ret = null;
+	return SyscallError.Failcopter;
 }
 
 // void exit(ulong retval)
-void syscall_exit(void* ret, exitArgs* params)
+SyscallError syscallExit(ExitArgs* params)
 {
 	kprintfln!("WARNING: exit() not yet implemented")();
+	return SyscallError.Failcopter;
 }

@@ -1,6 +1,7 @@
 module syscalluser;
 
 import util;
+import vga;
 
 enum SyscallID : ulong
 {
@@ -9,29 +10,51 @@ enum SyscallID : ulong
 	Exit
 }
 
-static const char[][] SyscallNames =
-[
-	SyscallID.Add: "add",
-	SyscallID.AllocPage: "allocPage",
-	SyscallID.Exit: "exit"
-];
+enum SyscallError : ulong
+{
+	OK = 0,
+	Failcopter
+}
 
-struct addArgs
+alias Tuple!
+(
+	"add", // Add
+	"allocPage", // AllocPage
+	"exit" // Exit
+) SyscallNames;
+
+alias Tuple!
+(
+	long, // Add
+	void*, // AllocPage
+	void // Exit
+) SyscallRetTypes;
+
+struct AddArgs
 {
 	long a, b;
 }
 
-struct allocPageArgs
+struct AllocPageArgs
 {
 	long num;
 }
 
-struct exitArgs
+struct ExitArgs
 {
 	long retVal;
 }
 
-import vga;
+// This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason
+template SyscallName(uint ID)
+{
+	const char[] SyscallName = SyscallNames[ID];
+}
+
+template ArgsStruct(uint ID)
+{
+	const char[] ArgsStruct = Capitalize!(SyscallName!(ID)) ~ "Args";
+}
 
 extern(C) long nativeSyscall(ulong ID, void* ret, void* params)
 {
@@ -42,7 +65,6 @@ extern(C) long nativeSyscall(ulong ID, void* ret, void* params)
 	//   so these should be there!
 
 	// I assume such in the syscall handler
-
 	asm
 	{	
 		naked;
@@ -52,18 +74,18 @@ extern(C) long nativeSyscall(ulong ID, void* ret, void* params)
 	}
 }
 
-template MakeSyscall(SyscallID ID, char[] name, RetType, ParamStruct)
+template MakeSyscall(uint ID)
 {
 	const char[] MakeSyscall =
-RetType.stringof ~ ` ` ~ name ~ `(Tuple!` ~ typeof(ParamStruct.tupleof).stringof ~ ` args)
+SyscallRetTypes[ID].stringof ~ ` ` ~ SyscallNames[ID] ~ `(Tuple!` ~ typeof(mixin(ArgsStruct!(ID)).tupleof).stringof ~ ` args)
 {
-	` ~ (is(RetType == void) ? "ulong ret;" : RetType.stringof ~ ` ret;  `)
-	 ~ ParamStruct.stringof ~ ` argStruct;
+	` ~ (is(SyscallRetTypes[ID] == void) ? "ulong ret;" : SyscallRetTypes[ID].stringof ~ ` ret;  `)
+	~ ArgsStruct!(ID) ~ ` argStruct;
 
 	foreach(i, arg; args)
 		argStruct.tupleof[i] = arg;
 
-	auto err = nativeSyscall(` ~ Itoa!(cast(ulong)ID) ~ `, &ret, &argStruct);
+	auto err = nativeSyscall(` ~ ID.stringof ~ `, &ret, &argStruct);
 
 	// check err!
 
@@ -71,6 +93,4 @@ RetType.stringof ~ ` ` ~ name ~ `(Tuple!` ~ typeof(ParamStruct.tupleof).stringof
 }`;
 }
 
-mixin(MakeSyscall!(SyscallID.Add, "add", ulong, addArgs));
-mixin(MakeSyscall!(SyscallID.AllocPage, "allocPage", void*, allocPageArgs));
-mixin(MakeSyscall!(SyscallID.Exit, "exit", void, exitArgs));
+mixin(Reduce!(Cat, Map!(MakeSyscall, Range!(SyscallID.max + 1))));
