@@ -1,7 +1,7 @@
-module syscalluser;
+module syscall;
 
-import util;
-import vga;
+import core.util;
+import kernel.vga;
 
 enum SyscallID : ulong
 {

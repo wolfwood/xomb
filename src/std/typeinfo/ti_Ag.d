@@ -1,6 +1,6 @@
 
 module std.typeinfo.ti_Ag;
-import system;
+import core.system;
 // byte[]
 
 class TypeInfo_Ag : TypeInfo

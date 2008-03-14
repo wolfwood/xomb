@@ -1,7 +1,11 @@
-import vga;
+module kernel.syscall;
 
-import syscalluser;
-import util;
+
+
+import kernel.vga;
+
+import user.syscall;
+import core.util;
 
 /**
 This function declares a handler for system calls. It accepts a pointer to a function (h).

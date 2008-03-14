@@ -3,7 +3,7 @@
 
 module std.typeinfo.ti_real;
 
-import system;
+import core.system;
 //private import std.math;
 
 class TypeInfo_e : TypeInfo

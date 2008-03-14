@@ -2,7 +2,7 @@
 This file contains common, global methods used widely by the system.
 */
 
-module system;
+module core.system;
 
 /**
 This function copies data from a source piece of memory to a destination piece of memory.

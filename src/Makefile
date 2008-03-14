@@ -24,7 +24,7 @@ endif
 CFLAGS = -nostdlib -nodefaultlibs -g -DUSE_ASSERT -mcmodel=kernel
 
 # flags for gdc
-DFLAGS = -nostdlib -nodefaultlibs -g -mcmodel=kernel -fdebug -I . 
+DFLAGS = -nostdlib -nodefaultlibs -g -mcmodel=kernel -fdebug -I .
 
 # flags for ld
 LDFLAGS = -nostdlib -nodefaultlibs -b elf64-x86-64 -T linker.ld
@@ -33,10 +33,10 @@ LDFLAGS = -nostdlib -nodefaultlibs -b elf64-x86-64 -T linker.ld
 APP_LDFLAGS = -nostdlib -nodefaultlibs -b elf64-x86-64 
 
 # file list
-ASM = boot.S load.S
-DFILES = kernel.d vga.d system.d multiboot.d idt.d gdt.d syscall.d kgdb_support.d vmem.d kgdb_stub.d config.d util.d syscalluser.d
-RTFILES := $(shell ls std/typeinfo/*.d) object.d invariant.d dstubs.d std/c/stdarg.d
-APP := application.d
+ASM = boot/boot.S boot/load.S
+DFILES = kernel/kmain.d kernel/vga.d core/system.d core/multiboot.d kernel/idt.d kernel/gdt.d kernel/syscall.d gdb/kgdb_support.d gdb/kgdb_stub.d mem/vmem.d config.d core/util.d user/syscall.d
+RTFILES := $(shell ls std/typeinfo/*.d) object.d core/invariant.d core/dstubs.d std/c/stdarg.d
+APP := application/application.d
 OBJS = $(ASM:.S=.o) $(DFILES:.d=.o) $(RTFILES:.d=.o)
 
 # vars
@@ -58,16 +58,16 @@ all: $(KERNEL_IMG)
 
 # assembly compile
 .S.o:
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # d file compile
 %.o: %.d
 	$(DC) $(DFLAGS) -c $< -o $@
 
 # kernel link
-$(KERNEL_IMG): $(OBJS) application.o
+$(KERNEL_IMG): $(OBJS) application/application.o
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
-	$(LD) $(LDFLAGS) -o application application.o -dN $(OBJS)
+	$(LD) $(LDFLAGS) -o application/application application/application.o -dN $(OBJS)
 
 # creates the GRUB iso image
 iso: all
@@ -75,7 +75,7 @@ iso: all
 	cp $(GRUB_IMG) $(ISO_PATH)$(GRUB_PATH)
 	cp $(GRUB_CONFIG) $(ISO_PATH)$(GRUB_PATH)
 	cp $(KERNEL_IMG) $(ISO_PATH)$(BOOT_PATH)
-	cp ./application $(ISO_PATH)$(BOOT_PATH)
+	cp ./application/application $(ISO_PATH)$(BOOT_PATH)
 	mkisofs -R -b $(GRUB_PATH)$(GRUB_IMG) -no-emul-boot -boot-load-size 4 -boot-info-table -o $(ISO_NAME) $(ISO_PATH)
 	@echo
 	@echo "ISO successfully made!"
@@ -84,11 +84,11 @@ iso: all
 
 # removes .o and the kernel executable
 clean:
-	rm -f $(OBJS) $(KERNEL_IMG) application.o
+	rm -f $(OBJS) $(KERNEL_IMG) application/application.o
 
 # along with the above, removes the files from the iso
 # and removes the application executable
 veryclean: clean
 	rm -rf $(ISO_PATH)
 	rm -f $(ISO_NAME)
-	rm -f ./application
+	rm -f ./application/application

@@ -17,7 +17,7 @@
 */
 /* GNU/GCC unwind interface declarations for D.  This must match unwind.h */
 
-module unwind;
+module core.unwind;
 //private import std.c.process; // for abort
 
 

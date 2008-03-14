@@ -1,9 +1,14 @@
 // idt.d - all the idt goodness you can handle
+module kernel.idt;
 
-import vga;
-import util;
-import vmem;
-static import gdt;
+
+
+import kernel.vga;
+static import gdt = kernel.gdt;
+
+import core.util;
+
+import mem.vmem;
 
 alias gdt.IntGateDesc64 IDTEntry;
 

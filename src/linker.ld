@@ -28,7 +28,7 @@ SECTIONS
     /* boot.S is ran in linear addresses */
     .text_boot : 
     {
-        boot.o (.text)
+        boot/boot.o (.text)
     }
 
     /* link from VMA */

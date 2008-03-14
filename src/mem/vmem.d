@@ -8,13 +8,13 @@
  * This should handle everything when a page fault
  * occurs.
  */
+module mem.vmem;
 
+import kernel.vga;
+import core.util;
+import core.multiboot;
 
-import vga;
-import util;
-import multiboot;
-
-static import idt;
+static import idt = kernel.idt;
 
 // Bitmap of free pages
 ubyte[] bitmap;

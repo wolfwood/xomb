@@ -9,9 +9,9 @@ That index is defined as a multiple of 8-byte entries, regardless of the size of
 entry you're setting.  So, if you set a 16-byte entry into index 3, slots 3 and 4 will
 be taken up by it, making the next valid index 5.
 */
-module gdt;
+module kernel.gdt;
 
-import util;
+import core.util;
 
 /**
 The various kinds of system segment types.

@@ -1,6 +1,6 @@
-module dstubs;
+module core.dstubs;
 
-import system;
+import core.system;
 static import gcc.builtins;
 
 extern(C)
@@ -429,7 +429,7 @@ void _d_switch_error( char[] file, uint line )
     onSwitchError( file, line );
 }
 
-private import vga;
+private import kernel.vga;
 
 private void onAssertError(char[] file, size_t line)
 {

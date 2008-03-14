@@ -5,19 +5,25 @@ and print out information to assist in debugging processor problems.
 
 Written: 2007
 */
-module kernel;
+module kernel.kmain;
 
+
+//imports
 import config;
-import elf;
-import kgdb_stub;
-import syscall;
-import multiboot;
-import system;
-import util;
-import vga;
-import vmem;
-static import gdt;
-static import idt;
+
+import gdb.kgdb_stub;
+
+import core.elf;
+import core.system;
+import core.util;
+import multiboot = core.multiboot;
+
+import syscall = kernel.syscall;
+import kernel.vga;
+static import gdt = kernel.gdt;
+static import idt = kernel.idt;
+
+import vmem = mem.vmem;
 
 /**
 This method sets sets the Input/Output Permission Level to 3, so
@@ -57,7 +63,7 @@ extern(C) void kmain(uint magic, uint addr)
 	gdt.install();
 	idt.install();
 
-	idt.setCustomHandler(idt.Type.PageFault, &handle_faults);
+	idt.setCustomHandler(idt.Type.PageFault, &vmem.handle_faults);
 
 	if(enable_kgdb)
 	{
@@ -123,7 +129,7 @@ extern(C) void kmain(uint magic, uint addr)
 	kprintfln!("BACK!!!")();
 }
 
-import syscalluser;
+import user.syscall;
 
 extern(C) void testUser()
 {
@@ -134,10 +140,10 @@ extern(C) void testUser()
 
 	long ret;
 
-	ret = syscalluser.add(3, 4);
+	ret = user.syscall.add(3, 4);
 	kprintfln!("Once more in user mode. Add: 3 + 4 = {}")(ret);
 
-	exit(0);
+	user.syscall.exit(0);
 
 	while(true)
 	{

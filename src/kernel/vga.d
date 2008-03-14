@@ -3,12 +3,14 @@ This file contains information for printing to the screen and communicating with
 through VGA.
 */
 
-module vga;
+module kernel.vga;
 
-import system;
+import core.system;
+import core.util;
+
 import std.c.stdarg;
 import gcc.builtins;
-import util;
+
 
 /** This structure contains hexadecimal values equivalent to various types
 of colors for printing to the screen, allowing the kernel to switch colors easily

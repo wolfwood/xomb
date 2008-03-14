@@ -1,7 +1,7 @@
 
 module std.typeinfo.ti_Along;
 
-import system;
+import core.system;
 
 // long[]
 
