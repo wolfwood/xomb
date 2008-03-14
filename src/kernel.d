@@ -46,7 +46,7 @@ and "addr," the address of the multiboot variable, passed by the GRUB bootloader
 		addr = the address of the multiboot header, passed to the kernel to by the
 			GRUB bootloader.
 */
-extern(C) void cmain(uint magic, uint addr)
+extern(C) void kmain(uint magic, uint addr)
 {
 	int mb_flag = 0;
 
@@ -70,10 +70,6 @@ extern(C) void cmain(uint magic, uint addr)
 	asm { 
 	
 		sti;
-
-		"pushq $0";
-		"lss (%%rsp), %%eax";
-		"popq %%rax";
 
 	}
 
