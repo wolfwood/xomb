@@ -1,4 +1,4 @@
-module syscall;
+module user.syscall;
 
 import core.util;
 import kernel.vga;

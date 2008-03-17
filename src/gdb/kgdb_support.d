@@ -1,4 +1,4 @@
-module kgdb_support;
+module gdb.kgdb_support;
 
 static import kernel.idt;
 
