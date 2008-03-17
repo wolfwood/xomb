@@ -92,3 +92,8 @@ veryclean: clean
 	rm -rf $(ISO_PATH)
 	rm -f $(ISO_NAME)
 	rm -f ./application/application
+
+# run this after checking out a clean tree
+setup:
+	cp bochsrc.sample bochsrc
+	cp config.d.sample config.d
