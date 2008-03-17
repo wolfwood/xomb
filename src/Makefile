@@ -9,7 +9,7 @@ CC = gcc
 LD = ld
 
 # platform specific options
-# NOTE: do we need this?
+# NOTE: do we need this? not now, but we may
 ifeq (${MY_ARCH},Darwin)
         CC = x86_64-pc-elf-gcc
         LD = x86_64-pc-elf-ld
