@@ -40,18 +40,18 @@ APP := application/application.d
 OBJS = $(ASM:.S=.o) $(DFILES:.d=.o) $(RTFILES:.d=.o)
 
 # vars
-KERNEL_IMG = paganos
+KERNEL_IMG = xomb
 GRUB_IMG = stage2_eltorito
 GRUB_PATH = boot/grub/
 GRUB_CONFIG = menu.lst
 BOOT_PATH = boot/
 ISO_PATH = iso/
-ISO_NAME = paganos.iso
+ISO_NAME = xomb.iso
 
 # last task for compile
 # will give a disassembled dump
 all: $(KERNEL_IMG)
-	rm -f paganos.dump && x86_64-pc-elf-objdump -d -S -r paganos > paganos.dump
+	rm -f xomb.dump && x86_64-pc-elf-objdump -d -S -r xomb > xomb.dump
 	@echo ""
 	@echo "OS successfully compiled, to make a bootable CD ISO, run:"
 	@echo "        make iso"
@@ -79,7 +79,7 @@ iso: all
 	mkisofs -R -b $(GRUB_PATH)$(GRUB_IMG) -no-emul-boot -boot-load-size 4 -boot-info-table -o $(ISO_NAME) $(ISO_PATH)
 	@echo
 	@echo "ISO successfully made!"
-	@echo "        qemu-system-x86_64 -cdrom paganos.iso -boot d"
+	@echo "        qemu-system-x86_64 -cdrom xomb.iso -boot d"
 	@echo "     or bochs -q"
 
 # removes .o and the kernel executable
