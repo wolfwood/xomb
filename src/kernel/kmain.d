@@ -24,6 +24,7 @@ static import gdt = kernel.gdt;
 static import idt = kernel.idt;
 
 import vmem = mem.vmem;
+import pmem = mem.pmem;
 
 /**
 This method sets sets the Input/Output Permission Level to 3, so
@@ -103,8 +104,8 @@ extern(C) void kmain(uint magic, uint addr)
 	Console.resetColors();
 
 	// Set up the heap memory allocator
-	vmem.setup_vmem_bitmap(addr);
-	vmem.test_vmem();
+	pmem.setup_pmem_bitmap(addr);
+	pmem.test_pmem();
 
 	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
 	{
