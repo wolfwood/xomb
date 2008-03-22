@@ -112,10 +112,10 @@ align(1) struct pte
 }
 
 
-void* find_free_page() {
-	
-}
+//void* find_free_page() {
 
-void allocate_virtual_page() {
+//}
+
+//void allocate_virtual_page() {
 	
-}
+//}
