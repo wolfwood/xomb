@@ -80,42 +80,42 @@ void handle_faults(idt.interrupt_stack* ir_stack)
 }
 
 // Page table structures
-align(1) union pmle {
-	ubyte[4096] padding;
-	// Page map level 4 entry
-	align(1) struct {
-		ulong pmle;
-		mixin(Bitfield!(pmle, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
-		"ign", 1, "mbz", 2, "avl", 3, "pdpba", 41, "available", 10, "nx", 1));
-	}
+align(1) struct pmle
+{
+	ulong pmle;
+	mixin(Bitfield!(pmle, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
+	"ign", 1, "mbz", 2, "avl", 3, "pdpba", 41, "available", 10, "nx", 1));
 }
 
-align(1) union pdpe {
-	ubyte[4096] padding;
-	// Page directory pointer entry
-	align(1) struct {
-		ulong pdpe;
-		mixin(Bitfield!(pdpe, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
-		"ign", 1, "o", 1, "mbz", 1, "avl", 3, "pdba", 41, "available", 10, "nx", 1));
-	}
+// Page directory pointer entry
+align(1) struct pdpe 
+{
+	ulong pdpe;
+	mixin(Bitfield!(pdpe, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
+	"ign", 1, "o", 1, "mbz", 1, "avl", 3, "pdba", 41, "available", 10, "nx", 1));
 }
 
-align(1) union pde {
-	ubyte[4096] padding;
-	// Page directory entry
-	align(1) struct {
-		ulong pde;
-		mixin(Bitfield!(pde, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
-		"ign1", 1, "o", 1, "ign2", 1, "avl", 3, "pdba", 41, "available", 10, "nx", 1));
-	}
+
+align(1) struct pde
+{
+	ulong pde;
+	mixin(Bitfield!(pde, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
+	"ign1", 1, "o", 1, "ign2", 1, "avl", 3, "pdba", 41, "available", 10, "nx", 1));
 }
 
-align(1) union pte {
-	// Page table entry
-	align(1) struct {
-		ulong pte;
-		mixin(Bitfield!(pte, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
-		"d", 1, "pat", 1, "g", 1, "avl", 3, "pdba", 41, "available", 10, "nx", 1));
-	}
+
+align(1) struct pte
+{
+	ulong pte;
+	mixin(Bitfield!(pte, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
+	"d", 1, "pat", 1, "g", 1, "avl", 3, "pdba", 41, "available", 10, "nx", 1));
 }
 
+
+void* find_free_page() {
+	
+}
+
+void allocate_virtual_page() {
+	
+}
