@@ -87,7 +87,6 @@ multiboot_header:
 		.long   (multiboot_entry)
 #endif
 
-
 multiboot_entry:
 
 		/* Stash values for multiboot we won't touch until 64 bit mode */
@@ -222,20 +221,28 @@ pml4_base:
 
 // --- THIS SHOULD BE ALIGNED AT 4K --- //
 
-
+.align 4096
 .globl level3_ident_pgt
 // PDP
 // PML3
 level3_ident_pgt:
-	.rept (512)
-	.quad	(level2_ident_pgt + 0x0000000000000007)
+	.quad (level2_ident_pgt + 0x07)
+	.quad 0 //(level2_ident_pgt + 0x07)
+	.quad (level2_ident_pgt + 0x07)
+
+	.rept (507)
+	.quad 0
 	.endr
+
+	.quad (level2_ident_pgt + 0x07)
+	.quad 0 // (level2_ident_pgt + 0x07)
 
 
 
 // --- THIS SHOULD BE ALIGNED AT 4K --- //
 
-
+
+.align 4096
 .globl level2_ident_pgt
 	// flags 0x00087
 // PDE
@@ -257,6 +264,7 @@ level2_ident_pgt:
 
 // PTE
 // PML1
+.align 4096
 .globl level1_ident_pgt
 level1_ident_pgt:
 	// UM
