@@ -124,6 +124,6 @@ hiddenmenu
 ## ## End Default Options ##
 
 title		PAGAN OS
-kernel		/boot/paganos
+kernel		/boot/xomb
 module		/boot/application
 ### END PITTGEEKS AUTOMAGIC KERNELS LIST
