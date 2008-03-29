@@ -50,7 +50,7 @@ ISO_NAME = xomb.iso
 
 # last task for compile
 # will give a disassembled dump
-all: $(KERNEL_IMG)
+all: setup $(KERNEL_IMG)
 	rm -f xomb.dump && x86_64-pc-elf-objdump -d -S -r xomb > xomb.dump
 	@echo ""
 	@echo "OS successfully compiled, to make a bootable CD ISO, run:"
@@ -94,6 +94,10 @@ veryclean: clean
 	rm -f ./application/application
 
 # run this after checking out a clean tree
-setup:
-	cp bochsrc.sample bochsrc
-	cp config.d.sample config.d
+setup: bochsrc config.d
+
+bochsrc: bochsrc.sample
+	cp --backup=numbered -u bochsrc.sample bochsrc
+
+config.d: config.d.sample
+	cp --backup=numbered -u config.d.sample config.d
