@@ -105,7 +105,8 @@ extern(C) void kmain(uint magic, uint addr)
 
 	// Set up the heap memory allocator
 	pmem.setup_pmem_bitmap(addr);
-	pmem.test_pmem();
+	//pmem.test_pmem();
+	vmem.reinstall_page_tables();
 
 	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
 	{
@@ -128,6 +129,8 @@ extern(C) void kmain(uint magic, uint addr)
 	}
 
 	kprintfln!("BACK!!!")();
+
+	
 }
 
 import user.syscall;
