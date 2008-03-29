@@ -14,10 +14,12 @@ ifeq (${MY_ARCH},Darwin)
         CC = x86_64-pc-elf-gcc
         LD = x86_64-pc-elf-ld
 	DC = x86_64-pc-elf-gdc
+	CPFLAGS = -n
 else
 	CC = x86_64-pc-elf-gcc
         LD = x86_64-pc-elf-ld
 	DC = x86_64-pc-elf-gdc
+	CPFLAGS = --backup=numbered -u
 endif
 
 # flags for assembler
@@ -97,7 +99,7 @@ veryclean: clean
 setup: bochsrc config.d
 
 bochsrc: bochsrc.sample
-	cp --backup=numbered -u bochsrc.sample bochsrc
+	cp $(CPFLAGS) bochsrc.sample bochsrc
 
 config.d: config.d.sample
-	cp --backup=numbered -u config.d.sample config.d
+	cp $(CPFLAGS) config.d.sample config.d
