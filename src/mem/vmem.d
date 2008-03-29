@@ -133,8 +133,6 @@ void reinstall_page_tables()
 	// Set correct flags, present, rw, usable
 	pageLevel4[511].pml4e |= 0x7;
 	
-	//pageLevel4[0].pml4e = pageLevel4[511].pml4e;
-	
 	// Create a level 2 entry
 	pml2[] pageLevel2 = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
 	
@@ -144,7 +142,6 @@ void reinstall_page_tables()
 	pageLevel3[510].pml3e = cast(ulong)pageLevel2.ptr;
 	// Set correct flags, present, rw, usable
 	pageLevel3[510].pml3e |= 0x7;
-	//pageLevel3[0].pml3e = pageLevel3[510].pml3e;
 	
 	// Put the kernel in to the top X pages of vmemory
 	
