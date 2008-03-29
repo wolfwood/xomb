@@ -175,7 +175,7 @@ static:
 	// The default color for the text the kernel will use when first printing out.
 	const ubyte DefaultColors = Color.LightGray;
 	/// A pointer to the beginning of video memory, so the kernel can be gin writing to the screen.
-	private ubyte* VideoMem = cast(ubyte*)0xB8000;
+	private ubyte* VideoMem = cast(ubyte*)0xffffffff800B8000;
 	/// The initial x-position of the cursor.
 	private int xpos = 0;
 	/// The initial y-position of the cursor.

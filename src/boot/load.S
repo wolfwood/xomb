@@ -47,7 +47,7 @@ long_entry:
 		   We can safely unmap the lower half, we do not
 		   need an identity mapping of the lower half. */
 		
-		//movq $(stack + STACK_SIZE), %rsp
+		movq $(stack + STACK_SIZE), %rsp
 
 		/* Clear cpu flags */
 		pushq $0
