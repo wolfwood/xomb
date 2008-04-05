@@ -11,6 +11,7 @@
 module mem.vmem;
 
 import kernel.vga;
+import config;
 import core.util;
 import core.multiboot;
 import pmem = mem.pmem;
@@ -20,6 +21,7 @@ static import idt = kernel.idt;
 const ulong PAGE_SIZE = 4096;			// 4k pages for us right now
 // Entry point in to the page table
 pml4[] pageLevel4;
+ulong kernel_end;
 
 
 void handle_faults(idt.interrupt_stack* ir_stack) 
@@ -115,9 +117,21 @@ void reinstall_page_tables()
 {
 	// Allocate the physical page for the top-level page table.
  	pageLevel4 = (cast(pml4*)pmem.request_phys_page())[0 .. 512];
-
+	
 	// zero it out.
 	pageLevel4[] = pml4.init;
+	
+	// Put the kernel in to the top X pages of vmemory
+	
+	// So where does our kernel actually live in physical memory?
+	// Well if our physical page allocator works correctly then
+	// we know that we have the first page after the kernel for
+	// our PML4.  This means we can just jack that address,
+	// and used it to determine our kernel size (we hope)!
+	
+	auto kernel_size = (cast(ulong)pageLevel4.ptr / PAGE_SIZE);
+	// kernel_end will be used for house keeping later
+	kernel_end = kernel_size + PAGE_SIZE;
 	
 	// Remapping time!  This will remap the kernel in to high memory (again)
 	// Though we did this in the asm, we are doing it again in here so that it
@@ -142,18 +156,6 @@ void reinstall_page_tables()
 	pageLevel3[510].pml3e = cast(ulong)pageLevel2.ptr;
 	// Set correct flags, present, rw, usable
 	pageLevel3[510].pml3e |= 0x7;
-	
-	// Put the kernel in to the top X pages of vmemory
-	
-	// So where does our kernel actually live in physical memory?
-	// Well if our physical page allocator works correctly then
-	// we know that we have the first page after the kernel for
-	// our PML4.  This means we can just jack that address,
-	// and used it to determine our kernel size (we hope)!
-	
-	auto kernel_size = (cast(ulong)pageLevel4.ptr / PAGE_SIZE);
-	// We know we start at 1m anyway, so we can just -0x100
-	//kernel_size -= 0x100;
 	
 	auto addr = 0x00; 		// Current addr 
 	
@@ -185,13 +187,112 @@ void reinstall_page_tables()
 	asm {
 		"mov %0, %%rax" :: "o" pageLevel4.ptr;
 		"mov %%rax, %%cr3";
-	}
+	}	
 }
 
-//void* find_free_page() {
-	
-//}
+/*void* find_free_page() {
+	int count = 0;
+	while(pageLevel4[count].p == 0)
+}*/
 
 //void allocate_virtual_page() {
 	
 //}
+
+// Function to get a physical page of memory and map it in to virtual memory
+void* get_page() {
+	ulong vm_addr_long = kernel_end;
+	// Request a page of physical memory
+	auto phys = pmem.request_phys_page();
+	
+	ulong vm_addr = vm_addr_long;
+	
+	// Arrays for later traversal
+	pml3[] pl3;
+	pml2[] pl2;
+	pml1[] pl1;
+	// Shift our VM address right by 12 bits
+	vm_addr_long >>= 12; 
+	// Get the index in to the page table
+	long pml_index = vm_addr_long & 0x1FF;
+	// Check to see if the level 4 [entry] is there (it damn well better be if it does't want to be hit... again)
+	if(pageLevel4[pml_index].pml4e == 0) {
+		pl3[] = spawn_pml3();
+		pageLevel4[pml_index].pml4e = cast(ulong)pl3.ptr;
+		pageLevel4[pml_index].pml4e |= 0x7;
+	} else {
+		// We know that the pml4 entry is alive and well, so now we need to
+		// set our traversal array variable equal to the pml3 entry...
+		pl3[] = (cast(pml3*)(pageLevel4[pml_index].pml4e & ~0x7))[0 .. 512];
+	}
+	
+	vm_addr_long >>= 9;
+	pml_index = vm_addr_long & 0x1FF;
+	
+	if(pl3[pml_index].pml3e == 0) {
+		pl2[] = spawn_pml2();
+		pl3[pml_index].pml3e = cast(ulong)pl2.ptr;
+		pl3[pml_index].pml3e |= 0x7;
+	} else {
+		// We know that the pml3 entry is alive and well, so now we need to
+		// set our traversal array variable equal to the pml2 entry...
+		pl2[] = (cast(pml2*)(pl3[pml_index].pml3e & ~0x7))[0 .. 512];
+	}
+	
+	vm_addr_long >>= 9;
+	pml_index = vm_addr_long & 0x1FF;
+	
+	if(pl2[pml_index].pml2e == 0) {
+		pl1[] = spawn_pml1();
+		pl2[pml_index].pml2e = cast(ulong)pl1.ptr;
+		pl2[pml_index].pml2e |= 0x7;
+	} else {
+		// We know that the pml3 entry is alive and well, so now we need to
+		// set our traversal array variable equal to the pml2 entry...
+		pl1[] = (cast(pml1*)(pl2[pml_index].pml2e & ~0x7))[0 .. 512];
+	}
+	
+	vm_addr_long >>= 9;
+	pml_index = vm_addr_long & 0x1FF;
+	
+	// We don't care about checking for this, we know we can just assign it
+	pl1[pml_index].pml1e = cast(ulong)phys;
+	pl1[pml_index].pml1e |= 0x87;
+	
+	// The page table puts the lotion on its skin or it gets the hose again...
+	return cast(void*)vm_addr;
+}
+
+
+pml3[] spawn_pml3() {
+	pml3[] pl3 = (cast(pml3*)pmem.request_phys_page())[0 .. 512];
+	pl3[] = pml3.init;
+	
+	return pl3[];
+}
+
+
+pml2[] spawn_pml2() {
+	pml2[] pl2 = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
+	pl2[] = pml2.init;
+	
+	return pl2[];
+}
+
+pml1[] spawn_pml1() {
+	pml1[] pl1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
+	pl1[] = pml1.init;
+	
+	return pl1[];
+}
+
+
+
+
+
+
+
+
+
+
+ 

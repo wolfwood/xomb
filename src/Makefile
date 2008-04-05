@@ -98,8 +98,8 @@ veryclean: clean
 # run this after checking out a clean tree
 setup: bochsrc config.d
 
-bochsrc: bochsrc.sample
-	cp $(CPFLAGS) bochsrc.sample bochsrc
-
-config.d: config.d.sample
-	cp $(CPFLAGS) config.d.sample config.d
+#bochsrc: bochsrc.sample
+#	cp $(CPFLAGS) bochsrc.sample bochsrc
+#
+#config.d: config.d.sample
+#	cp $(CPFLAGS) config.d.sample config.d

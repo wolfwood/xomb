@@ -108,6 +108,9 @@ extern(C) void kmain(uint magic, uint addr)
 	//pmem.test_pmem();
 	vmem.reinstall_page_tables();
 
+		void* test = vmem.get_page();
+	kprintfln!("{x}")(test);
+
 	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
 	{
 		kprintfln!("Your computer is not cool enough, we need SYSCALL and SYSRET.")();
@@ -129,8 +132,6 @@ extern(C) void kmain(uint magic, uint addr)
 	}
 
 	kprintfln!("BACK!!!")();
-
-	
 }
 
 import user.syscall;

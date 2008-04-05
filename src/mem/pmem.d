@@ -9,8 +9,11 @@ module mem.pmem;
 import kernel.vga;
 import core.util;
 import core.multiboot;
+import config;
+import vmem = mem.vmem;
 
 static import idt = kernel.idt;
+
 
 // Bitmap of free pages
 ubyte[] bitmap;
@@ -65,7 +68,7 @@ void setup_pmem_bitmap(uint addr) {
 		// Return a ulong a ptr to the bitmap
 
 		// The bitmap :)
-		bitmap = (cast(ubyte*)pages_start_addr)[0 .. bitmap_size];
+		bitmap = (cast(ubyte*)pages_start_addr + KERNEL_VM_BASE)[0 .. bitmap_size];
 
 		// Now we need to properly set the used pages
 		// First find the number of pages that are used
@@ -107,6 +110,8 @@ void* request_phys_page() {
 					bitmap[i] |= p;
 					// Calculate the address of the page we need
 					void* addr = cast(void*)(((i * 8) + z) * PAGE_SIZE);
+					// Make sure we know where the end of the kernel now is
+					vmem.kernel_end += PAGE_SIZE;
 					// Return the address of the free page
 					return (addr);
 				}
