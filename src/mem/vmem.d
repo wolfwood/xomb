@@ -221,7 +221,12 @@ void reinstall_page_tables()
 	asm {
 		"mov %0, %%rax" :: "o" pageLevel4.ptr;
 		"mov %%rax, %%cr3";
-	}	
+	}
+
+	// And now, for benefit of great gods in sky, we add VM_BASE_ADDR to
+	// pageLevel4.ptr so that the CPU does't fail when trying to read a physical
+	// address!
+	pageLevel4 = (cast(pml4*)(cast(void*)pageLevel4.ptr + VM_BASE_ADDR) )[0 .. 512];
 }
 
 
@@ -249,11 +254,9 @@ void* get_page() {
 	kprintfln!("pml_index = {}")(pml_index);
 
 	kprintfln!("TEST = {}")(pageLevel4[].ptr);
-	asm{cli; hlt;}
 	// Check to see if the level 4 [entry] is there (it damn well better be if it does't want to be hit... again)
 	if(pageLevel4[pml_index].pml4e == 0) {
 	    kprintfln!("Hit the if")();
-		asm{cli; hlt;}
 	  	pl3[] = spawn_pml3();
 		pageLevel4[pml_index].pml4e = cast(ulong)pl3.ptr;
 		pageLevel4[pml_index].pml4e |= 0x7;
