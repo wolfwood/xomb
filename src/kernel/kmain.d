@@ -108,8 +108,8 @@ extern(C) void kmain(uint magic, uint addr)
 	//pmem.test_pmem();
 	vmem.reinstall_page_tables();
 
-		void* test = vmem.get_page();
-	kprintfln!("{x}")(test);
+	void* test = vmem.get_page();
+	//kprintfln!("{x}")(test);
 
 	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
 	{

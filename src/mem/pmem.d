@@ -1,6 +1,7 @@
-/* vmem.d - virtual memory stuffs
+/* pmem.d - physical memory stuffs
  *
- * So far just the page fault handler
+ * This file contains all of the physical memory handler stuffs
+ * including the bitmap that maps used and unused physical pages!
  */
 
 
@@ -21,7 +22,7 @@ ubyte[] bitmap;
 const ulong PAGE_SIZE = 4096;			// 4k pages for us right now
 // Address of first available page
 void* pages_start_addr;
-
+ulong mem_size;
 
 // Paramemters = addr: addr is an address passed to us by grub that contains the address to the multi-boot info :)
 // Return a ulong (the ptr to our bitmap)
@@ -32,6 +33,7 @@ void setup_pmem_bitmap(uint addr) {
 	{
 		auto mod = cast(module_t*)(cast(module_t*)mbi.mods_addr + mbi.mods_count - 1);
 		ulong endAddr = mod.mod_end;
+		mem_size = endAddr;
 
 		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
 		kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
