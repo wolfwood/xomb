@@ -346,7 +346,7 @@ void free_page(void* pageAddr) {
 	// This frees the physical page
 	pmem.free_phys_page(cast(void*)(pl1[index].pml1e & ~0x87));
 	// Now lets set the page as available in virtual memory :)
-	pl1[index].pml1e &= ~0x5;
+	pl1[index].pml1e &= ~0x1;
 
 	
 }
