@@ -121,6 +121,7 @@ void reinstall_page_tables()
 {
 	// Allocate the physical page for the top-level page table.
  	pageLevel4 = (cast(pml4*)pmem.request_phys_page())[0 .. 512];
+	kernel_end += 4096;
 	
 	// zero it out.
 	pageLevel4[] = pml4.init;
@@ -143,6 +144,7 @@ void reinstall_page_tables()
 	
 	// 3rd level page table
 	pml3[] pageLevel3 = (cast(pml3*)pmem.request_phys_page())[0 .. 512];
+	kernel_end += 4096;
 	
 	pageLevel3[] = pml3.init;
 	
@@ -153,6 +155,7 @@ void reinstall_page_tables()
    
 	// Create a level 2 entry
 	pml2[] pageLevel2 = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
+	kernel_end += 4096;
 	
 	pageLevel2[] = pml2.init;
 	
@@ -166,6 +169,7 @@ void reinstall_page_tables()
 	for(int i = 0, j = 0; i < kernel_size; i += 512, j++) {
 		// Make some page table entries
 		pml1[] pageLevel1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
+		kernel_end += 4096;
 		// Set pml2e to the pageLevel 1 entry
 		pageLevel2[j].pml2e = cast(ulong)pageLevel1.ptr;
 		pageLevel2[j].pml2e |= 0x7;
@@ -183,6 +187,7 @@ void reinstall_page_tables()
 	// without a chicken and the egg problem...
 
 	pml2[] allPhys = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
+	kernel_end += 4096;
 	allPhys[] = pml2.init;
 	pageLevel3[VM_BASE_INDEX].pml3e = cast(ulong)allPhys.ptr;
 	pageLevel3[VM_BASE_INDEX].pml3e |= 0x7;
@@ -192,6 +197,7 @@ void reinstall_page_tables()
 	for(int i = 0, j = 0; i < (pmem.mem_size / PAGE_SIZE); i += 512, j++) {
 		// Make some page table entries
 		pml1[] pageLevel1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
+		kernel_end += 4096;
 		// Set pml2e to the pageLevel 1 entry
 		allPhys[j].pml2e = cast(ulong)pageLevel1.ptr;
 		allPhys[j].pml2e |= 0x7;
@@ -206,13 +212,14 @@ void reinstall_page_tables()
 
 
 
+	kprintfln!("kernel_end = {x}")(kernel_end);
 	
-	kprintfln!("kernel_size in pages = {}")(kernel_size);
-	kprintfln!("kernel_size in bytes = {}")(kernel_size * PAGE_SIZE);
-	kprintfln!("PageLevel 4 addr = {}")(pageLevel4.ptr);
-	kprintfln!("Pagelevel 3 addr = {}, {x}")(pageLevel3.ptr, pageLevel4[511].pml4e);
-	kprintfln!("Pagelevel 2 addr = {}, {x}")(pageLevel2.ptr, pageLevel3[510].pml3e);
-	kprintfln!("Pagelevel 1 addr = {x}")(pageLevel2[0].pml2e);
+	//kprintfln!("kernel_size in pages = {}")(kernel_size);
+	//kprintfln!("kernel_size in bytes = {}")(kernel_size * PAGE_SIZE);
+	//kprintfln!("PageLevel 4 addr = {}")(pageLevel4.ptr);
+	//kprintfln!("Pagelevel 3 addr = {}, {x}")(pageLevel3.ptr, pageLevel4[511].pml4e);
+	//kprintfln!("Pagelevel 2 addr = {}, {x}")(pageLevel2.ptr, pageLevel3[510].pml3e);
+	//kprintfln!("Pagelevel 1 addr = {x}")(pageLevel2[0].pml2e);
 	
 	pml1[] tmp = (cast(pml1*)(pageLevel2[1].pml2e - 0x7))[0 .. 512];
 	
@@ -237,6 +244,9 @@ void* get_page() {
 	
 	// Request a page of physical memory
 	auto phys = pmem.request_phys_page();
+	// Make sure we know where the end of the kernel now is
+	kernel_end += PAGE_SIZE;
+					
 	kprintfln!("The physical page requested = {x}")(phys);
 
 	ulong vm_addr = vm_addr_long;
@@ -348,7 +358,6 @@ void free_page(void* pageAddr) {
 	// Now lets set the page as available in virtual memory :)
 	pl1[index].pml1e &= ~0x1;
 
-	
 }
 
 

@@ -110,15 +110,15 @@ extern(C) void kmain(uint magic, uint addr)
 
 	void* test = vmem.get_page();
 	void* test2 = vmem.get_page();
-	kprintfln!("virtual page reuqested, and page recieved! Address = {x}")(test);
-	kprintfln!("virtual page reuqested, and page recieved! Address = {x}")(test2);
-	kprintfln!("Returning page!")();
+	//kprintfln!("virtual page reuqested, and page recieved! Address = {x}")(test);
+	//kprintfln!("virtual page reuqested, and page recieved! Address = {x}")(test2);
+	//kprintfln!("Returning page!")();
 	vmem.free_page(test);
 	test = vmem.get_page();
-	kprintfln!("virtual page requested a second time, address = {x}")(test);
-	kprintfln!("releasing test1")();
+	//kprintfln!("virtual page requested a second time, address = {x}")(test);
+	//kprintfln!("releasing test1")();
 	vmem.free_page(test);
-	kprintfln!("releasing test2")();
+	//kprintfln!("releasing test2")();
 	vmem.free_page(test2);
 
 	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
