@@ -233,7 +233,7 @@ void reinstall_page_tables()
 // Function to get a physical page of memory and map it in to virtual memory
 void* get_page() {
 	ulong vm_addr_long = kernel_end;
-	kprintfln!("The kernel end page addr in physical memory = {x}")(vm_addr_long);
+	//kprintfln!("The kernel end page addr in physical memory = {x}")(vm_addr_long);
 	
 	// Request a page of physical memory
 	auto phys = pmem.request_phys_page();
@@ -250,13 +250,14 @@ void* get_page() {
 
 	// Get the index in to the page table
 	long pml_index = vm_addr_long & 0x1FF;
-
+	//kprintfln!("level 4 Index = {}")(pml_index);
 	// Check to see if the level 4 [entry] is there (it damn well better be if it does't want to be hit... again)
 
 	if(pageLevel4[pml_index].pml4e == 0) {
 	  	pl3 = spawn_pml3();
 		pageLevel4[pml_index].pml4e = (cast(ulong)pl3.ptr) - VM_BASE_ADDR;
 		pageLevel4[pml_index].pml4e |= 0x7;
+		
 	} else {
 		// We know that the pml4 entry is alive and well, so now we need to
 		// set our traversal array variable equal to the pml3 entry...
@@ -266,10 +267,13 @@ void* get_page() {
 	vm_addr_long >>= 9;
 	pml_index = vm_addr_long & 0x1FF;
 	
+	//kprintfln!("Level 3 index = {}")(pml_index);
+
 	if(pl3[pml_index].pml3e == 0) {
 		pl2 = spawn_pml2();
 		pl3[pml_index].pml3e = (cast(ulong)pl2.ptr) - VM_BASE_ADDR;
 		pl3[pml_index].pml3e |= 0x7;
+		//kprintfln!("PL3 ADDY = {}")(pl3.ptr);
 	} else {
 		// We know that the pml3 entry is alive and well, so now we need to
 		// set our traversal array variable equal to the pml2 entry...
@@ -279,6 +283,8 @@ void* get_page() {
 	vm_addr_long >>= 9;
 	pml_index = vm_addr_long & 0x1FF;
 	
+	//kprintfln!("Level 2 index = {}")(pml_index);
+
 	if(pl2[pml_index].pml2e == 0) {
 		pl1 = spawn_pml1();
 		pl2[pml_index].pml2e = (cast(ulong)pl1.ptr) - VM_BASE_ADDR;
@@ -292,6 +298,8 @@ void* get_page() {
 	vm_addr_long >>= 9;
 	pml_index = vm_addr_long & 0x1FF;
 	
+	//kprintfln!("Level 1 index = {}")(pml_index);
+
 	// We don't care about checking for this, we know we can just assign it
 	pl1[pml_index].pml1e = cast(ulong)phys;
 	pl1[pml_index].pml1e |= 0x87;
@@ -301,6 +309,51 @@ void* get_page() {
 }
 
 
+// free_page(void* pageAddr) -- this function will free a virtual page
+// by setting its available bit
+void free_page(void* pageAddr) {
+	// Step 1: Traverse page table
+	// Step 2: Set available bit on free'd page
+	// Step 3: Set call free_phys_mem with physical address
+	// Step 4: profit
+
+	// Shift the page address right 12 bits (skip the crap)
+
+	// And it to get the index in to the level 4
+	auto v_address = cast(ulong)pageAddr >> 12;
+	auto index = v_address & 0x1FF;
+	
+	//kprintfln!("The level 4 index = {}")(index);
+	
+
+	pml3[] pl3 = (cast(pml3*)((pageLevel4[index].pml4e + VM_BASE_ADDR) & ~0x7))[0 .. 512];		
+	//kprintfln!("pl3.ptr = {}")(pl3.ptr);
+	v_address >>= 9;
+	index = v_address & 0x1FF;
+	
+	//kprintfln!("The level 3 index = {}")(index);
+	pml2[] pl2 = (cast(pml2*)((pl3[index].pml3e + VM_BASE_ADDR) & ~0x7))[0 .. 512];
+	v_address >>= 9;
+	index = v_address & 0x1FF;
+	//kprintfln!("The level 2 index = {}")(index);
+
+	pml1[] pl1 = (cast(pml1*)((pl2[index].pml2e + VM_BASE_ADDR) & ~0x7))[0 .. 512];
+	v_address >>= 9;
+	index = v_address & 0x1FF;
+	
+	//kprintfln!("The level 1 index = {}")(index);
+	kprintfln!("Address of physical shite = {x}")(pl1[index].pml1e & ~0x87);
+	// This frees the physical page
+	pmem.free_phys_page(cast(void*)(pl1[index].pml1e & ~0x87));
+	// Now lets set the page as available in virtual memory :)
+	pl1[index].pml1e &= ~0x5;
+
+	
+}
+
+
+// These spawn functions basically create a new pmlX[], and save us from having
+// to retype the two lines of code every time.  Yay code reuse!?
 pml3[] spawn_pml3() {
 	pml3[] pl3 = (cast(pml3*)(pmem.request_phys_page() + VM_BASE_ADDR))[0 .. 512];
 	pl3[] = pml3.init;
