@@ -112,8 +112,6 @@ void* request_phys_page() {
 					bitmap[i] |= p;
 					// Calculate the address of the page we need
 					void* addr = cast(void*)(((i * 8) + z) * PAGE_SIZE);
-					// Make sure we know where the end of the kernel now is
-					vmem.kernel_end += PAGE_SIZE;
 					// Return the address of the free page
 					return (addr);
 				}
