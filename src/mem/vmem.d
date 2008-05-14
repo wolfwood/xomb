@@ -21,7 +21,8 @@ const ulong VM_BASE_INDEX = 0;	// This index is where on the pageLevel3[] the ph
                                 // Changing this value WILL IMPACT THE VALUE ABOVE IT!!!!!!!!! 
 // Entry point in to the page table
 pml4[] pageLevel4;
-ulong kernel_end;
+ulong kernel_vm_end;
+ulong kernel_vm_start = 0xFFFFFFFF80000000;
 
 /* Handle faults -- the fault handler
  * This should handle everything when a page fault
@@ -121,7 +122,12 @@ void reinstall_page_tables()
 {
 	// Allocate the physical page for the top-level page table.
  	pageLevel4 = (cast(pml4*)pmem.request_phys_page())[0 .. 512];
-	kernel_end += 4096;
+	
+	auto kernel_size = (cast(ulong)pageLevel4.ptr / PAGE_SIZE);
+	// kernel_vm_end will be used for house keeping later
+	kernel_vm_end = (kernel_size * PAGE_SIZE);
+
+	kernel_vm_end += PAGE_SIZE + kernel_vm_start;
 	
 	// zero it out.
 	pageLevel4[] = pml4.init;
@@ -134,17 +140,13 @@ void reinstall_page_tables()
 	// our PML4.  This means we can just jack that address,
 	// and used it to determine our kernel size (we hope)!
 	
-	auto kernel_size = (cast(ulong)pageLevel4.ptr / PAGE_SIZE);
-	// kernel_end will be used for house keeping later
-	kernel_end = (kernel_size * PAGE_SIZE);
-	
 	// Remapping time!  This will remap the kernel in to high memory (again)
 	// Though we did this in the asm, we are doing it again in here so that it
 	// is easier to work with (has structs, etc that we can play with)
 	
 	// 3rd level page table
 	pml3[] pageLevel3 = (cast(pml3*)pmem.request_phys_page())[0 .. 512];
-	kernel_end += 4096;
+	kernel_vm_end += PAGE_SIZE;
 	
 	pageLevel3[] = pml3.init;
 	
@@ -155,7 +157,7 @@ void reinstall_page_tables()
    
 	// Create a level 2 entry
 	pml2[] pageLevel2 = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
-	kernel_end += 4096;
+	kernel_vm_end += PAGE_SIZE;
 	
 	pageLevel2[] = pml2.init;
 	
@@ -169,7 +171,7 @@ void reinstall_page_tables()
 	for(int i = 0, j = 0; i < kernel_size; i += 512, j++) {
 		// Make some page table entries
 		pml1[] pageLevel1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
-		kernel_end += 4096;
+		kernel_vm_end += PAGE_SIZE;
 		// Set pml2e to the pageLevel 1 entry
 		pageLevel2[j].pml2e = cast(ulong)pageLevel1.ptr;
 		pageLevel2[j].pml2e |= 0x7;
@@ -187,7 +189,7 @@ void reinstall_page_tables()
 	// without a chicken and the egg problem...
 
 	pml2[] allPhys = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
-	kernel_end += 4096;
+	kernel_vm_end += PAGE_SIZE;
 	allPhys[] = pml2.init;
 	pageLevel3[VM_BASE_INDEX].pml3e = cast(ulong)allPhys.ptr;
 	pageLevel3[VM_BASE_INDEX].pml3e |= 0x7;
@@ -197,7 +199,7 @@ void reinstall_page_tables()
 	for(int i = 0, j = 0; i < (pmem.mem_size / PAGE_SIZE); i += 512, j++) {
 		// Make some page table entries
 		pml1[] pageLevel1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
-		kernel_end += 4096;
+		kernel_vm_end += PAGE_SIZE;
 		// Set pml2e to the pageLevel 1 entry
 		allPhys[j].pml2e = cast(ulong)pageLevel1.ptr;
 		allPhys[j].pml2e |= 0x7;
@@ -212,7 +214,7 @@ void reinstall_page_tables()
 
 
 
-	kprintfln!("kernel_end = {x}")(kernel_end);
+	kprintfln!("kernel_vm_end = {x}")(kernel_vm_end);
 	
 	//kprintfln!("kernel_size in pages = {}")(kernel_size);
 	//kprintfln!("kernel_size in bytes = {}")(kernel_size * PAGE_SIZE);
@@ -239,15 +241,15 @@ void reinstall_page_tables()
 
 // Function to get a physical page of memory and map it in to virtual memory
 void* get_page() {
-	ulong vm_addr_long = kernel_end;
+	ulong vm_addr_long = kernel_vm_end;
 	//kprintfln!("The kernel end page addr in physical memory = {x}")(vm_addr_long);
 	
 	// Request a page of physical memory
 	auto phys = pmem.request_phys_page();
 	// Make sure we know where the end of the kernel now is
-	kernel_end += PAGE_SIZE;
+	kprintfln!("PHYS = {x} VIRT = {x}")(phys, kernel_vm_end);
+	kernel_vm_end += PAGE_SIZE;
 					
-	kprintfln!("The physical page requested = {x}")(phys);
 
 	ulong vm_addr = vm_addr_long;
 
@@ -258,61 +260,61 @@ void* get_page() {
 	// Shift our VM address right by 12 bits
 	vm_addr_long >>= 12;
 
+	long pml_index1 = vm_addr_long & 0x1FF;
+	
+	vm_addr_long >>= 9;
+	long pml_index2 = vm_addr_long & 0x1FF;
+	
+	vm_addr_long >>= 9;
+	long pml_index3 = vm_addr_long & 0x1FF;
+	
+	vm_addr_long >>= 9;
+	long pml_index4 = vm_addr_long & 0x1FF;
+
 	// Get the index in to the page table
-	long pml_index = vm_addr_long & 0x1FF;
 	//kprintfln!("level 4 Index = {}")(pml_index);
 	// Check to see if the level 4 [entry] is there (it damn well better be if it does't want to be hit... again)
 
-	if(pageLevel4[pml_index].pml4e == 0) {
+	if(pageLevel4[pml_index4].pml4e == 0) {
 	  	pl3 = spawn_pml3();
-		pageLevel4[pml_index].pml4e = (cast(ulong)pl3.ptr) - VM_BASE_ADDR;
-		pageLevel4[pml_index].pml4e |= 0x7;
+		pageLevel4[pml_index4].pml4e = (cast(ulong)pl3.ptr) - VM_BASE_ADDR;
+		pageLevel4[pml_index4].pml4e |= 0x7;
 		
 	} else {
 		// We know that the pml4 entry is alive and well, so now we need to
 		// set our traversal array variable equal to the pml3 entry...
-		pl3[] = (cast(pml3*)(pageLevel4[pml_index].pml4e & ~0x7))[0 .. 512];
+		pl3 = (cast(pml3*)((pageLevel4[pml_index4].pml4e & ~0x7) + VM_BASE_ADDR))[0 .. 512];
 	}
-	 
-	vm_addr_long >>= 9;
-	pml_index = vm_addr_long & 0x1FF;
-	
-	//kprintfln!("Level 3 index = {}")(pml_index);
 
-	if(pl3[pml_index].pml3e == 0) {
+	if(pl3[pml_index3].pml3e == 0) {
 		pl2 = spawn_pml2();
-		pl3[pml_index].pml3e = (cast(ulong)pl2.ptr) - VM_BASE_ADDR;
-		pl3[pml_index].pml3e |= 0x7;
+		pl3[pml_index3].pml3e = (cast(ulong)pl2.ptr) - VM_BASE_ADDR;
+		pl3[pml_index3].pml3e |= 0x7;
 		//kprintfln!("PL3 ADDY = {}")(pl3.ptr);
 	} else {
 		// We know that the pml3 entry is alive and well, so now we need to
 		// set our traversal array variable equal to the pml2 entry...
-		pl2[] = (cast(pml2*)(pl3[pml_index].pml3e & ~0x7))[0 .. 512];
+		pl2 = (cast(pml2*)((pl3[pml_index3].pml3e & ~0x7) + VM_BASE_ADDR))[0 .. 512];
 	}
 	
-	vm_addr_long >>= 9;
-	pml_index = vm_addr_long & 0x1FF;
 	
 	//kprintfln!("Level 2 index = {}")(pml_index);
 
-	if(pl2[pml_index].pml2e == 0) {
+	if(pl2[pml_index2].pml2e == 0) {
 		pl1 = spawn_pml1();
-		pl2[pml_index].pml2e = (cast(ulong)pl1.ptr) - VM_BASE_ADDR;
-		pl2[pml_index].pml2e |= 0x7;
+		pl2[pml_index2].pml2e = (cast(ulong)pl1.ptr) - VM_BASE_ADDR;
+		pl2[pml_index2].pml2e |= 0x7;
 	} else {
 		// We know that the pml3 entry is alive and well, so now we need to
 		// set our traversal array variable equal to the pml2 entry...
-		pl1[] = (cast(pml1*)(pl2[pml_index].pml2e & ~0x7))[0 .. 512];
+		pl1 = (cast(pml1*)((pl2[pml_index2].pml2e & ~0x7) + VM_BASE_ADDR))[0 .. 512];
 	}
-	
-	vm_addr_long >>= 9;
-	pml_index = vm_addr_long & 0x1FF;
 	
 	//kprintfln!("Level 1 index = {}")(pml_index);
 
 	// We don't care about checking for this, we know we can just assign it
-	pl1[pml_index].pml1e = cast(ulong)phys;
-	pl1[pml_index].pml1e |= 0x87;
+	pl1[pml_index1].pml1e = cast(ulong)phys;
+	pl1[pml_index1].pml1e |= 0x87;
 	
 	// The page table puts the lotion on its skin or it gets the hose again...
 	return cast(void*)vm_addr;
@@ -331,32 +333,36 @@ void free_page(void* pageAddr) {
 
 	// And it to get the index in to the level 4
 	auto v_address = cast(ulong)pageAddr >> 12;
-	auto index = v_address & 0x1FF;
+
+	long pml_index1 = v_address & 0x1FF;
+	
+	v_address >>= 9;
+	long pml_index2 = v_address & 0x1FF;
+	
+	v_address >>= 9;
+	long pml_index3 = v_address & 0x1FF;
+	
+	v_address >>= 9;
+	long pml_index4 = v_address & 0x1FF;
 	
 	//kprintfln!("The level 4 index = {}")(index);
 	
 
-	pml3[] pl3 = (cast(pml3*)((pageLevel4[index].pml4e + VM_BASE_ADDR) & ~0x7))[0 .. 512];		
+	pml3[] pl3 = (cast(pml3*)((pageLevel4[pml_index4].pml4e + VM_BASE_ADDR) & ~0x7))[0 .. 512];		
 	//kprintfln!("pl3.ptr = {}")(pl3.ptr);
-	v_address >>= 9;
-	index = v_address & 0x1FF;
 	
 	//kprintfln!("The level 3 index = {}")(index);
-	pml2[] pl2 = (cast(pml2*)((pl3[index].pml3e + VM_BASE_ADDR) & ~0x7))[0 .. 512];
-	v_address >>= 9;
-	index = v_address & 0x1FF;
+	pml2[] pl2 = (cast(pml2*)((pl3[pml_index3].pml3e + VM_BASE_ADDR) & ~0x7))[0 .. 512];
 	//kprintfln!("The level 2 index = {}")(index);
 
-	pml1[] pl1 = (cast(pml1*)((pl2[index].pml2e + VM_BASE_ADDR) & ~0x7))[0 .. 512];
-	v_address >>= 9;
-	index = v_address & 0x1FF;
+	pml1[] pl1 = (cast(pml1*)((pl2[pml_index2].pml2e + VM_BASE_ADDR) & ~0x7))[0 .. 512];
 	
 	//kprintfln!("The level 1 index = {}")(index);
-	kprintfln!("Address of physical shite = {x}")(pl1[index].pml1e & ~0x87);
+	kprintfln!("Address of physical shite = {x}")(pl1[pml_index1].pml1e & ~0x87);
 	// This frees the physical page
-	pmem.free_phys_page(cast(void*)(pl1[index].pml1e & ~0x87));
+	pmem.free_phys_page(cast(void*)(pl1[pml_index1].pml1e & ~0x87));
 	// Now lets set the page as available in virtual memory :)
-	pl1[index].pml1e &= ~0x1;
+	pl1[pml_index1].pml1e &= ~0x1;
 
 }
 
@@ -366,6 +372,7 @@ void free_page(void* pageAddr) {
 pml3[] spawn_pml3() {
 	pml3[] pl3 = (cast(pml3*)(pmem.request_phys_page() + VM_BASE_ADDR))[0 .. 512];
 	pl3[] = pml3.init;
+	kernel_vm_end += PAGE_SIZE;
 	
 	return pl3[];
 }
@@ -374,6 +381,7 @@ pml3[] spawn_pml3() {
 pml2[] spawn_pml2() {
 	pml2[] pl2 = (cast(pml2*)(pmem.request_phys_page() + VM_BASE_ADDR))[0 .. 512];
 	pl2[] = pml2.init;
+	kernel_vm_end += PAGE_SIZE;
 	
 	return pl2[];
 }
@@ -381,6 +389,7 @@ pml2[] spawn_pml2() {
 pml1[] spawn_pml1() {
 	pml1[] pl1 = (cast(pml1*)(pmem.request_phys_page() + VM_BASE_ADDR))[0 .. 512];
 	pl1[] = pml1.init;
+	kernel_vm_end += PAGE_SIZE;
 	
 	return pl1[];
 }
