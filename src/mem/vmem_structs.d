@@ -1,3 +1,9 @@
+module mem.vmem_structs;
+
+import core.util;
+
+
+
 // Page table structures
 align(1) struct pml4
 {

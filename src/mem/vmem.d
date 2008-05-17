@@ -7,10 +7,12 @@
 module mem.vmem;
 
 import kernel.vga;
+import kernel.error;
 import config;
 import core.util;
 import core.multiboot;
 import pmem = mem.pmem;
+import mem.vmem_structs; 
 static import idt = kernel.idt;
 
 // CONST for page size
@@ -19,10 +21,16 @@ const ulong VM_BASE_ADDR = 0xFFFFFF8000000000; // Base address for virtual addre
                                            // that was mapped in to VM during our pages reinstall to prevent chicken/egg
 const ulong VM_BASE_INDEX = 0;	// This index is where on the pageLevel3[] the physical memory should start to be mapped in
                                 // Changing this value WILL IMPACT THE VALUE ABOVE IT!!!!!!!!! 
+
 // Entry point in to the page table
 pml4[] pageLevel4;
-ulong kernel_vm_end;
-ulong kernel_vm_start = 0xFFFFFFFF80000000;
+
+// The kernel will always live in upper memory (across all page tables)
+// to accomplish this, we'll put it in the SAME pageLevel3 for every
+// table.  To do this we must keep track of the location of that level3
+// in a variable called kernel_mapping
+pml3[] kernel_mapping;
+
 
 /* Handle faults -- the fault handler
  * This should handle everything when a page fault
@@ -86,48 +94,60 @@ void handle_faults(idt.interrupt_stack* ir_stack)
 	}
 }
 
-// Page table structures
-align(1) struct pml4
-{
-	ulong pml4e;
-	mixin(Bitfield!(pml4e, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
-	"ign", 1, "mbz", 2, "avl", 3, "pdpba", 41, "available", 10, "nx", 1));
-}
 
-// Page directory pointer entry
-align(1) struct pml3 
-{
-	ulong pml3e;
-	mixin(Bitfield!(pml3e, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
-	"ign", 1, "o", 1, "mbz", 1, "avl", 3, "pdba", 41, "available", 10, "nx", 1));
-}
+/*void* spawn_page_table() {
+	// Allocate the physical page for the top-level page table.
+ 	pageLevel4 = (cast(pml4*)pmem.request_phys_page())[0 .. 512];
+	// zero it out.
+	pageLevel4[] = pml4.init;
+	
+	// 3rd level page table
+	pml3[] pageLevel3 = (cast(pml3*)pmem.request_phys_page())[0 .. 512];
+	
+	
+	pageLevel3[] = pml3.init;
+ 
+	pageLevel4[0].pml4e = cast(ulong)pageLevel3.ptr;
+	pageLevel4[0].pml4e |= 0x7;
+	
+	// Set the 511th entry of level 4 to the kernel_mapping
+	pageLevel4[511].pml4e = cast(ulong)kernel_mapping.ptr;
+   
+	// Create a level 2 entry
+	pml2[] pageLevel2 = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
+	pageLevel2[] = pml2.init;
+	
+	// Set the 511th entry of level 3 to a level 2 entry
+	pageLevel3[0].pml3e = cast(ulong)pageLevel2.ptr;
+	// Set correct flags, present, rw, usable
+	pageLevel3[0].pml3e |= 0x7;
+	
 
+	pml1[] pageLevel1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
+	
+	/* At this point, we need to determine where the current running environment
+	 * lives in physical memory so we can map it in here...
+	 * I'll be honest -- I don't know exactly how to do that.  If we get a grub module
+	 * I'm sure it'll tell us where it lives.  If we spawn a process, I'm not too sure!
+	 */
+/*
+	// Set pml2e to the pageLevel 1 entry
+	pageLevel2[j].pml2e = cast(ulong)pageLevel1.ptr;
+	pageLevel2[j].pml2e |= 0x7;
+		
+	pageLevel4 = (cast(pml4*)(cast(void*)pageLevel4.ptr + VM_BASE_ADDR) )[0 .. 512];
+}*/
 
-align(1) struct pml2
-{
-	ulong pml2e;
-	mixin(Bitfield!(pml2e, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
-	"ign1", 1, "o", 1, "ign2", 1, "avl", 3, "pdba", 41, "available", 10, "nx", 1));
-}
-
-
-align(1) struct pml1
-{
-	ulong pml1e;
-	mixin(Bitfield!(pml1e, "p", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
-	"d", 1, "pat", 1, "g", 1, "avl", 3, "pdba", 41, "available", 10, "nx", 1));
-}
-
-void reinstall_page_tables()
+void reinstall_kernel_page_tables()
 {
 	// Allocate the physical page for the top-level page table.
  	pageLevel4 = (cast(pml4*)pmem.request_phys_page())[0 .. 512];
 	
 	auto kernel_size = (cast(ulong)pageLevel4.ptr / PAGE_SIZE);
 	// kernel_vm_end will be used for house keeping later
-	kernel_vm_end = (kernel_size * PAGE_SIZE);
+	//kernel_vm_end = (kernel_size * PAGE_SIZE);
 
-	kernel_vm_end += PAGE_SIZE + kernel_vm_start;
+	//kernel_vm_end += PAGE_SIZE + kernel_vm_start;
 	
 	// zero it out.
 	pageLevel4[] = pml4.init;
@@ -146,10 +166,12 @@ void reinstall_page_tables()
 	
 	// 3rd level page table
 	pml3[] pageLevel3 = (cast(pml3*)pmem.request_phys_page())[0 .. 512];
-	kernel_vm_end += PAGE_SIZE;
+	
 	
 	pageLevel3[] = pml3.init;
-	
+	// Make sure we know where the kernel is living FO REALS!
+	kernel_mapping = pageLevel3[];
+
 	// Set the 511th entry of level 4 to a level 3 entry
 	pageLevel4[511].pml4e = cast(ulong)pageLevel3.ptr;
 	// Set correct flags, present, rw, usable
@@ -157,7 +179,7 @@ void reinstall_page_tables()
    
 	// Create a level 2 entry
 	pml2[] pageLevel2 = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
-	kernel_vm_end += PAGE_SIZE;
+	
 	
 	pageLevel2[] = pml2.init;
 	
@@ -171,7 +193,7 @@ void reinstall_page_tables()
 	for(int i = 0, j = 0; i < kernel_size; i += 512, j++) {
 		// Make some page table entries
 		pml1[] pageLevel1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
-		kernel_vm_end += PAGE_SIZE;
+		
 		// Set pml2e to the pageLevel 1 entry
 		pageLevel2[j].pml2e = cast(ulong)pageLevel1.ptr;
 		pageLevel2[j].pml2e |= 0x7;
@@ -189,7 +211,7 @@ void reinstall_page_tables()
 	// without a chicken and the egg problem...
 
 	pml2[] allPhys = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
-	kernel_vm_end += PAGE_SIZE;
+	
 	allPhys[] = pml2.init;
 	pageLevel3[VM_BASE_INDEX].pml3e = cast(ulong)allPhys.ptr;
 	pageLevel3[VM_BASE_INDEX].pml3e |= 0x7;
@@ -199,7 +221,7 @@ void reinstall_page_tables()
 	for(int i = 0, j = 0; i < (pmem.mem_size / PAGE_SIZE); i += 512, j++) {
 		// Make some page table entries
 		pml1[] pageLevel1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
-		kernel_vm_end += PAGE_SIZE;
+		
 		// Set pml2e to the pageLevel 1 entry
 		allPhys[j].pml2e = cast(ulong)pageLevel1.ptr;
 		allPhys[j].pml2e |= 0x7;
@@ -214,7 +236,7 @@ void reinstall_page_tables()
 
 
 
-	kprintfln!("kernel_vm_end = {x}")(kernel_vm_end);
+	//kprintfln!("kernel_vm_end = {x}")(kernel_vm_end);
 	
 	//kprintfln!("kernel_size in pages = {}")(kernel_size);
 	//kprintfln!("kernel_size in bytes = {}")(kernel_size * PAGE_SIZE);
@@ -240,17 +262,16 @@ void reinstall_page_tables()
 
 
 // Function to get a physical page of memory and map it in to virtual memory
-void* get_page() {
-	ulong vm_addr_long = kernel_vm_end;
+// Returns: 1 on success, -1 on failure
+int get_page(void* vm_address) {
+	
+	ulong vm_addr_long = cast(ulong)vm_address;
 	//kprintfln!("The kernel end page addr in physical memory = {x}")(vm_addr_long);
 	
 	// Request a page of physical memory
 	auto phys = pmem.request_phys_page();
 	// Make sure we know where the end of the kernel now is
-	kprintfln!("PHYS = {x} VIRT = {x}")(phys, kernel_vm_end);
-	kernel_vm_end += PAGE_SIZE;
 					
-
 	ulong vm_addr = vm_addr_long;
 
 	// Arrays for later traversal
@@ -312,12 +333,15 @@ void* get_page() {
 	
 	//kprintfln!("Level 1 index = {}")(pml_index);
 
-	// We don't care about checking for this, we know we can just assign it
-	pl1[pml_index1].pml1e = cast(ulong)phys;
-	pl1[pml_index1].pml1e |= 0x87;
-	
+	// We need to ensure that we aren't writing to a page that is already mapped.
+	if((pl1[pml_index1].pml1e & 0x1) == 0) { // Check to make sure that the page isn't mapped here
+		pl1[pml_index1].pml1e = cast(ulong)phys;
+		pl1[pml_index1].pml1e |= 0x87;
+	} else {
+		return ErrorVal.PageMapError;
+	}
 	// The page table puts the lotion on its skin or it gets the hose again...
-	return cast(void*)vm_addr;
+	return ErrorVal.Success;
 }
 
 
@@ -372,7 +396,6 @@ void free_page(void* pageAddr) {
 pml3[] spawn_pml3() {
 	pml3[] pl3 = (cast(pml3*)(pmem.request_phys_page() + VM_BASE_ADDR))[0 .. 512];
 	pl3[] = pml3.init;
-	kernel_vm_end += PAGE_SIZE;
 	
 	return pl3[];
 }
@@ -381,7 +404,6 @@ pml3[] spawn_pml3() {
 pml2[] spawn_pml2() {
 	pml2[] pl2 = (cast(pml2*)(pmem.request_phys_page() + VM_BASE_ADDR))[0 .. 512];
 	pl2[] = pml2.init;
-	kernel_vm_end += PAGE_SIZE;
 	
 	return pl2[];
 }
@@ -389,7 +411,6 @@ pml2[] spawn_pml2() {
 pml1[] spawn_pml1() {
 	pml1[] pl1 = (cast(pml1*)(pmem.request_phys_page() + VM_BASE_ADDR))[0 .. 512];
 	pl1[] = pml1.init;
-	kernel_vm_end += PAGE_SIZE;
-	
+
 	return pl1[];
 }

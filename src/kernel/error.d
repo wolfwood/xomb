@@ -6,5 +6,6 @@ enum ErrorVal {
 	Success = 0,
 	Fail,
 	NoSpace,
-	BadInputs
+	BadInputs,
+	PageMapError
 }

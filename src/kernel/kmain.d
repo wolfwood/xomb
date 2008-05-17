@@ -106,20 +106,27 @@ extern(C) void kmain(uint magic, uint addr)
 	// Set up the heap memory allocator
 	pmem.setup_pmem_bitmap(addr);
 	//pmem.test_pmem();
-	vmem.reinstall_page_tables();
+	vmem.reinstall_kernel_page_tables();
 
-	void* test = vmem.get_page();
-	void* test2 = vmem.get_page();
-	//kprintfln!("virtual page reuqested, and page recieved! Address = {x}")(test);
-	//kprintfln!("virtual page reuqested, and page recieved! Address = {x}")(test2);
-	//kprintfln!("Returning page!")();
-	vmem.free_page(test);
-	test = vmem.get_page();
+	void* t = cast(void*)0x0000000000100000;
+	void* t2 = cast(void*)0x0000000000110000;
+	void* t3 = cast(void*)0x0000000000100000;
+
+	int test = vmem.get_page(t);
+	int test2 = vmem.get_page(t2);
+	int test3 = vmem.get_page(t3);
+
+	kprintfln!("test1 = {}")(test);
+	kprintfln!("test2 = {}")(test2);
+	kprintfln!("test3 = {}")(test3);
+	vmem.free_page(t);
+	test = vmem.get_page(t);
 	//kprintfln!("virtual page requested a second time, address = {x}")(test);
 	//kprintfln!("releasing test1")();
-	vmem.free_page(test);
+	vmem.free_page(t);
 	//kprintfln!("releasing test2")();
-	vmem.free_page(test2);
+	vmem.free_page(t2);
+	vmem.free_page(t3);
 
 	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
 	{
