@@ -26,6 +26,8 @@ static import idt = kernel.idt;
 import vmem = mem.vmem;
 import pmem = mem.pmem;
 
+import locks = kernel.locks;
+
 /**
 This method sets sets the Input/Output Permission Level to 3, so
 that it will not check the IO permissions bitmap when access is requested.
@@ -138,6 +140,13 @@ extern(C) void kmain(uint magic, uint addr)
 
 	syscall.setHandler(&syscall.syscallHandler);
 
+	// TESTING MUTEXES
+	kprintfln!("Starting kmutex test")();
+	int failcode = locks.test_kmutex();
+	kprintfln!("KMUTEX test code (0 is good): {}")(failcode);
+	//want to see the result:   
+	//return;
+	
 	kprintfln!("JUMPING TO USER MODE!!!")();
 
 	asm
