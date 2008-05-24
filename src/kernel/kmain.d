@@ -83,7 +83,7 @@ extern(C) void kmain(uint magic, uint addr)
 	}
 
 	// Clear the screen in order to begin printing.
-	// Console.cls();
+	Console.cls();
 
 	// Print initial booting information.
 	kprintf!("Booting ")();

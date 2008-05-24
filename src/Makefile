@@ -14,7 +14,7 @@ ifeq (${MY_ARCH},Darwin)
         CC = x86_64-pc-elf-gcc
         LD = x86_64-pc-elf-ld
 	DC = x86_64-pc-elf-gdc
-	CPFLAGS = -n
+	-CPFLAGS = -i
 else
 	CC = x86_64-pc-elf-gcc
         LD = x86_64-pc-elf-ld
@@ -100,8 +100,8 @@ veryclean: clean
 # run this after checking out a clean tree
 setup: bochsrc config.d
 
-#bochsrc: bochsrc.sample
-#	cp $(CPFLAGS) bochsrc.sample bochsrc
-#
-#config.d: config.d.sample
-#	cp $(CPFLAGS) config.d.sample config.d
+bochsrc: bochsrc.sample
+	cp $(CPFLAGS) bochsrc.sample bochsrc
+
+config.d: config.d.sample
+	cp $(CPFLAGS) config.d.sample config.d
