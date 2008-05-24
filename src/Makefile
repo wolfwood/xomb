@@ -14,7 +14,7 @@ ifeq (${MY_ARCH},Darwin)
         CC = x86_64-pc-elf-gcc
         LD = x86_64-pc-elf-ld
 	DC = x86_64-pc-elf-gdc
-	-CPFLAGS = -i
+	CPFLAGS = -i
 else
 	CC = x86_64-pc-elf-gcc
         LD = x86_64-pc-elf-ld
@@ -101,7 +101,7 @@ veryclean: clean
 setup: bochsrc config.d
 
 bochsrc: bochsrc.sample
-	cp $(CPFLAGS) bochsrc.sample bochsrc
+	-cp $(CPFLAGS) bochsrc.sample bochsrc
 
 config.d: config.d.sample
-	cp $(CPFLAGS) config.d.sample config.d
+	-cp $(CPFLAGS) config.d.sample config.d
