@@ -138,7 +138,7 @@ void handle_faults(idt.interrupt_stack* ir_stack)
 	pageLevel4 = (cast(pml4*)(cast(void*)pageLevel4.ptr + VM_BASE_ADDR) )[0 .. 512];
 }*/
 
-void reinstall_kernel_page_tables()
+void reinstall_kernel_page_tables(ulong mmap_addr)
 {
 	// Allocate the physical page for the top-level page table.
  	pageLevel4 = (cast(pml4*)pmem.request_phys_page())[0 .. 512];
@@ -234,7 +234,11 @@ void reinstall_kernel_page_tables()
 		}
 	}
 
-
+	// Also map in importent regions for James to make timers with
+	auto multi_boot_struct = cast(multiboot_info_t*)mmap_addr;
+	memory_map_t[] mmap = (cast(memory_map_t*)multi_boot_struct.mmap_addr)[0 .. (multi_boot_struct.mmap_length / memory_map_t.sizeof)];
+	auto bios_regions = mmap[$-1];
+	kprintfln!("Bios region = {}")(bios_regions.size_of);
 
 	//kprintfln!("kernel_vm_end = {x}")(kernel_vm_end);
 	
@@ -382,7 +386,7 @@ void free_page(void* pageAddr) {
 	pml1[] pl1 = (cast(pml1*)((pl2[pml_index2].pml2e + VM_BASE_ADDR) & ~0x7))[0 .. 512];
 	
 	//kprintfln!("The level 1 index = {}")(index);
-	kprintfln!("Address of physical shite = {x}")(pl1[pml_index1].pml1e & ~0x87);
+	//kprintfln!("Address of physical shite = {x}")(pl1[pml_index1].pml1e & ~0x87);
 	// This frees the physical page
 	pmem.free_phys_page(cast(void*)(pl1[pml_index1].pml1e & ~0x87));
 	// Now lets set the page as available in virtual memory :)

@@ -108,7 +108,7 @@ extern(C) void kmain(uint magic, uint addr)
 	// Set up the heap memory allocator
 	pmem.setup_pmem_bitmap(addr);
 	//pmem.test_pmem();
-	vmem.reinstall_kernel_page_tables();
+	vmem.reinstall_kernel_page_tables(addr);
 
 	void* t = cast(void*)0x0000000000100000;
 	void* t2 = cast(void*)0x0000000000110000;
