@@ -1,9 +1,9 @@
-module core.multiboot;
+module kernel.core.multiboot;
 
 
 import kernel.vga;
-import core.util;
-import system = core.system;
+import kernel.core.util;
+import system = kernel.core.system;
 
 /** multiboot.d
 	This file declares structures and constants used by GRUB for the multiboot header.

@@ -49,8 +49,8 @@ static import idt = kernel.idt;
 
 import config;
 
-import core.util;
-import core.system;
+import kernel.core.util;
+import kernel.core.system;
 
 import kernel.vga;
 

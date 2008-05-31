@@ -1,7 +1,7 @@
 
 module std.typeinfo.ti_Aint;
 
-import core.system;
+import kernel.core.system;
 
 // int[]
 

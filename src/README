@@ -1,0 +1,25 @@
+This readme is provided as a quick and dirty guide to the XOmB source tree.
+It may not be up to date, and there may not be much good information in here,
+so don't hate on us if this is worthless to you!!
+
+Contents:
+		1. Directory Structure
+		2. 
+
+
+--------------------------------------------------------------------------------
+1. Directory Structure
+--------------------------------------------------------------------------------
+/src			<- Root source directory
+				-- Only thing you should need to modify in here is a Makefile (maybe)
+
+/src/kernel		   <- Kernel code including kmain and kernel data structures (idt, gdt, etc)
+/src/kernel/boot   <- Bootstrap code
+/src/kernel/core   <- Various system utilities used by the kernel
+/src/kernel/dev	   <- Kernel devices
+/src/kernel/mem	   <- Physical and virtual memory management
+
+/src/iso		   <- ISO image of the kernel once its built
+
+/src/gcc		   <- Guts n Magic so that the compiler won't die when trying to build
+				   -- This is a DO NOT TOUCH directory (unless you know what you're doing)

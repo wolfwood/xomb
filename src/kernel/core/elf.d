@@ -9,9 +9,9 @@ The following definitions declare sizes for various types of Elf64-specific
 variables. These types are defined using 64-bit specific datatypes.
 They are individually commented with their corresponding number of bytes.
  */
-module core.elf;
+module kernel.core.elf;
 
-import core.multiboot;
+import kernel.core.multiboot;
 
 alias void* Elf64_Addr;	   // size 8
 alias ulong Elf64_Off;	   // size 8

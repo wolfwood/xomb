@@ -11,7 +11,7 @@ be taken up by it, making the next valid index 5.
 */
 module kernel.gdt;
 
-import core.util;
+import kernel.core.util;
 
 /**
 The various kinds of system segment types.

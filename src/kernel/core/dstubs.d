@@ -1,6 +1,6 @@
-module core.dstubs;
+module kernel.core.dstubs;
 
-import core.system;
+import kernel.core.system;
 static import gcc.builtins;
 
 extern(C)

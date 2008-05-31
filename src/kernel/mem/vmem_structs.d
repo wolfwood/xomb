@@ -1,6 +1,6 @@
-module mem.vmem_structs;
+module kernel.mem.vmem_structs;
 
-import core.util;
+import kernel.core.util;
 
 
 

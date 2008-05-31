@@ -5,7 +5,7 @@ module kernel.syscall;
 import kernel.vga;
 
 import user.syscall;
-import core.util;
+import kernel.core.util;
 
 /**
 This function declares a handler for system calls. It accepts a pointer to a function (h).

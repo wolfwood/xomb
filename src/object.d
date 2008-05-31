@@ -36,7 +36,7 @@
 module object;
 
 import kernel.vga;
-import core.system;
+import kernel.core.system;
 
 extern(C) Object _d_newclass(ClassInfo ci);
 

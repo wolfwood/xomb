@@ -13,18 +13,18 @@ import config;
 
 import gdb.kgdb_stub;
 
-import core.elf;
-import core.system;
-import core.util;
-import multiboot = core.multiboot;
+import kernel.core.elf;
+import kernel.core.system;
+import kernel.core.util;
+import multiboot = kernel.core.multiboot;
 
 import syscall = kernel.syscall;
 import kernel.vga;
 static import gdt = kernel.gdt;
 static import idt = kernel.idt;
 
-import vmem = mem.vmem;
-import pmem = mem.pmem;
+import vmem = kernel.mem.vmem;
+import pmem = kernel.mem.pmem;
 
 import locks = kernel.locks;
 

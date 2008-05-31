@@ -4,15 +4,15 @@
  */
 
 
-module mem.vmem;
+module kernel.mem.vmem;
 
 import kernel.vga;
 import kernel.error;
 import config;
-import core.util;
-import core.multiboot;
-import pmem = mem.pmem;
-import mem.vmem_structs; 
+import kernel.core.util;
+import kernel.core.multiboot;
+import pmem = kernel.mem.pmem;
+import kernel.mem.vmem_structs; 
 static import idt = kernel.idt;
 
 // CONST for page size

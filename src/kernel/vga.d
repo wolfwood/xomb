@@ -5,8 +5,8 @@ through VGA.
 
 module kernel.vga;
 
-import core.system;
-import core.util;
+import kernel.core.system;
+import kernel.core.util;
 
 import std.c.stdarg;
 import gcc.builtins;

@@ -6,9 +6,9 @@ module kernel.idt;
 import kernel.vga;
 static import gdt = kernel.gdt;
 
-import core.util;
+import kernel.core.util;
 
-import mem.vmem;
+import kernel.mem.vmem;
 
 alias gdt.IntGateDesc64 IDTEntry;
 

@@ -1,7 +1,7 @@
 
 module std.typeinfo.ti_Ashort;
 
-import core.system;
+import kernel.core.system;
 
 // short[]
 

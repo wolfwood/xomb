@@ -1,6 +1,6 @@
 module user.syscall;
 
-import core.util;
+import kernel.core.util;
 import kernel.vga;
 
 enum SyscallID : ulong

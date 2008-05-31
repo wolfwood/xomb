@@ -1,4 +1,4 @@
-module core.util;
+module kernel.core.util;
 
 /**
 This method checks to see if the value stored in the bit number declared

@@ -5,13 +5,13 @@
  */
 
 
-module mem.pmem;
+module kernel.mem.pmem;
 
 import kernel.vga;
-import core.util;
-import core.multiboot;
+import kernel.core.util;
+import kernel.core.multiboot;
 import config;
-import vmem = mem.vmem;
+import vmem = kernel.mem.vmem;
 
 static import idt = kernel.idt;
 

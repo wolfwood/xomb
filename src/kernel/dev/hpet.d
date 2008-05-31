@@ -2,7 +2,7 @@
 module kernel.dev.hpet;
 
 import kernel.error;
-import core.util;
+import kernel.core.util;
 
 template Tmaker(uint ID)
 {

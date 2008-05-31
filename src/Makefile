@@ -35,20 +35,20 @@ LDFLAGS = -nostdlib -nodefaultlibs -b elf64-x86-64 -T linker.ld
 APP_LDFLAGS = -nostdlib -nodefaultlibs -b elf64-x86-64 
 
 # file list
-ASM = boot/boot.S boot/load.S
+ASM = kernel/boot/boot.S kernel/boot/load.S
 
-DFILES = kernel/kmain.d kernel/vga.d core/system.d core/multiboot.d kernel/idt.d kernel/gdt.d kernel/syscall.d gdb/kgdb_support.d gdb/kgdb_stub.d mem/vmem.d mem/vmem_structs.d mem/pmem.d config.d core/util.d user/syscall.d kernel/error.d kernel/dev/hpet.d kernel/locks.d
+DFILES = kernel/kmain.d kernel/vga.d kernel/core/system.d kernel/core/multiboot.d kernel/idt.d kernel/gdt.d kernel/syscall.d gdb/kgdb_support.d gdb/kgdb_stub.d kernel/mem/vmem.d kernel/mem/vmem_structs.d kernel/mem/pmem.d config.d kernel/core/util.d user/syscall.d kernel/error.d kernel/dev/hpet.d kernel/locks.d
 
-RTFILES := $(shell ls std/typeinfo/*.d) object.d core/invariant.d core/dstubs.d std/c/stdarg.d
+RTFILES := $(shell ls std/typeinfo/*.d) object.d kernel/core/invariant.d kernel/core/dstubs.d std/c/stdarg.d
 APP := application/application.d
 OBJS = $(ASM:.S=.o) $(DFILES:.d=.o) $(RTFILES:.d=.o)
 
 # vars
 KERNEL_IMG = xomb
 GRUB_IMG = stage2_eltorito
-GRUB_PATH = boot/grub/
+GRUB_PATH = kernel/boot/grub/
 GRUB_CONFIG = menu.lst
-BOOT_PATH = boot/
+BOOT_PATH = kernel/boot/
 ISO_PATH = iso/
 ISO_NAME = xomb.iso
 
