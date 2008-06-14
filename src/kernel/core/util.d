@@ -162,7 +162,12 @@ Sees if a type is a pointer.
 */
 template isPointerType(T)
 {
-	const bool isPointerType = (is(typeof(*T)) && !isArrayType!(T)) || is(T == void*);
+	const bool isPointerType = false;
+}
+
+template isPointerType(T : T*)
+{
+	const bool isPointerType = true;	
 }
 
 /**

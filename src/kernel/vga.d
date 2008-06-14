@@ -159,7 +159,7 @@ private
 	}
 }
 
-/** This structure contains informatino aobut the console, including
+/** This structure contains information aobut the console, including
 the number of columns and lines a standard screen should contain.
 Also, it contains information about the standard and default colors, as well as the
 initial position for the cursor when the kernel first executes.
@@ -388,6 +388,58 @@ static:
 		{
 			mixin(ConvertFormat!(Format, Args));
 			putchar('\n');
+		}
+	}
+	
+	void printStruct(T)(ref T s, bool recursive = false, ulong indent = 0)
+	{
+		static assert(is(T == struct), "printStruct - Type must be a struct");
+		
+		void tabs()
+		{
+			for(ulong i = 0; i < indent; i++)
+				putchar('\t');
+		}
+
+		alias FieldNames!(T) fieldNames;
+		
+		tabs();
+		indent++;
+		kprintfln!(T.stringof ~ " (0x{x})")(&s);
+
+		foreach(i, _; s.tupleof)
+		{
+			alias typeof(s.tupleof[i]) fieldType;
+			const fieldName = fieldNames[i];
+
+			static if(is(fieldType == struct) ||
+				(isPointerType!(fieldType) && is(typeof(*fieldType) == struct)))
+			{
+				if(recursive)
+				{
+					printString(fieldName);
+					printString(":\n");
+
+					static if(isPointerType!(fieldType))
+						printStruct(*s.tupleof[i], true, indent);
+					else
+						printStruct(s.tupleof[i], true, indent);
+				}
+				else
+				{
+					tabs();
+
+					static if(isPointerType!(fieldType))
+						kprintfln!(fieldName ~ " = {x}")(s.tupleof[i]);
+					else
+						kprintfln!(fieldType.stringof ~ " " ~ fieldName ~ " (struct)");
+				}
+			}
+			else
+			{
+				tabs();
+				kprintfln!(fieldName ~ " = {x}")(s.tupleof[i]);
+			}
 		}
 	}
 }
