@@ -2,6 +2,9 @@
 module kernel.dev.mp;
 
 import kernel.error;
+import kernel.mem.vmem_structs;
+import kernel.core.util;
+import kernel.vga;
 
 align(1) struct mpFloatingPointer {
 	uint signature;
@@ -69,7 +72,7 @@ align(1) struct ioInterruptEntry {
 	ubyte destinationIOAPICID;
 	ubyte destinationIOAPICIntin;
 
-	mixin(Bitfield!(polarityAndTrigger, "po", 2, "el", 2, "reserved2",6));
+	mixin(Bitfield!(ioInterruptFlag, "po", 2, "el", 2, "reserved2",4));
 }
 
 align(1) struct localInterruptEntry {
@@ -82,7 +85,7 @@ align(1) struct localInterruptEntry {
 	ubyte destinationLocalAPICID;
 	ubyte destinationLocalAPICLintin;
 
-	mixin(Bitfield!(polarityAndTrigger, "po", 2, "el", 2, "reserved2",6));
+	mixin(Bitfield!(localInterruptFlag, "po", 2, "el", 2, "reserved2",4));
 }
 
 //extended mp configuration table entries
@@ -103,7 +106,7 @@ align(1) struct busHierarchyDescriptor {
 	ubyte parentBus;
 	ubyte[3] reserved;
 
-	mixin(Bitfield!(busInformation, "sd", 1, "reserved2"));
+	mixin(Bitfield!(busInformation, "sd", 1, "reserved2", 7));
 }
 
 align(1) struct compatibilityBusAddressSpaceModifier {
@@ -114,4 +117,18 @@ align(1) struct compatibilityBusAddressSpaceModifier {
 	uint predefinedRangeList;
 
 	mixin(Bitfield!(addressModifier, "pr", 1, "reserved", 7));
+}
+
+ErrorVal init(mem_region possibleLocations)
+{
+	for(int i = 0; i < 3; i++)
+	{
+		ubyte* virtualAddress = cast(ubyte*)possibleLocations.virtual_start + (possibleLocations.physical_start + possibleLocations.length - 1024);
+		char[] test = cast(char[])virtualAddress[0..4];
+		if(test[0] == '_')
+		{
+			kprintfln!("found _")();
+		}
+	}
+	return ErrorVal.Success;
 }
