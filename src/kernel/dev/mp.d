@@ -6,6 +6,15 @@ import kernel.mem.vmem_structs;
 import kernel.core.util;
 import kernel.vga;
 
+const ulong maxProcessorEntries = 255;
+const ulong maxBusEntries = 255;
+const ulong maxIOAPICEntries = 255;
+const ulong maxIOInterruptEntries = 255;
+const ulong maxLocalInterruptEntries = 255;
+const ulong maxSystemAddressSpaceMappingEntries = 255;
+const ulong maxBusHierarchyDescriptorEntries = 255;
+const ulong maxCompatibilityBusAddressSpaceModifierEntries = 255;
+
 align(1) struct mpFloatingPointer {
 	uint signature;
 	uint mpConfigPointer;
@@ -89,7 +98,7 @@ align(1) struct localInterruptEntry {
 }
 
 //extended mp configuration table entries
-align(1) struct systemAddressSpaceMapping {
+align(1) struct systemAddressSpaceMappingEntry {
 	ubyte entryType = 128;
 	ubyte entryLength = 20;
 	ubyte busID;
@@ -98,7 +107,7 @@ align(1) struct systemAddressSpaceMapping {
 	ulong addressLength;
 }
 
-align(1) struct busHierarchyDescriptor {
+align(1) struct busHierarchyDescriptorEntry {
 	ubyte entryType = 129;
 	ubyte entryLength = 8;
 	ubyte busID;
@@ -109,7 +118,7 @@ align(1) struct busHierarchyDescriptor {
 	mixin(Bitfield!(busInformation, "sd", 1, "reserved2", 7));
 }
 
-align(1) struct compatibilityBusAddressSpaceModifier {
+align(1) struct compatibilityBusAddressSpaceModifierEntry {
 	ubyte entryType = 130;
 	ubyte entryLength = 8;
 	ubyte busID;
@@ -119,16 +128,79 @@ align(1) struct compatibilityBusAddressSpaceModifier {
 	mixin(Bitfield!(addressModifier, "pr", 1, "reserved", 7));
 }
 
-ErrorVal init(mem_region possibleLocations)
+struct mpBase {
+	mpFloatingPointer* pointerTable;
+	mpConfigurationTable* configTable;
+	processorEntry*[maxProcessorEntries] processors;
+	busEntry*[maxBusEntries] buses;
+	ioAPICEntry*[maxIOAPICEntries] ioApics;
+	ioInterruptEntry*[maxIOInterruptEntries] ioInterrupts;
+	localInterruptEntry*[maxLocalInterruptEntries] localInterrupts;
+	systemAddressSpaceMappingEntry*[maxSystemAddressSpaceMappingEntries] systemAddressSpaceMapping;
+	busHierarchyDescriptorEntry*[maxBusHierarchyDescriptorEntries] busHierarchyDescriptors;
+	compatibilityBusAddressSpaceModifierEntry*[maxCompatibilityBusAddressSpaceModifierEntries] compatibilityBusAddressSpaceModifiers;
+}
+
+private mpBase mpInformation;
+
+ErrorVal init(mem_region extendedBiosRegion, mem_region systemBaseMemory, mem_region biosROM)
 {
-	for(int i = 0; i < 3; i++)
+	ubyte* virtualAddress = cast(ubyte*)systemBaseMemory.virtual_start + (systemBaseMemory.physical_start + systemBaseMemory.length - 1024);
+	ubyte* virtualEnd = virtualAddress + 1024;
+	mpFloatingPointer* tmp = scan(virtualAddress,virtualEnd);
+	if(tmp == null)
 	{
-		ubyte* virtualAddress = cast(ubyte*)possibleLocations.virtual_start + (possibleLocations.physical_start + possibleLocations.length - 1024);
-		char[] test = cast(char[])virtualAddress[0..4];
-		if(test[0] == '_')
+		virtualAddress = cast(ubyte*)extendedBiosRegion.virtual_start + extendedBiosRegion.physical_start;
+		virtualEnd = virtualAddress + 1024;
+		tmp = scan(virtualAddress,virtualEnd);
+		if(tmp == null)
 		{
-			kprintfln!("found _")();
+			virtualAddress = cast(ubyte*)biosROM.virtual_start + (biosROM.physical_start+0xF0000);
+			virtualEnd = virtualAddress + 0xffff;
+			tmp = scan(virtualAddress,virtualEnd);
+			if(tmp == null)
+			{
+				return ErrorVal.CannotFindMPFloatingPointerStructure;
+			}
 		}
 	}
+	mpInformation.pointerTable = tmp;
+	printStruct(*mpInformation.pointerTable);
 	return ErrorVal.Success;
+}
+
+mpFloatingPointer* scan(ubyte* start, ubyte* end)
+{
+	mpFloatingPointer* result = null;
+	for(ubyte* currentByte = start; currentByte < end-3; currentByte++)
+	{
+		if(*cast(char*)currentByte == '_')
+		{
+			if(*cast(char*)(currentByte-=1) == 'M')
+			{
+				if(*cast(char*)(currentByte+=2) == 'P')
+				{
+					if(*cast(char*)(currentByte+=3) == '_')
+					{
+						currentByte-=4;
+						result = cast(mpFloatingPointer*)currentByte;
+						break;
+					}
+					else
+					{
+						currentByte-=3;
+					}
+				}
+				else
+				{
+					currentByte-=2;
+				}
+			}
+			else
+			{
+				currentByte-=1;
+			}
+		}
+	}
+	return result;
 }

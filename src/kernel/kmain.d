@@ -130,6 +130,16 @@ extern(C) void kmain(uint magic, uint addr)
 	vmem.free_page(t2);
 	vmem.free_page(t3);
 
+
+	struct S
+	{
+		int x = 5;
+		char[] name = "hi!";
+	}
+
+	//S s;
+	//printStruct(s);
+
 	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
 	{
 		kprintfln!("Your computer is not cool enough, we need SYSCALL and SYSRET.")();

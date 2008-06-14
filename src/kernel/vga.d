@@ -369,7 +369,7 @@ static:
 
 	void printPointer(void* p, char[] fmt)
 	{
-		//putstr("0x");
+		putstr("0x");
 		char[20] buf;
 		putstr(itoa(buf, 'x', cast(ulong)p));
 	}
@@ -405,22 +405,19 @@ static:
 		
 		tabs();
 		indent++;
-		kprintfln!(T.stringof ~ " (0x{x})")(&s);
+		kprintfln!(T.stringof ~ " (0x{})")(&s);
 
 		foreach(i, _; s.tupleof)
 		{
-			alias typeof(s.tupleof[i]) fieldType;
-			const fieldName = fieldNames[i];
-
-			static if(is(fieldType == struct) ||
-				(isPointerType!(fieldType) && is(typeof(*fieldType) == struct)))
+			/*static if(is(typeof(s.tupleof[i]) == struct) ||
+				(isPointerType!(typeof(s.tupleof[i])) && is(typeof(*s.tupleof[i]) == struct)))
 			{
 				if(recursive)
 				{
-					printString(fieldName);
+					printString(fieldNames[i]);
 					printString(":\n");
 
-					static if(isPointerType!(fieldType))
+					static if(isPointerType!(typeof(s.tupleof[i])))
 						printStruct(*s.tupleof[i], true, indent);
 					else
 						printStruct(s.tupleof[i], true, indent);
@@ -429,16 +426,16 @@ static:
 				{
 					tabs();
 
-					static if(isPointerType!(fieldType))
-						kprintfln!(fieldName ~ " = {x}")(s.tupleof[i]);
+					static if(isPointerType!(typeof(s.tupleof[i])))
+						kprintfln!(fieldNames[i] ~ " = {x}")(s.tupleof[i]);
 					else
-						kprintfln!(fieldType.stringof ~ " " ~ fieldName ~ " (struct)");
+						kprintfln!(fieldType.stringof ~ " " ~ fieldNames[i] ~ " (struct)");
 				}
 			}
-			else
+			else*/
 			{
 				tabs();
-				kprintfln!(fieldName ~ " = {x}")(s.tupleof[i]);
+				//kprintfln!(fieldNames[i] ~ " = {}")(s.tupleof[i]);
 			}
 		}
 	}
