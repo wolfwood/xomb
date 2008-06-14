@@ -21,5 +21,5 @@ Contents:
 
 /src/iso		   <- ISO image of the kernel once its built
 
-/src/gcc		   <- Guts n Magic so that the compiler won't die when trying to build
+/src/gcc		   <- Guts 'n Magic so that the compiler won't die when trying to build
 				   -- This is a DO NOT TOUCH directory (unless you know what you're doing)
