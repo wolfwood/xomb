@@ -447,6 +447,7 @@ static:
 /// Create aliases so that we do not have to constantly call "Console.kprintf," but can simply call "printf."
 alias Console.kprintf kprintf;
 alias Console.kprintfln kprintfln;
+alias Console.printStruct printStruct;
 
 extern(C) void kprintString(char* s)
 {
