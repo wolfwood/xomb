@@ -46,9 +46,9 @@ OBJS = $(ASM:.S=.o) $(DFILES:.d=.o) $(RTFILES:.d=.o)
 # vars
 KERNEL_IMG = xomb
 GRUB_IMG = stage2_eltorito
-GRUB_PATH = kernel/boot/grub/
+GRUB_PATH = boot/grub/
 GRUB_CONFIG = menu.lst
-BOOT_PATH = kernel/boot/
+BOOT_PATH = boot/
 ISO_PATH = iso/
 ISO_NAME = xomb.iso
 

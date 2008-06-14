@@ -132,7 +132,7 @@ void free_phys_page(void* address) {
 	
 	bitmap[byte_num] &= (~mask);
 	
-	kprintfln!("Returning bit {}; in byte {} of page {}\n")(bit_num, byte_num, page);
+	//kprintfln!("Returning bit {}; in byte {} of page {}\n")(bit_num, byte_num, page);
 }
 
 void test_pmem()

@@ -238,7 +238,31 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 	auto multi_boot_struct = cast(multiboot_info_t*)mmap_addr;
 	memory_map_t[] mmap = (cast(memory_map_t*)multi_boot_struct.mmap_addr)[0 .. (multi_boot_struct.mmap_length / memory_map_t.sizeof)];
 	auto bios_regions = mmap[$-1];
-	kprintfln!("Bios region = {}")(bios_regions.size_of);
+	kprintfln!("Bios region = 0x{x}")(bios_regions.size_of);
+	kprintfln!("FUCK!")();
+	// pml2[] allPhys = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
+	
+	// allPhys[] = pml2.init;
+	// pageLevel3[VM_BASE_INDEX].pml3e = cast(ulong)allPhys.ptr;
+	// pageLevel3[VM_BASE_INDEX].pml3e |= 0x7;
+
+	// addr = 0x00;
+	// // Do da mappin'
+	// for(int i = 0, j = 0; i < (pmem.mem_size / PAGE_SIZE); i += 512, j++) {
+	// 	// Make some page table entries
+	// 	pml1[] pageLevel1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
+		
+	// 	// Set pml2e to the pageLevel 1 entry
+	// 	allPhys[j].pml2e = cast(ulong)pageLevel1.ptr;
+	// 	allPhys[j].pml2e |= 0x7;
+		
+	// 	// Now map all the physical addresses :)  YAY!
+	// 	for(int z = 0; z < 512; z++) {
+	// 		pageLevel1[z].pml1e = addr;
+	// 		pageLevel1[z].pml1e |= 0x87;
+	// 		addr += 4096;
+	// 	}
+	// }
 
 	//kprintfln!("kernel_vm_end = {x}")(kernel_vm_end);
 	
