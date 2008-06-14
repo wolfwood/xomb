@@ -7,5 +7,6 @@ enum ErrorVal {
 	Fail,
 	NoSpace,
 	BadInputs,
-	PageMapError
+	PageMapError,
+	CannotFindMPFloatingPointerStructure
 }
