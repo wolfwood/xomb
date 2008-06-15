@@ -239,9 +239,8 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 	memory_map_t[] mmap = (cast(memory_map_t*)multi_boot_struct.mmap_addr)[0 .. (multi_boot_struct.mmap_length / memory_map_t.sizeof)];
 	auto bios_regions = mmap[$-1];
 	kprintfln!("Bios region = 0x{x}")(bios_regions.size_of);
-	kprintfln!("FUCK!")();
 	// pml2[] allPhys = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
-	
+
 	// allPhys[] = pml2.init;
 	// pageLevel3[VM_BASE_INDEX].pml3e = cast(ulong)allPhys.ptr;
 	// pageLevel3[VM_BASE_INDEX].pml3e |= 0x7;
