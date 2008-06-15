@@ -182,6 +182,8 @@ static:
 	private int ypos = 0;
 	/// The default set of colors the kernel is capable of using when printing to the screen.
 	private ubyte colors = DefaultColors;
+	/// The width of a tab.  It's 4, goddammit.
+	const Tabstop = 4;
 
 	/**
 	This method clears the screen and returns the cursor to its default position.
@@ -218,14 +220,19 @@ static:
 				return;
 		}
 
-		/// Set the current piece of video memory to the character to print.
-		volatile *(VideoMem + (xpos + ypos * Columns) * 2) = c & 0xFF;
-		volatile *(VideoMem + (xpos + ypos * Columns) * 2 + 1) = colors;
-	
-		/// Increase the cursor position.
-		xpos++;
-	
-		/// If you have reached the end of the screen, create a new line (declared above).
+		if(c == '\t')
+			xpos += Tabstop;
+		else
+		{
+			// Set the current piece of video memory to the character to print.
+			volatile *(VideoMem + (xpos + ypos * Columns) * 2) = c & 0xFF;
+			volatile *(VideoMem + (xpos + ypos * Columns) * 2 + 1) = colors;
+
+			// Increase the cursor position.
+			xpos++;
+		}
+
+		// If you have reached the end of the screen, create a new line (declared above).
 		if(xpos >= Columns)
 			goto newline;
 	}
@@ -260,7 +267,6 @@ static:
 		colors &= newcol | 0xF0;
 	}
 
-	
 	/**
 	 Sets the current text background to a new color.
 		Params:
@@ -405,37 +411,52 @@ static:
 		
 		tabs();
 		indent++;
-		kprintfln!(T.stringof ~ " (0x{})")(&s);
+		kprintfln!(T.stringof ~ " ({})")(&s);
 
 		foreach(i, _; s.tupleof)
 		{
-			/*static if(is(typeof(s.tupleof[i]) == struct) ||
+			static if(is(typeof(s.tupleof[i]) == struct) ||
 				(isPointerType!(typeof(s.tupleof[i])) && is(typeof(*s.tupleof[i]) == struct)))
 			{
+				tabs();
+
 				if(recursive)
 				{
-					printString(fieldNames[i]);
-					printString(":\n");
+					putstr(fieldNames[i]);
+					putstr(": ");
 
 					static if(isPointerType!(typeof(s.tupleof[i])))
-						printStruct(*s.tupleof[i], true, indent);
+					{
+						if(s.tupleof[i] is null)
+							putstr("(null)\n");
+						else
+						{
+							putchar('\n');
+							printStruct(*s.tupleof[i], true, indent);
+						}
+					}
 					else
+					{
+						putchar('\n');
 						printStruct(s.tupleof[i], true, indent);
+					}
 				}
 				else
 				{
-					tabs();
-
 					static if(isPointerType!(typeof(s.tupleof[i])))
 						kprintfln!(fieldNames[i] ~ " = {x}")(s.tupleof[i]);
 					else
 						kprintfln!(fieldType.stringof ~ " " ~ fieldNames[i] ~ " (struct)");
 				}
 			}
-			else*/
+			else
 			{
 				tabs();
-				//kprintfln!(fieldNames[i] ~ " = {}")(s.tupleof[i]);
+
+				static if(isIntType!(typeof(s.tupleof[i])))
+					kprintfln!(fieldNames[i] ~ " = 0x{x}")(s.tupleof[i]);
+				else
+					kprintfln!(fieldNames[i] ~ " = {}")(s.tupleof[i]);
 			}
 		}
 	}
