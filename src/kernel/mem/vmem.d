@@ -22,6 +22,9 @@ const ulong VM_BASE_ADDR = 0xFFFFFF8000000000; // Base address for virtual addre
 const ulong VM_BASE_INDEX = 0;	// This index is where on the pageLevel3[] the physical memory should start to be mapped in
                                 // Changing this value WILL IMPACT THE VALUE ABOVE IT!!!!!!!!! 
 
+const ulong VM_BIOS_REGION_INDEX = 33;   // Arbitrary! index in to the table where we map the bios regions in at.  This is probably temporary because..
+// We're really like to map the bios regions in at the end of our mapped physical memory, or at the end of physical memory or something...
+
 // Entry point in to the page table
 pml4[] pageLevel4;
 
@@ -30,6 +33,9 @@ pml4[] pageLevel4;
 // table.  To do this we must keep track of the location of that level3
 // in a variable called kernel_mapping
 pml3[] kernel_mapping;
+
+// Global for bios regions
+mem_region bios_region_t;
 
 
 /* Handle faults -- the fault handler
@@ -217,8 +223,11 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 	pageLevel3[VM_BASE_INDEX].pml3e |= 0x7;
 
 	addr = 0x00;
+	auto counti = 0;
+	auto countj = 0;
+
 	// Do da mappin'
-	for(int i = 0, j = 0; i < (pmem.mem_size / PAGE_SIZE); i += 512, j++) {
+	for(int i, j = 0; i < (pmem.mem_size / PAGE_SIZE); i += 512, j++) {
 		// Make some page table entries
 		pml1[] pageLevel1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
 		
@@ -232,45 +241,13 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 			pageLevel1[z].pml1e |= 0x87;
 			addr += 4096;
 		}
-	}
 
-	// Also map in importent regions for James to make timers with
-	auto multi_boot_struct = cast(multiboot_info_t*)mmap_addr;
-	memory_map_t[] mmap = (cast(memory_map_t*)multi_boot_struct.mmap_addr)[0 .. (multi_boot_struct.mmap_length / memory_map_t.sizeof)];
-	auto bios_regions = mmap[$-1];
-	kprintfln!("Bios region = 0x{x}")(bios_regions.size_of);
-	// pml2[] allPhys = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
-
-	// allPhys[] = pml2.init;
-	// pageLevel3[VM_BASE_INDEX].pml3e = cast(ulong)allPhys.ptr;
-	// pageLevel3[VM_BASE_INDEX].pml3e |= 0x7;
-
-	// addr = 0x00;
-	// // Do da mappin'
-	// for(int i = 0, j = 0; i < (pmem.mem_size / PAGE_SIZE); i += 512, j++) {
-	// 	// Make some page table entries
-	// 	pml1[] pageLevel1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
-		
-	// 	// Set pml2e to the pageLevel 1 entry
-	// 	allPhys[j].pml2e = cast(ulong)pageLevel1.ptr;
-	// 	allPhys[j].pml2e |= 0x7;
-		
-	// 	// Now map all the physical addresses :)  YAY!
-	// 	for(int z = 0; z < 512; z++) {
-	// 		pageLevel1[z].pml1e = addr;
-	// 		pageLevel1[z].pml1e |= 0x87;
-	// 		addr += 4096;
-	// 	}
-	// }
-
-	//kprintfln!("kernel_vm_end = {x}")(kernel_vm_end);
-	
-	//kprintfln!("kernel_size in pages = {}")(kernel_size);
-	//kprintfln!("kernel_size in bytes = {}")(kernel_size * PAGE_SIZE);
-	//kprintfln!("PageLevel 4 addr = {}")(pageLevel4.ptr);
-	//kprintfln!("Pagelevel 3 addr = {}, {x}")(pageLevel3.ptr, pageLevel4[511].pml4e);
-	//kprintfln!("Pagelevel 2 addr = {}, {x}")(pageLevel2.ptr, pageLevel3[510].pml3e);
-	//kprintfln!("Pagelevel 1 addr = {x}")(pageLevel2[0].pml2e);
+	kprintfln!("kernel_size in pages = {}")(kernel_size);
+	kprintfln!("kernel_size in bytes = {}")(kernel_size * PAGE_SIZE);
+	kprintfln!("PageLevel 4 addr = {}")(pageLevel4.ptr);
+	kprintfln!("Pagelevel 3 addr = {}, {x}")(pageLevel3.ptr, pageLevel4[511].pml4e);
+	kprintfln!("Pagelevel 2 addr = {}, {x}")(pageLevel2.ptr, pageLevel3[510].pml3e);
+	kprintfln!("Pagelevel 1 addr = {x}")(pageLevel2[0].pml2e);
 	
 	pml1[] tmp = (cast(pml1*)(pageLevel2[1].pml2e - 0x7))[0 .. 512];
 	

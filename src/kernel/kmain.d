@@ -25,6 +25,7 @@ static import idt = kernel.idt;
 
 import vmem = kernel.mem.vmem;
 import pmem = kernel.mem.pmem;
+import kernel.mem.vmem_structs;
 
 import locks = kernel.locks;
 
@@ -114,21 +115,21 @@ extern(C) void kmain(uint magic, uint addr)
 	void* t2 = cast(void*)0x0000000000110000;
 	void* t3 = cast(void*)0x0000000000100000;
 
-	int test = vmem.get_page(t);
-	int test2 = vmem.get_page(t2);
-	int test3 = vmem.get_page(t3);
+	//int test = vmem.get_page(t);
+	//int test2 = vmem.get_page(t2);
+	//int test3 = vmem.get_page(t3);
 
-	kprintfln!("test1 = {}")(test);
-	kprintfln!("test2 = {}")(test2);
-	kprintfln!("test3 = {}")(test3);
-	vmem.free_page(t);
-	test = vmem.get_page(t);
+	//kprintfln!("test1 = {}")(test);
+	//kprintfln!("test2 = {}")(test2);
+	//kprintfln!("test3 = {}")(test3);
+	//vmem.free_page(t);
+	//test = vmem.get_page(t);
 	//kprintfln!("virtual page requested a second time, address = {x}")(test);
 	//kprintfln!("releasing test1")();
-	vmem.free_page(t);
+	//vmem.free_page(t);
 	//kprintfln!("releasing test2")();
-	vmem.free_page(t2);
-	vmem.free_page(t3);
+	//vmem.free_page(t2);
+	//vmem.free_page(t3);
 
 	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
 	{
@@ -136,16 +137,21 @@ extern(C) void kmain(uint magic, uint addr)
 		asm { cli; hlt; }
 	}
 
-	kprintfln!("Setting lstar, star and SF_MASK...")();
+	//kprintfln!("Setting lstar, star and SF_MASK...")();
 
 	syscall.setHandler(&syscall.syscallHandler);
 
 	// TESTING MUTEXES
-	kprintfln!("Starting kmutex test")();
+	//kprintfln!("Starting kmutex test")();
 	int failcode = locks.test_kmutex();
-	kprintfln!("KMUTEX test code (0 is good): {}")(failcode);
+	//kprintfln!("KMUTEX test code (0 is good): {}")(failcode);
 	//want to see the result:   
 	//return;
+
+	kprintfln!("Testing bios memory regions!")();
+	kprintfln!("Bios region phys_start / length / virt_start = 0x{x} / 0x{x} / 0x{x}")(global_mem_regions_t.system_memory.physical_start, 
+																				  global_mem_regions_t.system_memory.length,
+																				  global_mem_regions_t.system_memory.virtual_start);
 	
 	kprintfln!("JUMPING TO USER MODE!!!")();
 

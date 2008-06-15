@@ -36,8 +36,8 @@ void setup_pmem_bitmap(uint addr) {
 		mem_size = endAddr;
 
 		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
-		kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
-		kprintfln!("mods_end = 0x{x}")(endAddr);
+		//kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
+		//kprintfln!("mods_end = 0x{x}")(endAddr);
 
 		// If endAddr is aligned already we'll just add 0, so no biggie
 		// Address of where to start pages
@@ -45,18 +45,18 @@ void setup_pmem_bitmap(uint addr) {
 		// Free space avail for pages
 		ulong pages_free_size = (cast(ulong)mbi.mem_upper * 1024) - cast(ulong)pages_start_addr;		// Free space available to us
 
-		kprintfln!("Free space avail : {}KB")(pages_free_size / 1024);
+		//kprintfln!("Free space avail : {}KB")(pages_free_size / 1024);
 		
 		
-		kprintfln!("pages_start_addr = 0x{x}")(pages_start_addr);
-		kprintfln!("Mem upper = {u}KB")(mbi.mem_upper);
+		//kprintfln!("pages_start_addr = 0x{x}")(pages_start_addr);
+		//kprintfln!("Mem upper = {u}KB")(mbi.mem_upper);
 		
 		// Page allocator
 		// Find the total number of pages in the system
 		// Determine bitmap size
 		// Total number of pages in teh system
 		ulong num_pages =  (mbi.mem_upper * 1024) / PAGE_SIZE;
-		kprintfln!("Num of pages = {}")(num_pages);
+		//kprintfln!("Num of pages = {}")(num_pages);
 		
 		// Size the bitmap needs to be
 		ulong bitmap_size = (num_pages / 8);			// Bitmap size in bytes
@@ -64,7 +64,7 @@ void setup_pmem_bitmap(uint addr) {
 			bitmap_size += PAGE_SIZE - (bitmap_size % PAGE_SIZE);	// Pad the size off to keep things page aligned
 		}
 		
-		kprintfln!("Bitmap size in bytes = {}")(bitmap_size);		
+		//kprintfln!("Bitmap size in bytes = {}")(bitmap_size);		
 
 		// Set up bitmap
 		// Return a ulong a ptr to the bitmap
@@ -76,7 +76,7 @@ void setup_pmem_bitmap(uint addr) {
 		// First find the number of pages that are used
 		// Number of used pages to init the mapping
 		ulong num_used = (cast(ulong)pages_start_addr + bitmap_size) / PAGE_SIZE;	// Find number of used pages so far
-		kprintfln!("Number of used pages = {}")(num_used);
+		//kprintfln!("Number of used pages = {}")(num_used);
 
 		// Set the first part of the bitmap to all used
 		bitmap[0 .. num_used / 8] = cast(ubyte)0xFF;

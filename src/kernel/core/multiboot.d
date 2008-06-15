@@ -4,6 +4,8 @@ module kernel.core.multiboot;
 import kernel.vga;
 import kernel.core.util;
 import system = kernel.core.system;
+import kernel.mem.vmem_structs;
+import vmem = kernel.mem.vmem;
 
 /** multiboot.d
 	This file declares structures and constants used by GRUB for the multiboot header.
@@ -182,8 +184,6 @@ int test_mb_header(uint magic, uint addr)
 				cast(uint)mod.mod_start,
 				cast(uint)mod.mod_end,
 				system.toString(cast(char*)mod.string));
-		}
-
 		// Use the jumpTo() method (see below) to execute the first module.
 		//jumpTo(0, multi_boot_struct);
 		//return;
@@ -227,15 +227,56 @@ int test_mb_header(uint magic, uint addr)
 		
 		memory_map_t[] mmap = (cast(memory_map_t*)multi_boot_struct.mmap_addr)[0 .. (multi_boot_struct.mmap_length / memory_map_t.sizeof)];
 
-   		foreach(map; mmap)
+   		foreach(int z, map; mmap)
 		{
-			kprintfln!(" size = 0x{x}, base_addr = 0x{x}{x}, length = 0x{x}{x}, type = 0x{x}")(
+
+			// For sanity...
+			ulong base_addr = map.base_addr_high << 32;
+			base_addr += map.base_addr_low;
+			
+			ulong mem_length = map.length_high << 32;
+			mem_length += map.length_low;
+
+			kprintfln!(" size = 0x{x}, base_addr = 0x{x}, length = 0x{x}, type = 0x{x}")(
 				cast(uint)map.size_of,
-				cast(uint)map.base_addr_high,
-				cast(uint)map.base_addr_low,
-				cast(uint)map.length_high,
-				cast(uint)map.length_low,
+				base_addr,
+				mem_length,
 				cast(uint)map.type);
+
+
+			switch(z) {
+			case 0 :
+				global_mem_regions_t.system_memory.physical_start = base_addr;
+				global_mem_regions_t.system_memory.length = mem_length;
+				global_mem_regions_t.system_memory.virtual_start = base_addr + vmem.VM_BASE_ADDR;
+				break;
+			case 1 :
+				global_mem_regions_t.bios_data.physical_start = base_addr;
+				global_mem_regions_t.bios_data.length = mem_length;
+				global_mem_regions_t.bios_data.virtual_start = base_addr + vmem.VM_BASE_ADDR;
+				break;
+			case 2:
+				global_mem_regions_t.extended_bios_data.physical_start = base_addr;
+				global_mem_regions_t.extended_bios_data.length = mem_length;
+				global_mem_regions_t.extended_bios_data.virtual_start = base_addr + vmem.VM_BASE_ADDR;
+				break;
+			case 3:
+				global_mem_regions_t.extended_memory.physical_start = base_addr;
+				global_mem_regions_t.extended_memory.length = mem_length;
+				global_mem_regions_t.extended_memory.virtual_start = base_addr + vmem.VM_BASE_ADDR;
+				break;
+			case 4: 
+				global_mem_regions_t.device_maps.physical_start = base_addr;
+				global_mem_regions_t.device_maps.length = mem_length;
+				global_mem_regions_t.device_maps.virtual_start = base_addr + vmem.VM_BASE_ADDR;
+				break;
+			default:
+				break;
+			}
+
+		}
+
+
 		}
 	}
 	

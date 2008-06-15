@@ -42,3 +42,15 @@ struct mem_region
 	ulong physical_start;
 	uint length;
 }
+
+
+struct global_mem_regions {
+	mem_region system_memory;
+	mem_region bios_data;
+	mem_region extended_bios_data;
+	mem_region extended_memory;
+	mem_region device_maps;
+} 
+
+// Global mem map regions live here :)
+global_mem_regions global_mem_regions_t;
