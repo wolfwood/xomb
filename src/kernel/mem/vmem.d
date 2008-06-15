@@ -242,12 +242,14 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 			addr += 4096;
 		}
 
-	kprintfln!("kernel_size in pages = {}")(kernel_size);
-	kprintfln!("kernel_size in bytes = {}")(kernel_size * PAGE_SIZE);
-	kprintfln!("PageLevel 4 addr = {}")(pageLevel4.ptr);
-	kprintfln!("Pagelevel 3 addr = {}, {x}")(pageLevel3.ptr, pageLevel4[511].pml4e);
-	kprintfln!("Pagelevel 2 addr = {}, {x}")(pageLevel2.ptr, pageLevel3[510].pml3e);
-	kprintfln!("Pagelevel 1 addr = {x}")(pageLevel2[0].pml2e);
+	}
+
+	//kprintfln!("kernel_size in pages = {}")(kernel_size);
+	//kprintfln!("kernel_size in bytes = {}")(kernel_size * PAGE_SIZE);
+	//kprintfln!("PageLevel 4 addr = {}")(pageLevel4.ptr);
+	//kprintfln!("Pagelevel 3 addr = {}, {x}")(pageLevel3.ptr, pageLevel4[511].pml4e);
+	//kprintfln!("Pagelevel 2 addr = {}, {x}")(pageLevel2.ptr, pageLevel3[510].pml3e);
+	//kprintfln!("Pagelevel 1 addr = {x}")(pageLevel2[0].pml2e);
 	
 	pml1[] tmp = (cast(pml1*)(pageLevel2[1].pml2e - 0x7))[0 .. 512];
 	
@@ -418,3 +420,4 @@ pml1[] spawn_pml1() {
 
 	return pl1[];
 }
+
