@@ -7,7 +7,8 @@ enum SyscallID : ulong
 {
 	Add = 0,
 	AllocPage,
-	Exit
+	Exit,
+	FreePage
 }
 
 enum SyscallError : ulong
@@ -20,14 +21,16 @@ alias Tuple!
 (
 	"add", // Add
 	"allocPage", // AllocPage
-	"exit" // Exit
+	"exit", // Exit
+	"freePage" // FreePage
 ) SyscallNames;
 
 alias Tuple!
 (
 	long, // Add
-	void*, // AllocPage
-	void // Exit
+	ulong, // AllocPage
+	void, // Exit
+	void // FreePage
 ) SyscallRetTypes;
 
 struct AddArgs
@@ -37,12 +40,17 @@ struct AddArgs
 
 struct AllocPageArgs
 {
-	long num;
+	void* va;
 }
 
 struct ExitArgs
 {
 	long retVal;
+}
+
+struct FreePageArgs
+{
+	void* ptr;
 }
 
 // This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason
@@ -66,10 +74,10 @@ extern(C) long nativeSyscall(ulong ID, void* ret, void* params)
 
 	// I assume such in the syscall handler
 	asm
-	{	
+	{
 		naked;
 		"syscall";
-		"xorq %%rax, %%rax";
+		//"xorq %%rax, %%rax";
 		"retq";
 	}
 }

@@ -175,10 +175,17 @@ extern(C) void testUser()
 
 	kprintfln!("In User Mode.")();
 
-	long ret;
+	auto ptr = cast(long*)0x1000;
 
-	ret = user.syscall.add(3, 4);
-	kprintfln!("Once more in user mode. Add: 3 + 4 = {}")(ret);
+	if(cast(SyscallError)user.syscall.allocPage(ptr) == SyscallError.OK)
+	{
+		kprintfln!("!!Page allocation succeeded!!  Testing..")();
+
+		ptr[0] = 5;
+		kprintfln!("ptr[0] = {}")(ptr[0]);
+	}
+	else
+		kprintfln!("Page allocation failed..")();
 
 	user.syscall.exit(0);
 

@@ -6,6 +6,8 @@ import kernel.vga;
 
 import user.syscall;
 import kernel.core.util;
+import kernel.mem.vmem;
+import kernel.error;
 
 /**
 This function declares a handler for system calls. It accepts a pointer to a function (h).
@@ -115,12 +117,15 @@ SyscallError syscallAdd(out long ret, AddArgs* params)
 	return SyscallError.OK;
 }
 
-// void* allocPage(ulong num)
-SyscallError syscallAllocPage(out void* ret, AllocPageArgs* params)
+// void allocPage(void* virtAddr)
+SyscallError syscallAllocPage(out ulong ret, AllocPageArgs* params)
 {
-	kprintfln!("WARNING: allocPage() not yet implemented")();
-	ret = null;
-	return SyscallError.Failcopter;
+	if(get_user_page(params.va) == ErrorVal.Success)
+		ret = SyscallError.OK;
+	else
+		ret = SyscallError.Failcopter;
+		
+	return cast(SyscallError)ret;
 }
 
 // void exit(ulong retval)
@@ -128,4 +133,10 @@ SyscallError syscallExit(ExitArgs* params)
 {
 	kprintfln!("WARNING: exit() not yet implemented")();
 	return SyscallError.Failcopter;
+}
+
+SyscallError syscallFreePage(FreePageArgs* params)
+{
+
+	return SyscallError.OK;
 }

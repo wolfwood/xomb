@@ -269,13 +269,17 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 
 // Function to get a physical page of memory and map it in to virtual memory
 // Returns: 1 on success, -1 on failure
-int get_page(void* vm_address) {
-	
+ErrorVal get_page(bool usermode)(void* vm_address) {
+
 	ulong vm_addr_long = cast(ulong)vm_address;
 	//kprintfln!("The kernel end page addr in physical memory = {x}")(vm_addr_long);
 	
 	// Request a page of physical memory
 	auto phys = pmem.request_phys_page();
+	
+	static if(usermode)
+		kprintfln!("physical address: {}")(phys);
+
 	// Make sure we know where the end of the kernel now is
 					
 	ulong vm_addr = vm_addr_long;
@@ -288,7 +292,7 @@ int get_page(void* vm_address) {
 	vm_addr_long >>= 12;
 
 	long pml_index1 = vm_addr_long & 0x1FF;
-	
+
 	vm_addr_long >>= 9;
 	long pml_index2 = vm_addr_long & 0x1FF;
 	
@@ -303,10 +307,20 @@ int get_page(void* vm_address) {
 	// Check to see if the level 4 [entry] is there (it damn well better be if it does't want to be hit... again)
 
 	if(pageLevel4[pml_index4].pml4e == 0) {
-	  	pl3 = spawn_pml3();
-		pageLevel4[pml_index4].pml4e = (cast(ulong)pl3.ptr) - VM_BASE_ADDR;
-		pageLevel4[pml_index4].pml4e |= 0x7;
+		pl3 = spawn_pml3();
 		
+		with(pageLevel4[pml_index4])
+		{
+			address = (cast(ulong)pl3.ptr) - VM_BASE_ADDR;
+			present = true;
+			rw = true;
+			us = usermode;
+		}
+		
+		kprintfln!("pml4 bits: {x}")(pageLevel4[pml_index4].pml4e);
+
+		//pageLevel4[pml_index4].pml4e = (cast(ulong)pl3.ptr) - VM_BASE_ADDR;
+		//pageLevel4[pml_index4].pml4e |= (usermode ? 0x7 : 0x3);
 	} else {
 		// We know that the pml4 entry is alive and well, so now we need to
 		// set our traversal array variable equal to the pml3 entry...
@@ -315,22 +329,37 @@ int get_page(void* vm_address) {
 
 	if(pl3[pml_index3].pml3e == 0) {
 		pl2 = spawn_pml2();
-		pl3[pml_index3].pml3e = (cast(ulong)pl2.ptr) - VM_BASE_ADDR;
-		pl3[pml_index3].pml3e |= 0x7;
+
+		with(pl3[pml_index3])
+		{
+			address = (cast(ulong)pl2.ptr) - VM_BASE_ADDR;
+			present = true;
+			rw = true;
+			us = usermode;
+		}
+		//pl3[pml_index3].pml3e = (cast(ulong)pl2.ptr) - VM_BASE_ADDR;
+		//pl3[pml_index3].pml3e |= (usermode ? 0x7 : 0x3);
 		//kprintfln!("PL3 ADDY = {}")(pl3.ptr);
 	} else {
 		// We know that the pml3 entry is alive and well, so now we need to
 		// set our traversal array variable equal to the pml2 entry...
 		pl2 = (cast(pml2*)((pl3[pml_index3].pml3e & ~0x7) + VM_BASE_ADDR))[0 .. 512];
 	}
-	
-	
+
 	//kprintfln!("Level 2 index = {}")(pml_index);
 
 	if(pl2[pml_index2].pml2e == 0) {
 		pl1 = spawn_pml1();
-		pl2[pml_index2].pml2e = (cast(ulong)pl1.ptr) - VM_BASE_ADDR;
-		pl2[pml_index2].pml2e |= 0x7;
+
+		with(pl2[pml_index2])
+		{
+			address = (cast(ulong)pl1.ptr) - VM_BASE_ADDR;
+			present = true;
+			rw = true;
+			us = usermode;
+		}
+		//pl2[pml_index2].pml2e = (cast(ulong)pl1.ptr) - VM_BASE_ADDR;
+		//pl2[pml_index2].pml2e |= (usermode ? 0x7 : 0x3);
 	} else {
 		// We know that the pml3 entry is alive and well, so now we need to
 		// set our traversal array variable equal to the pml2 entry...
@@ -341,8 +370,15 @@ int get_page(void* vm_address) {
 
 	// We need to ensure that we aren't writing to a page that is already mapped.
 	if((pl1[pml_index1].pml1e & 0x1) == 0) { // Check to make sure that the page isn't mapped here
-		pl1[pml_index1].pml1e = cast(ulong)phys;
-		pl1[pml_index1].pml1e |= 0x87;
+		with(pl1[pml_index1])
+		{
+			address = cast(ulong)phys;
+			present = true;
+			rw = true;
+			us = usermode;
+		}
+		//pl1[pml_index1].pml1e = cast(ulong)phys;
+		//pl1[pml_index1].pml1e |= (usermode ? 0x87 : 0x83);
 	} else {
 		return ErrorVal.PageMapError;
 	}
@@ -350,6 +386,8 @@ int get_page(void* vm_address) {
 	return ErrorVal.Success;
 }
 
+alias get_page!(false) get_kernel_page;
+alias get_page!(true) get_user_page;
 
 // free_page(void* pageAddr) -- this function will free a virtual page
 // by setting its available bit
