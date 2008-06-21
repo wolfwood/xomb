@@ -3,6 +3,7 @@ module kernel.dev.mp;
 
 import kernel.error;
 import kernel.mem.vmem_structs;
+import vmem = kernel.mem.vmem;
 import kernel.core.util;
 import kernel.vga;
 
@@ -143,64 +144,67 @@ struct mpBase {
 
 private mpBase mpInformation;
 
-ErrorVal init(mem_region extendedBiosRegion, mem_region systemBaseMemory, mem_region biosROM)
+ErrorVal init()
 {
-	ubyte* virtualAddress = cast(ubyte*)systemBaseMemory.virtual_start + (systemBaseMemory.physical_start + systemBaseMemory.length - 1024);
+	ubyte* virtualAddress = cast(ubyte*)global_mem_regions_t.extended_bios_data.virtual_start;
 	ubyte* virtualEnd = virtualAddress + 1024;
+	kprintf!("start {x} :: end {x}\n")(virtualAddress,virtualEnd);
 	mpFloatingPointer* tmp = scan(virtualAddress,virtualEnd);
 	if(tmp == null)
 	{
-		virtualAddress = cast(ubyte*)extendedBiosRegion.virtual_start + extendedBiosRegion.physical_start;
+		virtualAddress = cast(ubyte*)0x9fc00 + vmem.VM_BASE_ADDR;
 		virtualEnd = virtualAddress + 1024;
+		kprintf!("start {x} :: end {x}\n")(virtualAddress,virtualEnd);
 		tmp = scan(virtualAddress,virtualEnd);
 		if(tmp == null)
 		{
-			virtualAddress = cast(ubyte*)biosROM.virtual_start + (biosROM.physical_start+0xF0000);
-			virtualEnd = virtualAddress + 0xffff;
-			tmp = scan(virtualAddress,virtualEnd);
+			//virtualAddress = cast(ubyte*)global_mem_regions_t.bios_data.virtual_start;
+			//virtualEnd = virtualAddress + 0xffff;
+			kprintf!("start {x} :: end {x}\n")(0xF0000+vmem.VM_BASE_ADDR,0xFFFFF+vmem.VM_BASE_ADDR);
+			tmp = scan(cast(ubyte*)0xF0000+vmem.VM_BASE_ADDR,cast(ubyte*)0xFFFFF+vmem.VM_BASE_ADDR);
 			if(tmp == null)
 			{
+				kprintf!("returning error\n")();
 				return ErrorVal.CannotFindMPFloatingPointerStructure;
 			}
 		}
 	}
+	if(tmp == null)
+	{
+		kprintf!("not there")();
+	}
+	else
+	{
+		kprintf!("found it\n")();
+	}
 	mpInformation.pointerTable = tmp;
-	printStruct(*mpInformation.pointerTable);
+	printStruct(*(mpInformation.pointerTable));
+//	kprintf!("{x}\n")(mpInformation.pointerTable.mpConfigPointer);
 	return ErrorVal.Success;
 }
 
 mpFloatingPointer* scan(ubyte* start, ubyte* end)
 {
-	mpFloatingPointer* result = null;
+	//kprintf!("in scan\n")();
 	for(ubyte* currentByte = start; currentByte < end-3; currentByte++)
 	{
-		if(*cast(char*)currentByte == '_')
+		if(cast(char)*currentByte == '_')
 		{
-			if(*cast(char*)(currentByte-=1) == 'M')
+			//kprintf!("found _\n")();
+			if(cast(char)*(currentByte+1) == 'M')
 			{
-				if(*cast(char*)(currentByte+=2) == 'P')
+				//kprintf!("found M\n")();
+				if(cast(char)*(currentByte+2) == 'P')
 				{
-					if(*cast(char*)(currentByte+=3) == '_')
+					//kprintf!("found P\n")();
+					if(cast(char)*(currentByte+3) == '_')
 					{
-						currentByte-=4;
-						result = cast(mpFloatingPointer*)currentByte;
-						break;
-					}
-					else
-					{
-						currentByte-=3;
+						kprintfln!("found _MP_")();
+						return cast(mpFloatingPointer*)currentByte;
 					}
 				}
-				else
-				{
-					currentByte-=2;
-				}
-			}
-			else
-			{
-				currentByte-=1;
 			}
 		}
 	}
-	return result;
+	return null;
 }

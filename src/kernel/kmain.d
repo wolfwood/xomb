@@ -29,6 +29,7 @@ import kernel.mem.vmem_structs;
 
 import locks = kernel.locks;
 
+import mp = kernel.dev.mp;
 /**
 This method sets sets the Input/Output Permission Level to 3, so
 that it will not check the IO permissions bitmap when access is requested.
@@ -153,6 +154,8 @@ extern(C) void kmain(uint magic, uint addr)
 																				  global_mem_regions_t.system_memory.length,
 																				  global_mem_regions_t.system_memory.virtual_start);
 	
+	mp.init();
+
 	kprintfln!("JUMPING TO USER MODE!!!")();
 
 	asm
