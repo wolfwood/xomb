@@ -301,7 +301,7 @@ void install()
 	setCodeSegment64(2, true, 0, true);
 	setDataSegment64(3, true);
 	setDataSegment64(4, true);
-	setSysSegment64(6, 0x67, cast(ulong)&tss_struct, SysSegType64.AvailTSS, 0, true, false, false);
+	setSysSegment64(6, 0x67, (cast(ulong)&tss_struct)-0xFFFFFFFF80000000, SysSegType64.AvailTSS, 0, true, false, false);
 
 	// for SYSCALL and SYSRET
 	setDataSegment64(8, true);
@@ -309,6 +309,8 @@ void install()
 
 	// WTF do we set the RSP0-2 members to?!
 	//tss_struct.rsp0 = tss_struct.rsp1 = tss_struct.rsp2 =
+
+//	gp.base -= 0xFFFFFFFF80000000;
 
 	asm
 	{
