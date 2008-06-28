@@ -80,7 +80,7 @@ extern(C) void kmain(uint magic, uint addr)
 	
 	asm { 
 	
-		sti;
+		//sti;
 
 	}
 

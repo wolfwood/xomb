@@ -311,12 +311,17 @@ ErrorVal get_page(bool usermode)(void* vm_address) {
 		
 		with(pageLevel4[pml_index4])
 		{
-			address = (cast(ulong)pl3.ptr) - VM_BASE_ADDR;
+			// set the whole address, which will also conveniently set the
+			// first 12 flag bits to zero.
+			pml4e = (cast(ulong)pl3.ptr) - VM_BASE_ADDR;
+
+			// set initial bits
 			present = true;
 			rw = true;
 			us = usermode;
 		}
 		
+		kprintfln!("pml4 bits: {x}")((cast(ulong)pl3.ptr) - VM_BASE_ADDR);
 		kprintfln!("pml4 bits: {x}")(pageLevel4[pml_index4].pml4e);
 
 		//pageLevel4[pml_index4].pml4e = (cast(ulong)pl3.ptr) - VM_BASE_ADDR;
@@ -332,7 +337,11 @@ ErrorVal get_page(bool usermode)(void* vm_address) {
 
 		with(pl3[pml_index3])
 		{
-			address = (cast(ulong)pl2.ptr) - VM_BASE_ADDR;
+			// set the whole address, which will also conveniently set the
+			// first 12 flag bits to zero.
+			pml3e = (cast(ulong)pl2.ptr) - VM_BASE_ADDR;
+
+			// set initial bits
 			present = true;
 			rw = true;
 			us = usermode;
@@ -353,7 +362,11 @@ ErrorVal get_page(bool usermode)(void* vm_address) {
 
 		with(pl2[pml_index2])
 		{
-			address = (cast(ulong)pl1.ptr) - VM_BASE_ADDR;
+			// set the whole address, which will also conveniently set the
+			// first 12 flag bits to zero.
+			pml2e = (cast(ulong)pl1.ptr) - VM_BASE_ADDR;
+
+			// set initial bits
 			present = true;
 			rw = true;
 			us = usermode;
@@ -372,7 +385,11 @@ ErrorVal get_page(bool usermode)(void* vm_address) {
 	if((pl1[pml_index1].pml1e & 0x1) == 0) { // Check to make sure that the page isn't mapped here
 		with(pl1[pml_index1])
 		{
-			address = cast(ulong)phys;
+			// set the whole address, which will also conveniently set the
+			// first 12 flag bits to zero.
+			pml1e = cast(ulong)phys;
+
+			// set initial bits
 			present = true;
 			rw = true;
 			us = usermode;
@@ -392,9 +409,10 @@ alias get_page!(true) get_user_page;
 // free_page(void* pageAddr) -- this function will free a virtual page
 // by setting its available bit
 void free_page(void* pageAddr) {
+
 	// Step 1: Traverse page table
-	// Step 2: Set available bit on free'd page
-	// Step 3: Set call free_phys_mem with physical address
+	// Step 2: Set call free_phys_mem with physical address
+	// Step 3: Reset present bit on free'd page
 	// Step 4: profit
 
 	// Shift the page address right 12 bits (skip the crap)
@@ -413,24 +431,28 @@ void free_page(void* pageAddr) {
 	v_address >>= 9;
 	long pml_index4 = v_address & 0x1FF;
 	
-	//kprintfln!("The level 4 index = {}")(index);
-	
+	// Step 1: Traversing the page table
 
+	//kprintfln!("The level 4 index = {}")(index);	
 	pml3[] pl3 = (cast(pml3*)((pageLevel4[pml_index4].pml4e + VM_BASE_ADDR) & ~0x7))[0 .. 512];		
-	//kprintfln!("pl3.ptr = {}")(pl3.ptr);
-	
+
+	//kprintfln!("pl3.ptr = {}")(pl3.ptr);	
 	//kprintfln!("The level 3 index = {}")(index);
 	pml2[] pl2 = (cast(pml2*)((pl3[pml_index3].pml3e + VM_BASE_ADDR) & ~0x7))[0 .. 512];
 	//kprintfln!("The level 2 index = {}")(index);
 
 	pml1[] pl1 = (cast(pml1*)((pl2[pml_index2].pml2e + VM_BASE_ADDR) & ~0x7))[0 .. 512];
 	
-	//kprintfln!("The level 1 index = {}")(index);
-	//kprintfln!("Address of physical shite = {x}")(pl1[pml_index1].pml1e & ~0x87);
-	// This frees the physical page
+	// Step 2: Set call free_phys_mem with physical address
 	pmem.free_phys_page(cast(void*)(pl1[pml_index1].pml1e & ~0x87));
-	// Now lets set the page as available in virtual memory :)
+	
+	// Step 3: Reset present bit on free'd page
+	// Now lets set the page as absent in virtual memory :)
 	pl1[pml_index1].pml1e &= ~0x1;
+
+
+
+	// Step 4: profit?!?!
 
 }
 

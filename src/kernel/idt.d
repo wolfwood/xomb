@@ -39,6 +39,7 @@ IDTEntry[256] Entries;
 
 public void setGate(uint num, gdt.SysSegType64 gateType, ulong funcPtr, uint dplFlags, uint istFlags)
 {
+	funcPtr -= 0xFFFFFFFF80000000;
 	with(Entries[num])
 	{
 		target_lo = funcPtr & 0xFFFF;
@@ -100,6 +101,8 @@ void install()
 	setIntGate(30, &isr30);
 	setIntGate(31, &isr31);
 	setSysGate(0x80, &isr128);
+
+	idtp.base -= 0xFFFFFFFF80000000;
 
 	asm { "lidt (idtp)"; }
 }
