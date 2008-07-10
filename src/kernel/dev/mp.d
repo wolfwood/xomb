@@ -147,13 +147,13 @@ private mpBase mpInformation;
 ErrorVal init()
 {
 	ubyte* virtualAddress = cast(ubyte*)global_mem_regions_t.extended_bios_data.virtual_start;
-	ubyte* virtualEnd = virtualAddress + 1024;
+	ubyte* virtualEnd = virtualAddress + 0x400;
 	kprintf!("start {x} :: end {x}\n")(virtualAddress,virtualEnd);
 	mpFloatingPointer* tmp = scan(virtualAddress,virtualEnd);
 	if(tmp == null)
 	{
-		virtualAddress = cast(ubyte*)0x9fc00 + vmem.VM_BASE_ADDR;
-		virtualEnd = virtualAddress + 1024;
+		virtualAddress = cast(ubyte*)0x9fc00+vmem.VM_BASE_ADDR;
+		virtualEnd = virtualAddress + 0x400;
 		kprintf!("start {x} :: end {x}\n")(virtualAddress,virtualEnd);
 		tmp = scan(virtualAddress,virtualEnd);
 		if(tmp == null)
@@ -161,7 +161,7 @@ ErrorVal init()
 			//virtualAddress = cast(ubyte*)global_mem_regions_t.bios_data.virtual_start;
 			//virtualEnd = virtualAddress + 0xffff;
 			kprintf!("start {x} :: end {x}\n")(0xF0000+vmem.VM_BASE_ADDR,0xFFFFF+vmem.VM_BASE_ADDR);
-			tmp = scan(cast(ubyte*)0xF0000+vmem.VM_BASE_ADDR,cast(ubyte*)0xFFFFF+vmem.VM_BASE_ADDR);
+			tmp = scan(cast(ubyte*)0x0+vmem.VM_BASE_ADDR,cast(ubyte*)0xFFFFF+vmem.VM_BASE_ADDR);
 			if(tmp == null)
 			{
 				kprintf!("returning error\n")();
@@ -199,7 +199,7 @@ mpFloatingPointer* scan(ubyte* start, ubyte* end)
 					//kprintf!("found P\n")();
 					if(cast(char)*(currentByte+3) == '_')
 					{
-						kprintfln!("found _MP_")();
+						kprintfln!("found at {x}")(currentByte);
 						return cast(mpFloatingPointer*)currentByte;
 					}
 				}
