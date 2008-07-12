@@ -310,8 +310,6 @@ void install()
 	// WTF do we set the RSP0-2 members to?!
 	//tss_struct.rsp0 = tss_struct.rsp1 = tss_struct.rsp2 =
 
-	gp.base -= 0xFFFFFFFF80000000;
-
 	asm
 	{
 		"lgdt (gp)";

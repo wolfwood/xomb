@@ -1,4 +1,4 @@
-romimage: file=/usr/share/bochs/BIOS-bochs-latest, address=0xf0000
+romimage: file=/usr/share/bochs/BIOS-bochs-latest
 floppya: 1_44="/Users/jamesll/Documents/PGOS/images/floppy2.img", status=inserted
 megs: 128
 ata1-slave:  type=cdrom, path="./xomb.iso", status=inserted

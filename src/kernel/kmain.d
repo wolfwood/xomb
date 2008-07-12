@@ -76,14 +76,6 @@ extern(C) void kmain(uint magic, uint addr)
 		breakpoint();
 	}
 
-	// Turn general interrupts on, so the computer can deal with errors and faults.
-	
-	asm { 
-	
-		//sti;
-
-	}
-
 	// Clear the screen in order to begin printing.
 	Console.cls();
 
@@ -111,6 +103,14 @@ extern(C) void kmain(uint magic, uint addr)
 	pmem.setup_pmem_bitmap(addr);
 	//pmem.test_pmem();
 	vmem.reinstall_kernel_page_tables(addr);
+
+	// Turn general interrupts on, so the computer can deal with errors and faults.
+	
+	asm { 
+	
+		sti;
+
+	}
 
 	void* t = cast(void*)0x0000000000100000;
 	void* t2 = cast(void*)0x0000000000110000;
