@@ -20,7 +20,7 @@ align(1) struct mpFloatingPointer {
 	uint signature;
 	uint mpConfigPointer;
 	ubyte length;
-	ubyte version_;
+	ubyte mpVersion;
 	ubyte checksum;
 	ubyte mpFeatures1;
 	ubyte mpFeatures2;
@@ -200,7 +200,11 @@ mpFloatingPointer* scan(ubyte* start, ubyte* end)
 					if(cast(char)*(currentByte+3) == '_')
 					{
 						kprintfln!("found at {x}")(currentByte);
-						return cast(mpFloatingPointer*)currentByte;
+						mpFloatingPointer* floatingTable = cast(mpFloatingPointer*)currentByte;
+						if (floatingTable.length == 0x1 && floatingTable.mpVersion == 0x4)
+						{
+							return floatingTable;
+						}
 					}
 				}
 			}
