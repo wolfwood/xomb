@@ -276,6 +276,11 @@ private void initConfigurationTable()
 		kprintfln!("Configuration Table Present")();
 		mpInformation.configTable = cast(mpConfigurationTable*)(vmem.VM_BASE_ADDR + cast(ulong)mpInformation.pointerTable.mpConfigPointer);
 		printStruct(*(mpInformation.configTable));
+		if (!isChecksumValid(cast(ubyte*)mpInformation.configTable, mpInformation.configTable.baseTableLength))
+		{
+			kprintfln!("Configuration Table Checksum invalid!")();
+			return;
+		}
 	}
 	else
 	{
@@ -383,7 +388,7 @@ mpFloatingPointer* scan(ubyte* start, ubyte* end)
 					{
 						kprintfln!("found at {x}")(currentByte);
 						mpFloatingPointer* floatingTable = cast(mpFloatingPointer*)currentByte;
-						if (floatingTable.length == 0x1 && floatingTable.mpVersion == 0x4)
+						if (floatingTable.length == 0x1 && floatingTable.mpVersion == 0x4 && isChecksumValid(currentByte, mpFloatingPointer.sizeof))
 						{
 							return floatingTable;
 						}
@@ -393,4 +398,16 @@ mpFloatingPointer* scan(ubyte* start, ubyte* end)
 		}
 	}
 	return null;
+}
+
+bool isChecksumValid(ubyte* startAddr, uint length)
+{
+	ubyte* endAddr = startAddr + length;
+	int acc;
+	for (; startAddr < endAddr; startAddr++)
+	{
+		acc += *startAddr;
+	}
+
+	return ((acc &= 0xFF) == 0);
 }
