@@ -1,0 +1,16 @@
+currently works with bochs 2.3.7
+
+to INSTALL:
+
+configure bochs with:
+
+./configure --enable-pci --enable-debugger --enable-apic --enable-x86-64 
+--enable-smp --enable-pae
+
+
+
+then build:
+
+make install
+
+
