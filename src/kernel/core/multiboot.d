@@ -246,29 +246,29 @@ int test_mb_header(uint magic, uint addr)
 
 			switch(z) {
 			case 0 :
-				global_mem_regions_t.system_memory.physical_start = base_addr;
-				global_mem_regions_t.system_memory.length = mem_length;
-				global_mem_regions_t.system_memory.virtual_start = base_addr + vmem.VM_BASE_ADDR;
+				global_mem_regions.system_memory.physical_start = cast(ubyte*)base_addr;
+				global_mem_regions.system_memory.length = mem_length;
+				global_mem_regions.system_memory.virtual_start = cast(ubyte*)(base_addr + vmem.VM_BASE_ADDR);
 				break;
 			case 1 :
-				global_mem_regions_t.bios_data.physical_start = base_addr;
-				global_mem_regions_t.bios_data.length = mem_length;
-				global_mem_regions_t.bios_data.virtual_start = base_addr + vmem.VM_BASE_ADDR;
+				global_mem_regions.bios_data.physical_start = cast(ubyte*)base_addr;
+				global_mem_regions.bios_data.length = mem_length;
+				global_mem_regions.bios_data.virtual_start = cast(ubyte*)(base_addr + vmem.VM_BASE_ADDR);
 				break;
 			case 2:
-				global_mem_regions_t.extended_bios_data.physical_start = base_addr;
-				global_mem_regions_t.extended_bios_data.length = mem_length;
-				global_mem_regions_t.extended_bios_data.virtual_start = base_addr + vmem.VM_BASE_ADDR;
+				global_mem_regions.extended_bios_data.physical_start = cast(ubyte*)base_addr;
+				global_mem_regions.extended_bios_data.length = mem_length;
+				global_mem_regions.extended_bios_data.virtual_start = cast(ubyte*)(base_addr + vmem.VM_BASE_ADDR);
 				break;
 			case 3:
-				global_mem_regions_t.extended_memory.physical_start = base_addr;
-				global_mem_regions_t.extended_memory.length = mem_length;
-				global_mem_regions_t.extended_memory.virtual_start = base_addr + vmem.VM_BASE_ADDR;
+				global_mem_regions.extended_memory.physical_start = cast(ubyte*)base_addr;
+				global_mem_regions.extended_memory.length = mem_length;
+				global_mem_regions.extended_memory.virtual_start = cast(ubyte*)(base_addr + vmem.VM_BASE_ADDR);
 				break;
 			case 4: 
-				global_mem_regions_t.device_maps.physical_start = base_addr;
-				global_mem_regions_t.device_maps.length = mem_length;
-				global_mem_regions_t.device_maps.virtual_start = base_addr + vmem.VM_BASE_ADDR;
+				global_mem_regions.device_maps.physical_start = cast(ubyte*)base_addr;
+				global_mem_regions.device_maps.length = mem_length;
+				global_mem_regions.device_maps.virtual_start = cast(ubyte*)(base_addr + vmem.VM_BASE_ADDR);
 				break;
 			default:
 				break;

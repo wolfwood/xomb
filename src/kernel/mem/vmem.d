@@ -20,10 +20,45 @@ const ulong PAGE_SIZE = 4096;			// 4k pages for us right now
 const ulong VM_BASE_ADDR = 0xFFFFFF8000000000; // Base address for virtual addresses when accessing the physical memory
                                            // that was mapped in to VM during our pages reinstall to prevent chicken/egg
 const ulong VM_BASE_INDEX = 0;	// This index is where on the pageLevel3[] the physical memory should start to be mapped in
-                                // Changing this value WILL IMPACT THE VALUE ABOVE IT!!!!!!!!! 
+                                // Changing this value WILL IMPACT THE VALUE ABOVE IT!!!!!!!!!
 
-const ulong VM_BIOS_REGION_INDEX = 33;   // Arbitrary! index in to the table where we map the bios regions in at.  This is probably temporary because..
-// We're really like to map the bios regions in at the end of our mapped physical memory, or at the end of physical memory or something...
+
+// Page Table Structures
+
+align(1) struct pml4
+{
+	ulong pml4e;
+	mixin(Bitfield!(pml4e, "present", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
+	"ign", 1, "mbz", 2, "avl", 3, "address", 41, "available", 10, "nx", 1));
+}
+
+// Page directory pointer entry
+align(1) struct pml3
+{
+	ulong pml3e;
+	mixin(Bitfield!(pml3e, "present", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
+	"ign", 1, "o", 1, "mbz", 1, "avl", 3, "address", 41, "available", 10, "nx", 1));
+}
+
+
+align(1) struct pml2
+{
+	ulong pml2e;
+	mixin(Bitfield!(pml2e, "present", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
+	"ign1", 1, "o", 1, "ign2", 1, "avl", 3, "address", 41, "available", 10, "nx", 1));
+}
+
+
+align(1) struct pml1
+{
+	ulong pml1e;
+	mixin(Bitfield!(pml1e, "present", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
+	"d", 1, "pat", 1, "g", 1, "avl", 3, "address", 41, "available", 10, "nx", 1));
+}
+
+
+
+
 
 // Entry point in to the page table
 pml4[] pageLevel4;
@@ -33,9 +68,6 @@ pml4[] pageLevel4;
 // table.  To do this we must keep track of the location of that level3
 // in a variable called kernel_mapping
 pml3[] kernel_mapping;
-
-// Global for bios regions
-mem_region bios_region_t;
 
 
 /* Handle faults -- the fault handler
@@ -59,8 +91,6 @@ void handle_faults(idt.interrupt_stack* ir_stack)
 	// Bit 3 = RSV bit - 1 if processor tried to read from a reserved field in PTE
 	// Bit 4 = I/D bit - 1 if instruction fetch, otherwise 0
 	// The rest of the error code byte is considered reserved
-
-	// The easiest way to find if a bit is set is by & it with a mask and check for ! 0
 
 	kprintfln!("\n Page fault. Code = {}, IP = 0x{x}, VA = 0x{x}, RBP = 0x{x}\n")(ir_stack.err_code, ir_stack.rip, addr, ir_stack.rbp);
 
@@ -150,6 +180,10 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
  	pageLevel4 = (cast(pml4*)pmem.request_phys_page())[0 .. 512];
 	
 	auto kernel_size = (cast(ulong)pageLevel4.ptr / PAGE_SIZE);
+	
+	global_mem_regions.kernel.physical_start = cast(ubyte*)0x100000;
+	global_mem_regions.kernel.virtual_start = cast(ubyte*)0xffffffff80000000;
+	global_mem_regions.kernel.length = kernel_size;
 	// kernel_vm_end will be used for house keeping later
 	//kernel_vm_end = (kernel_size * PAGE_SIZE);
 
@@ -159,17 +193,17 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 	pageLevel4[] = pml4.init;
 	
 	// Put the kernel in to the top X pages of vmemory
-	
+
 	// So where does our kernel actually live in physical memory?
 	// Well if our physical page allocator works correctly then
 	// we know that we have the first page after the kernel for
 	// our PML4.  This means we can just jack that address,
 	// and used it to determine our kernel size (we hope)!
-	
+
 	// Remapping time!  This will remap the kernel in to high memory (again)
 	// Though we did this in the asm, we are doing it again in here so that it
 	// is easier to work with (has structs, etc that we can play with)
-	
+
 	// 3rd level page table
 	pml3[] pageLevel3 = (cast(pml3*)pmem.request_phys_page())[0 .. 512];
 	
@@ -194,12 +228,12 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 	// Set correct flags, present, rw, usable
 	pageLevel3[510].pml3e |= 0x7;
 
-	auto addr = 0x00; 		// Current addr 
+	auto addr = 0x00; 		// Current addr
 	
 	for(int i = 0, j = 0; i < kernel_size; i += 512, j++) {
 		// Make some page table entries
 		pml1[] pageLevel1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
-		
+
 		// Set pml2e to the pageLevel 1 entry
 		pageLevel2[j].pml2e = cast(ulong)pageLevel1.ptr;
 		pageLevel2[j].pml2e |= 0x7;
@@ -211,26 +245,25 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 			addr += 4096;
 		}
 	}
-
 	
 	// Lets map in all of our phyiscal memory here, just so we can write to it
 	// without a chicken and the egg problem...
+//	map_ram(pageLevel3);
 
 	pml2[] allPhys = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
-	
+
 	allPhys[] = pml2.init;
 	pageLevel3[VM_BASE_INDEX].pml3e = cast(ulong)allPhys.ptr;
 	pageLevel3[VM_BASE_INDEX].pml3e |= 0x7;
 
 	addr = 0x00;
-	auto counti = 0;
-	auto countj = 0;
 
 	// Do da mappin'
-	for(int i, j = 0; i < (pmem.mem_size / PAGE_SIZE); i += 512, j++) {
+	int i = 0;
+	for(int j = 0; i <= ((pmem.mem_size-1) / PAGE_SIZE); i += 512, j++) {
 		// Make some page table entries
 		pml1[] pageLevel1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
-		
+
 		// Set pml2e to the pageLevel 1 entry
 		allPhys[j].pml2e = cast(ulong)pageLevel1.ptr;
 		allPhys[j].pml2e |= 0x7;
@@ -241,8 +274,23 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 			pageLevel1[z].pml1e |= 0x87;
 			addr += 4096;
 		}
-
 	}
+
+	// establish the RAM region
+	global_mem_regions.system_memory.virtual_start = cast(ubyte*)VM_BASE_ADDR;
+	global_mem_regions.system_memory.physical_start = cast(ubyte*)0;
+	global_mem_regions.system_memory.length = i * 4096;
+
+	// establish the kernel mapped area (after RAM mapping)
+	// this is for devices and bios regions
+	global_mem_regions.kernel_mapped.virtual_start = global_mem_regions.system_memory.virtual_start + global_mem_regions.system_memory.length;
+	global_mem_regions.kernel_mapped.length = 0;
+
+	// the physical start of the kernel mapping is not known
+	global_mem_regions.kernel_mapped.physical_start = global_mem_regions.kernel_mapped.virtual_start;
+	
+	kprintfln!("virtual mapping starts: {x}")(global_mem_regions.kernel_mapped.virtual_start);
+
 
 	//kprintfln!("kernel_size in pages = {}")(kernel_size);
 	//kprintfln!("kernel_size in bytes = {}")(kernel_size * PAGE_SIZE);
@@ -250,11 +298,11 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 	//kprintfln!("Pagelevel 3 addr = {}, {x}")(pageLevel3.ptr, pageLevel4[511].pml4e);
 	//kprintfln!("Pagelevel 2 addr = {}, {x}")(pageLevel2.ptr, pageLevel3[510].pml3e);
 	//kprintfln!("Pagelevel 1 addr = {x}")(pageLevel2[0].pml2e);
-	
+
 	pml1[] tmp = (cast(pml1*)(pageLevel2[1].pml2e - 0x7))[0 .. 512];
-	
+
 	kprintfln!("Page address: {x}")(tmp[0].pml1e);
-	
+
 	asm {
 		"mov %0, %%rax" :: "o" pageLevel4.ptr;
 		"mov %%rax, %%cr3";
@@ -264,8 +312,191 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 	// pageLevel4.ptr so that the CPU does't fail when trying to read a physical
 	// address!
 	pageLevel4 = (cast(pml4*)(cast(void*)pageLevel4.ptr + VM_BASE_ADDR) )[0 .. 512];
+	
+	pageLevel3 = get_pml3(511);
+
+	kprintfln!("Done Mapping ... {}")(pageLevel3[0].present);
 }
 
+void map_ram(ref pml3[] pageLevel3)
+{
+	auto addr = 0x00; 		// Current addr
+
+	pml2[] allPhys = (cast(pml2*)pmem.request_phys_page())[0 .. 512];
+
+	allPhys[] = pml2.init;
+	pageLevel3[VM_BASE_INDEX].pml3e = cast(ulong)allPhys.ptr;
+	pageLevel3[VM_BASE_INDEX].pml3e |= 0x7;
+
+	addr = 0x00;
+
+	// Do da mappin'
+	int i = 0;
+	for(int j = 0; i <= ((pmem.mem_size-1) / PAGE_SIZE); i += 512, j++) {
+		// Make some page table entries
+		pml1[] pageLevel1 = (cast(pml1*)pmem.request_phys_page())[0 .. 512];
+
+		// Set pml2e to the pageLevel 1 entry
+		allPhys[j].pml2e = cast(ulong)pageLevel1.ptr;
+		allPhys[j].pml2e |= 0x7;
+		
+		// Now map all the physical addresses :)  YAY!
+		for(int z = 0; z < 512; z++) {
+			pageLevel1[z].pml1e = addr;
+			pageLevel1[z].pml1e |= 0x87;
+			addr += 4096;
+		}
+	}
+
+	// establish the RAM region
+	global_mem_regions.system_memory.virtual_start = cast(ubyte*)VM_BASE_ADDR;
+	global_mem_regions.system_memory.physical_start = cast(ubyte*)0;
+	global_mem_regions.system_memory.length = i * 4096;
+
+	// establish the kernel mapped area (after RAM mapping)
+	// this is for devices and bios regions
+	global_mem_regions.kernel_mapped.virtual_start = global_mem_regions.system_memory.virtual_start + global_mem_regions.system_memory.length;
+	global_mem_regions.kernel_mapped.length = 0;
+
+	// the physical start of the kernel mapping is not known
+	global_mem_regions.kernel_mapped.physical_start = global_mem_regions.kernel_mapped.virtual_start;
+	
+	kprintfln!("virtual mapping starts: {x}")(global_mem_regions.kernel_mapped.virtual_start);
+}
+
+// This function will take a physical range (a BIOS region, perhaps) and
+// map it after the end of the physical address range
+ErrorVal map_range(ubyte* physicalRangeStart, ulong physicalRangeLength, out ubyte* virtualRangeStart)
+{
+	// the physical range needs to be aligned by the page
+	if (cast(ulong)physicalRangeStart & (PAGE_SIZE-1))
+	{
+		// Not aligned
+		return ErrorVal.BadInputs;
+	}
+
+	ubyte* physicalRangeEnd = physicalRangeStart + physicalRangeLength;
+
+	// the physical end must be aligned by 4K (the length must be a factor of 4K)
+	if (physicalRangeLength & (PAGE_SIZE-1))
+	{
+		// Not aligned
+		// align it
+		physicalRangeLength += PAGE_SIZE;
+		physicalRangeLength -= (physicalRangeLength & (PAGE_SIZE-1));
+	}
+
+	// the physical range cannot be invalid due to overflow
+	if (physicalRangeEnd < physicalRangeStart)
+	{
+		// bah! bad input, range invalid
+		return ErrorVal.BadInputs;
+	}
+
+	// now that we have a valid range, we can map to the kernel
+
+	// set the virtual range, it will be returned from the function
+	virtualRangeStart = global_mem_regions.kernel_mapped.virtual_start + global_mem_regions.kernel_mapped.length;
+
+	kprintfln!("start: {} {} {}")(virtualRangeStart, global_mem_regions.kernel_mapped.virtual_start, pmem.mem_size);
+	// get the initial page tables to alter
+
+	pml3[] pl3;
+	pml2[] pl2;
+	pml1[] pl1;
+
+	long pml_index4;
+	long pml_index3;
+	long pml_index2;
+	long pml_index1;
+
+	// get the initial page table entry to set, allocating page tables as necessary
+	allocate_page_entries(virtualRangeStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+
+	retrieve_page_entries(virtualRangeStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+
+	pl2 = get_pml2(pl3, pml_index3);
+	pl1 = get_pml1(pl2, pml_index2);
+
+	// map each page
+	for ( ; ; )
+	{
+		// set page level 1, unless all have been set
+		// when page level 1 is full, move on to page level 2
+		// shouldn't move along page level 4, would mean overwriting
+		// kernel code mapping...
+
+		// should ensure that only new pages get added
+		// if any are overwritten, this would mean death
+		
+		// Step One:
+		//  --  set the current page table entry
+
+		if (pl1[pml_index1].present)
+		{
+			// this page table entry has already been
+			// set, this is a huge deal, something is
+			// in the kernel mapping space
+			
+			return ErrorVal.Fail;
+		}
+
+		pl1[pml_index1].pml1e = cast(ulong)physicalRangeStart;
+		pl1[pml_index1].pml1e |= 0x87;
+
+		kprintfln!("mapping physical address: {x} to virtual address: {x}")(physicalRangeStart, virtualRangeStart);
+		
+		physicalRangeStart += PAGE_SIZE;
+		if (physicalRangeStart >= physicalRangeEnd)
+		{
+			break;
+		}
+
+		pml_index1++;
+		if (pml_index1 == 512)
+		{
+			// we must go onto the next page level 2
+			pml_index1 = 0;
+			pml_index2++;
+
+			if (pml_index2 == 512)
+			{
+				pml_index2 = 0;
+				pml_index3++;
+
+				if (pml_index3 == 512)
+				{
+					// crap! we are screwed!
+
+					// we cannot progress over the
+					// last page table, we risk overwriting
+					// kernel code mapping
+
+					// although, we could simply fail on seeing
+					// an already mapped page table entry, I'd
+					// rather not risk it.
+					return ErrorVal.Fail;
+				}
+
+				pl2 = get_pml2(pl3, pml_index3);
+				if (pl2 is null)
+				{
+					pl2 = allocate_pml2(pl3, pml_index3);
+				}
+			}
+			
+			pl1 = get_pml1(pl2, pml_index2);
+			if (pl1 is null)
+			{
+				pl1 = allocate_pml1(pl2, pml_index2);
+			}
+		}
+	}
+	
+	kprintfln!("virtual Start: {x} for length: {}")(virtualRangeStart, physicalRangeLength);
+
+	return ErrorVal.Success;
+}
 
 // Function to get a physical page of memory and map it in to virtual memory
 // Returns: 1 on success, -1 on failure
@@ -281,13 +512,14 @@ ErrorVal get_page(bool usermode)(void* vm_address) {
 		kprintfln!("physical address: {}")(phys);
 
 	// Make sure we know where the end of the kernel now is
-					
+
 	ulong vm_addr = vm_addr_long;
 
 	// Arrays for later traversal
 	pml3[] pl3;
 	pml2[] pl2;
 	pml1[] pl1;
+
 	// Shift our VM address right by 12 bits
 	vm_addr_long >>= 12;
 
@@ -305,84 +537,16 @@ ErrorVal get_page(bool usermode)(void* vm_address) {
 	// Get the index in to the page table
 	//kprintfln!("level 4 Index = {}")(pml_index);
 	// Check to see if the level 4 [entry] is there (it damn well better be if it does't want to be hit... again)
-
-	if(pageLevel4[pml_index4].pml4e == 0) {
-		pl3 = spawn_pml3();
-		
-		with(pageLevel4[pml_index4])
-		{
-			// set the whole address, which will also conveniently set the
-			// first 12 flag bits to zero.
-			pml4e = (cast(ulong)pl3.ptr) - VM_BASE_ADDR;
-
-			// set initial bits
-			present = true;
-			rw = true;
-			us = usermode;
-		}
-		
-		kprintfln!("pml4 bits: {x}")((cast(ulong)pl3.ptr) - VM_BASE_ADDR);
-		kprintfln!("pml4 bits: {x}")(pageLevel4[pml_index4].pml4e);
-
-		//pageLevel4[pml_index4].pml4e = (cast(ulong)pl3.ptr) - VM_BASE_ADDR;
-		//pageLevel4[pml_index4].pml4e |= (usermode ? 0x7 : 0x3);
-	} else {
-		// We know that the pml4 entry is alive and well, so now we need to
-		// set our traversal array variable equal to the pml3 entry...
-		pl3 = (cast(pml3*)((pageLevel4[pml_index4].pml4e & ~0x7) + VM_BASE_ADDR))[0 .. 512];
-	}
-
-	if(pl3[pml_index3].pml3e == 0) {
-		pl2 = spawn_pml2();
-
-		with(pl3[pml_index3])
-		{
-			// set the whole address, which will also conveniently set the
-			// first 12 flag bits to zero.
-			pml3e = (cast(ulong)pl2.ptr) - VM_BASE_ADDR;
-
-			// set initial bits
-			present = true;
-			rw = true;
-			us = usermode;
-		}
-		//pl3[pml_index3].pml3e = (cast(ulong)pl2.ptr) - VM_BASE_ADDR;
-		//pl3[pml_index3].pml3e |= (usermode ? 0x7 : 0x3);
-		//kprintfln!("PL3 ADDY = {}")(pl3.ptr);
-	} else {
-		// We know that the pml3 entry is alive and well, so now we need to
-		// set our traversal array variable equal to the pml2 entry...
-		pl2 = (cast(pml2*)((pl3[pml_index3].pml3e & ~0x7) + VM_BASE_ADDR))[0 .. 512];
-	}
-
-	//kprintfln!("Level 2 index = {}")(pml_index);
-
-	if(pl2[pml_index2].pml2e == 0) {
-		pl1 = spawn_pml1();
-
-		with(pl2[pml_index2])
-		{
-			// set the whole address, which will also conveniently set the
-			// first 12 flag bits to zero.
-			pml2e = (cast(ulong)pl1.ptr) - VM_BASE_ADDR;
-
-			// set initial bits
-			present = true;
-			rw = true;
-			us = usermode;
-		}
-		//pl2[pml_index2].pml2e = (cast(ulong)pl1.ptr) - VM_BASE_ADDR;
-		//pl2[pml_index2].pml2e |= (usermode ? 0x7 : 0x3);
-	} else {
-		// We know that the pml3 entry is alive and well, so now we need to
-		// set our traversal array variable equal to the pml2 entry...
-		pl1 = (cast(pml1*)((pl2[pml_index2].pml2e & ~0x7) + VM_BASE_ADDR))[0 .. 512];
-	}
 	
-	//kprintfln!("Level 1 index = {}")(pml_index);
+	pl3 = allocate_pml3(pml_index4, usermode);
 
-	// We need to ensure that we aren't writing to a page that is already mapped.
-	if((pl1[pml_index1].pml1e & 0x1) == 0) { // Check to make sure that the page isn't mapped here
+	pl2 = allocate_pml2(pl3, pml_index3, usermode);
+	
+	pl1 = allocate_pml1(pl2, pml_index2, usermode);
+
+	// We need to ensure that we aren't writing to a page that is already mapped.s
+	if(!pl1[pml_index1].present)
+	{
 		with(pl1[pml_index1])
 		{
 			// set the whole address, which will also conveniently set the
@@ -394,11 +558,10 @@ ErrorVal get_page(bool usermode)(void* vm_address) {
 			rw = true;
 			us = usermode;
 		}
-		//pl1[pml_index1].pml1e = cast(ulong)phys;
-		//pl1[pml_index1].pml1e |= (usermode ? 0x87 : 0x83);
 	} else {
 		return ErrorVal.PageMapError;
 	}
+	
 	// The page table puts the lotion on its skin or it gets the hose again...
 	return ErrorVal.Success;
 }
@@ -408,7 +571,7 @@ alias get_page!(true) get_user_page;
 
 // free_page(void* pageAddr) -- this function will free a virtual page
 // by setting its available bit
-void free_page(void* pageAddr) {
+ErrorVal free_page(void* pageAddr) {
 
 	// Step 1: Traverse page table
 	// Step 2: Set call free_phys_mem with physical address
@@ -418,31 +581,24 @@ void free_page(void* pageAddr) {
 	// Shift the page address right 12 bits (skip the crap)
 
 	// And it to get the index in to the level 4
-	auto v_address = cast(ulong)pageAddr >> 12;
+	
+	pml3[] pl3;
+	pml2[] pl2;
+	pml1[] pl1;
 
-	long pml_index1 = v_address & 0x1FF;
-	
-	v_address >>= 9;
-	long pml_index2 = v_address & 0x1FF;
-	
-	v_address >>= 9;
-	long pml_index3 = v_address & 0x1FF;
-	
-	v_address >>= 9;
-	long pml_index4 = v_address & 0x1FF;
-	
-	// Step 1: Traversing the page table
+	long pml_index4;
+	long pml_index3;
+	long pml_index2;
+	long pml_index1;
 
-	//kprintfln!("The level 4 index = {}")(index);	
-	pml3[] pl3 = (cast(pml3*)((pageLevel4[pml_index4].pml4e + VM_BASE_ADDR) & ~0x7))[0 .. 512];		
-
-	//kprintfln!("pl3.ptr = {}")(pl3.ptr);	
-	//kprintfln!("The level 3 index = {}")(index);
-	pml2[] pl2 = (cast(pml2*)((pl3[pml_index3].pml3e + VM_BASE_ADDR) & ~0x7))[0 .. 512];
-	//kprintfln!("The level 2 index = {}")(index);
-
-	pml1[] pl1 = (cast(pml1*)((pl2[pml_index2].pml2e + VM_BASE_ADDR) & ~0x7))[0 .. 512];
+	retrieve_page_entries(pageAddr, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
 	
+	if (pl1 is null)
+	{
+		// this virtual address is invalid
+		return ErrorVal.BadInputs;
+	}
+
 	// Step 2: Set call free_phys_mem with physical address
 	pmem.free_phys_page(cast(void*)(pl1[pml_index1].pml1e & ~0x87));
 	
@@ -454,7 +610,75 @@ void free_page(void* pageAddr) {
 
 	// Step 4: profit?!?!
 
+
+	return ErrorVal.Success;
 }
+
+void retrieve_page_entries(void* virtual_address, out pml3[] pl3, out pml2[] pl2, out pml1[] pl1, out long pml_index4, out long pml_index3, out long pml_index2, out long pml_index1)
+{
+	ulong v_address = (cast(ulong)virtual_address) >> 12;
+
+	pml_index1 = v_address & 0x1FF;
+	
+	v_address >>= 9;
+	pml_index2 = v_address & 0x1FF;
+	
+	v_address >>= 9;
+	pml_index3 = v_address & 0x1FF;
+
+	v_address >>= 9;
+	pml_index4 = v_address & 0x1FF;
+	
+	kprintfln!("{} {} {} {}")(pml_index4, pml_index3, pml_index2, pml_index1);
+
+	// Step 1: Traversing the page table
+
+	pl3 = get_pml3(pml_index4);
+	if (pl3 is null)
+	{
+		// this virtual address has not been mapped
+		pl2 = null;
+		pl1 = null;
+		return;
+	}
+
+	pl2 = get_pml2(pl3, pml_index3);
+	if (pl2 is null)
+	{
+		// this virtual address has not been mapped
+		pl1 = null;
+		return;
+	}
+
+	pl1 = get_pml1(pl2, pml_index2);
+}
+
+ErrorVal allocate_page_entries(void* virtualAddress, out pml3[] pl3, out pml2[] pl2, out pml1[] pl1, out long pml_index4, out long pml_index3, out long pml_index2, out long pml_index1)
+{
+	retrieve_page_entries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+
+	if (pl3 is null)
+	{
+		// need to allocate page level 3 before we continue
+		pl3 = allocate_pml3(pml_index4);
+	}
+	
+	if (pl2 is null)
+	{
+		// need to allocate page level 2 before we continue
+		pl2 = allocate_pml2(pl3, pml_index3);
+	}
+	
+	if (pl1 is null)
+	{
+		// need to allocate page level 1 before we continue
+		pl1 = allocate_pml1(pl2, pml_index2);
+	}
+
+	return ErrorVal.Success;
+}
+
+
 
 
 // These spawn functions basically create a new pmlX[], and save us from having
@@ -481,3 +705,110 @@ pml1[] spawn_pml1() {
 	return pl1[];
 }
 
+
+
+
+pml3[] get_pml3(ulong pml_index4)
+{
+	ulong addr = pageLevel4[pml_index4].address << 12;
+	if (!pageLevel4[pml_index4].present)
+	{
+		return null;
+	}
+	return (cast(pml3*)((addr + VM_BASE_ADDR)))[0 .. 512];
+}
+
+pml2[] get_pml2(ref pml3[] pl3, ulong pml_index3)
+{
+	ulong addr = pl3[pml_index3].address << 12;
+	if (!pl3[pml_index3].present)
+	{
+		return null;
+	}
+	return (cast(pml2*)((addr + VM_BASE_ADDR)))[0 .. 512];
+}
+
+pml1[] get_pml1(ref pml2[] pl2, ulong pml_index2)
+{
+	ulong addr = pl2[pml_index2].address << 12;
+	if (!pl2[pml_index2].present)
+	{
+		return null;
+	}
+	return (cast(pml1*)((addr + VM_BASE_ADDR)))[0 .. 512];
+}
+
+
+
+
+pml3[] allocate_pml3(ulong pml_index4, bool usermode = false)
+{
+	if (!pageLevel4[pml_index4].present)
+	{
+		pml3[] pl3 = spawn_pml3();
+		
+		with(pageLevel4[pml_index4])
+		{
+			// set the whole address, which will also conveniently set the
+			// first 12 flag bits to zero.
+			pml4e = (cast(ulong)pl3.ptr) - VM_BASE_ADDR;
+
+			// set initial bits
+			present = true;
+			rw = true;
+			us = usermode;
+		}
+		
+		return pl3;
+	}
+	ulong addr = pageLevel4[pml_index4].pml4e;
+	return (cast(pml3*)((addr + VM_BASE_ADDR) & ~0x7))[0 .. 512];
+}
+
+pml2[] allocate_pml2(pml3[] pl3, ulong pml_index3, bool usermode = false)
+{
+	if (!pl3[pml_index3].present)
+	{
+		pml2[] pl2 = spawn_pml2();
+		
+		with(pl3[pml_index3])
+		{
+			// set the whole address, which will also conveniently set the
+			// first 12 flag bits to zero.
+			pml3e = (cast(ulong)pl2.ptr) - VM_BASE_ADDR;
+
+			// set initial bits
+			present = true;
+			rw = true;
+			us = usermode;
+		}
+		
+		return pl2;
+	}
+	ulong addr = pl3[pml_index3].pml3e;
+	return (cast(pml2*)((addr + VM_BASE_ADDR) & ~0x7))[0 .. 512];
+}
+
+pml1[] allocate_pml1(pml2[] pl2, ulong pml_index2, bool usermode = false)
+{
+	if (!pl2[pml_index2].present)
+	{
+		pml1[] pl1 = spawn_pml1();
+		
+		with(pl2[pml_index2])
+		{
+			// set the whole address, which will also conveniently set the
+			// first 12 flag bits to zero.
+			pml2e = (cast(ulong)pl1.ptr) - VM_BASE_ADDR;
+
+			// set initial bits
+			present = true;
+			rw = true;
+			us = usermode;
+		}
+		
+		return pl1;
+	}
+	ulong addr = pl2[pml_index2].pml2e;
+	return (cast(pml1*)((addr + VM_BASE_ADDR) & ~0x7))[0 .. 512];
+}

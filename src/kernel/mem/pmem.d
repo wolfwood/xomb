@@ -36,8 +36,8 @@ void setup_pmem_bitmap(uint addr) {
 		mem_size = endAddr;
 
 		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
-		//kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
-		//kprintfln!("mods_end = 0x{x}")(endAddr);
+		kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
+		kprintfln!("mods_end = 0x{x}")(endAddr);
 
 		// If endAddr is aligned already we'll just add 0, so no biggie
 		// Address of where to start pages
@@ -55,7 +55,10 @@ void setup_pmem_bitmap(uint addr) {
 		// Find the total number of pages in the system
 		// Determine bitmap size
 		// Total number of pages in teh system
-		ulong num_pages =  (mbi.mem_upper * 1024) / PAGE_SIZE;
+
+		mem_size = mbi.mem_upper * 1024;
+		ulong num_pages =  mem_size / PAGE_SIZE;
+
 		//kprintfln!("Num of pages = {}")(num_pages);
 		
 		// Size the bitmap needs to be

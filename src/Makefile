@@ -37,7 +37,7 @@ APP_LDFLAGS = -nostdlib -nodefaultlibs -b elf64-x86-64
 # file list
 ASM = kernel/boot/boot.S kernel/boot/load.S
 
-DFILES = kernel/kmain.d kernel/vga.d kernel/core/system.d kernel/core/multiboot.d kernel/idt.d kernel/gdt.d kernel/syscall.d gdb/kgdb_support.d gdb/kgdb_stub.d kernel/mem/vmem.d kernel/mem/vmem_structs.d kernel/mem/pmem.d config.d kernel/core/util.d user/syscall.d kernel/error.d kernel/dev/hpet.d kernel/locks.d kernel/dev/mp.d
+DFILES = kernel/dev/lapic.d kernel/kmain.d kernel/vga.d kernel/core/system.d kernel/core/multiboot.d kernel/idt.d kernel/gdt.d kernel/syscall.d gdb/kgdb_support.d gdb/kgdb_stub.d kernel/mem/vmem.d kernel/mem/vmem_structs.d kernel/mem/pmem.d config.d kernel/core/util.d user/syscall.d kernel/error.d kernel/dev/hpet.d kernel/locks.d kernel/dev/mp.d
 
 RTFILES := $(shell ls std/typeinfo/*.d) object.d kernel/core/invariant.d kernel/core/dstubs.d std/c/stdarg.d
 APP := application/application.d

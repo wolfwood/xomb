@@ -150,9 +150,9 @@ extern(C) void kmain(uint magic, uint addr)
 	//return;
 
 	kprintfln!("Testing bios memory regions!")();
-	kprintfln!("Bios region phys_start / length / virt_start = 0x{x} / 0x{x} / 0x{x}")(global_mem_regions_t.system_memory.physical_start, 
-																				  global_mem_regions_t.system_memory.length,
-																				  global_mem_regions_t.system_memory.virtual_start);
+	kprintfln!("Bios region phys_start / length / virt_start = 0x{x} / 0x{x} / 0x{x}")(global_mem_regions.system_memory.physical_start,
+																				  global_mem_regions.system_memory.length,
+																				  global_mem_regions.system_memory.virtual_start);
 	
 	mp.init();
 
@@ -177,18 +177,18 @@ extern(C) void testUser()
 	int numIters = 10;
 
 	kprintfln!("In User Mode.")();
-
-	auto ptr = cast(long*)0x1000;
-
-	if(cast(SyscallError)user.syscall.allocPage(ptr) == SyscallError.OK)
-	{
-		kprintfln!("!!Page allocation succeeded!!  Testing..")();
-
-		ptr[0] = 5;
-		kprintfln!("ptr[0] = {}")(ptr[0]);
-	}
-	else
-		kprintfln!("Page allocation failed..")();
+// 
+// 	auto ptr = cast(long*)0x1000;
+// 
+// 	if(cast(SyscallError)user.syscall.allocPage(ptr) == SyscallError.OK)
+// 	{
+// 		kprintfln!("!!Page allocation succeeded!!  Testing..")();
+// 
+// 		ptr[0] = 5;
+// 		kprintfln!("ptr[0] = {}")(ptr[0]);
+// 	}
+// 	else
+// 		kprintfln!("Page allocation failed..")();
 
 	user.syscall.exit(0);
 

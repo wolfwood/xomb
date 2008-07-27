@@ -7,6 +7,8 @@ import vmem = kernel.mem.vmem;
 import kernel.core.util;
 import kernel.vga;
 
+import kernel.dev.lapic;
+
 const ulong maxProcessorEntries = 255;
 const ulong maxBusEntries = 255;
 const ulong maxIOAPICEntries = 255;
@@ -135,68 +137,6 @@ align(1) struct compatibilityBusAddressSpaceModifierEntry {
 	mixin(Bitfield!(addressModifier, "pr", 1, "reserved", 7));
 }
 
-align(1) struct apicRegisterSpace {
-	uint reserved1;				ubyte[12] padding1;
-	uint localApicId;			ubyte[12] padding2;
-	uint localApicIdVersion; 	ubyte[12] padding3;
-	uint reserved2;				ubyte[12] padding4;
-	uint taskPriority;			ubyte[12] padding5;
-	uint arbitrationPriority;	ubyte[12] padding6;
-	uint processorPriority;		ubyte[12] padding7;
-	uint EOI;					ubyte[12] padding8;
-	uint reserved3;				ubyte[12] padding9;
-	uint logicalDestination;	ubyte[12] padding10;
-	uint destinationFormat;		ubyte[12] padding11;
-	uint spuriousIntVector;		ubyte[12] padding12;
-	uint isr0;					ubyte[12] padding13;
-	uint isr1;					ubyte[12] padding14;
-	uint isr2;					ubyte[12] padding15;
-	uint isr3;					ubyte[12] padding16;
-	uint isr4;					ubyte[12] padding17;
-	uint isr5;					ubyte[12] padding18;
-	uint isr6;					ubyte[12] padding19;
-	uint isr7;					ubyte[12] padding20;
-	uint tmr0;					ubyte[12] padding21;
-	uint tmr1;					ubyte[12] padding22;
-	uint tmr2;					ubyte[12] padding23;
-	uint tmr3;					ubyte[12] padding24;
-	uint tmr4;					ubyte[12] padding25;
-	uint tmr5;					ubyte[12] padding26;
-	uint tmr6;					ubyte[12] padding27;
-	uint tmr7;					ubyte[12] padding28;
-	uint irr0;					ubyte[12] padding29;
-	uint irr1;					ubyte[12] padding30;
-	uint irr2;					ubyte[12] padding31;
-	uint irr3;					ubyte[12] padding32;
-	uint irr4;					ubyte[12] padding33;
-	uint irr5;					ubyte[12] padding34;
-	uint irr6;					ubyte[12] padding35;
-	uint irr7;					ubyte[12] padding36;
-	uint errorStatus;			ubyte[12] padding37;
-	uint reserved4;				ubyte[12] padding38;
-	uint reserved5;				ubyte[12] padding39;
-	uint reserved6;				ubyte[12] padding40;
-	uint reserved7;				ubyte[12] padding41;
-	uint reserved8;				ubyte[12] padding42;
-	uint reserved9;				ubyte[12] padding43;
-	uint reserved10;			ubyte[12] padding44;
-	uint interruptCommandLo;	ubyte[12] padding45;
-	uint interruptCommandHi;	ubyte[12] padding46;
-	uint tmrLocalVectorTable;	ubyte[12] padding47;
-	uint reserved11;			ubyte[12] padding48;
-	uint performanceCounterLVT;	ubyte[12] padding49;
-	uint lint0LocalVectorTable;	ubyte[12] padding50;
-	uint lint1LocalVectorTable;	ubyte[12] padding51;
-	uint errorLocalVectorTable;	ubyte[12] padding52;
-	uint tmrInitialCount;		ubyte[12] padding53;
-	uint tmrCurrentCount;		ubyte[12] padding54;
-	uint reserved12;			ubyte[12] padding55;
-	uint reserved13;			ubyte[12] padding56;
-	uint reserved14;			ubyte[12] padding57;
-	uint reserved15;			ubyte[12] padding58;
-	uint tmrDivideConfiguration;ubyte[12] padding59;
-}
-
 // contains all of the useful information about the multiprocessor
 // capabilities of the system
 
@@ -226,39 +166,27 @@ ErrorVal init()
 {
 	ubyte* virtualAddress;
 	ubyte* virtualEnd;
-	kprintfln!("start {x} :: end {x}")(0xF0000+vmem.VM_BASE_ADDR,0xFFFFF+vmem.VM_BASE_ADDR);
 	mpFloatingPointer* tmp = scan(cast(ubyte*)0xF0000+vmem.VM_BASE_ADDR,cast(ubyte*)0xFFFFF+vmem.VM_BASE_ADDR);
 	if(tmp == null)
 	{
 		virtualAddress = cast(ubyte*)0x9fc00+vmem.VM_BASE_ADDR;
 		virtualEnd = virtualAddress + 0x400;
-		kprintfln!("start {x} :: end {x}")(virtualAddress,virtualEnd);
 		tmp = scan(virtualAddress,virtualEnd);
 		if(tmp == null)
 		{
-			virtualAddress = cast(ubyte*)global_mem_regions_t.extended_bios_data.virtual_start;
+			virtualAddress = cast(ubyte*)global_mem_regions.extended_bios_data.virtual_start;
 			virtualEnd = virtualAddress + 0x400;
-			kprintfln!("start {x} :: end {x}")(virtualAddress,virtualEnd);
-			tmp = scan(virtualAddress,virtualEnd);	
+			tmp = scan(virtualAddress,virtualEnd);
 			if(tmp == null)
 			{
-				kprintfln!("returning error")();
 				return ErrorVal.CannotFindMPFloatingPointerStructure;
 			}
 		}
 	}
-	if(tmp == null)
-	{
-		kprintfln!("not there")();
-	}
-	else
-	{
-		kprintfln!("found it")();
-	}
 
 	// Retain the MP Pointer Table
 	mpInformation.pointerTable = tmp;
-	printStruct(*(mpInformation.pointerTable));	
+	//printStruct(*(mpInformation.pointerTable));
 
 	// Obtain
 	initConfigurationTable();
@@ -275,7 +203,7 @@ private void initConfigurationTable()
 		// This means that the configuration table is present.
 		kprintfln!("Configuration Table Present")();
 		mpInformation.configTable = cast(mpConfigurationTable*)(vmem.VM_BASE_ADDR + cast(ulong)mpInformation.pointerTable.mpConfigPointer);
-		printStruct(*(mpInformation.configTable));
+		//printStruct(*(mpInformation.configTable));
 		if (!isChecksumValid(cast(ubyte*)mpInformation.configTable, mpInformation.configTable.baseTableLength))
 		{
 			kprintfln!("Configuration Table Checksum invalid!")();
@@ -292,8 +220,7 @@ private void initConfigurationTable()
 		return;
 	}
 
-	mpInformation.apicRegisters = cast(apicRegisterSpace*)(vmem.VM_BASE_ADDR + cast(ulong)mpInformation.configTable.addressOfLocalAPIC);
-	kprintfln!("local APIC address: 0x{x}")(mpInformation.apicRegisters);
+	initLocalApic(mpInformation);
 
 	// We must map in the APIC register space into a separate kernel region
 	
