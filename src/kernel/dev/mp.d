@@ -210,7 +210,6 @@ ErrorVal init()
 
 	// Retain the MP Pointer Table
 	mpInformation.pointerTable = tmp;
-	//printStruct(*(mpInformation.pointerTable));
 
 	printLogLine("Reading the Configuration Table");
 
@@ -224,7 +223,6 @@ ErrorVal init()
 		printLogFail();
 	}
 
-//	kprintf!("{x}\n")(mpInformation.pointerTable.mpConfigPointer);
 	return ErrorVal.Success;
 }
 
@@ -234,12 +232,9 @@ private ErrorVal initConfigurationTable()
 	if (mpInformation.pointerTable.mpFeatures1 == 0)
 	{
 		// This means that the configuration table is present.
-		//kprintfln!("Configuration Table Present")();
 		mpInformation.configTable = cast(mpConfigurationTable*)(vmem.VM_BASE_ADDR + cast(ulong)mpInformation.pointerTable.mpConfigPointer);
-		//printStruct(*(mpInformation.configTable));
 		if (!isChecksumValid(cast(ubyte*)mpInformation.configTable, mpInformation.configTable.baseTableLength))
 		{
-			//kprintfln!("Configuration Table Checksum invalid!")();
 			return ErrorVal.Fail;
 		}
 	}
@@ -247,14 +242,11 @@ private ErrorVal initConfigurationTable()
 	{
 		// This means that the configuration table is of the 'default'
 		// set from the MP specs.
-		//kprintfln!("Configuration Table not present!")();
 
 		// exit, do not continue to read entries, do not collect $200
 		return ErrorVal.Fail;
 	}
 	// We must map in the APIC register space into a separate kernel region
-	
-	//kprintfln!("APIC spurious vector: 0x{x}")(mpInformation.apicRegisters.spuriousIntVector);
 
 	// Obtain other entry information	
 	ubyte* curAddr = cast(ubyte*)mpInformation.configTable;
@@ -271,7 +263,6 @@ private ErrorVal initConfigurationTable()
 		else
 		{
 			// this is a problem
-			//kprintfln!("corrupt MP config table")();
 			return ErrorVal.Fail;
 		}
 		switch(*curAddr)
@@ -280,11 +271,7 @@ private ErrorVal initConfigurationTable()
 				if (mpInformation.processor_count != maxProcessorEntries)
 				{
 					mpInformation.processors[mpInformation.processor_count] = cast(processorEntry*)curAddr;
-					//kprintfln!("processor local apic id: {}")(mpInformation.processors[mpInformation.processor_count].localAPICID);
-					//kprintfln!("processor cpu flags: 0x{x}")(mpInformation.processors[mpInformation.processor_count].cpuFlags);
-					//printStruct(*mpInformation.processors[mpInformation.processor_count]);
 					mpInformation.processor_count++;
-					kprintfln!("number of cpus: {}")(mpInformation.processor_count);
 				}
 				curAddr += processorEntry.sizeof;
 				break;
@@ -300,7 +287,6 @@ private ErrorVal initConfigurationTable()
 				if (mpInformation.ioAPIC_count != maxIOAPICEntries)
 				{
 					mpInformation.ioApics[mpInformation.ioAPIC_count] = cast(ioAPICEntry*)curAddr;
-					//kprintfln!("io apic id: {}")(mpInformation.ioApics[mpInformation.ioAPIC_count].ioAPICID);
 					mpInformation.ioAPIC_count++;
 				}
 				curAddr += ioAPICEntry.sizeof;
@@ -356,21 +342,16 @@ private ErrorVal initConfigurationTable()
 
 mpFloatingPointer* scan(ubyte* start, ubyte* end)
 {
-	//kprintf!("in scan\n")();
 	for(ubyte* currentByte = start; currentByte < end-3; currentByte++)
 	{
 		if(cast(char)*currentByte == '_')
 		{
-			//kprintf!("found _\n")();
 			if(cast(char)*(currentByte+1) == 'M')
 			{
-				//kprintf!("found M\n")();
 				if(cast(char)*(currentByte+2) == 'P')
 				{
-					//kprintf!("found P\n")();
 					if(cast(char)*(currentByte+3) == '_')
 					{
-						//kprintfln!("found at {x}")(currentByte);
 						mpFloatingPointer* floatingTable = cast(mpFloatingPointer*)currentByte;
 						if (floatingTable.length == 0x1 && floatingTable.mpVersion == 0x4 && isChecksumValid(currentByte, mpFloatingPointer.sizeof))
 						{
