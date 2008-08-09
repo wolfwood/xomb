@@ -9,14 +9,30 @@ _trampoline_start:
 		/* REAL MODE */
  
 		/* to appease conspiracy theorists */
-		cli
+		cli		
+
+		/* clear segment registers */
+		mov %ax, %ax
+		mov %ax, %ds
+		mov %ax, %ss
+
+		hlt
+
+		/* turn on paging and protected mode */
+		movl $0x80000001, %eax
+		mov %eax, %cr0
+
+
+		nop
+		nop
 
 
 
 
 
-
-		/* go to protected mode */
+		
+		/* "long" jump into protected mode */
+		ljmp $0x8, $(trampoline_protected - trampoline_start)
 
 
 
@@ -29,6 +45,9 @@ _trampoline_start:
 		
 	.code32
 
+trampoline_protected:
+
+		hlt
 		
 		/* enable 64-bit page-translation-table entries by
 			setting CR4.PAE=1.  Paging not enabled until after
