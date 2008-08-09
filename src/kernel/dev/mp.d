@@ -12,6 +12,7 @@ import kernel.error;
 import kernel.mem.vmem_structs;
 import vmem = kernel.mem.vmem;
 import kernel.core.util;
+import kernel.dev.vga;
 
 import lapic = kernel.dev.lapic;
 
@@ -50,6 +51,7 @@ align(1) struct mpConfigurationTable {
 	uint addressOfLocalAPIC;
 	ushort extendedTableLength;
 	ubyte extendedTableChecksum;
+	ubyte reserved;
 }
 
 //base mp configuration table entries
@@ -62,6 +64,14 @@ align(1) struct processorEntry {
 	ubyte cpuFlags;
 	uint cpuSignature;
 	uint cpuFeatureFlags;
+	ubyte reservedBytes0;
+	ubyte reservedBytes1;
+	ubyte reservedBytes2;
+	ubyte reservedBytes3;
+	ubyte reservedBytes4;
+	ubyte reservedBytes5;
+	ubyte reservedBytes6;
+	ubyte reservedBytes7;
 
 	mixin(Bitfield!(cpuFlags, "cpuEnabledBit", 1, "cpuBootstrapProcessorBit", 1, "reserved", 6));
 }
@@ -161,8 +171,11 @@ struct mpBase {
 	ioInterruptEntry*[maxIOInterruptEntries] ioInterrupts;
 	uint localInterrupt_count;
 	localInterruptEntry*[maxLocalInterruptEntries] localInterrupts;
+	uint systemAddressSpaceMapping_count;
 	systemAddressSpaceMappingEntry*[maxSystemAddressSpaceMappingEntries] systemAddressSpaceMapping;
+	uint busHierarchyDescriptor_count;
 	busHierarchyDescriptorEntry*[maxBusHierarchyDescriptorEntries] busHierarchyDescriptors;
+	uint compatibilityBusAddressSpaceModifier_count;
 	compatibilityBusAddressSpaceModifierEntry*[maxCompatibilityBusAddressSpaceModifierEntries] compatibilityBusAddressSpaceModifiers;
 }
 
@@ -239,7 +252,6 @@ private ErrorVal initConfigurationTable()
 		// exit, do not continue to read entries, do not collect $200
 		return ErrorVal.Fail;
 	}
-
 	// We must map in the APIC register space into a separate kernel region
 	
 	//kprintfln!("APIC spurious vector: 0x{x}")(mpInformation.apicRegisters.spuriousIntVector);
@@ -272,8 +284,9 @@ private ErrorVal initConfigurationTable()
 					//kprintfln!("processor cpu flags: 0x{x}")(mpInformation.processors[mpInformation.processor_count].cpuFlags);
 					//printStruct(*mpInformation.processors[mpInformation.processor_count]);
 					mpInformation.processor_count++;
+					kprintfln!("number of cpus: {}")(mpInformation.processor_count);
 				}
-				curAddr += 20;
+				curAddr += processorEntry.sizeof;
 				break;
 			case 1:
 				if (mpInformation.bus_count != maxBusEntries)
@@ -307,6 +320,30 @@ private ErrorVal initConfigurationTable()
 					mpInformation.localInterrupt_count++;
 				}
 				curAddr += localInterruptEntry.sizeof;
+				break;
+			case 128:
+				if (mpInformation.systemAddressSpaceMapping_count != maxSystemAddressSpaceMappingEntries)
+				{
+					mpInformation.systemAddressSpaceMapping[mpInformation.systemAddressSpaceMapping_count] = cast(systemAddressSpaceMappingEntry*)curAddr;
+					mpInformation.systemAddressSpaceMapping_count++;
+				}
+				curAddr += systemAddressSpaceMappingEntry.sizeof;
+				break;
+			case 129:
+				if (mpInformation.busHierarchyDescriptor_count != maxBusHierarchyDescriptorEntries)
+				{
+					mpInformation.busHierarchyDescriptors[mpInformation.busHierarchyDescriptor_count] = cast(busHierarchyDescriptorEntry*)curAddr;
+					mpInformation.busHierarchyDescriptor_count++;
+				}
+				curAddr += busHierarchyDescriptorEntry.sizeof;
+				break;
+			case 130:
+				if (mpInformation.compatibilityBusAddressSpaceModifier_count != maxCompatibilityBusAddressSpaceModifierEntries)
+				{
+					mpInformation.compatibilityBusAddressSpaceModifiers[mpInformation.compatibilityBusAddressSpaceModifier_count] = cast(compatibilityBusAddressSpaceModifierEntry*)curAddr;
+					mpInformation.compatibilityBusAddressSpaceModifier_count++;
+				}
+				curAddr += compatibilityBusAddressSpaceModifierEntry.sizeof;
 				break;
 			default:
 				// WTF
