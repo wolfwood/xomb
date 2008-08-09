@@ -3,7 +3,7 @@ This file contains information for printing to the screen and communicating with
 through VGA.
 */
 
-module kernel.vga;
+module kernel.dev.vga;
 
 import kernel.core.system;
 import kernel.core.util;
@@ -196,6 +196,23 @@ static:
 
 		xpos = 0;
 		ypos = 0;
+	}
+
+	void getPosition(out int x, out int y)
+	{
+		x = xpos;
+		y = ypos;
+	}
+
+	void setPosition(int x, int y)
+	{
+		if (x < 0) { x = 0; }
+		if (y < 0) { y = 0; }
+		if (x >= Columns) { x = Columns-1; }
+		if (y >= Lines) { y = Lines-1; }
+
+		xpos = x;
+		ypos = y;
 	}
 
 	/**
@@ -472,43 +489,3 @@ extern(C) void kprintString(char* s)
 	kprintfln!("{}")(toString(s));
 }
 
-/**
-This function converts an integer to a string, depending on the base passed in.
-	Params:
-		buf = The function will save the translated string into this character array.
-		base = The base of the integer value. If "d," it will be assumed to be decimal. If "x," the integer
-			will be hexadecimal.
-		d = The integer to translate.
-	Returns: The translated string in a character array.
-*/
-char[] itoa(char[] buf, char base, long d)
-{
-	size_t p = buf.length - 1;
-	size_t startIdx = 0;
-	ulong ud = d;
-	bool negative = false;
-
-	int divisor = 10;
-
-	// If %d is specified and D is minus, put `-' in the head.
-	if(base == 'd' && d < 0)
-	{
-		negative = true;
-		ud = -d;
-	}
-	else if(base == 'x')
-		divisor = 16;
-
-	// Divide UD by DIVISOR until UD == 0.
-	do
-	{
-		int remainder = ud % divisor;
-		buf[p--] = (remainder < 10) ? remainder + '0' : remainder + 'a' - 10;
-	}
-	while (ud /= divisor)
-
-	if(negative)
-		buf[p--] = '-';
-
-	return buf[p + 1 .. $];
-}

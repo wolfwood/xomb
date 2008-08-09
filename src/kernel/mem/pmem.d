@@ -7,15 +7,16 @@
 
 module kernel.mem.pmem;
 
-import kernel.vga;
+import kernel.arch.select;
+
+import kernel.error;
 import kernel.core.util;
 import kernel.core.multiboot;
 import config;
 import vmem = kernel.mem.vmem;
+import kernel.dev.vga;
 
-static import idt = kernel.idt;
-
-
+	
 // Bitmap of free pages
 ubyte[] bitmap;
 // CONST for page size
@@ -26,7 +27,7 @@ ulong mem_size;
 
 // Paramemters = addr: addr is an address passed to us by grub that contains the address to the multi-boot info :)
 // Return a ulong (the ptr to our bitmap)
-void setup_pmem_bitmap(uint addr) {
+ErrorVal setup_pmem_bitmap(uint addr) {
 	auto mbi = cast(multiboot_info_t*)addr;
 
 	if(CHECK_FLAG(mbi.flags, 6))
@@ -36,8 +37,8 @@ void setup_pmem_bitmap(uint addr) {
 		mem_size = endAddr;
 
 		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
-		kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
-		kprintfln!("mods_end = 0x{x}")(endAddr);
+		//kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
+		//kprintfln!("mods_end = 0x{x}")(endAddr);
 
 		// If endAddr is aligned already we'll just add 0, so no biggie
 		// Address of where to start pages
@@ -90,8 +91,11 @@ void setup_pmem_bitmap(uint addr) {
 		// The reset of the bitmap is 0 to mean unused
 		bitmap[num_used / 8 + 1 .. $] = 0;
 
+		return ErrorVal.Success;
+
 	} else {
-		kprintfln!("The multi-boot struct was wrong!")();
+		//kprintfln!("The multi-boot struct was wrong!")();
+		return ErrorVal.Fail;
 	}
 }
 

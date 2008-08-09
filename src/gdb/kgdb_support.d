@@ -1,7 +1,5 @@
 module gdb.kgdb_support;
 
-static import kernel.idt;
-
 const byte *com1 = cast(byte*)0x3f8;
 const byte *com2 = cast(byte*)0x2f8;
 

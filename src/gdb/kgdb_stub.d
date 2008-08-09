@@ -45,14 +45,14 @@
 
 // get a number of support functions
 import gdb.kgdb_support;
-static import idt = kernel.idt;
+
+import idt = kernel.arch.x86_64.idt;
+import kernel.dev.vga;
 
 import config;
 
 import kernel.core.util;
 import kernel.core.system;
-
-import kernel.vga;
 
 // --- Create  Debug ISRs ---
 // we want to capture exceptions 0, 1, 3, 4-10, 12, 16

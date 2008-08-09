@@ -6,14 +6,17 @@
 
 module kernel.mem.vmem;
 
-import kernel.vga;
+import idt = kernel.arch.x86_64.idt;
+import kernel.dev.vga;
+
 import kernel.error;
 import config;
 import kernel.core.util;
 import kernel.core.multiboot;
+
 import pmem = kernel.mem.pmem;
 import kernel.mem.vmem_structs; 
-static import idt = kernel.idt;
+
 
 // CONST for page size
 const ulong PAGE_SIZE = 4096;			// 4k pages for us right now
@@ -92,40 +95,40 @@ void handle_faults(idt.interrupt_stack* ir_stack)
 	// Bit 4 = I/D bit - 1 if instruction fetch, otherwise 0
 	// The rest of the error code byte is considered reserved
 
-	kprintfln!("\n Page fault. Code = {}, IP = 0x{x}, VA = 0x{x}, RBP = 0x{x}\n")(ir_stack.err_code, ir_stack.rip, addr, ir_stack.rbp);
+	//kprintfln!("\n Page fault. Code = {}, IP = 0x{x}, VA = 0x{x}, RBP = 0x{x}\n")(ir_stack.err_code, ir_stack.rip, addr, ir_stack.rbp);
 
 	if((ir_stack.err_code & 1) == 0) 
 	{
-		kprintfln!("Error due to page not present!")();
+		//kprintfln!("Error due to page not present!")();
 
 		if((ir_stack.err_code & 2) != 0)
 		{
-			kprintfln!("Error due to write fault.")();
+			//kprintfln!("Error due to write fault.")();
 		}
 		else
 		{
-			kprintfln!("Error due to read fault.")();
+			//kprintfln!("Error due to read fault.")();
 		}
 
 		if((ir_stack.err_code & 4) != 0)
 		{
-			kprintfln!("Error occurred in usermode.")();
+			//kprintfln!("Error occurred in usermode.")();
 			// In this case we need to send a signal to the libOS handler
 		}
 		else
 		{
-			kprintfln!("Error occurred in supervised mode.")();
+			//kprintfln!("Error occurred in supervised mode.")();
 			// In this case we're super concerned and need to handle the fault
 		}
 
 		if((ir_stack.err_code & 8) != 0)
 		{
-			kprintfln!("Tried to read from a reserved field in PTE!")();
+			//kprintfln!("Tried to read from a reserved field in PTE!")();
 		}
 
 		if((ir_stack.err_code & 16) != 0)
 		{
-			kprintfln!("Instruction fetch error!")();
+			//kprintfln!("Instruction fetch error!")();
 		}
 	}
 }
@@ -289,7 +292,7 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 	// the physical start of the kernel mapping is not known
 	global_mem_regions.kernel_mapped.physical_start = global_mem_regions.kernel_mapped.virtual_start;
 	
-	kprintfln!("virtual mapping starts: {x}")(global_mem_regions.kernel_mapped.virtual_start);
+	//kprintfln!("virtual mapping starts: {x}")(global_mem_regions.kernel_mapped.virtual_start);
 
 
 	//kprintfln!("kernel_size in pages = {}")(kernel_size);
@@ -301,7 +304,7 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 
 	pml1[] tmp = (cast(pml1*)(pageLevel2[1].pml2e - 0x7))[0 .. 512];
 
-	kprintfln!("Page address: {x}")(tmp[0].pml1e);
+	//kprintfln!("Page address: {x}")(tmp[0].pml1e);
 
 	asm {
 		"mov %0, %%rax" :: "o" pageLevel4.ptr;
@@ -315,7 +318,7 @@ void reinstall_kernel_page_tables(ulong mmap_addr)
 	
 	pageLevel3 = get_pml3(511);
 
-	kprintfln!("Done Mapping ... {}")(pageLevel3[0].present);
+	//kprintfln!("Done Mapping ... {}")(pageLevel3[0].present);
 }
 
 void map_ram(ref pml3[] pageLevel3)
@@ -361,7 +364,7 @@ void map_ram(ref pml3[] pageLevel3)
 	// the physical start of the kernel mapping is not known
 	global_mem_regions.kernel_mapped.physical_start = global_mem_regions.kernel_mapped.virtual_start;
 	
-	kprintfln!("virtual mapping starts: {x}")(global_mem_regions.kernel_mapped.virtual_start);
+	//kprintfln!("virtual mapping starts: {x}")(global_mem_regions.kernel_mapped.virtual_start);
 }
 
 // This function will take a physical range (a BIOS region, perhaps) and
@@ -398,8 +401,11 @@ ErrorVal map_range(ubyte* physicalRangeStart, ulong physicalRangeLength, out uby
 	// set the virtual range, it will be returned from the function
 	virtualRangeStart = global_mem_regions.kernel_mapped.virtual_start + global_mem_regions.kernel_mapped.length;
 
-	kprintfln!("start: {} {} {}")(virtualRangeStart, global_mem_regions.kernel_mapped.virtual_start, pmem.mem_size);
+	//kprintfln!("start: {} {} {}")(virtualRangeStart, global_mem_regions.kernel_mapped.virtual_start, pmem.mem_size);
 	// get the initial page tables to alter
+
+	// increment the kernel mapping region
+	global_mem_regions.kernel_mapped.length += physicalRangeLength;
 
 	pml3[] pl3;
 	pml2[] pl2;
@@ -443,8 +449,6 @@ ErrorVal map_range(ubyte* physicalRangeStart, ulong physicalRangeLength, out uby
 
 		pl1[pml_index1].pml1e = cast(ulong)physicalRangeStart;
 		pl1[pml_index1].pml1e |= 0x87;
-
-		kprintfln!("mapping physical address: {x} to virtual address: {x}")(physicalRangeStart, virtualRangeStart);
 		
 		physicalRangeStart += PAGE_SIZE;
 		if (physicalRangeStart >= physicalRangeEnd)
@@ -493,7 +497,7 @@ ErrorVal map_range(ubyte* physicalRangeStart, ulong physicalRangeLength, out uby
 		}
 	}
 	
-	kprintfln!("virtual Start: {x} for length: {}")(virtualRangeStart, physicalRangeLength);
+	//kprintfln!("virtual Start: {x} for length: {}")(virtualRangeStart, physicalRangeLength);
 
 	return ErrorVal.Success;
 }
@@ -629,7 +633,7 @@ void retrieve_page_entries(void* virtual_address, out pml3[] pl3, out pml2[] pl2
 	v_address >>= 9;
 	pml_index4 = v_address & 0x1FF;
 	
-	kprintfln!("{} {} {} {}")(pml_index4, pml_index3, pml_index2, pml_index1);
+	//kprintfln!("{} {} {} {}")(pml_index4, pml_index3, pml_index2, pml_index1);
 
 	// Step 1: Traversing the page table
 

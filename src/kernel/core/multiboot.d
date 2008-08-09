@@ -1,7 +1,9 @@
 module kernel.core.multiboot;
 
 
-import kernel.vga;
+
+import kernel.dev.vga;
+
 import kernel.core.util;
 import system = kernel.core.system;
 import kernel.mem.vmem_structs;
@@ -142,7 +144,7 @@ int test_mb_header(uint magic, uint addr)
 	// system was booted by a bootloader other than GRUB.
 	if(magic != MULTIBOOT_BOOTLOADER_MAGIC)
 	{
-		kprintfln!("Invalid magic number: 0x{x}")(cast(uint)magic);
+		// invalid magic number
 		return -1;
 	}
 
@@ -151,26 +153,26 @@ int test_mb_header(uint magic, uint addr)
 	multi_boot_struct = cast(multiboot_info_t*)addr;
 
 	// Print out all the values of the flags presented to the operating system by GRUB.
-	kprintfln!("flags = 0x{x}")(cast(uint)multi_boot_struct.flags);
+	//kprintfln!("flags = 0x{x}")(cast(uint)multi_boot_struct.flags);
 
 	// Are mem_* valid
-	if(CHECK_FLAG(multi_boot_struct.flags, 0))
-		kprintfln!("mem_lower = {u}KB, mem_upper = {u}KB")(cast(uint)multi_boot_struct.mem_lower, cast(uint)multi_boot_struct.mem_upper);
+	//if(CHECK_FLAG(multi_boot_struct.flags, 0))
+		//kprintfln!("mem_lower = {u}KB, mem_upper = {u}KB")(cast(uint)multi_boot_struct.mem_lower, cast(uint)multi_boot_struct.mem_upper);
 
 	// Check to make sure the boot device is valid.
-	if(CHECK_FLAG(multi_boot_struct.flags, 1))
-		kprintfln!("boot_device = 0x{x}")(cast(uint)multi_boot_struct.boot_device);
+	//if(CHECK_FLAG(multi_boot_struct.flags, 1))
+		//kprintfln!("boot_device = 0x{x}")(cast(uint)multi_boot_struct.boot_device);
 
 	// Is the command line passed?
-	if(CHECK_FLAG(multi_boot_struct.flags, 2))
-		kprintfln!("cmdline = {}")(system.toString(cast(char*)multi_boot_struct.cmdline));
+	//if(CHECK_FLAG(multi_boot_struct.flags, 2))
+		//kprintfln!("cmdline = {}")(system.toString(cast(char*)multi_boot_struct.cmdline));
 
 	// This if statement calls the function CHECK_FLAG on the flags of the GRUB multiboot header.
 	// It then checks to make sure the flags are valid (indicating proper, secure booting).
 	if(CHECK_FLAG(multi_boot_struct.flags, 3))
 	{
 		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
-		kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)multi_boot_struct.mods_count, cast(int)multi_boot_struct.mods_addr);
+		//kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)multi_boot_struct.mods_count, cast(int)multi_boot_struct.mods_addr);
 
 		module_t* mod;
 		int i;
@@ -180,10 +182,10 @@ int test_mb_header(uint magic, uint addr)
 		{
 			// print out the memory address of the beginning of that module, the address of the end of that module,
 			// and the name of that module.
-			kprintfln!(" mod_start = 0x{x}, mod_end = 0x{x}, string = {}")(
-				cast(uint)mod.mod_start,
-				cast(uint)mod.mod_end,
-				system.toString(cast(char*)mod.string));
+			//kprintfln!(" mod_start = 0x{x}, mod_end = 0x{x}, string = {}")(
+				//cast(uint)mod.mod_start,
+				//cast(uint)mod.mod_end,
+				//system.toString(cast(char*)mod.string));
 		// Use the jumpTo() method (see below) to execute the first module.
 		//jumpTo(0, multi_boot_struct);
 		//return;
@@ -192,7 +194,8 @@ int test_mb_header(uint magic, uint addr)
 	// Bits 4 and 5 are mutually exclusive!
 	if(CHECK_FLAG(multi_boot_struct.flags, 4) && CHECK_FLAG(multi_boot_struct.flags, 5))
 	{
-		kprintfln!("Both bits 4 and 5 are set.")();
+		//kprintfln!("Both bits 4 and 5 are set.")();
+		// these bits are set
 		return -1;
 	}
 
@@ -203,10 +206,10 @@ int test_mb_header(uint magic, uint addr)
 		aout_symbol_table_t* aout_sym = &(multi_boot_struct.aout_sym);
 
 		// If it is valid, print out information about the compiled kernel's symbol table.
-		kprintfln!("aout_symbol_table: tabsize = 0x{x}, strsize = 0x{x}, addr = 0x{x}")(
-			cast(uint)aout_sym.tabsize,
-			cast(uint)aout_sym.strsize,
-			cast(uint)aout_sym.addr);
+		//kprintfln!("aout_symbol_table: tabsize = 0x{x}, strsize = 0x{x}, addr = 0x{x}")(
+			//cast(uint)aout_sym.tabsize,
+			//cast(uint)aout_sym.strsize,
+			//cast(uint)aout_sym.addr);
 	}
 
 	// Check to make sure the section header of the compiled kernel is valid.
@@ -215,15 +218,15 @@ int test_mb_header(uint magic, uint addr)
 		elf_section_header_table_t* elf_sec = &(multi_boot_struct.elf_sec);
 
 		// If it is valid, print out information about the compiled kernel's section table.
-		kprintfln!("elf_sec: num = {u}, size = 0x{x}, addr = 0x{x}, shndx = 0x{x}")(
-			cast(uint)elf_sec.num, cast(uint)elf_sec.size_of,
-			cast(uint)elf_sec.addr, cast(uint)elf_sec.shndx);
+		//kprintfln!("elf_sec: num = {u}, size = 0x{x}, addr = 0x{x}, shndx = 0x{x}")(
+			//cast(uint)elf_sec.num, cast(uint)elf_sec.size_of,
+			//cast(uint)elf_sec.addr, cast(uint)elf_sec.shndx);
 	}
 
 	// This checks to make sure that the memory map of the bootloader is valid.
 	if(CHECK_FLAG(multi_boot_struct.flags, 6))
 	{
-		kprintfln!("mmap_addr = 0x{x}, mmap_length = 0x{x}")(cast(uint)multi_boot_struct.mmap_addr, cast(uint)multi_boot_struct.mmap_length);
+		//kprintfln!("mmap_addr = 0x{x}, mmap_length = 0x{x}")(cast(uint)multi_boot_struct.mmap_addr, cast(uint)multi_boot_struct.mmap_length);
 		
 		memory_map_t[] mmap = (cast(memory_map_t*)multi_boot_struct.mmap_addr)[0 .. (multi_boot_struct.mmap_length / memory_map_t.sizeof)];
 
@@ -237,11 +240,11 @@ int test_mb_header(uint magic, uint addr)
 			ulong mem_length = map.length_high << 32;
 			mem_length += map.length_low;
 
-			kprintfln!(" size = 0x{x}, base_addr = 0x{x}, length = 0x{x}, type = 0x{x}")(
-				cast(uint)map.size_of,
-				base_addr,
-				mem_length,
-				cast(uint)map.type);
+			//kprintfln!(" size = 0x{x}, base_addr = 0x{x}, length = 0x{x}, type = 0x{x}")(
+				//cast(uint)map.size_of,
+				//base_addr,
+				//mem_length,
+				//cast(uint)map.type);
 
 
 			switch(z) {

@@ -49,9 +49,18 @@ long_entry:
 		
 		movq $(stack + STACK_SIZE), %rsp
 
-		/* Clear cpu flags */
+		/* Set cpu flags */
 		pushq $0
 		lss (%rsp), %eax
+		popf
+
+		/* Sets the Input/Output Permission Level to 3, so
+		that it will not check the IO permissions bitmap when access is requested. */
+
+		pushf
+		popq %rax
+		or $0x3000, %rax
+		pushq %rax
 		popf
 
 		/* Push the pointer to the Multiboot information structure. */
@@ -77,7 +86,6 @@ loop:
 // --- STACK --- //
 
 .align 4096
-
 
 	// Our stack area.
 

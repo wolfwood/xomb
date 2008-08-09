@@ -167,20 +167,13 @@ GDT_END:
 
 // 32 BIT IDT
 
-	.align 4096/*
-load.S
+	.align 4096
 
-The 64 bit code that serves these functions:
-
-- sets up stack
-- transfers %rip to higher half
-- clears cpu flags
-- calls cmain
-
-*/
 
 	.globl pIDT32
 pIDT32:
+
+
 	.word	IDT_END - IDT_TABLE - 1
 	.quad	IDT_TABLE - KERNEL_VMA_BASE
 

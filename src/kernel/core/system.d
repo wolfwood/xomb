@@ -111,24 +111,3 @@ int isnan(real e)
     return (pe[4] & 0x7FFF) == 0x7FFF &&
 	    *ps & 0x7FFFFFFFFFFFFFFF;
 }
-
-/**
-Gets the value of the CPUID function for a given item.  See some sort of documentation on
-how to use the CPUID function.  There's way too much to document here.
-
-	Params:
-		func = The CPUID function.
-	Returns:
-		The result of the CPUID instruction for the given function.
-*/
-uint cpuid(uint func)
-{
-	asm
-	{
-		naked;
-		"movl %%edi, %%eax";
-		"cpuid";
-		"movl %%edx, %%eax";
-		"retq";
-	}
-}

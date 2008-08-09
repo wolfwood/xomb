@@ -3,6 +3,8 @@ module kernel.core.dstubs;
 import kernel.core.system;
 static import gcc.builtins;
 
+import kernel.dev.vga;
+
 extern(C)
 {
 
@@ -428,8 +430,6 @@ void _d_switch_error( char[] file, uint line )
 {
     onSwitchError( file, line );
 }
-
-private import kernel.vga;
 
 private void onAssertError(char[] file, size_t line)
 {

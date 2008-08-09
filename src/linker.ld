@@ -25,21 +25,36 @@ SECTIONS
     /* link from LMA */
     . = kernel_LMA;
 
+	_boot = .;
+
     /* boot.S is ran in linear addresses */
     .text_boot : 
     {
-        kernel/boot/boot.o (.text)
+        kernel/arch/x86_64/boot/boot.o (.text)
     }
+
+	_eboot = .;
+
+	PROVIDE(_trampoline = .);
+
+	.text_trampoline ALIGN(0x1000) : 
+	{
+		kernel/arch/x86_64/boot/trampoline.o (.text)
+	}
+
+	PROVIDE(_etrampoline = .);
 
     /* link from VMA */
     . = . + kernel_VMA;
+
+	_text = .;
 
     /* the rest of the code links to higher memory */
     .text : AT(ADDR(.text) - kernel_VMA + kernel_LMA)
     {
         code = .;
         *(.text)
-	*(.text*)
+		*(.text*)
 
         /* read only data */
         *(.rodata*)
@@ -50,6 +65,8 @@ SECTIONS
 
     /* _etext defined */
     PROVIDE (_etext = .);
+
+	_data = .;
 
     /* data section */	
     .data : AT(ADDR(.data) - kernel_VMA + kernel_LMA)

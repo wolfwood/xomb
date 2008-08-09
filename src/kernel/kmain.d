@@ -7,46 +7,30 @@ Written: 2007
 */
 module kernel.kmain;
 
+// log
+import kernel.log;
+
+import vmem = kernel.mem.vmem;
+import pmem = kernel.mem.pmem;
+
+import kernel.dev.vga;
 
 //imports
 import config;
 
 import gdb.kgdb_stub;
 
+import kernel.arch.select;
+
+import kernel.error;
 import kernel.core.elf;
 import kernel.core.system;
 import kernel.core.util;
 import multiboot = kernel.core.multiboot;
 
-import syscall = kernel.syscall;
-import kernel.vga;
-static import gdt = kernel.gdt;
-static import idt = kernel.idt;
-
-import vmem = kernel.mem.vmem;
-import pmem = kernel.mem.pmem;
-import kernel.mem.vmem_structs;
-
-import locks = kernel.locks;
+import lapic = kernel.dev.lapic;
 
 import mp = kernel.dev.mp;
-/**
-This method sets sets the Input/Output Permission Level to 3, so
-that it will not check the IO permissions bitmap when access is requested.
-*/
-void set_rflags_iopl()
-{
-	/* popf RFLAGS to set (IOPL) bits 12 & 13 = 1 */
-	/* 0x3000 = 11000000000000 => bits 12 and 13 are 1*/
-	asm
-	{
-		"pushf";
-		"popq %%rax";
-		"or $0x3000, %%rax";
-		"pushq %%rax";
-		"popf";
-	}
-}
 
 /**
 This is the main function of PGOS. It is executed once GRUB loads
@@ -61,102 +45,105 @@ extern(C) void kmain(uint magic, uint addr)
 {
 	int mb_flag = 0;
 
-	// set flags.
-	set_rflags_iopl();
-
-	// install the Global Descriptor Table (GDT) and the Interrupt Descriptor Table (IDT)
-	gdt.install();
-	idt.install();
-
-	idt.setCustomHandler(idt.Type.PageFault, &vmem.handle_faults);
-
-	if(enable_kgdb)
-	{
-		set_debug_traps();
-		breakpoint();
-	}
-
 	// Clear the screen in order to begin printing.
 	Console.cls();
 
 	// Print initial booting information.
-	kprintf!("Booting ")();
-	Console.setColors(Color.Black, Color.HighRed);
-	kprintf!("PaGanOS")();
+	Console.setColors(Color.LowGreen, Color.Black);
+	kprintf!(" XOmB 0.0")();
 	Console.resetColors();
-	kprintfln!("...\n")();
-
-	// Make sure the multiboot header is valid
-	// and print out memory info, etc
-	mb_flag = multiboot.test_mb_header(magic, addr);
-	if (mb_flag) { // The mb header is bad!!!! Die!!!!
-		kprintfln!("Multiboot header is bad... DIE!")();
-		return;
-	}
+	kprintf!("                               ")();
 
 	// Print out our slogan. Literally, "We came, we saw, we conquered."
 	Console.setColors(Color.Yellow, Color.LowBlue);
-	kprintfln!("\nVenimus, vidimus, vicimus!  --PittGeeks")();
+	kprintfln!("Venimus, vidimus, vicimus!  --PittGeeks\n")();
 	Console.resetColors();
 
+	// Make sure the multiboot header is valid
+	// and print out memory info, etc
+	printLogLine("Checking Multiboot Information");
+	mb_flag = multiboot.test_mb_header(magic, addr);
+	if (mb_flag) { // The mb header is bad!!!! Die!!!!
+		printLogFail();
+		return;
+	}
+	printLogSuccess();
+
+	if(enable_kgdb)
+	{
+		printLogLine("Enabling kgdb");
+		set_debug_traps();
+		breakpoint();
+		printLogSuccess();
+	}
+
+	// check to see if the CPU has the features we require
+	// if this fails, the CPU will hang.
+	Cpu.validate();
+
+	// boot and initialize the primary CPU
+	Cpu.boot();
+
+	printLogLine("Installing Heap Allocator");
 	// Set up the heap memory allocator
-	pmem.setup_pmem_bitmap(addr);
+	if (pmem.setup_pmem_bitmap(addr) == ErrorVal.Success)
+	{
+		printLogSuccess();
+	}
+	else
+	{
+		printLogFail();
+	}
+
 	//pmem.test_pmem();
+
+	printLogLine("Installing Page Tables");
 	vmem.reinstall_kernel_page_tables(addr);
+	printLogSuccess();
 
 	// Turn general interrupts on, so the computer can deal with errors and faults.
-	
-	asm { 
-	
-		sti;
-
-	}
-
-	void* t = cast(void*)0x0000000000100000;
-	void* t2 = cast(void*)0x0000000000110000;
-	void* t3 = cast(void*)0x0000000000100000;
-
-	//int test = vmem.get_page(t);
-	//int test2 = vmem.get_page(t2);
-	//int test3 = vmem.get_page(t3);
-
-	//kprintfln!("test1 = {}")(test);
-	//kprintfln!("test2 = {}")(test2);
-	//kprintfln!("test3 = {}")(test3);
-	//vmem.free_page(t);
-	//test = vmem.get_page(t);
-	//kprintfln!("virtual page requested a second time, address = {x}")(test);
-	//kprintfln!("releasing test1")();
-	//vmem.free_page(t);
-	//kprintfln!("releasing test2")();
-	//vmem.free_page(t2);
-	//vmem.free_page(t3);
-
-	if(!(cpuid(0x8000_0001) & 0b1000_0000_0000))
-	{
-		kprintfln!("Your computer is not cool enough, we need SYSCALL and SYSRET.")();
-		asm { cli; hlt; }
-	}
+	Cpu.enableInterrupts();
 
 	//kprintfln!("Setting lstar, star and SF_MASK...")();
 
+	printLogLine("Installing Syscall Handler");
 	syscall.setHandler(&syscall.syscallHandler);
+	printLogSuccess();
+
+
+
+
+
 
 	// TESTING MUTEXES
-	//kprintfln!("Starting kmutex test")();
+	printLogLine("Testing Kernel Locks");
 	int failcode = locks.test_kmutex();
-	//kprintfln!("KMUTEX test code (0 is good): {}")(failcode);
-	//want to see the result:   
-	//return;
+	if (failcode == 0)
+	{
+		printLogSuccess();
+	}
+	else
+	{
+		printLogFail();	
+	}
 
-	kprintfln!("Testing bios memory regions!")();
-	kprintfln!("Bios region phys_start / length / virt_start = 0x{x} / 0x{x} / 0x{x}")(global_mem_regions.system_memory.physical_start,
-																				  global_mem_regions.system_memory.length,
-																				  global_mem_regions.system_memory.virtual_start);
-	
+
+
+
+
+
+	// initialize multiprocessor information
 	mp.init();
 
-	kprintfln!("JUMPING TO USER MODE!!!")();
+	// initialize APIC
+	mp.initAPIC();
+
+
+
+
+	kprintfln!("")();
+
+	kprintfln!("Jumping to User Mode...\n")();
 
 	asm
 	{
@@ -173,9 +160,6 @@ import user.syscall;
 
 extern(C) void testUser()
 {
-	// let's not loop forever.  Do not want (yet).
-	int numIters = 10;
-
 	kprintfln!("In User Mode.")();
 // 
 // 	auto ptr = cast(long*)0x1000;

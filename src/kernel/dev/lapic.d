@@ -2,11 +2,20 @@
 
 module kernel.dev.lapic;
 
+
+import kernel.dev.vga;
+
 // Needs the ability to add virtual pages and ranges
 import vmem = kernel.mem.vmem;
 
+// log
+import kernel.log;
+
 // Error codes
 import kernel.error;
+
+// for logging
+import kernel.kmain;
 
 // Needs the MP Configuration Table
 // and the MP information to get the addresses
@@ -14,7 +23,7 @@ import kernel.dev.mp;
 
 // For support utils and printing
 import kernel.core.util;
-import kernel.vga;
+
 
 align(1) struct apicRegisterSpace {
 	/* 0000 */ uint reserved0;				ubyte[12] padding0;
@@ -82,6 +91,24 @@ align(1) struct apicRegisterSpace {
 	/* 03e0 */ uint tmrDivideConfiguration;	ubyte[12] padding62;
 }
 
+
+
+extern (C) void read_trampoline_bounds();
+
+void init(ref mpBase mpInformation)
+{
+	printLogLine("Initializing Local APIC");
+	initLocalApic(mpInformation);
+	printLogSuccess();
+
+	printLogLine("Enabling Local APIC");
+	enableLocalApic(mpInformation);
+	printLogSuccess();
+
+	startAPs(mpInformation);
+	
+}
+
 void initLocalApic(ref mpBase mpInformation)
 {
 	// map the address space of the APIC
@@ -93,13 +120,51 @@ void initLocalApic(ref mpBase mpInformation)
 		apicRegisterSpace.sizeof,
 		apicRange) != ErrorVal.Success)
 	{
-		kprintfln!("error mapping apic register space! {x} ... {x}")(mpInformation.configTable.addressOfLocalAPIC, mpInformation.configTable.addressOfLocalAPIC + apicRegisterSpace.sizeof);
+		//kprintfln!("error mapping apic register space! {x} ... {x}")(mpInformation.configTable.addressOfLocalAPIC, mpInformation.configTable.addressOfLocalAPIC + apicRegisterSpace.sizeof);
 		return;
 	}
 
+	ubyte* firstSpace;
+
+	ubyte* trampolineStart;
+	ubyte* trampolineEnd;
+
+	// map first megabyte
+	if (vmem.map_range(
+		cast(ubyte*)0,
+		0x100000,
+		firstSpace) != ErrorVal.Success)
+	{
+		//kprintfln!("error mapping initial megabyte of space")();
+		return;
+	}
+
+	// get trampoline start and end from linker
+	asm
+	{
+		"movq $_trampoline, %%rax";
+		"movq %%rax, %0" :: "o" trampolineStart;
+
+		"movq $_etrampoline, %%rax";
+		"movq %%rax, %0" :: "o" trampolineEnd;
+	}
+
+	//kprintfln!("Trampoline Code: {x} - {x}")(trampolineStart, trampolineEnd);
+
+	trampolineStart += vmem.VM_BASE_ADDR;
+	trampolineEnd += vmem.VM_BASE_ADDR;
+
+	// copy trampoline code to first megabyte
+
+	ubyte* trampolineDestination = firstSpace;
+	for ( ; trampolineStart < trampolineEnd ; trampolineStart++, trampolineDestination++)
+	{
+		(*trampolineDestination) = (*trampolineStart);
+	}	
+
 	// get the apic address space, and add it to the base information
 	mpInformation.apicRegisters = cast(apicRegisterSpace*)(apicRange);
-	kprintfln!("local APIC address: {x}")(mpInformation.apicRegisters);
+	//kprintfln!("local APIC address: {x}")(mpInformation.apicRegisters);
 
 	enableLocalApic(mpInformation);
 }
@@ -108,7 +173,102 @@ void enableLocalApic(ref mpBase mpInformation)
 {
 	// enable the APIC (just in case it is not enabled)
 	mpInformation.apicRegisters.spuriousIntVector |= 0x100;
-	kprintfln!("{}")(mpInformation.apicRegisters.spuriousIntVector);
-	
-
+	//kprintfln!("{}")(mpInformation.apicRegisters.spuriousIntVector);
 }
+
+void startAPs(ref mpBase mpInformation)
+{
+	// go through the list of AP APIC IDs
+	for (uint i=1; i<mpInformation.processor_count; i++)
+	{
+		printLogLine("Initializing CPU");
+		processorEntry* curProcessor = mpInformation.processors[i];
+
+		// Universal Algorithm
+
+		//kprintfln!("cpu: send INIT")();
+
+		sendINIT(mpInformation, curProcessor.localAPICID);
+
+		uint p;
+		for (uint o=0; o < 10000; o++)
+		{
+			p = o << 5 + 10;			
+		}
+
+		//kprintfln!("cpu: send Startup")();
+
+		sendStartup(mpInformation, curProcessor.localAPICID);	
+		
+		for (uint o=0; o < 10000; o++)
+		{
+			p = o << 5 + 10;			
+		}
+
+		//kprintfln!("cpu: send Startup... again")();	
+
+		sendStartup(mpInformation, curProcessor.localAPICID);			
+		
+		for (uint o=0; o < 10000; o++)
+		{
+			p = o << 5 + 10;			
+		}
+
+		printLogSuccess();
+	}
+}
+
+
+
+
+
+
+enum DeliveryMode
+{
+	Fixed,
+	LowestPriority,
+	SMI,
+	Reserved,
+	NonMaskedInterrupt,
+	INIT,
+	Startup,
+}
+
+void sendINIT(ref mpBase mpInformation, ubyte ApicID)
+{
+	sendIPI(mpInformation, 0, DeliveryMode.INIT, 0, 0, ApicID);
+}
+
+void sendStartup(ref mpBase mpInformation, ubyte ApicID)
+{
+	sendIPI(mpInformation, 0, DeliveryMode.Startup, 0, 0, ApicID);
+}
+
+// the destinationField is the apic ID of the processor to send the interrupt
+void sendIPI(ref mpBase mpInformation, ubyte vectorNumber, DeliveryMode dmode, bool destinationMode, ubyte destinationShorthand, ubyte destinationField)
+{
+	// form the higher part first
+	uint hiword = cast(uint)destinationField << 24;
+
+	// set the high part
+	mpInformation.apicRegisters.interruptCommandHi = hiword;
+
+	// form the lower part now
+	uint loword = cast(uint)vectorNumber;
+	loword |= cast(uint)dmode << 8;
+
+	if (destinationMode)
+	{
+		loword |= (1 << 11);
+	}
+	
+	loword |= cast(uint)destinationShorthand << 18;
+
+	// when this is set, the interrupt should be sent
+	mpInformation.apicRegisters.interruptCommandLo = loword;
+}
+
+
+
+
+
