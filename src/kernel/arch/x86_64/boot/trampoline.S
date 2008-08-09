@@ -1,3 +1,8 @@
+// trampoline.S
+// -----------------
+// This file contains the code for starting application processors in a
+// multiprocessor environment.  It starts in 16 bit Real Mode and should
+// end up in long mode before running kernel code.
 
 #include "boot.h"
 
