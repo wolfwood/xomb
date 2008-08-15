@@ -16,28 +16,77 @@ _trampoline_start:
 		/* to appease conspiracy theorists */
 		cli		
 
+		/* set the stack */
+		mov (trampoline_stack_end - trampoline_start), %sp
+
 		/* clear segment registers */
-		mov %ax, %ax
+		mov %cs, %ax
 		mov %ax, %ds
 		mov %ax, %ss
+		mov %ax, %es
 
-		hlt
-
-		/* turn on paging and protected mode */
-		movl $0x80000001, %eax
-		mov %eax, %cr0
-
+		/* Load the 32 bit GDT */
+		lgdt	(p_trampoline_gdt - trampoline_start)
 
 		nop
 		nop
 
 
+	 	xor	%ax, %ax
+	 	inc	%ax		# protected mode (PE) bit
+	 	lmsw	%ax		# into protected mode
 
-
-
-		
 		/* "long" jump into protected mode */
-		ljmp $0x8, $(trampoline_protected - trampoline_start)
+		ljmp $CS_KERNEL32, $(trampoline_protected - trampoline_start)
+
+		/* GDT */
+
+
+
+/* GDT */
+
+	.align 4096
+	.globl p_trampoline_gdt
+p_trampoline_gdt:
+	.word	trampoline_gdt_end - trampoline_gdt - 1
+	.quad	trampoline_gdt - trampoline_start
+
+.align 4096
+trampoline_gdt:
+	.quad	0x0000000000000000	/* NULL descriptor */
+	.quad	0x00cf9a000000ffff	/* __KERNEL32_CS */
+	.quad	0x00af9a000000ffff	/* __KERNEL_CS */
+	.quad	0x0000000000000000	/* upper half of CS */	
+	.quad	0x00af93000000ffff	/* __KERNEL_DS */
+	.quad	0x0000000000000000	/* upper half of DS */
+	.quad	0x00affa000000ffff	/* __USER_CS */
+	.quad	0x0000000000000000	/* upper half of CS */
+	.quad	0x00aff3000000ffff	/* __USER_DS  */
+	.quad	0x0000000000000000	/* upper half of DS */
+	.quad	0,0			/* TSS */
+	.quad	0,0			/* TSS */
+	.quad	0,0			/* LDT */
+	.quad	0,0			/* LDT */
+
+	// wtf?
+	.quad   0,0,0			/* three TLS descriptors */
+	.quad	0x0000f40000000000	/* node/CPU stored in limit */
+trampoline_gdt_end:
+
+
+
+
+
+
+
+/* STACK */
+.align 4096
+trampoline_stack:
+	.comm trampoline__stack, 4096
+trampoline_stack_end:
+
+
+
 
 
 
@@ -49,10 +98,7 @@ _trampoline_start:
 		/* PROTECTED MODE */
 		
 	.code32
-
 trampoline_protected:
-
-		hlt
 		
 		/* enable 64-bit page-translation-table entries by
 			setting CR4.PAE=1.  Paging not enabled until after
@@ -69,18 +115,21 @@ trampoline_protected:
 		/* Enable Long mode and SYSCALL/SYSRET instructions */
 		movl $0xc0000080, %ecx
 		rdmsr
+
+		xor %eax, %eax
 		bts $8, %eax
 		bts $0, %eax
 		wrmsr 
 
 		/* Load the 32 bit GDT */
-		lgdt	(pGDT32)
+		//lgdt	(pGDT32)
 
 		/* Load the 32 bit IDT */
-		lidt	(pIDT32)
+	//	lidt	(pIDT32)
+//		hlt
 
 		/* establish a stack for 32 bit code */
-		/* mov    $((stack-KERNEL_VMA_BASE) + STACK_SIZE), %esp */
+		//mov    $((stack-KERNEL_VMA_BASE) + STACK_SIZE), %esp
 
 		/* enable paging to activate long mode */
 		movl %cr0, %eax
@@ -88,18 +137,9 @@ trampoline_protected:
 		movl %eax, %cr0
 
 		/* jump to long mode */
-		ljmp $CS_KERNEL, $(start64-KERNEL_VMA_BASE)
-
-
-
-
+		ljmp $CS_KERNEL, $(start64_ap - KERNEL_VMA_BASE)
 
 		/* LONG MODE */
-
-	.code64
-
-		/* just halt */
-		hlt
 
 nop
 nop

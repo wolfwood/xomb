@@ -58,6 +58,12 @@ The 32 bit bootstrap code that serves these functions:
 start:
 _start:
 	.code32
+
+		/* Stash values for multiboot we won't touch until 64 bit mode */
+		movl %ebx, %esi
+		movl %eax, %edi
+
+		/* jump to the 32 bit common start */
 		jmp (multiboot_entry)
 
 		/* Align 32 bits boundary. */
@@ -92,6 +98,20 @@ multiboot_entry:
 		/* Stash values for multiboot we won't touch until 64 bit mode */
 		movl %ebx, %esi
 		movl %eax, %edi
+
+		xor %eax, %eax
+
+		jmp start32
+
+		/* trampoline code may go here */
+
+.global start32, _start32
+
+_start32:
+start32:
+
+		test $0x1, %eax
+		jne start32_ap
 
 		/* enable 64-bit page-translation-table entries by
 			setting CR4.PAE=1.  Paging not enabled until after
@@ -130,7 +150,9 @@ multiboot_entry:
 		ljmp $CS_KERNEL, $(start64-KERNEL_VMA_BASE)
 
 
+start32_ap:
 
+		hlt
 
 
 

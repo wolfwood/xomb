@@ -10,6 +10,7 @@ boot.h
 /* the code section for the kernel
    0x10 = code section 2 ( right shift it by 3 ) */
 #define CS_KERNEL 0x10
+#define CS_KERNEL32 0x8
 
 /* the location, in physical address (LMA) and virtual (VMA) */
 /* these should correspond to linker.ld */

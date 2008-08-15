@@ -179,7 +179,7 @@ void enableLocalApic(ref mpBase mpInformation)
 void startAPs(ref mpBase mpInformation)
 {
 	// go through the list of AP APIC IDs
-	for (uint i=1; i<mpInformation.processor_count; i++)
+	for (uint i=0; i<mpInformation.processor_count; i++)
 	{
 		printLogLine("Initializing CPU");
 		processorEntry* curProcessor = mpInformation.processors[i];

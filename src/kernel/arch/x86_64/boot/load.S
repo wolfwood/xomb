@@ -80,15 +80,72 @@ loop:
 		hlt
 		jmp     loop
 
+.globl start64_ap
+start64_ap:
+
+
+		/* Initialize the 64 bit stack pointer. */
+		movq $((stack - KERNEL_VMA_BASE) + STACK_SIZE), %rsp
+
+		/* set up the stack for the return */
+		pushq $CS_KERNEL
+		pushq $long_entry_ap
+
+		/* Go into canonical higher half */
+		/* This trick is borrowed from the linux kernel, 
+		   /arch/x86_64/kernel/head.S */
+
+		lretq 
+
+long_entry_ap:
+
+		/* From here on out, we are running instructions
+		   Within the higher half (0xffffffff80000000 ... )
+
+		   We can safely unmap the lower half, we do not
+		   need an identity mapping of the lower half. */
+		
+		movq $(stack2 + STACK_SIZE), %rsp
+
+		/* Set cpu flags */
+		pushq $0
+		lss (%rsp), %eax
+		popf
+
+		/* Sets the Input/Output Permission Level to 3, so
+		that it will not check the IO permissions bitmap when access is requested. */
+
+		pushf
+		popq %rax
+		or $0x3000, %rax
+		pushq %rax
+		popf
+
+		/* go into the kernel */
+		call EXT_C(kmain_ap)
+
+		/* just halt */
+		hlt
 
 
 
 // --- STACK --- //
-
+.globl stack
 .align 4096
 
 	// Our stack area.
+stack:
+	.rept STACK_SIZE
+	.long 0
+	.endr
 
-	.comm stack, STACK_SIZE
+.globl stack2
+.align 4096
+
+	// Our stack area.
+stack2:
+	.rept STACK_SIZE
+	.long 0
+	.endr
 
 // --- END STACK --- //

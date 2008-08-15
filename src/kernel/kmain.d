@@ -41,6 +41,18 @@ and "addr," the address of the multiboot variable, passed by the GRUB bootloader
 		addr = the address of the multiboot header, passed to the kernel to by the
 			GRUB bootloader.
 */
+
+	locks.kmutex m;
+
+extern(C) void kmain_ap()
+{
+	locks.get_kmutex(&m);
+	printLogSuccess();
+	locks.release_kmutex(&m);
+
+	for(;;) { }
+}
+
 extern(C) void kmain(uint magic, uint addr)
 {
 	int mb_flag = 0;
@@ -127,6 +139,7 @@ extern(C) void kmain(uint magic, uint addr)
 		printLogFail();	
 	}
 
+	locks.get_kmutex(&m);
 
 
 
@@ -139,7 +152,10 @@ extern(C) void kmain(uint magic, uint addr)
 	mp.initAPIC();
 
 
-
+	printLogLine("The second CPU will post OK");
+	locks.release_kmutex(&m);
+	locks.get_kmutex(&m);
+	
 
 	kprintfln!("")();
 
