@@ -170,16 +170,14 @@ struct Console
 {
 static:
 
-	kmutex vgaMutex;
-
 	/// The number of columns a standard screen is wide.
 	const uint Columns = 80;
 	
 	/// The number of lines contained in a standard screen.
 	const uint Lines = 24;
-	// The default color for the text the kernel will use when first printing out.
+	/// The default color for the text the kernel will use when first printing out.
 	const ubyte DefaultColors = Color.LightGray;
-	/// A pointer to the beginning of video memory, so the kernel can be gin writing to the screen.
+	/// A pointer to the beginning of video memory, so the kernel can begin writing to the screen.
 	private ubyte* VideoMem = cast(ubyte*)0xffffffff800B8000;
 	/// The initial x-position of the cursor.
 	private int xpos = 0;
@@ -189,6 +187,9 @@ static:
 	private ubyte colors = DefaultColors;
 	/// The width of a tab.  It's 4, goddammit.
 	const Tabstop = 4;
+	/// print lock and x/y coordinates lock
+	kmutex printLock;
+	kmutex coordLock;
 
 	/**
 	This method clears the screen and returns the cursor to its default position.
@@ -198,9 +199,10 @@ static:
 		/// Set all pieces of video memory to nothing.
 		for(int i = 0; i < Columns * Lines * 2; i++)
 			volatile *(VideoMem + i) = 0;
-
+		coordLock.lock();
 		xpos = 0;
 		ypos = 0;
+		coordLock.unlock();
 	}
 
 	void getPosition(out int x, out int y)
@@ -216,8 +218,10 @@ static:
 		if (x >= Columns) { x = Columns-1; }
 		if (y >= Lines) { y = Lines-1; }
 
+		coordLock.lock();
 		xpos = x;
 		ypos = y;
+		coordLock.unlock();
 	}
 
 	/**
@@ -232,8 +236,10 @@ static:
 		{
 			/// If it is, increase the cursor's y-position, thus creating a new line.
 			newline:
+				coordLock.lock();
 				xpos = 0;
 				ypos++;
+				coordLock.unlock();
 
 				/// If the printing has reached the end of the screen, set the y-cursor to the top of the screen.
 				if(ypos >= Lines)
@@ -243,7 +249,11 @@ static:
 		}
 
 		if(c == '\t')
+		{
+			coordLock.lock();
 			xpos += Tabstop;
+			coordLock.unlock();
+		}
 		else
 		{
 			// Set the current piece of video memory to the character to print.
@@ -251,7 +261,9 @@ static:
 			volatile *(VideoMem + (xpos + ypos * Columns) * 2 + 1) = colors;
 
 			// Increase the cursor position.
+			coordLock.lock();
 			xpos++;
+			coordLock.unlock();
 		}
 
 		// If you have reached the end of the screen, create a new line (declared above).
@@ -359,14 +371,17 @@ static:
 			offset1 += Columns;
 	    }
 	
+		coordLock.lock();
 		ypos -= numlines;
 	
 		if(ypos < 0)
 			ypos = 0;
+		coordLock.unlock();
 	}
 
 	void printInt(long i, char[] fmt)
-	{
+	{		
+		printLock.lock();
 		char[20] buf;
 		
 		if(fmt.length is 0)
@@ -376,30 +391,39 @@ static:
 		else if(fmt[0] is 'u' || fmt[0] is 'U')
 			putstr(itoa(buf, 'u', i));
 		else if(fmt[0] is 'x' || fmt[0] is 'X')
-			putstr(itoa(buf, 'x', i));
+			putstr(itoa(buf, 'x', i));		
+		printLock.unlock();
 	}
 	
 	void printFloat(real f, char[] fmt)
 	{
+		printLock.lock();
 		putstr("?float?");
+		printLock.unlock();
 	}
 	
 	void printChar(dchar c, char[] fmt)
 	{
+		printLock.lock();
 		putchar(c);
+		printLock.unlock();
 	}
 
 	void printString(T)(T s, char[] fmt)
 	{
+		printLock.lock();
 		static assert(isStringType!(T));
 		putstr(s);
+		printLock.unlock();
 	}
 
 	void printPointer(void* p, char[] fmt)
 	{
+		printLock.lock();
 		putstr("0x");
 		char[20] buf;
 		putstr(itoa(buf, 'x', cast(ulong)p));
+		printLock.unlock();
 	}
 
 	template kprintf(char[] Format)
@@ -421,6 +445,7 @@ static:
 	
 	void printStruct(T)(ref T s, bool recursive = false, ulong indent = 0)
 	{
+		printLock.lock();
 		static assert(is(T == struct), "printStruct - Type must be a struct");
 		
 		void tabs()
@@ -481,6 +506,7 @@ static:
 					kprintfln!(fieldNames[i] ~ " = {}")(s.tupleof[i]);
 			}
 		}
+		printLock.unlock();
 	}
 }
 

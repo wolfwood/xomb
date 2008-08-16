@@ -7,11 +7,11 @@ const char[] spaces = ".........................................................
 
 void printLogLine(char[] string)
 {
-	Console.setColors(Color.White, Color.Black);
+	Console.resetColors();
 	kprintf!("  .  {} {} [ ")(string, spaces[0..65-string.length]);
 	Console.setColors(Color.Yellow, Color.Black);
 	kprintf!(".. ")();
-	Console.setColors(Color.White, Color.Black);
+	Console.resetColors();
 	kprintf!("]")();
 }
 
