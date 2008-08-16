@@ -195,7 +195,8 @@ static:
 	This method clears the screen and returns the cursor to its default position.
 	*/
 	void cls()
-	{
+	{	
+		printLock.lock();
 		/// Set all pieces of video memory to nothing.
 		for(int i = 0; i < Columns * Lines * 2; i++)
 			volatile *(VideoMem + i) = 0;
@@ -203,6 +204,7 @@ static:
 		xpos = 0;
 		ypos = 0;
 		coordLock.unlock();
+		printLock.unlock();
 	}
 
 	void getPosition(out int x, out int y)
@@ -231,7 +233,7 @@ static:
 		Params:
 			c = The character you wish to print to the screen.
 	*/
-	void putchar(char c)
+	private void putchar(char c)
 	{
 		/// Check to make sure that c is not a standard escape sequence.
 		if(c == '\n' || c == '\r')
@@ -279,7 +281,7 @@ static:
 	Params:
 		s = The string to output.
 	*/
-	void putstr(char[] s)
+	private void putstr(char[] s)
 	{
 		foreach(c; s)
 			putchar(c);
@@ -331,7 +333,7 @@ static:
 			numlines = The number of lines that should be added to the bottom of the screen
 				after the scrolling is complete.
 	*/
-	void scrollDisplay(int numlines)
+	private void scrollDisplay(int numlines)
 	{
 		/// The function received no lines. Do nothing.
 		if(numlines <= 0)
@@ -381,9 +383,8 @@ static:
 		coordLock.unlock();
 	}
 
-	void printInt(long i, char[] fmt)
+	private void printInt(long i, char[] fmt)
 	{		
-		printLock.lock();
 		char[20] buf;
 		
 		if(fmt.length is 0)
@@ -393,46 +394,39 @@ static:
 		else if(fmt[0] is 'u' || fmt[0] is 'U')
 			putstr(itoa(buf, 'u', i));
 		else if(fmt[0] is 'x' || fmt[0] is 'X')
-			putstr(itoa(buf, 'x', i));		
-		printLock.unlock();
+			putstr(itoa(buf, 'x', i));	
 	}
 	
-	void printFloat(real f, char[] fmt)
+	private void printFloat(real f, char[] fmt)
 	{
-		printLock.lock();
 		putstr("?float?");
-		printLock.unlock();
 	}
 	
-	void printChar(dchar c, char[] fmt)
+	private void printChar(dchar c, char[] fmt)
 	{
-		printLock.lock();
 		putchar(c);
-		printLock.unlock();
 	}
 
-	void printString(T)(T s, char[] fmt)
+	private void printString(T)(T s, char[] fmt)
 	{
-		printLock.lock();
 		static assert(isStringType!(T));
 		putstr(s);
-		printLock.unlock();
 	}
 
-	void printPointer(void* p, char[] fmt)
+	private void printPointer(void* p, char[] fmt)
 	{
-		printLock.lock();
 		putstr("0x");
 		char[20] buf;
 		putstr(itoa(buf, 'x', cast(ulong)p));
-		printLock.unlock();
 	}
 
 	template kprintf(char[] Format)
 	{
 		void kprintf(Args...)(Args args)
 		{
+			printLock.lock();
 			mixin(ConvertFormat!(Format, Args));
+			printLock.unlock();
 		}
 	}
 
@@ -440,11 +434,13 @@ static:
 	{
 		void kprintfln(Args...)(Args args)
 		{
+			printLock.lock();
 			mixin(ConvertFormat!(Format, Args));
 			putchar('\n');
+			printLock.unlock();
 		}
 	}
-	
+	 
 	void printStruct(T)(ref T s, bool recursive = false, ulong indent = 0)
 	{
 		printLock.lock();
