@@ -19,21 +19,51 @@ struct kmutex {
 		// use this for atomic lock checks
 	int num_accesses = 0; // num times accessed .
 	int num_blocks = 0; // num times unsuccessful access
+
+
+
+	// Functions //
+	void lock(){
+		// why does this loop look like it does?
+		// see http://en.wikipedia.org/wiki/Test_and_Test-and-set
+		do {
+			while (lock_val == KMUTEX_LOCKED) {}
+		} while (kmutex_test_and_set(&lock_val) != KMUTEX_UNLOCKED);
+		// if it returns _UNLOCKED then we got the lock
+	}
+
+	bool lock_nowait(){
+		return kmutex_test_and_set(&lock_val)==KMUTEX_UNLOCKED;
+	}
+
+	void unlock(){
+		lock_val = KMUTEX_UNLOCKED;
+	}
 }
 
-void get_kmutex(kmutex* lock){
-	// why does this loop look like it does?
-	// see http://en.wikipedia.org/wiki/Test_and_Test-and-set
-	do {
-		while (lock.lock_val == KMUTEX_LOCKED) {}
-	} while (kmutex_test_and_set(&lock.lock_val) != KMUTEX_UNLOCKED);
-	// if it returns _UNLOCKED then we got the lock
+
+
+int test_kmutex(){
+	kmutex m;
+	if (m.lock_val != KMUTEX_UNLOCKED) { return -1; }
+
+	int lv = m.lock_nowait();
+	//if (lv != KMUTEX_UNLOCKED) { return -2; }
+	if (!lv) { return -2; }
+	if (m.lock_val != KMUTEX_LOCKED) { return -3; }
+	
+	lv = m.lock_nowait();
+	//if (lv != KMUTEX_LOCKED) { return -4; }
+	if (lv) { return -4; }
+	if (m.lock_val != KMUTEX_LOCKED) { return -5; }
+	
+	m.unlock();
+	if (m.lock_val != KMUTEX_UNLOCKED) {return -6; }
+	
+	return 0;
 }
 
-// returns true if get lock...
-int get_kmutex_nowait(kmutex* lock){
-	return kmutex_test_and_set(&lock.lock_val)==KMUTEX_UNLOCKED;
-}
+private:
 
 // (re)locks lock_val and returns current lock_val
 int kmutex_test_and_set(int* lock_val_p){
@@ -45,29 +75,5 @@ int kmutex_test_and_set(int* lock_val_p){
 		: ;
 	}
 	return check;
-}
-
-void release_kmutex(kmutex* lock){
-	lock.lock_val = KMUTEX_UNLOCKED;
-}
-
-int test_kmutex(){
-	kmutex m;
-	if (m.lock_val != KMUTEX_UNLOCKED) { return -1; }
-
-	int lv = get_kmutex_nowait(&m);
-	//if (lv != KMUTEX_UNLOCKED) { return -2; }
-	if (!lv) { return -2; }
-	if (m.lock_val != KMUTEX_LOCKED) { return -3; }
-	
-	lv = get_kmutex_nowait(&m);
-	//if (lv != KMUTEX_LOCKED) { return -4; }
-	if (lv) { return -4; }
-	if (m.lock_val != KMUTEX_LOCKED) { return -5; }
-	
-	release_kmutex(&m);
-	if (m.lock_val != KMUTEX_UNLOCKED) {return -6; }
-	
-	return 0;
 }
 
