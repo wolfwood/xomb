@@ -6,7 +6,7 @@ module kernel.dev.lapic;
 import kernel.dev.vga;
 
 // Needs the ability to add virtual pages and ranges
-import vmem = kernel.mem.vmem;
+import kernel.mem.vmem;
 
 // log
 import kernel.log;
@@ -115,7 +115,7 @@ void initLocalApic(ref mpBase mpInformation)
 	ubyte* apicRange;
 
 	// this function will set apicRange to the virtual address of the bios region
-	if (vmem.map_range(
+	if (vMem.map_range(
 		cast(ubyte*)mpInformation.configTable.addressOfLocalAPIC,
 		apicRegisterSpace.sizeof,
 		apicRange) != ErrorVal.Success)
@@ -130,7 +130,7 @@ void initLocalApic(ref mpBase mpInformation)
 	ubyte* trampolineEnd;
 
 	// map first megabyte
-	if (vmem.map_range(
+	if (vMem.map_range(
 		cast(ubyte*)0,
 		0x100000,
 		firstSpace) != ErrorVal.Success)
@@ -151,8 +151,8 @@ void initLocalApic(ref mpBase mpInformation)
 
 	//kprintfln!("Trampoline Code: {x} - {x}")(trampolineStart, trampolineEnd);
 
-	trampolineStart += vmem.VM_BASE_ADDR;
-	trampolineEnd += vmem.VM_BASE_ADDR;
+	trampolineStart += vMem.VM_BASE_ADDR;
+	trampolineEnd += vMem.VM_BASE_ADDR;
 
 	// copy trampoline code to first megabyte
 

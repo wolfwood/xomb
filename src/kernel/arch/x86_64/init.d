@@ -7,8 +7,7 @@ import kernel.arch.select;
 import idt = kernel.arch.x86_64.idt;
 import gdt = kernel.arch.x86_64.gdt;
 
-import vmem = kernel.mem.vmem;
-import pmem = kernel.mem.pmem;
+import kernel.mem.vmem;
 
 import kernel.dev.vga;
 
@@ -49,7 +48,7 @@ static:
 		printLogSuccess();
 
 		printLogLine("Installing Paging Mechanism");
-		idt.setCustomHandler(idt.Type.PageFault, &vmem.handle_faults);
+		idt.setCustomHandler(idt.Type.PageFault, &vMem.fault_handler);
 		printLogSuccess();
 	}
 

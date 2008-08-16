@@ -10,8 +10,10 @@ module kernel.kmain;
 // log
 import kernel.log;
 
-import vmem = kernel.mem.vmem;
-import pmem = kernel.mem.pmem;
+import kernel.mem.vmem;
+import kernel.mem.pmem;
+
+import kernel.core.multiboot;
 
 import kernel.dev.vga;
 
@@ -54,7 +56,8 @@ extern(C) void kmain_ap()
 }
 
 extern(C) void kmain(uint magic, uint addr)
-{
+{	
+	auto mbi = cast(multiboot_info_t*)addr;
 	int mb_flag = 0;
 
 	// Clear the screen in order to begin printing.
@@ -98,7 +101,7 @@ extern(C) void kmain(uint magic, uint addr)
 
 	printLogLine("Installing Heap Allocator");
 	// Set up the heap memory allocator
-	if (pmem.setup_pmem_bitmap(addr) == ErrorVal.Success)
+	if (pMem.install(mbi) == ErrorVal.Success)
 	{
 		printLogSuccess();
 	}
@@ -107,10 +110,10 @@ extern(C) void kmain(uint magic, uint addr)
 		printLogFail();
 	}
 
-	//pmem.test_pmem();
+	//pMem.test();
 
 	printLogLine("Installing Page Tables");
-	vmem.reinstall_kernel_page_tables(addr);
+	vMem.install();
 	printLogSuccess();
 
 	// Turn general interrupts on, so the computer can deal with errors and faults.

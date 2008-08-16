@@ -10,7 +10,7 @@ import kernel.arch.select;
 
 import kernel.error;
 import kernel.mem.vmem_structs;
-import vmem = kernel.mem.vmem;
+import kernel.mem.vmem;
 import kernel.core.util;
 import kernel.dev.vga;
 
@@ -187,10 +187,10 @@ ErrorVal init()
 
 	ubyte* virtualAddress;
 	ubyte* virtualEnd;
-	mpFloatingPointer* tmp = scan(cast(ubyte*)0xF0000+vmem.VM_BASE_ADDR,cast(ubyte*)0xFFFFF+vmem.VM_BASE_ADDR);
+	mpFloatingPointer* tmp = scan(cast(ubyte*)0xF0000+vMem.VM_BASE_ADDR,cast(ubyte*)0xFFFFF+vMem.VM_BASE_ADDR);
 	if(tmp == null)
 	{
-		virtualAddress = cast(ubyte*)0x9fc00+vmem.VM_BASE_ADDR;
+		virtualAddress = cast(ubyte*)0x9fc00+vMem.VM_BASE_ADDR;
 		virtualEnd = virtualAddress + 0x400;
 		tmp = scan(virtualAddress,virtualEnd);
 		if(tmp == null)
@@ -232,7 +232,7 @@ private ErrorVal initConfigurationTable()
 	if (mpInformation.pointerTable.mpFeatures1 == 0)
 	{
 		// This means that the configuration table is present.
-		mpInformation.configTable = cast(mpConfigurationTable*)(vmem.VM_BASE_ADDR + cast(ulong)mpInformation.pointerTable.mpConfigPointer);
+		mpInformation.configTable = cast(mpConfigurationTable*)(vMem.VM_BASE_ADDR + cast(ulong)mpInformation.pointerTable.mpConfigPointer);
 		if (!isChecksumValid(cast(ubyte*)mpInformation.configTable, mpInformation.configTable.baseTableLength))
 		{
 			return ErrorVal.Fail;
