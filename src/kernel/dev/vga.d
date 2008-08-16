@@ -5,6 +5,8 @@ through VGA.
 
 module kernel.dev.vga;
 
+import kernel.arch.locks;
+
 import kernel.core.system;
 import kernel.core.util;
 
@@ -167,6 +169,9 @@ initial position for the cursor when the kernel first executes.
 struct Console
 {
 static:
+
+	kmutex vgaMutex;
+
 	/// The number of columns a standard screen is wide.
 	const uint Columns = 80;
 	

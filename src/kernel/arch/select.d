@@ -16,7 +16,7 @@ public import kernel.arch.x86_64.init;
 public import syscall = kernel.arch.x86_64.syscall;
 
 // LOCKS
-public import locks = kernel.arch.x86_64.locks;
+public import kernel.arch.locks;
 
 
 

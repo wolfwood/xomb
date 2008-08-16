@@ -42,7 +42,7 @@ and "addr," the address of the multiboot variable, passed by the GRUB bootloader
 			GRUB bootloader.
 */
 
-	locks.kmutex apMutex;
+	kmutex apMutex;
 
 extern(C) void kmain_ap()
 {
@@ -129,7 +129,7 @@ extern(C) void kmain(uint magic, uint addr)
 
 	// TESTING MUTEXES
 	printLogLine("Testing Kernel Locks");
-	int failcode = locks.test_kmutex();
+	int failcode = test_kmutex();
 	if (failcode == 0)
 	{
 		printLogSuccess();
