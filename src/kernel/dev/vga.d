@@ -207,8 +207,10 @@ static:
 
 	void getPosition(out int x, out int y)
 	{
+		coordLock.lock();
 		x = xpos;
 		y = ypos;
+		coordLock.unlock();
 	}
 
 	void setPosition(int x, int y)
@@ -458,7 +460,10 @@ static:
 		
 		tabs();
 		indent++;
+
+		printLock.unlock();
 		kprintfln!(T.stringof ~ " ({})")(&s);
+		printLock.lock();
 
 		foreach(i, _; s.tupleof)
 		{
@@ -479,21 +484,33 @@ static:
 						else
 						{
 							putchar('\n');
+							printLock.unlock();
 							printStruct(*s.tupleof[i], true, indent);
+							printLock.lock();
 						}
 					}
 					else
 					{
 						putchar('\n');
+						printLock.unlock();
 						printStruct(s.tupleof[i], true, indent);
+						printLock.lock();
 					}
 				}
 				else
 				{
 					static if(isPointerType!(typeof(s.tupleof[i])))
+					{
+						printLock.unlock();
 						kprintfln!(fieldNames[i] ~ " = {x}")(s.tupleof[i]);
+						printLock.lock();
+					}
 					else
+					{
+						printLock.unlock();
 						kprintfln!(fieldType.stringof ~ " " ~ fieldNames[i] ~ " (struct)");
+						printLock.lock();
+					}
 				}
 			}
 			else
@@ -501,9 +518,17 @@ static:
 				tabs();
 
 				static if(isIntType!(typeof(s.tupleof[i])))
+				{
+					printLock.unlock();
 					kprintfln!(fieldNames[i] ~ " = 0x{x}")(s.tupleof[i]);
+					printLock.lock();
+				}
 				else
+				{
+					printLock.unlock();
 					kprintfln!(fieldNames[i] ~ " = {}")(s.tupleof[i]);
+					printLock.lock();
+				}
 			}
 		}
 		printLock.unlock();
