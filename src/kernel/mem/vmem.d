@@ -199,11 +199,14 @@ struct vMem
 		// Set correct flags, present, rw, usable
 		pageLevel3[510].pml3e |= 0x7;
 
+		// forward reference a page level 1 array
+		pml1[] pageLevel1;
+
 		auto addr = 0x00; 		// Current addr
 		
 		for(int i = 0, j = 0; i < kernel_size; i += 512, j++) {
 			// Make some page table entries
-			pml1[] pageLevel1 = (cast(pml1*)pMem.request_page())[0 .. 512];
+			pageLevel1 = (cast(pml1*)pMem.request_page())[0 .. 512];
 
 			// Set pml2e to the pageLevel 1 entry
 			pageLevel2[j].pml2e = cast(ulong)pageLevel1.ptr;
@@ -219,38 +222,7 @@ struct vMem
 		
 		// Lets map in all of our phyiscal memory here, just so we can write to it
 		// without a chicken and the egg problem...
-	//	map_ram(pageLevel3);
-
-		pml2[] allPhys = (cast(pml2*)pMem.request_page())[0 .. 512];
-
-		allPhys[] = pml2.init;
-		pageLevel3[VM_BASE_INDEX].pml3e = cast(ulong)allPhys.ptr;
-		pageLevel3[VM_BASE_INDEX].pml3e |= 0x7;
-
-		addr = 0x00;
-
-		// Do da mappin'
-		int i = 0;
-		for(int j = 0; i <= ((pMem.mem_size-1) / PAGE_SIZE); i += 512, j++) {
-			// Make some page table entries
-			pml1[] pageLevel1 = (cast(pml1*)pMem.request_page())[0 .. 512];
-
-			// Set pml2e to the pageLevel 1 entry
-			allPhys[j].pml2e = cast(ulong)pageLevel1.ptr;
-			allPhys[j].pml2e |= 0x7;
-			
-			// Now map all the physical addresses :)  YAY!
-			for(int z = 0; z < 512; z++) {
-				pageLevel1[z].pml1e = addr;
-				pageLevel1[z].pml1e |= 0x87;
-				addr += 4096;
-			}
-		}
-
-		// establish the RAM region
-		global_mem_regions.system_memory.virtual_start = cast(ubyte*)VM_BASE_ADDR;
-		global_mem_regions.system_memory.physical_start = cast(ubyte*)0;
-		global_mem_regions.system_memory.length = i * 4096;
+		map_ram(pageLevel3);
 
 		// establish the kernel mapped area (after RAM mapping)
 		// this is for devices and bios regions
@@ -291,31 +263,39 @@ struct vMem
 
 	private void map_ram(ref pml3[] pageLevel3)
 	{
-		auto addr = 0x00; 		// Current addr
+		// forward reference a page level 1 and 2 array
+		pml2[] pageLevel2;
+		pml1[] pageLevel1;
 
-		pml2[] allPhys = (cast(pml2*)pMem.request_page())[0 .. 512];
-
-		allPhys[] = pml2.init;
-		pageLevel3[VM_BASE_INDEX].pml3e = cast(ulong)allPhys.ptr;
-		pageLevel3[VM_BASE_INDEX].pml3e |= 0x7;
-
-		addr = 0x00;
+		ulong addr = 0x00;
 
 		// Do da mappin'
-		int i = 0;
-		for(int j = 0; i <= ((pMem.mem_size-1) / PAGE_SIZE); i += 512, j++) {
-			// Make some page table entries
-			pml1[] pageLevel1 = (cast(pml1*)pMem.request_page())[0 .. 512];
+		ulong i = 0;
+		ulong pageLimit = ((pMem.mem_size-1) / PAGE_SIZE);
 
-			// Set pml2e to the pageLevel 1 entry
-			allPhys[j].pml2e = cast(ulong)pageLevel1.ptr;
-			allPhys[j].pml2e |= 0x7;
-			
-			// Now map all the physical addresses :)  YAY!
-			for(int z = 0; z < 512; z++) {
-				pageLevel1[z].pml1e = addr;
-				pageLevel1[z].pml1e |= 0x87;
-				addr += 4096;
+		for(int k = VM_BASE_INDEX; i <= pageLimit; k++) 
+		{
+			pageLevel2 = (cast(pml2*)pMem.request_page())[0 .. 512];
+	
+			pageLevel2[] = pml2.init;
+			pageLevel3[k].pml3e = cast(ulong)pageLevel2.ptr;
+			pageLevel3[k].pml3e |= 0x7;
+
+			for(int j = 0; i <= pageLimit && j < 512; i += 512, j++)
+			{
+				// Make some page table entries
+				pageLevel1 = (cast(pml1*)pMem.request_page())[0 .. 512];
+	
+				// Set pml2e to the pageLevel 1 entry
+				pageLevel2[j].pml2e = cast(ulong)pageLevel1.ptr;
+				pageLevel2[j].pml2e |= 0x7;
+				
+				// Now map all the physical addresses :)  YAY!
+				for(int z = 0; z < 512; z++) {
+					pageLevel1[z].pml1e = addr;
+					pageLevel1[z].pml1e |= 0x87;
+					addr += 4096;
+				}
 			}
 		}
 
@@ -323,16 +303,6 @@ struct vMem
 		global_mem_regions.system_memory.virtual_start = cast(ubyte*)VM_BASE_ADDR;
 		global_mem_regions.system_memory.physical_start = cast(ubyte*)0;
 		global_mem_regions.system_memory.length = i * 4096;
-
-		// establish the kernel mapped area (after RAM mapping)
-		// this is for devices and bios regions
-		global_mem_regions.kernel_mapped.virtual_start = global_mem_regions.system_memory.virtual_start + global_mem_regions.system_memory.length;
-		global_mem_regions.kernel_mapped.length = 0;
-
-		// the physical start of the kernel mapping is not known
-		global_mem_regions.kernel_mapped.physical_start = global_mem_regions.kernel_mapped.virtual_start;
-		
-		//kprintfln!("virtual mapping starts: {x}")(global_mem_regions.kernel_mapped.virtual_start);
 	}
 
 	// This function will take a physical range (a BIOS region, perhaps) and

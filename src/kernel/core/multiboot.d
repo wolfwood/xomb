@@ -248,12 +248,12 @@ int test_mb_header(uint magic, uint addr)
 
 
 			switch(z) {
-			case 0 :
+			case 0:
 				global_mem_regions.system_memory.physical_start = cast(ubyte*)base_addr;
 				global_mem_regions.system_memory.length = mem_length;
 				global_mem_regions.system_memory.virtual_start = cast(ubyte*)(base_addr + vMem.VM_BASE_ADDR);
 				break;
-			case 1 :
+			case 1:
 				global_mem_regions.bios_data.physical_start = cast(ubyte*)base_addr;
 				global_mem_regions.bios_data.length = mem_length;
 				global_mem_regions.bios_data.virtual_start = cast(ubyte*)(base_addr + vMem.VM_BASE_ADDR);
