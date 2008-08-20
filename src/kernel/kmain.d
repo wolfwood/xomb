@@ -127,9 +127,6 @@ extern(C) void kmain(uint magic, uint addr)
 
 
 
-
-
-
 	// TESTING MUTEXES
 	printLogLine("Testing Kernel Locks");
 	int failcode = test_kmutex();
@@ -143,10 +140,6 @@ extern(C) void kmain(uint magic, uint addr)
 	}
 
 	apMutex.lock();
-
-
-
-
 
 	// initialize multiprocessor information
 	mp.init();

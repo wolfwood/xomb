@@ -420,30 +420,42 @@ static:
 		putstr(itoa(buf, 'x', cast(ulong)p));
 	}
 
-	template kprintf(char[] Format)
+	template kprintf(char[] Format, bool lock = true)
 	{
 		void kprintf(Args...)(Args args)
 		{
-			printLock.lock();
+			if (lock) {
+				printLock.lock();
+			}
 			mixin(ConvertFormat!(Format, Args));
-			printLock.unlock();
+			if (lock) {
+				printLock.unlock();
+			}
 		}
 	}
 
-	template kprintfln(char[] Format)
+	template kprintfln(char[] Format, bool lock = true)
 	{
 		void kprintfln(Args...)(Args args)
 		{
-			printLock.lock();
+			if (lock) {
+				printLock.lock();
+			}
 			mixin(ConvertFormat!(Format, Args));
 			putchar('\n');
-			printLock.unlock();
+			if (lock) {
+				printLock.unlock();
+			}
 		}
 	}
 	 
-	void printStruct(T)(ref T s, bool recursive = false, ulong indent = 0)
+	void printStruct(T)(ref T s, bool recursive = false, ulong indent = 0, bool lock = true)
 	{
-		printLock.lock();
+		if (lock)
+		{
+			printLock.lock();
+		}
+
 		static assert(is(T == struct), "printStruct - Type must be a struct");
 		
 		void tabs()
@@ -457,9 +469,7 @@ static:
 		tabs();
 		indent++;
 
-		printLock.unlock();
-		kprintfln!(T.stringof ~ " ({})")(&s);
-		printLock.lock();
+		kprintfln!(T.stringof ~ " ({})")(&s, false);
 
 		foreach(i, _; s.tupleof)
 		{
@@ -480,32 +490,24 @@ static:
 						else
 						{
 							putchar('\n');
-							printLock.unlock();
-							printStruct(*s.tupleof[i], true, indent);
-							printLock.lock();
+							printStruct(*s.tupleof[i], true, indent, false);
 						}
 					}
 					else
 					{
 						putchar('\n');
-						printLock.unlock();
-						printStruct(s.tupleof[i], true, indent);
-						printLock.lock();
+						printStruct(s.tupleof[i], true, indent, false);
 					}
 				}
 				else
 				{
 					static if(isPointerType!(typeof(s.tupleof[i])))
 					{
-						printLock.unlock();
-						kprintfln!(fieldNames[i] ~ " = {x}")(s.tupleof[i]);
-						printLock.lock();
+						kprintfln!(fieldNames[i] ~ " = {x}")(s.tupleof[i], false);
 					}
 					else
 					{
-						printLock.unlock();
-						kprintfln!(fieldType.stringof ~ " " ~ fieldNames[i] ~ " (struct)");
-						printLock.lock();
+						kprintfln!(fieldType.stringof ~ " " ~ fieldNames[i] ~ " (struct)", false);
 					}
 				}
 			}
@@ -515,19 +517,78 @@ static:
 
 				static if(isIntType!(typeof(s.tupleof[i])))
 				{
-					printLock.unlock();
-					kprintfln!(fieldNames[i] ~ " = 0x{x}")(s.tupleof[i]);
-					printLock.lock();
+					kprintfln!(fieldNames[i] ~ " = 0x{x}")(s.tupleof[i], false);
 				}
 				else
 				{
-					printLock.unlock();
-					kprintfln!(fieldNames[i] ~ " = {}")(s.tupleof[i]);
-					printLock.lock();
+					kprintfln!(fieldNames[i] ~ " = {}")(s.tupleof[i], false);
 				}
 			}
 		}
-		printLock.unlock();
+
+		if (lock)
+		{
+			printLock.unlock();
+		}
+	}
+	 
+	void printArray(T)(T[] s, bool recursive = false, bool lock = true)
+	{
+		if (lock)
+		{
+			printLock.lock();
+		}
+
+		putstr("[ ");
+
+		static assert (isArrayType!(T[]), "printArray - parameter needs to be an array");
+
+		foreach(uint count, item; s)
+		{
+			static if (isArrayType!(typeof(item)))
+			{
+				printArray(item, true, false);
+			}	
+			else static if (isCharType!(T))
+			{
+				putchar(item);
+			}
+			else static if (is(T == struct))
+			{
+				printStruct(item, false, 0, false);
+			}
+			else static if (isSignedIntType!(T))
+			{
+				printInt(item, "d");
+			}
+			else static if (isUnsignedIntType!(T))
+			{
+				printInt(item, "u");
+			}
+			else static if (isPointerType!(T))
+			{
+				printPointer(item);
+			}
+			
+			if (count!=(s.length-1))
+			{				
+				putstr(", ");
+			}
+			else
+			{
+				putstr(" ]");
+			}
+		}
+
+		if (!recursive)
+		{
+			putstr("\n");
+		}
+		
+		if (lock)
+		{
+			printLock.unlock();
+		}
 	}
 }
 
@@ -535,6 +596,7 @@ static:
 alias Console.kprintf kprintf;
 alias Console.kprintfln kprintfln;
 alias Console.printStruct printStruct;
+alias Console.printArray printArray;
 
 extern(C) void kprintString(char* s)
 {

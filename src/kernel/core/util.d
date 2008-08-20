@@ -129,6 +129,28 @@ template isIntType(T)
 }
 
 /**
+Sees if a type is a signed or unsigned byte, short, int, or long.
+*/
+template isUnsignedIntType(T)
+{
+	const bool isUnsignedIntType = is(T == uint) || is(T == ulong) ||
+							is(T == ushort) || is(T == ubyte) /* || is(T == ucent) */;
+}
+
+/**
+Sees if a type is a signed or unsigned byte, short, int, or long.
+*/
+template isSignedIntType(T)
+{
+	const bool isSignedIntType = is(T == int) || is(T == long) ||
+							is(T == short) || is(T == byte) /* || is(T == cent) */;
+}
+
+
+
+
+
+/**
 Sees if a type is float, double, or real.
 */
 template isFloatType(T)
