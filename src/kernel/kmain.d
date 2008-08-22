@@ -144,7 +144,10 @@ extern(C) void kmain(uint magic, uint addr)
 	// initialize multiprocessor information
 	mp.init();
 
-	// initialize APIC
+	// initialize IO APIC
+	mp.initIOAPIC();
+
+	// initialize Local APIC
 	mp.initAPIC();
 
 

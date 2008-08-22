@@ -15,6 +15,7 @@ import kernel.core.util;
 import kernel.dev.vga;
 
 import lapic = kernel.dev.lapic;
+import kernel.dev.ioapic;
 
 const ulong maxProcessorEntries = 255;
 const ulong maxBusEntries = 255;
@@ -363,6 +364,11 @@ mpFloatingPointer* scan(ubyte* start, ubyte* end)
 		}
 	}
 	return null;
+}
+
+void initIOAPIC()
+{
+	IOAPIC.init(mpInformation, mpInformation.ioApics[0]);
 }
 
 void initAPIC()
