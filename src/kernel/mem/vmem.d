@@ -87,7 +87,7 @@ struct vMem
 	                            // Changing this value WILL IMPACT THE VALUE ABOVE IT!!!!!!!!!
 
 
-	void fault_handler(idt.interrupt_stack* ir_stack) 
+	void pageFaultHandler(idt.interrupt_stack* ir_stack) 
 	{
 		// First we need to determine why the page fault happened
 		// This ulong will contain the address of the section of memory being faulted on
@@ -222,7 +222,7 @@ struct vMem
 		
 		// Lets map in all of our phyiscal memory here, just so we can write to it
 		// without a chicken and the egg problem...
-		map_ram(pageLevel3);
+		mapRam(pageLevel3);
 
 		// establish the kernel mapped area (after RAM mapping)
 		// this is for devices and bios regions
@@ -256,12 +256,12 @@ struct vMem
 		// address!
 		pageLevel4 = (cast(pml4*)(cast(void*)pageLevel4.ptr + VM_BASE_ADDR) )[0 .. 512];
 		
-		pageLevel3 = get_pml3(511);
+		pageLevel3 = getPml3(511);
 
 		//kprintfln!("Done Mapping ... {}")(pageLevel3[0].present);
 	}
 
-	private void map_ram(ref pml3[] pageLevel3)
+	private void mapRam(ref pml3[] pageLevel3)
 	{
 		// forward reference a page level 1 and 2 array
 		pml2[] pageLevel2;
@@ -307,7 +307,7 @@ struct vMem
 
 	// This function will take a physical range (a BIOS region, perhaps) and
 	// map it after the end of the physical address range
-	ErrorVal map_range(ubyte* physicalRangeStart, ulong physicalRangeLength, out ubyte* virtualRangeStart)
+	ErrorVal mapRange(ubyte* physicalRangeStart, ulong physicalRangeLength, out ubyte* virtualRangeStart)
 	{
 		// the physical range needs to be aligned by the page
 		if (cast(ulong)physicalRangeStart & (PAGE_SIZE-1))
@@ -357,12 +357,12 @@ struct vMem
 		long pml_index1;
 
 		// get the initial page table entry to set, allocating page tables as necessary
-		allocate_page_entries(virtualRangeStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+		allocatePageEntries(virtualRangeStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
 
-		retrieve_page_entries(virtualRangeStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+		retrievePageEntries(virtualRangeStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
 
-		pl2 = get_pml2(pl3, pml_index3);
-		pl1 = get_pml1(pl2, pml_index2);
+		pl2 = getPml2(pl3, pml_index3);
+		pl1 = getPml1(pl2, pml_index2);
 
 		// map each page
 		for ( ; ; )
@@ -423,17 +423,17 @@ struct vMem
 						return ErrorVal.Fail;
 					}
 
-					pl2 = get_pml2(pl3, pml_index3);
+					pl2 = getPml2(pl3, pml_index3);
 					if (pl2 is null)
 					{
-						pl2 = allocate_pml2(pl3, pml_index3);
+						pl2 = allocatePml2(pl3, pml_index3);
 					}
 				}
 				
-				pl1 = get_pml1(pl2, pml_index2);
+				pl1 = getPml1(pl2, pml_index2);
 				if (pl1 is null)
 				{
-					pl1 = allocate_pml1(pl2, pml_index2);
+					pl1 = allocatePml1(pl2, pml_index2);
 				}
 			}
 		}
@@ -446,7 +446,7 @@ struct vMem
 
 	// Function to get a physical page of memory and map it in to virtual memory
 	// Returns: 1 on success, -1 on failure
-	ErrorVal get_page(bool usermode)(void* vm_address) {
+	ErrorVal getPage(bool usermode)(void* vm_address) {
 
 		vMemMutex.lock();
 
@@ -486,11 +486,11 @@ struct vMem
 		//kprintfln!("level 4 Index = {}")(pml_index);
 		// Check to see if the level 4 [entry] is there (it damn well better be if it does't want to be hit... again)
 		
-		pl3 = allocate_pml3(pml_index4, usermode);
+		pl3 = allocatePml3(pml_index4, usermode);
 
-		pl2 = allocate_pml2(pl3, pml_index3, usermode);
+		pl2 = allocatePml2(pl3, pml_index3, usermode);
 		
-		pl1 = allocate_pml1(pl2, pml_index2, usermode);
+		pl1 = allocatePml1(pl2, pml_index2, usermode);
 
 		// We need to ensure that we aren't writing to a page that is already mapped.s
 		if(!pl1[pml_index1].present)
@@ -516,12 +516,12 @@ struct vMem
 		return ErrorVal.Success;
 	}
 
-	alias get_page!(false) get_kernel_page;
-	alias get_page!(true) get_user_page;
+	alias getPage!(false) getKernelPage;
+	alias getPage!(true) getUserPage;
 
 	// free_page(void* pageAddr) -- this function will free a virtual page
 	// by setting its available bit
-	ErrorVal free_page(void* pageAddr) {
+	ErrorVal freePage(void* pageAddr) {
 
 		vMemMutex.lock();
 
@@ -543,7 +543,7 @@ struct vMem
 		long pml_index2;
 		long pml_index1;
 
-		retrieve_page_entries(pageAddr, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+		retrievePageEntries(pageAddr, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
 		
 		if (pl1 is null)
 		{
@@ -572,7 +572,7 @@ struct vMem
 		return ErrorVal.Success;
 	}
 
-	private void retrieve_page_entries(void* virtual_address, out pml3[] pl3, out pml2[] pl2, out pml1[] pl1, out long pml_index4, out long pml_index3, out long pml_index2, out long pml_index1)
+	private void retrievePageEntries(void* virtual_address, out pml3[] pl3, out pml2[] pl2, out pml1[] pl1, out long pml_index4, out long pml_index3, out long pml_index2, out long pml_index1)
 	{
 		ulong v_address = (cast(ulong)virtual_address) >> 12;
 
@@ -591,7 +591,7 @@ struct vMem
 
 		// Step 1: Traversing the page table
 
-		pl3 = get_pml3(pml_index4);
+		pl3 = getPml3(pml_index4);
 		if (pl3 is null)
 		{
 			// this virtual address has not been mapped
@@ -600,7 +600,7 @@ struct vMem
 			return;
 		}
 
-		pl2 = get_pml2(pl3, pml_index3);
+		pl2 = getPml2(pl3, pml_index3);
 		if (pl2 is null)
 		{
 			// this virtual address has not been mapped
@@ -608,29 +608,29 @@ struct vMem
 			return;
 		}
 
-		pl1 = get_pml1(pl2, pml_index2);
+		pl1 = getPml1(pl2, pml_index2);
 	}
 
-	private ErrorVal allocate_page_entries(void* virtualAddress, out pml3[] pl3, out pml2[] pl2, out pml1[] pl1, out long pml_index4, out long pml_index3, out long pml_index2, out long pml_index1)
+	private ErrorVal allocatePageEntries(void* virtualAddress, out pml3[] pl3, out pml2[] pl2, out pml1[] pl1, out long pml_index4, out long pml_index3, out long pml_index2, out long pml_index1)
 	{
-		retrieve_page_entries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+		retrievePageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
 
 		if (pl3 is null)
 		{
 			// need to allocate page level 3 before we continue
-			pl3 = allocate_pml3(pml_index4);
+			pl3 = allocatePml3(pml_index4);
 		}
 		
 		if (pl2 is null)
 		{
 			// need to allocate page level 2 before we continue
-			pl2 = allocate_pml2(pl3, pml_index3);
+			pl2 = allocatePml2(pl3, pml_index3);
 		}
 		
 		if (pl1 is null)
 		{
 			// need to allocate page level 1 before we continue
-			pl1 = allocate_pml1(pl2, pml_index2);
+			pl1 = allocatePml1(pl2, pml_index2);
 		}
 
 		return ErrorVal.Success;
@@ -641,7 +641,7 @@ struct vMem
 
 	// These spawn functions basically create a new pmlX[], and save us from having
 	// to retype the two lines of code every time.  Yay code reuse!?
-	private pml3[] spawn_pml3() {
+	private pml3[] spawnPml3() {
 		pml3[] pl3 = (cast(pml3*)(pMem.request_page() + VM_BASE_ADDR))[0 .. 512];
 		pl3[] = pml3.init;
 		
@@ -649,14 +649,14 @@ struct vMem
 	}
 
 
-	private pml2[] spawn_pml2() {
+	private pml2[] spawnPml2() {
 		pml2[] pl2 = (cast(pml2*)(pMem.request_page() + VM_BASE_ADDR))[0 .. 512];
 		pl2[] = pml2.init;
 		
 		return pl2[];
 	}
 
-	private pml1[] spawn_pml1() {
+	private pml1[] spawnPml1() {
 		pml1[] pl1 = (cast(pml1*)(pMem.request_page() + VM_BASE_ADDR))[0 .. 512];
 		pl1[] = pml1.init;
 
@@ -666,7 +666,7 @@ struct vMem
 
 
 
-	private pml3[] get_pml3(ulong pml_index4)
+	private pml3[] getPml3(ulong pml_index4)
 	{
 		ulong addr = pageLevel4[pml_index4].address << 12;
 		if (!pageLevel4[pml_index4].present)
@@ -676,7 +676,7 @@ struct vMem
 		return (cast(pml3*)((addr + VM_BASE_ADDR)))[0 .. 512];
 	}
 
-	private pml2[] get_pml2(ref pml3[] pl3, ulong pml_index3)
+	private pml2[] getPml2(ref pml3[] pl3, ulong pml_index3)
 	{
 		ulong addr = pl3[pml_index3].address << 12;
 		if (!pl3[pml_index3].present)
@@ -686,7 +686,7 @@ struct vMem
 		return (cast(pml2*)((addr + VM_BASE_ADDR)))[0 .. 512];
 	}
 
-	private pml1[] get_pml1(ref pml2[] pl2, ulong pml_index2)
+	private pml1[] getPml1(ref pml2[] pl2, ulong pml_index2)
 	{
 		ulong addr = pl2[pml_index2].address << 12;
 		if (!pl2[pml_index2].present)
@@ -699,11 +699,11 @@ struct vMem
 
 
 
-	private pml3[] allocate_pml3(ulong pml_index4, bool usermode = false)
+	private pml3[] allocatePml3(ulong pml_index4, bool usermode = false)
 	{
 		if (!pageLevel4[pml_index4].present)
 		{
-			pml3[] pl3 = spawn_pml3();
+			pml3[] pl3 = spawnPml3();
 			
 			with(pageLevel4[pml_index4])
 			{
@@ -723,11 +723,11 @@ struct vMem
 		return (cast(pml3*)((addr + VM_BASE_ADDR) & ~0x7))[0 .. 512];
 	}
 
-	private pml2[] allocate_pml2(pml3[] pl3, ulong pml_index3, bool usermode = false)
+	private pml2[] allocatePml2(pml3[] pl3, ulong pml_index3, bool usermode = false)
 	{
 		if (!pl3[pml_index3].present)
 		{
-			pml2[] pl2 = spawn_pml2();
+			pml2[] pl2 = spawnPml2();
 			
 			with(pl3[pml_index3])
 			{
@@ -747,11 +747,11 @@ struct vMem
 		return (cast(pml2*)((addr + VM_BASE_ADDR) & ~0x7))[0 .. 512];
 	}
 
-	private pml1[] allocate_pml1(pml2[] pl2, ulong pml_index2, bool usermode = false)
+	private pml1[] allocatePml1(pml2[] pl2, ulong pml_index2, bool usermode = false)
 	{
 		if (!pl2[pml_index2].present)
 		{
-			pml1[] pl1 = spawn_pml1();
+			pml1[] pl1 = spawnPml1();
 			
 			with(pl2[pml_index2])
 			{

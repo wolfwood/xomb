@@ -121,7 +121,7 @@ SyscallError syscallAdd(out long ret, AddArgs* params)
 // void allocPage(void* virtAddr)
 SyscallError syscallAllocPage(out ulong ret, AllocPageArgs* params)
 {
-	if(vMem.get_user_page(params.va) == ErrorVal.Success)
+	if(vMem.getUserPage(params.va) == ErrorVal.Success)
 		ret = SyscallError.OK;
 	else
 		ret = SyscallError.Failcopter;

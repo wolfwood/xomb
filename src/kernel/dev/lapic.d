@@ -115,7 +115,7 @@ void initLocalApic(ref mpBase mpInformation)
 	ubyte* apicRange;
 
 	// this function will set apicRange to the virtual address of the bios region
-	if (vMem.map_range(
+	if (vMem.mapRange(
 		cast(ubyte*)mpInformation.configTable.addressOfLocalAPIC,
 		apicRegisterSpace.sizeof,
 		apicRange) != ErrorVal.Success)
@@ -130,7 +130,7 @@ void initLocalApic(ref mpBase mpInformation)
 	ubyte* trampolineEnd;
 
 	// map first megabyte
-	if (vMem.map_range(
+	if (vMem.mapRange(
 		cast(ubyte*)0,
 		0x100000,
 		firstSpace) != ErrorVal.Success)

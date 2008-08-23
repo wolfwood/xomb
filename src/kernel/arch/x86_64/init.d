@@ -48,7 +48,7 @@ static:
 		printLogSuccess();
 
 		printLogLine("Installing Paging Mechanism");
-		idt.setCustomHandler(idt.Type.PageFault, &vMem.fault_handler);
+		idt.setCustomHandler(idt.Type.PageFault, &vMem.pageFaultHandler);
 		printLogSuccess();
 	}
 
