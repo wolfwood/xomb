@@ -117,6 +117,8 @@ private
 			const char[] MakePrintOther = "printFloat(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
 		else static if(isPointerType!(T))
 			const char[] MakePrintOther = "printPointer(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
+		else static if(isArrayType!(T))
+			const char[] MakePrintOther = "printArray(args[" ~ idx.stringof ~ "], true, false);\n";
 		else
 			static assert(false, "I don't know how to handle argument " ~ idx.stringof ~ " of type '" ~ T.stringof ~ "'.");
 	}
@@ -125,7 +127,7 @@ private
 	{
 		static if(format.length == 0)
 		{
-			static assert(argIdx == Types.length, "More parameters than format specifiers");
+			static assert(argIdx == Types	.length, "More parameters than format specifiers");
 			const char[] res = "";
 		}
 		else
@@ -469,7 +471,7 @@ static:
 		tabs();
 		indent++;
 
-		kprintfln!(T.stringof ~ " ({})")(&s, false);
+		kprintfln!(T.stringof ~ " ({})", false)(&s);
 
 		foreach(i, _; s.tupleof)
 		{
@@ -503,11 +505,11 @@ static:
 				{
 					static if(isPointerType!(typeof(s.tupleof[i])))
 					{
-						kprintfln!(fieldNames[i] ~ " = {x}")(s.tupleof[i], false);
+						kprintfln!(fieldNames[i] ~ " = {x}", false)(s.tupleof[i]);
 					}
 					else
 					{
-						kprintfln!(fieldType.stringof ~ " " ~ fieldNames[i] ~ " (struct)", false);
+						kprintfln!(fieldType.stringof ~ " " ~ fieldNames[i] ~ " (struct)", false)();
 					}
 				}
 			}
@@ -517,11 +519,11 @@ static:
 
 				static if(isIntType!(typeof(s.tupleof[i])))
 				{
-					kprintfln!(fieldNames[i] ~ " = 0x{x}")(s.tupleof[i], false);
+					kprintfln!(fieldNames[i] ~ " = 0x{x}", false)(s.tupleof[i]);
 				}
 				else
 				{
-					kprintfln!(fieldNames[i] ~ " = {}")(s.tupleof[i], false);
+					kprintfln!(fieldNames[i] ~ " = {}", false)(s.tupleof[i]);
 				}
 			}
 		}

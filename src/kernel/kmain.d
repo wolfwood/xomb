@@ -156,7 +156,6 @@ extern(C) void kmain(uint magic, uint addr)
 	// initialize Local APIC
 	mp.initAPIC();
 
-
 	printLogLine("The second CPU will post OK");
 	apMutex.unlock();
 	apMutex.lock();	
