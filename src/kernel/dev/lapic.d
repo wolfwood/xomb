@@ -11,6 +11,9 @@ import kernel.mem.vmem;
 // log
 import kernel.log;
 
+// need addresses of trampoline region
+import kernel.globals;
+
 // Error codes
 import kernel.error;
 
@@ -126,9 +129,6 @@ void initLocalApic(ref mpBase mpInformation)
 
 	ubyte* firstSpace;
 
-	ubyte* trampolineStart;
-	ubyte* trampolineEnd;
-
 	// map first megabyte
 	if (vMem.mapRange(
 		cast(ubyte*)0,
@@ -139,27 +139,15 @@ void initLocalApic(ref mpBase mpInformation)
 		return;
 	}
 
-	// get trampoline start and end from linker
-	asm
-	{
-		"movq $_trampoline, %%rax";
-		"movq %%rax, %0" :: "o" trampolineStart;
-
-		"movq $_etrampoline, %%rax";
-		"movq %%rax, %0" :: "o" trampolineEnd;
-	}
-
 	//kprintfln!("Trampoline Code: {x} - {x}")(trampolineStart, trampolineEnd);
-
-	trampolineStart += vMem.VM_BASE_ADDR;
-	trampolineEnd += vMem.VM_BASE_ADDR;
 
 	// copy trampoline code to first megabyte
 
+	ubyte* trampolinePointer = Globals.trampolineStart;
 	ubyte* trampolineDestination = firstSpace;
-	for ( ; trampolineStart < trampolineEnd ; trampolineStart++, trampolineDestination++)
+	for ( ; trampolinePointer < Globals.trampolineEnd ; trampolinePointer++, trampolineDestination++)
 	{
-		(*trampolineDestination) = (*trampolineStart);
+		(*trampolineDestination) = (*trampolinePointer);
 	}	
 
 	// get the apic address space, and add it to the base information

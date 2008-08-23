@@ -19,4 +19,3 @@ boot.h
 #define KERNEL_VMA_BASE (0xffffffff80000000)
 #define KERNEL_LOCATION (KERNEL_VMA_BASE + KERNEL_LMA_BASE)
 
-

@@ -19,6 +19,7 @@ import kernel.dev.vga;
 
 //imports
 import config;
+import kernel.globals;
 
 import gdb.kgdb_stub;
 
@@ -91,6 +92,11 @@ extern(C) void kmain(uint magic, uint addr)
 		breakpoint();
 		printLogSuccess();
 	}
+
+	// get the globals from the linker definitions
+	printLogLine("Initializing Globals");
+	Globals.init();
+	printLogSuccess();
 
 	// check to see if the CPU has the features we require
 	// if this fails, the CPU will hang.

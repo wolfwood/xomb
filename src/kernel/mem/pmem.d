@@ -14,7 +14,8 @@ import kernel.arch.locks;
 import kernel.error;
 import kernel.core.util;
 import kernel.core.multiboot;
-import config;
+
+import kernel.globals;
 
 import kernel.dev.vga;
 
@@ -27,7 +28,7 @@ struct pMem
 	// CONST for page size
 	const ulong PAGE_SIZE = 4096;			// 4k pages for us right now
 	// Address of first available page
-	void* pages_start_addr;
+	ubyte* pages_start_addr;
 	ulong mem_size;
 
 	kmutex pMemMutex;
@@ -50,7 +51,7 @@ struct pMem
 
 			// If endAddr is aligned already we'll just add 0, so no biggie
 			// Address of where to start pages
-			pages_start_addr = cast(void*)(endAddr + (endAddr % PAGE_SIZE));			// Available start address for paging
+			pages_start_addr = cast(ubyte*)(endAddr + (endAddr % PAGE_SIZE));			// Available start address for paging
 			// Free space avail for pages
 			ulong pages_free_size = (cast(ulong)mbi.mem_upper * 1024) - cast(ulong)pages_start_addr;		// Free space available to us
 
@@ -82,7 +83,7 @@ struct pMem
 			// Return a ulong a ptr to the bitmap
 
 			// The bitmap :)
-			bitmap = (cast(ubyte*)pages_start_addr + KERNEL_VM_BASE)[0 .. bitmap_size];
+			bitmap = (pages_start_addr + cast(ulong)Globals.kernelVMemBase)[0 .. bitmap_size];
 
 			// Now we need to properly set the used pages
 			// First find the number of pages that are used

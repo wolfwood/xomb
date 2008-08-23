@@ -49,6 +49,9 @@ SECTIONS
 
 	_text = .;
 
+	PROVIDE(_kernel = .);
+	PROVIDE(_kernelBase = kernel_VMA);
+
     /* the rest of the code links to higher memory */
     .text : AT(ADDR(.text) - kernel_VMA + kernel_LMA)
     {
@@ -62,6 +65,8 @@ SECTIONS
 
         . = ALIGN(4096);
     }  
+
+	PROVIDE(_ekernel = .);
 
     /* _etext defined */
     PROVIDE (_etext = .);
@@ -110,3 +115,5 @@ SECTIONS
     _end = .; PROVIDE (end = .);
 
 }
+
+
