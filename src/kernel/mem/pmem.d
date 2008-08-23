@@ -15,7 +15,7 @@ import kernel.error;
 import kernel.core.util;
 import kernel.core.multiboot;
 import config;
-import vmem = kernel.mem.vmem;
+
 import kernel.dev.vga;
 
 struct pMem
@@ -113,7 +113,7 @@ struct pMem
 	//	bitmap => pointer to the bitmap of allocated pages
 	// returns => uint pointer to a page
 
-	void* request_page() {
+	void* requestPage() {
 
 		pMemMutex.lock();
 
@@ -144,7 +144,7 @@ struct pMem
 		return null;
 	}
 
-	void free_page(void* address) {
+	void freePage(void* address) {
 
 		pMemMutex.lock();
 
@@ -165,15 +165,15 @@ struct pMem
 	void test()
 	{
 		// Request a page for testing
-		void* someAddr = request_page();
-		void* someAddr2 = request_page();
+		void* someAddr = requestPage();
+		void* someAddr2 = requestPage();
 		// Print the address for debug
 		kprintfln!("The address is 0x{x}\n")(someAddr);
 		kprintfln!("The address is 0x{x}\n")(someAddr2);
 
-		free_page(someAddr2);
+		freePage(someAddr2);
 
-		void* someAddr3 = request_page();
+		void* someAddr3 = requestPage();
 		kprintfln!("The address is 0x{x}\n")(someAddr3);
 	}
 }

@@ -148,7 +148,7 @@ struct vMem
 		// any other cpus are initialized (it sort of has to be that way)
 
 		// Allocate the physical page for the top-level page table.
-	 	pageLevel4 = (cast(pml4*)pMem.request_page())[0 .. 512];
+	 	pageLevel4 = (cast(pml4*)pMem.requestPage())[0 .. 512];
 		
 		auto kernel_size = (cast(ulong)pageLevel4.ptr / PAGE_SIZE);
 		
@@ -176,7 +176,7 @@ struct vMem
 		// is easier to work with (has structs, etc that we can play with)
 
 		// 3rd level page table
-		pml3[] pageLevel3 = (cast(pml3*)pMem.request_page())[0 .. 512];
+		pml3[] pageLevel3 = (cast(pml3*)pMem.requestPage())[0 .. 512];
 		
 		
 		pageLevel3[] = pml3.init;
@@ -189,7 +189,7 @@ struct vMem
 		pageLevel4[511].pml4e |= 0x7;
 	   
 		// Create a level 2 entry
-		pml2[] pageLevel2 = (cast(pml2*)pMem.request_page())[0 .. 512];
+		pml2[] pageLevel2 = (cast(pml2*)pMem.requestPage())[0 .. 512];
 		
 		
 		pageLevel2[] = pml2.init;
@@ -206,7 +206,7 @@ struct vMem
 		
 		for(int i = 0, j = 0; i < kernel_size; i += 512, j++) {
 			// Make some page table entries
-			pageLevel1 = (cast(pml1*)pMem.request_page())[0 .. 512];
+			pageLevel1 = (cast(pml1*)pMem.requestPage())[0 .. 512];
 
 			// Set pml2e to the pageLevel 1 entry
 			pageLevel2[j].pml2e = cast(ulong)pageLevel1.ptr;
@@ -275,7 +275,7 @@ struct vMem
 
 		for(int k = VM_BASE_INDEX; i <= pageLimit; k++) 
 		{
-			pageLevel2 = (cast(pml2*)pMem.request_page())[0 .. 512];
+			pageLevel2 = (cast(pml2*)pMem.requestPage())[0 .. 512];
 	
 			pageLevel2[] = pml2.init;
 			pageLevel3[k].pml3e = cast(ulong)pageLevel2.ptr;
@@ -284,7 +284,7 @@ struct vMem
 			for(int j = 0; i <= pageLimit && j < 512; i += 512, j++)
 			{
 				// Make some page table entries
-				pageLevel1 = (cast(pml1*)pMem.request_page())[0 .. 512];
+				pageLevel1 = (cast(pml1*)pMem.requestPage())[0 .. 512];
 	
 				// Set pml2e to the pageLevel 1 entry
 				pageLevel2[j].pml2e = cast(ulong)pageLevel1.ptr;
@@ -454,7 +454,7 @@ struct vMem
 		//kprintfln!("The kernel end page addr in physical memory = {x}")(vm_addr_long);
 		
 		// Request a page of physical memory
-		auto phys = pMem.request_page();
+		auto phys = pMem.requestPage();
 		
 		static if(usermode)
 			kprintfln!("physical address: {}")(phys);
@@ -553,7 +553,7 @@ struct vMem
 		}
 
 		// Step 2: Set call free_phys_mem with physical address
-		pMem.free_page(cast(void*)(pl1[pml_index1].pml1e & ~0x87));
+		pMem.freePage(cast(void*)(pl1[pml_index1].pml1e & ~0x87));
 		
 		// Step 3: Reset present bit on free'd page
 		// Now lets set the page as absent in virtual memory :)
@@ -642,7 +642,7 @@ struct vMem
 	// These spawn functions basically create a new pmlX[], and save us from having
 	// to retype the two lines of code every time.  Yay code reuse!?
 	private pml3[] spawnPml3() {
-		pml3[] pl3 = (cast(pml3*)(pMem.request_page() + VM_BASE_ADDR))[0 .. 512];
+		pml3[] pl3 = (cast(pml3*)(pMem.requestPage() + VM_BASE_ADDR))[0 .. 512];
 		pl3[] = pml3.init;
 		
 		return pl3[];
@@ -650,14 +650,14 @@ struct vMem
 
 
 	private pml2[] spawnPml2() {
-		pml2[] pl2 = (cast(pml2*)(pMem.request_page() + VM_BASE_ADDR))[0 .. 512];
+		pml2[] pl2 = (cast(pml2*)(pMem.requestPage() + VM_BASE_ADDR))[0 .. 512];
 		pl2[] = pml2.init;
 		
 		return pl2[];
 	}
 
 	private pml1[] spawnPml1() {
-		pml1[] pl1 = (cast(pml1*)(pMem.request_page() + VM_BASE_ADDR))[0 .. 512];
+		pml1[] pl1 = (cast(pml1*)(pMem.requestPage() + VM_BASE_ADDR))[0 .. 512];
 		pl1[] = pml1.init;
 
 		return pl1[];
