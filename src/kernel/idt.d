@@ -202,7 +202,7 @@ extern(C) void isr_common()
 		// automatically on an interrupt
 
 		"mov %%rsp, %%rdi";
-		"call fault_handler";
+		"call faultHandler";
 
 		"popq %%r15";
 		"popq %%r14";
@@ -340,7 +340,7 @@ void stack_dump(interrupt_stack* r) {
 *  serviced as a 'locking' mechanism to prevent an IRQ from
 *  happening and messing up kernel data structures */
 
-extern(C) void fault_handler(interrupt_stack* r)
+extern(C) void faultHandler(interrupt_stack* r)
 {
 	if(InterruptHandlers[r.int_no])
 	{
