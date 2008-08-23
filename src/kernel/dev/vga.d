@@ -557,7 +557,7 @@ static:
 			}
 			else static if (is(T == struct))
 			{
-				printStruct(item, false, 0, false);
+				printStruct(item, false, cast(ulong)0, false);
 			}
 			else static if (isSignedIntType!(T))
 			{
