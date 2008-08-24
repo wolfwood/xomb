@@ -50,8 +50,10 @@ private hpetDev hpetDevice;
 //initialize out HPET timer
 ErrorVal init()
 {
-	if (vMem.mapRange(global_mem_regions.device_maps.physical_start, global_mem_regions.device_maps.length + ( 32 * timerInfo.sizeof ), global_mem_regions.device_maps.virtual_start )
-			!= ErrorVal.Success)
+	if (vMem.mapRange(global_mem_regions.device_maps.physical_start, 
+			global_mem_regions.device_maps.length + ( 32 * timerInfo.sizeof ), 
+			global_mem_regions.device_maps.virtual_start )
+				!= ErrorVal.Success)
 	{
 		return ErrorVal.Fail;
 	}
