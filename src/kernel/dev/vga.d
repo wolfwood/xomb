@@ -567,9 +567,9 @@ static:
 			{
 				printInt(item, "u");
 			}
-			else static if (isPointerType!(T))
+			else 
 			{
-				printPointer(item);
+				kprintf!("{}", false)(cast(void*)item);
 			}
 			
 			if (count!=(s.length-1))

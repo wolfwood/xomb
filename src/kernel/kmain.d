@@ -35,6 +35,8 @@ import lapic = kernel.dev.lapic;
 
 import mp = kernel.dev.mp;
 
+import hpet = kernel.dev.hpet;
+
 /**
 This is the main function of PGOS. It is executed once GRUB loads
 fully. It accepts "magic," the magic number of the GRUB bootloader,
@@ -155,6 +157,8 @@ extern(C) void kmain(uint magic, uint addr)
 
 	// initialize Local APIC
 	mp.initAPIC();
+
+	hpet.init();
 
 	printLogLine("The second CPU will post OK");
 	apMutex.unlock();

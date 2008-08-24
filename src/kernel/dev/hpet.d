@@ -3,6 +3,9 @@ module kernel.dev.hpet;
 
 import kernel.error;
 import kernel.core.util;
+import kernel.mem.vmem;
+import kernel.mem.vmem_structs;
+import kernel.dev.vga;
 
 template Tmaker(uint ID)
 {
@@ -38,22 +41,35 @@ align(1) struct timerInfo {
 //Brings everything together for HPET
 struct hpetDev {
 	hpetConfig* config;
-	timerInfo[] timers;
+	timerInfo*[32] timers;
 	ubyte* physHPETAddress = cast(ubyte*)0xFED00000;
 }
 
 private hpetDev hpetDevice;
 
 //initialize out HPET timer
-ErrorVal init(ubyte* biosVirtualStart, ubyte* biosPhysicalStart, ulong length)
+ErrorVal init()
 {
-	ubyte* virtHPETAddy = biosVirtualStart + (hpetDevice.physHPETAddress - biosPhysicalStart);
-	if(virtHPETAddy > (biosVirtualStart + length))
+	if (vMem.mapRange(global_mem_regions.device_maps.physical_start, global_mem_regions.device_maps.length + ( 32 * timerInfo.sizeof ), global_mem_regions.device_maps.virtual_start )
+			!= ErrorVal.Success)
 	{
 		return ErrorVal.Fail;
 	}
+
+	ubyte* virtHPETAddy = global_mem_regions.device_maps.virtual_start + (hpetDevice.physHPETAddress - global_mem_regions.device_maps.physical_start);
+	if(virtHPETAddy > (global_mem_regions.device_maps.virtual_start + global_mem_regions.device_maps.length))
+	{
+		return ErrorVal.Fail;
+	}
+
 	hpetDevice.config = cast(hpetConfig*)virtHPETAddy;
-	hpetDevice.timers = (cast(timerInfo*)(virtHPETAddy+hpetDevice.config.sizeof))[0..hpetDevice.config.NUM_TIM_CAP];
+
+	for(uint i = 0; i < hpetDevice.config.NUM_TIM_CAP; i++)
+	{
+		hpetDevice.timers[i] = cast(timerInfo*)virtHPETAddy+hpetConfig.sizeof;
+	}
+
+	printStruct(hpetDevice);
 
 	return ErrorVal.Success;
 }
