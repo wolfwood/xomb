@@ -54,7 +54,7 @@ private
 	
 	template Stub(char[] signature)
 	{
-		const char[] Stub = signature ~ " { assert(false); }";
+		const char[] Stub = signature ~ " { assert(false, \"Undefined runtime stub executed: " ~ signature ~ "\"); }";
 	}
 }
 

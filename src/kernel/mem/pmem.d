@@ -39,73 +39,66 @@ struct pMem
 		// before other cpus use the rest of the routines
 
 		// install the pmem bitmap
-		if(CHECK_FLAG(mbi.flags, 6))
-		{
-			auto mod = cast(module_t*)(cast(module_t*)mbi.mods_addr + mbi.mods_count - 1);
-			ulong endAddr = mod.mod_end;
-			mem_size = endAddr;
+		auto mod = cast(module_t*)(cast(module_t*)mbi.mods_addr + mbi.mods_count - 1);
+		ulong endAddr = mod.mod_end;
+		mem_size = endAddr;
 
-			// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
-			//kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
-			//kprintfln!("mods_end = 0x{x}")(endAddr);
+		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
+		//kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
+		//kprintfln!("mods_end = 0x{x}")(endAddr);
 
-			// If endAddr is aligned already we'll just add 0, so no biggie
-			// Address of where to start pages
-			pages_start_addr = cast(ubyte*)(endAddr + (endAddr % PAGE_SIZE));			// Available start address for paging
-			// Free space avail for pages
-			ulong pages_free_size = (cast(ulong)mbi.mem_upper * 1024) - cast(ulong)pages_start_addr;		// Free space available to us
+		// If endAddr is aligned already we'll just add 0, so no biggie
+		// Address of where to start pages
+		pages_start_addr = cast(ubyte*)(endAddr + (endAddr % PAGE_SIZE));			// Available start address for paging
+		// Free space avail for pages
+		ulong pages_free_size = (cast(ulong)mbi.mem_upper * 1024) - cast(ulong)pages_start_addr;		// Free space available to us
 
-			//kprintfln!("Free space avail : {}KB")(pages_free_size / 1024);
-			
-			
-			//kprintfln!("pages_start_addr = 0x{x}")(pages_start_addr);
-			//kprintfln!("Mem upper = {u}KB")(mbi.mem_upper);
-			
-			// Page allocator
-			// Find the total number of pages in the system
-			// Determine bitmap size
-			// Total number of pages in teh system
+		//kprintfln!("Free space avail : {}KB")(pages_free_size / 1024);
+		
+		
+		//kprintfln!("pages_start_addr = 0x{x}")(pages_start_addr);
+		//kprintfln!("Mem upper = {u}KB")(mbi.mem_upper);
+		
+		// Page allocator
+		// Find the total number of pages in the system
+		// Determine bitmap size
+		// Total number of pages in teh system
 
-			mem_size = mbi.mem_upper * 1024;
-			ulong num_pages =  mem_size / PAGE_SIZE;
+		mem_size = mbi.mem_upper * 1024;
+		ulong num_pages =  mem_size / PAGE_SIZE;
 
-			//kprintfln!("Num of pages = {}")(num_pages);
-			
-			// Size the bitmap needs to be
-			ulong bitmap_size = (num_pages / 8);			// Bitmap size in bytes
-			if(bitmap_size % PAGE_SIZE != 0) {			// If it is not 4k aligned
-				bitmap_size += PAGE_SIZE - (bitmap_size % PAGE_SIZE);	// Pad the size off to keep things page aligned
-			}
-			
-			//kprintfln!("Bitmap size in bytes = {}")(bitmap_size);		
-
-			// Set up bitmap
-			// Return a ulong a ptr to the bitmap
-
-			// The bitmap :)
-			bitmap = (pages_start_addr + cast(ulong)Globals.kernelVMemBase)[0 .. bitmap_size];
-
-			// Now we need to properly set the used pages
-			// First find the number of pages that are used
-			// Number of used pages to init the mapping
-			ulong num_used = (cast(ulong)pages_start_addr + bitmap_size) / PAGE_SIZE;	// Find number of used pages so far
-			//kprintfln!("Number of used pages = {}")(num_used);
-
-			// Set the first part of the bitmap to all used
-			bitmap[0 .. num_used / 8] = cast(ubyte)0xFF;
-			
-			// Where we change from used to unused, figure out the bit pattern to put in that slot
-			bitmap[num_used / 8] = 0xFF >> (8 - (num_used % 8));
-			
-			// The reset of the bitmap is 0 to mean unused
-			bitmap[num_used / 8 + 1 .. $] = 0;
-
-			return ErrorVal.Success;
-
-		} else {
-			//kprintfln!("The multi-boot struct was wrong!")();
-			return ErrorVal.Fail;
+		//kprintfln!("Num of pages = {}")(num_pages);
+		
+		// Size the bitmap needs to be
+		ulong bitmap_size = (num_pages / 8);			// Bitmap size in bytes
+		if(bitmap_size % PAGE_SIZE != 0) {			// If it is not 4k aligned
+			bitmap_size += PAGE_SIZE - (bitmap_size % PAGE_SIZE);	// Pad the size off to keep things page aligned
 		}
+		
+		//kprintfln!("Bitmap size in bytes = {}")(bitmap_size);		
+
+		// Set up bitmap
+		// Return a ulong a ptr to the bitmap
+
+		// The bitmap :)
+		bitmap = (pages_start_addr + cast(ulong)Globals.kernelVMemBase)[0 .. bitmap_size];
+
+		// Now we need to properly set the used pages
+		// First find the number of pages that are used
+		// Number of used pages to init the mapping
+		ulong num_used = (cast(ulong)pages_start_addr + bitmap_size) / PAGE_SIZE;	// Find number of used pages so far
+		//kprintfln!("Number of used pages = {}")(num_used);
+
+		// Set the first part of the bitmap to all used
+		bitmap[0 .. num_used / 8] = cast(ubyte)0xFF;
+		
+		// Where we change from used to unused, figure out the bit pattern to put in that slot
+		bitmap[num_used / 8] = 0xFF >> (8 - (num_used % 8));
+		
+		// The reset of the bitmap is 0 to mean unused
+		bitmap[num_used / 8 + 1 .. $] = 0;
+
+		return ErrorVal.Success;
 	}
 
 

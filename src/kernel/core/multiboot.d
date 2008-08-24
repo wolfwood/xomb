@@ -4,10 +4,16 @@ module kernel.core.multiboot;
 
 import kernel.dev.vga;
 
+import kernel.log;
+
+import kernel.error;
+
 import kernel.core.util;
 import system = kernel.core.system;
-import kernel.mem.vmem_structs;
+import kernel.mem.regions;
 import kernel.mem.vmem;
+
+import kernel.globals;
 
 /** multiboot.d
 	This file declares structures and constants used by GRUB for the multiboot header.
@@ -131,12 +137,38 @@ struct memory_map_t
 	uint type;
 }
 
+memory_map_t[] mmap;
+
+void init(uint magic, uint addr)
+{
+	multiboot_info_t* multi_boot_struct = cast(multiboot_info_t*)addr;
+
+	printLogLine("Validate Multiboot Information");
+	if (test_mb_header(magic, multi_boot_struct) == ErrorVal.Success)
+	{
+		printLogSuccess();
+	}
+	else
+	{
+		printLogFail();
+	}	
+
+	mmap = (cast(memory_map_t*)multi_boot_struct.mmap_addr)[0 .. (multi_boot_struct.mmap_length / memory_map_t.sizeof)];
+
+	initBIOSRegions(mmap);
+}
+
+void mapRegions()
+{
+	printLogLine("Mapping BIOS Regions");
+	mapBIOSRegions();	
+	printLogSuccess();	
+}
+
 // Tests the multiboot header, prints out relevant mem info, etc
 // return: 0 good, -1 bad.
-int test_mb_header(uint magic, uint addr)
+ErrorVal test_mb_header(uint magic, multiboot_info_t *multi_boot_struct)
 {
-	// declare a pointer to the multiboot header.
-	multiboot_info_t *multi_boot_struct;
 
 	// Make sure that the magic number, passed to the kernel, is a valid GRUB magic number.
 	// If it is not, print to the screen that the magic number is invalid and end execution.
@@ -145,12 +177,8 @@ int test_mb_header(uint magic, uint addr)
 	if(magic != MULTIBOOT_BOOTLOADER_MAGIC)
 	{
 		// invalid magic number
-		return -1;
+		return ErrorVal.Fail;
 	}
-
-	// Set MULTI_BOOT_STRUCT to the address of the Multiboot information structure, passed to the kernel
-	// by GRUB.
-	multi_boot_struct = cast(multiboot_info_t*)addr;
 
 	// Print out all the values of the flags presented to the operating system by GRUB.
 	//kprintfln!("flags = 0x{x}")(cast(uint)multi_boot_struct.flags);
@@ -189,6 +217,7 @@ int test_mb_header(uint magic, uint addr)
 		// Use the jumpTo() method (see below) to execute the first module.
 		//jumpTo(0, multi_boot_struct);
 		//return;
+		}
 	}
 
 	// Bits 4 and 5 are mutually exclusive!
@@ -196,7 +225,7 @@ int test_mb_header(uint magic, uint addr)
 	{
 		//kprintfln!("Both bits 4 and 5 are set.")();
 		// these bits are set
-		return -1;
+		return ErrorVal.Fail;
 	}
 
 	// Check to make sure the symbol table of the compiled kernel file is valid.
@@ -227,61 +256,10 @@ int test_mb_header(uint magic, uint addr)
 	if(CHECK_FLAG(multi_boot_struct.flags, 6))
 	{
 		//kprintfln!("mmap_addr = 0x{x}, mmap_length = 0x{x}")(cast(uint)multi_boot_struct.mmap_addr, cast(uint)multi_boot_struct.mmap_length);
-		
-		memory_map_t[] mmap = (cast(memory_map_t*)multi_boot_struct.mmap_addr)[0 .. (multi_boot_struct.mmap_length / memory_map_t.sizeof)];
-
-   		foreach(int z, map; mmap)
-		{
-
-			// For sanity...
-			ulong base_addr = map.base_addr_high << 32;
-			base_addr += map.base_addr_low;
-			
-			ulong mem_length = map.length_high << 32;
-			mem_length += map.length_low;
-
-			//kprintfln!(" size = 0x{x}, base_addr = 0x{x}, length = 0x{x}, type = 0x{x}")(
-				//cast(uint)map.size_of,
-				//base_addr,
-				//mem_length,
-				//cast(uint)map.type);
-
-
-			switch(z) {
-			case 0:
-				global_mem_regions.system_memory.physical_start = cast(ubyte*)base_addr;
-				global_mem_regions.system_memory.length = mem_length;
-				global_mem_regions.system_memory.virtual_start = cast(ubyte*)(base_addr + vMem.VM_BASE_ADDR);
-				break;
-			case 1:
-				global_mem_regions.bios_data.physical_start = cast(ubyte*)base_addr;
-				global_mem_regions.bios_data.length = mem_length;
-				global_mem_regions.bios_data.virtual_start = cast(ubyte*)(base_addr + vMem.VM_BASE_ADDR);
-				break;
-			case 2:
-				global_mem_regions.extended_bios_data.physical_start = cast(ubyte*)base_addr;
-				global_mem_regions.extended_bios_data.length = mem_length;
-				global_mem_regions.extended_bios_data.virtual_start = cast(ubyte*)(base_addr + vMem.VM_BASE_ADDR);
-				break;
-			case 3:
-				global_mem_regions.extended_memory.physical_start = cast(ubyte*)base_addr;
-				global_mem_regions.extended_memory.length = mem_length;
-				global_mem_regions.extended_memory.virtual_start = cast(ubyte*)(base_addr + vMem.VM_BASE_ADDR);
-				break;
-			case 4: 
-				global_mem_regions.device_maps.physical_start = cast(ubyte*)base_addr;
-				global_mem_regions.device_maps.length = mem_length;
-				global_mem_regions.device_maps.virtual_start = cast(ubyte*)(base_addr + vMem.VM_BASE_ADDR);
-				break;
-			default:
-				break;
-			}
-
-		}
-
-
-		}
 	}
+
 	
-	return 0;
+	
+	
+	return ErrorVal.Success;
 }

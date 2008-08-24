@@ -9,7 +9,7 @@ import kernel.kmain;
 import kernel.arch.select;
 
 import kernel.error;
-import kernel.mem.vmem_structs;
+import kernel.mem.regions;
 import kernel.mem.vmem;
 import kernel.core.util;
 import kernel.dev.vga;

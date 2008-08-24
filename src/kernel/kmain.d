@@ -77,15 +77,14 @@ extern(C) void kmain(uint magic, uint addr)
 	kprintfln!("Venimus, vidimus, vicimus!  --PittGeeks\n")();
 	Console.resetColors();
 
+	// get the globals from the linker definitions
+	printLogLine("Initializing Globals");
+	Globals.init();
+	printLogSuccess();
+
 	// Make sure the multiboot header is valid
 	// and print out memory info, etc
-	printLogLine("Checking Multiboot Information");
-	mb_flag = multiboot.test_mb_header(magic, addr);
-	if (mb_flag) { // The mb header is bad!!!! Die!!!!
-		printLogFail();
-		return;
-	}
-	printLogSuccess();
+	multiboot.init(magic, addr);
 
 	if(enable_kgdb)
 	{
@@ -94,11 +93,6 @@ extern(C) void kmain(uint magic, uint addr)
 		breakpoint();
 		printLogSuccess();
 	}
-
-	// get the globals from the linker definitions
-	printLogLine("Initializing Globals");
-	Globals.init();
-	printLogSuccess();
 
 	// check to see if the CPU has the features we require
 	// if this fails, the CPU will hang.
@@ -123,6 +117,11 @@ extern(C) void kmain(uint magic, uint addr)
 	printLogLine("Installing Page Tables");
 	vMem.install();
 	printLogSuccess();
+
+	// Now that page tables are implemented,
+	// Map in the BIOS regions.
+
+	multiboot.mapRegions();
 
 	// Turn general interrupts on, so the computer can deal with errors and faults.
 	Cpu.enableInterrupts();
@@ -158,7 +157,15 @@ extern(C) void kmain(uint magic, uint addr)
 	// initialize Local APIC
 	mp.initAPIC();
 
-	hpet.init();
+	printLogLine("Initializing HPET");
+	if (hpet.init() == ErrorVal.Success)
+	{
+		printLogSuccess();
+	}
+	else
+	{
+		printLogFail();
+	}
 
 	printLogLine("The second CPU will post OK");
 	apMutex.unlock();

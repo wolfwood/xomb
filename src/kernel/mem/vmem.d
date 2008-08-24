@@ -17,7 +17,7 @@ import kernel.core.util;
 import kernel.core.multiboot;
 
 import kernel.mem.pmem;
-import kernel.mem.vmem_structs; 
+import kernel.mem.regions; 
 
 
 // Page Table Structures
