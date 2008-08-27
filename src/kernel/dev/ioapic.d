@@ -6,6 +6,8 @@ import kernel.dev.lapic;
 
 import kernel.mem.vmem;
 
+import kernel.error;
+
 import kernel.log;
 
 enum IOAPICRegister{
@@ -101,19 +103,36 @@ struct IOAPIC
 	void init(ref mpBase mpInformation, ioAPICEntry* ioApicEntry)
 	{	
 		printLogLine("Initializing IO APIC");
-		ioApicRegisterSelect = cast(uint*)(cast(ulong)ioApicEntry.ioAPICAddress + vMem.VM_BASE_ADDR);
-		ioApicWindowRegister = ioApicRegisterSelect + 1;
+
+		// map IOAPIC region
+		ubyte* IOAPICVirtAddr;
+
+		// this function will set IOAPICVirtAddr to the virtual address of the bios region
+		if (vMem.mapRange(
+			cast(ubyte*)ioApicEntry.ioAPICAddress,
+			4096,
+			IOAPICVirtAddr) != ErrorVal.Success)
+		{
+			return;
+		}
+
+		ioApicRegisterSelect = cast(uint*)(IOAPICVirtAddr);
+		ioApicWindowRegister = cast(uint*)(IOAPICVirtAddr + 0x10);
+
+		ubyte apicVersion, maxRedirectionEntry;
+		getIOApicVersion(apicVersion, maxRedirectionEntry);
+		kprintfln!("IO Ver: 0x{x} MaxRedirectEntry: 0x{x}")(apicVersion, maxRedirectionEntry);
 		printLogSuccess();
 	}
 
 	void readRegister (IOAPICRegister reg, out uint value){
-		(*ioApicRegisterSelect) = cast(uint)reg;
-		value = (*ioApicWindowRegister);
+		volatile *(ioApicRegisterSelect) = cast(uint)reg;
+		value = *(ioApicWindowRegister);
 	}
 
 	void writeRegister (IOAPICRegister reg, in uint value){
-		(*ioApicRegisterSelect) = cast(uint)reg;
-		(*ioApicWindowRegister) = value;
+		volatile *(ioApicRegisterSelect) = cast(uint)reg;
+		volatile *(ioApicWindowRegister) = value;
 	}
 
 	void getIOApicVersion (out ubyte apicVersion, out ubyte maxRedirectionEntry){
