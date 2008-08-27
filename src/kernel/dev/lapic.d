@@ -94,169 +94,167 @@ align(1) struct apicRegisterSpace {
 	/* 03e0 */ uint tmrDivideConfiguration;	ubyte[12] padding62;
 }
 
-
-
-extern (C) void read_trampoline_bounds();
-
-void init(ref mpBase mpInformation)
+struct LocalAPIC
 {
-	printLogLine("Initializing Local APIC");
-	initLocalApic(mpInformation);
-	printLogSuccess();
 
-	printLogLine("Enabling Local APIC");
-	enableLocalApic(mpInformation);
-	printLogSuccess();
-
-	startAPs(mpInformation);
+	static:
 	
-}
-
-void initLocalApic(ref mpBase mpInformation)
-{
-	// map the address space of the APIC
-	ubyte* apicRange;
-
-	// this function will set apicRange to the virtual address of the bios region
-	if (vMem.mapRange(
-		cast(ubyte*)mpInformation.configTable.addressOfLocalAPIC,
-		apicRegisterSpace.sizeof,
-		apicRange) != ErrorVal.Success)
+	void init(ref mpBase mpInformation)
 	{
-		//kprintfln!("error mapping apic register space! {x} ... {x}")(mpInformation.configTable.addressOfLocalAPIC, mpInformation.configTable.addressOfLocalAPIC + apicRegisterSpace.sizeof);
-		return;
-	}
-
-	ubyte* firstSpace;
-
-	// map first megabyte
-	if (vMem.mapRange(
-		cast(ubyte*)0,
-		0x100000,
-		firstSpace) != ErrorVal.Success)
-	{
-		//kprintfln!("error mapping initial megabyte of space")();
-		return;
-	}
-
-	//kprintfln!("Trampoline Code: {x} - {x}")(trampolineStart, trampolineEnd);
-
-	// copy trampoline code to first megabyte
-
-	ubyte* trampolinePointer = Globals.trampolineStart;
-	ubyte* trampolineDestination = firstSpace;
-	for ( ; trampolinePointer < Globals.trampolineEnd ; trampolinePointer++, trampolineDestination++)
-	{
-		(*trampolineDestination) = (*trampolinePointer);
-	}	
-
-	// get the apic address space, and add it to the base information
-	mpInformation.apicRegisters = cast(apicRegisterSpace*)(apicRange);
-	//kprintfln!("local APIC address: {x}")(mpInformation.apicRegisters);
-
-	enableLocalApic(mpInformation);
-}
-
-void enableLocalApic(ref mpBase mpInformation)
-{
-	// enable the APIC (just in case it is not enabled)
-	mpInformation.apicRegisters.spuriousIntVector |= 0x100;
-	//kprintfln!("{}")(mpInformation.apicRegisters.spuriousIntVector);
-}
-
-void startAPs(ref mpBase mpInformation)
-{
-	// go through the list of AP APIC IDs
-	for (uint i=0; i<mpInformation.processor_count; i++)
-	{
-		printLogLine("Initializing CPU");
-		processorEntry* curProcessor = mpInformation.processors[i];
-
-		// Universal Algorithm
-
-		//kprintfln!("cpu: send INIT")();
-
-		sendINIT(mpInformation, curProcessor.localAPICID);
-
-		uint p;
-		for (uint o=0; o < 10000; o++)
-		{
-			p = o << 5 + 10;			
-		}
-
-		//kprintfln!("cpu: send Startup")();
-
-		sendStartup(mpInformation, curProcessor.localAPICID);	
-		
-		for (uint o=0; o < 10000; o++)
-		{
-			p = o << 5 + 10;			
-		}
-
-		//kprintfln!("cpu: send Startup... again")();	
-
-		sendStartup(mpInformation, curProcessor.localAPICID);			
-		
-		for (uint o=0; o < 10000; o++)
-		{
-			p = o << 5 + 10;			
-		}
-
+		printLogLine("Initializing Local APIC");
+		initLocalApic(mpInformation);
 		printLogSuccess();
-	}
-}
-
-
-
-
-
-
-enum DeliveryMode
-{
-	Fixed,
-	LowestPriority,
-	SMI,
-	Reserved,
-	NonMaskedInterrupt,
-	INIT,
-	Startup,
-}
-
-void sendINIT(ref mpBase mpInformation, ubyte ApicID)
-{
-	sendIPI(mpInformation, 0, DeliveryMode.INIT, 0, 0, ApicID);
-}
-
-void sendStartup(ref mpBase mpInformation, ubyte ApicID)
-{
-	sendIPI(mpInformation, 0, DeliveryMode.Startup, 0, 0, ApicID);
-}
-
-// the destinationField is the apic ID of the processor to send the interrupt
-void sendIPI(ref mpBase mpInformation, ubyte vectorNumber, DeliveryMode dmode, bool destinationMode, ubyte destinationShorthand, ubyte destinationField)
-{
-	// form the higher part first
-	uint hiword = cast(uint)destinationField << 24;
-
-	// set the high part
-	mpInformation.apicRegisters.interruptCommandHi = hiword;
-
-	// form the lower part now
-	uint loword = cast(uint)vectorNumber;
-	loword |= cast(uint)dmode << 8;
-
-	if (destinationMode)
-	{
-		loword |= (1 << 11);
+	
+		printLogLine("Enabling Local APIC");
+		enableLocalApic(mpInformation);
+		printLogSuccess();
+	
+		startAPs(mpInformation);
+		
 	}
 	
-	loword |= cast(uint)destinationShorthand << 18;
+	void initLocalApic(ref mpBase mpInformation)
+	{
+		// map the address space of the APIC
+		ubyte* apicRange;
+	
+		// this function will set apicRange to the virtual address of the bios region
+		if (vMem.mapRange(
+			cast(ubyte*)mpInformation.configTable.addressOfLocalAPIC,
+			apicRegisterSpace.sizeof,
+			apicRange) != ErrorVal.Success)
+		{
+			//kprintfln!("error mapping apic register space! {x} ... {x}")(mpInformation.configTable.addressOfLocalAPIC, mpInformation.configTable.addressOfLocalAPIC + apicRegisterSpace.sizeof);
+			return;
+		}
+	
+		ubyte* firstSpace;
+	
+		// map first megabyte
+		if (vMem.mapRange(
+			cast(ubyte*)0,
+			0x100000,
+			firstSpace) != ErrorVal.Success)
+		{
+			//kprintfln!("error mapping initial megabyte of space")();
+			return;
+		}
+	
+		//kprintfln!("Trampoline Code: {x} - {x}")(trampolineStart, trampolineEnd);
+	
+		// copy trampoline code to first megabyte
+	
+		ubyte* trampolinePointer = Globals.trampolineStart;
+		ubyte* trampolineDestination = firstSpace;
+		for ( ; trampolinePointer < Globals.trampolineEnd ; trampolinePointer++, trampolineDestination++)
+		{
+			(*trampolineDestination) = (*trampolinePointer);
+		}	
+	
+		// get the apic address space, and add it to the base information
+		mpInformation.apicRegisters = cast(apicRegisterSpace*)(apicRange);
+		//kprintfln!("local APIC address: {x}")(mpInformation.apicRegisters);
+	
+		enableLocalApic(mpInformation);
+	}
+	
+	void enableLocalApic(ref mpBase mpInformation)
+	{
+		// enable the APIC (just in case it is not enabled)
+		mpInformation.apicRegisters.spuriousIntVector |= 0x100;
+		//kprintfln!("{}")(mpInformation.apicRegisters.spuriousIntVector);
+	}
+	
+	void startAPs(ref mpBase mpInformation)
+	{
+		// go through the list of AP APIC IDs
+		for (uint i=0; i<mpInformation.processor_count; i++)
+		{
+			printLogLine("Initializing CPU");
+			processorEntry* curProcessor = mpInformation.processors[i];
+	
+			// Universal Algorithm
+	
+			//kprintfln!("cpu: send INIT")();
+	
+			sendINIT(mpInformation, curProcessor.localAPICID);
+	
+			uint p;
+			for (uint o=0; o < 10000; o++)
+			{
+				p = o << 5 + 10;			
+			}
+	
+			//kprintfln!("cpu: send Startup")();
+	
+			sendStartup(mpInformation, curProcessor.localAPICID);	
+			
+			for (uint o=0; o < 10000; o++)
+			{
+				p = o << 5 + 10;			
+			}
+	
+			//kprintfln!("cpu: send Startup... again")();	
+	
+			sendStartup(mpInformation, curProcessor.localAPICID);			
+			
+			for (uint o=0; o < 10000; o++)
+			{
+				p = o << 5 + 10;			
+			}
+	
+			printLogSuccess();
+		}
+	}
+	
+	
+	
+	
+	
+	
+	enum DeliveryMode
+	{
+		Fixed,
+		LowestPriority,
+		SMI,
+		Reserved,
+		NonMaskedInterrupt,
+		INIT,
+		Startup,
+	}
 
-	// when this is set, the interrupt should be sent
-	mpInformation.apicRegisters.interruptCommandLo = loword;
+	void sendINIT(ref mpBase mpInformation, ubyte ApicID)
+	{
+		sendIPI(mpInformation, 0, DeliveryMode.INIT, 0, 0, ApicID);
+	}
+	
+	void sendStartup(ref mpBase mpInformation, ubyte ApicID)
+	{
+		sendIPI(mpInformation, 0, DeliveryMode.Startup, 0, 0, ApicID);
+	}
+	
+	// the destinationField is the apic ID of the processor to send the interrupt
+	void sendIPI(ref mpBase mpInformation, ubyte vectorNumber, DeliveryMode dmode, bool destinationMode, ubyte destinationShorthand, ubyte destinationField)
+	{
+		// form the higher part first
+		uint hiword = cast(uint)destinationField << 24;
+	
+		// set the high part
+		mpInformation.apicRegisters.interruptCommandHi = hiword;
+	
+		// form the lower part now
+		uint loword = cast(uint)vectorNumber;
+		loword |= cast(uint)dmode << 8;
+	
+		if (destinationMode)
+		{
+			loword |= (1 << 11);
+		}
+		
+		loword |= cast(uint)destinationShorthand << 18;
+	
+		// when this is set, the interrupt should be sent
+		mpInformation.apicRegisters.interruptCommandLo = loword;
+	}
+
 }
-
-
-
-
-

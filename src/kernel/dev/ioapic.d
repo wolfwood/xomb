@@ -27,13 +27,13 @@ enum IOAPICRegister{
 	IOREDTBL6HI,
 	IOREDTBL6LO,
 	IOREDTBL7HI,
-        IOREDTBL7LO,
+    IOREDTBL7LO,
 	IOREDTBL8HI,
-        IOREDTBL8LO,
+    IOREDTBL8LO,
 	IOREDTBL9HI,        
 	IOREDTBL9LO,
 	IOREDTBL10HI,
-        IOREDTBL10LO,
+    IOREDTBL10LO,
 	IOREDTBL11HI,
 	IOREDTBL11LO,
 	IOREDTBL12HI,
@@ -74,12 +74,12 @@ enum IOAPICInputPinPolarity{
 
 enum IOAPICTriggerMode{
 	EdgeTriggered,
-	LevelSensitive
+	LevelTriggered
 }
 
 enum IOAPICInterruptType{
-	Masked,
-	Unmasked
+	Unmasked,
+	Masked
 }
 
 enum IOAPICDeliveryMode{

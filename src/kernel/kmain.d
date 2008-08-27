@@ -35,7 +35,7 @@ import lapic = kernel.dev.lapic;
 
 import mp = kernel.dev.mp;
 
-import hpet = kernel.dev.hpet;
+import kernel.dev.hpet;
 
 /**
 This is the main function of PGOS. It is executed once GRUB loads
@@ -124,7 +124,7 @@ extern(C) void kmain(uint magic, uint addr)
 	multiboot.mapRegions();
 
 	// Turn general interrupts on, so the computer can deal with errors and faults.
-	//Cpu.enableInterrupts();
+	Cpu.enableInterrupts();
 
 	//kprintfln!("Setting lstar, star and SF_MASK...")();
 
@@ -158,7 +158,7 @@ extern(C) void kmain(uint magic, uint addr)
 	mp.initAPIC();
 
 	printLogLine("Initializing HPET");
-	if (hpet.init() == ErrorVal.Success)
+	if (HPET.init() == ErrorVal.Success)
 	{
 		printLogSuccess();
 	}

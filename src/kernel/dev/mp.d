@@ -14,7 +14,7 @@ import kernel.mem.vmem;
 import kernel.core.util;
 import kernel.dev.vga;
 
-import lapic = kernel.dev.lapic;
+import kernel.dev.lapic;
 import kernel.dev.ioapic;
 
 const ulong maxProcessorEntries = 255;
@@ -374,7 +374,7 @@ void initIOAPIC()
 void initAPIC()
 {
 	// start up application processors and APIC bus
-	lapic.init(mpInformation);
+	LocalAPIC.init(mpInformation);
 }
 
 bool isChecksumValid(ubyte* startAddr, uint length)
