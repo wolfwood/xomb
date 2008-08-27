@@ -124,7 +124,7 @@ extern(C) void kmain(uint magic, uint addr)
 	multiboot.mapRegions();
 
 	// Turn general interrupts on, so the computer can deal with errors and faults.
-	Cpu.enableInterrupts();
+	//Cpu.enableInterrupts();
 
 	//kprintfln!("Setting lstar, star and SF_MASK...")();
 
