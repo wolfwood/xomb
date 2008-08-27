@@ -77,13 +77,13 @@ struct HPET
 		// initialize the configuration to allow standard IOAPIC interrupts
 		hpetDevice.config.LEG_RT_CNF = 0;
 		hpetDevice.config.ENABLE_CNF = 1;
-	
+
 		// resolve the array of timers
 		hpetDevice.timers = (cast(timerInfo*)virtHPETAddy+hpetConfig.sizeof)[0..hpetDevice.config.NUM_TIM_CAP];
 	
 		//printStruct(hpetDevice);
 
-		//initTimer(0, 1000000);
+		initTimer(0, 1000000);
 	
 		return ErrorVal.Success;
 	}
@@ -122,7 +122,7 @@ struct HPET
 		kprintfln!("counter updates by = {} for {}ns")(nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD, nanoSecondInterval / 1000000);
 
 		// tell IOAPIC of our plans
-		IOAPIC.setRedirectionTableEntry(0, );
+		//IOAPIC.setRedirectionTableEntry(0, );
 
 		// we now want to enable the timer interrupt
 		hpetDevice.timers[index].INT_ENB_CNF = 1;

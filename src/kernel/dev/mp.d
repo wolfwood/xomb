@@ -289,6 +289,7 @@ private ErrorVal initConfigurationTable()
 				{
 					mpInformation.ioApics[mpInformation.ioAPIC_count] = cast(ioAPICEntry*)curAddr;
 					mpInformation.ioAPIC_count++;
+					kprintfln!("IO APIC: {}")(mpInformation.ioAPIC_count);
 				}
 				curAddr += ioAPICEntry.sizeof;
 				break;
@@ -297,6 +298,7 @@ private ErrorVal initConfigurationTable()
 				{
 					mpInformation.ioInterrupts[mpInformation.ioInterrupt_count] = cast(ioInterruptEntry*)curAddr;
 					mpInformation.ioInterrupt_count++;
+					kprintfln!("io int: {}")(mpInformation.ioInterrupt_count);
 				}
 				curAddr += ioInterruptEntry.sizeof;
 				break;
@@ -305,6 +307,7 @@ private ErrorVal initConfigurationTable()
 				{
 					mpInformation.localInterrupts[mpInformation.localInterrupt_count] = cast(localInterruptEntry*)curAddr;
 					mpInformation.localInterrupt_count++;
+					kprintfln!("local int: {}")(mpInformation.localInterrupt_count);
 				}
 				curAddr += localInterruptEntry.sizeof;
 				break;

@@ -117,7 +117,13 @@ struct LocalAPIC
 	{
 		// map the address space of the APIC
 		ubyte* apicRange;
-	
+		
+		if (mpInformation.pointerTable.mpFeatures2 & 0b1000_0000)
+		{
+			asm {
+			}
+		}
+
 		// this function will set apicRange to the virtual address of the bios region
 		if (vMem.mapRange(
 			cast(ubyte*)mpInformation.configTable.addressOfLocalAPIC,
