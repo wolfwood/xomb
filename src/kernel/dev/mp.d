@@ -160,7 +160,7 @@ align(1) struct compatibilityBusAddressSpaceModifierEntry {
 // this is exposed to the kernel
 struct mpBase {
 	mpFloatingPointer* pointerTable;
-	lapic.apicRegisterSpace* apicRegisters;
+	apicRegisterSpace* apicRegisters;
 	mpConfigurationTable* configTable;
 	uint processor_count;
 	processorEntry*[maxProcessorEntries] processors;
