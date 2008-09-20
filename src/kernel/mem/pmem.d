@@ -19,6 +19,8 @@ import kernel.globals;
 
 import kernel.dev.vga;
 
+import config;
+
 struct pMem
 {
 	static:
@@ -44,8 +46,8 @@ struct pMem
 		mem_size = endAddr;
 
 		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
-		//kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
-		//kprintfln!("mods_end = 0x{x}")(endAddr);
+		//kdebugfln!(DEBUG_PMEM, "mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
+		//kdebugfln!(DEBUG_PMEM, "mods_end = 0x{x}")(endAddr);
 
 		// If endAddr is aligned already we'll just add 0, so no biggie
 		// Address of where to start pages
@@ -53,11 +55,11 @@ struct pMem
 		// Free space avail for pages
 		ulong pages_free_size = (cast(ulong)mbi.mem_upper * 1024) - cast(ulong)pages_start_addr;		// Free space available to us
 
-		//kprintfln!("Free space avail : {}KB")(pages_free_size / 1024);
+		//kdebugfln!(DEBUG_PMEM, "Free space avail : {}KB")(pages_free_size / 1024);
 		
 		
-		//kprintfln!("pages_start_addr = 0x{x}")(pages_start_addr);
-		//kprintfln!("Mem upper = {u}KB")(mbi.mem_upper);
+		//kdebugfln!(DEBUG_PMEM, "pages_start_addr = 0x{x}")(pages_start_addr);
+		//kdebugfln!(DEBUG_PMEM, "Mem upper = {u}KB")(mbi.mem_upper);
 		
 		// Page allocator
 		// Find the total number of pages in the system
@@ -67,7 +69,7 @@ struct pMem
 		mem_size = mbi.mem_upper * 1024;
 		ulong num_pages =  mem_size / PAGE_SIZE;
 
-		//kprintfln!("Num of pages = {}")(num_pages);
+		//kdebugfln!(DEBUG_PMEM, "Num of pages = {}")(num_pages);
 		
 		// Size the bitmap needs to be
 		ulong bitmap_size = (num_pages / 8);			// Bitmap size in bytes
@@ -75,7 +77,7 @@ struct pMem
 			bitmap_size += PAGE_SIZE - (bitmap_size % PAGE_SIZE);	// Pad the size off to keep things page aligned
 		}
 		
-		//kprintfln!("Bitmap size in bytes = {}")(bitmap_size);		
+		//kdebugfln!(DEBUG_PMEM, "Bitmap size in bytes = {}")(bitmap_size);		
 
 		// Set up bitmap
 		// Return a ulong a ptr to the bitmap
@@ -87,7 +89,7 @@ struct pMem
 		// First find the number of pages that are used
 		// Number of used pages to init the mapping
 		ulong num_used = (cast(ulong)pages_start_addr + bitmap_size) / PAGE_SIZE;	// Find number of used pages so far
-		//kprintfln!("Number of used pages = {}")(num_used);
+		//kdebugfln!(DEBUG_PMEM, "Number of used pages = {}")(num_used);
 
 		// Set the first part of the bitmap to all used
 		bitmap[0 .. num_used / 8] = cast(ubyte)0xFF;
@@ -153,7 +155,7 @@ struct pMem
 
 		pMemMutex.unlock();
 		
-		//kprintfln!("Returning bit {}; in byte {} of page {}\n")(bit_num, byte_num, page);
+		//kdebugfln!(DEBUG_PMEM, "Returning bit {}; in byte {} of page {}\n")(bit_num, byte_num, page);
 	}
 
 	void test()
@@ -162,12 +164,12 @@ struct pMem
 		void* someAddr = requestPage();
 		void* someAddr2 = requestPage();
 		// Print the address for debug
-		kprintfln!("The address is 0x{x}\n")(someAddr);
-		kprintfln!("The address is 0x{x}\n")(someAddr2);
+		kdebugfln!(DEBUG_PMEM, "The address is 0x{x}\n")(someAddr);
+		kdebugfln!(DEBUG_PMEM, "The address is 0x{x}\n")(someAddr2);
 
 		freePage(someAddr2);
 
 		void* someAddr3 = requestPage();
-		kprintfln!("The address is 0x{x}\n")(someAddr3);
+		kdebugfln!(DEBUG_PMEM, "The address is 0x{x}\n")(someAddr3);
 	}
 }

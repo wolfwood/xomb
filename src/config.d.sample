@@ -6,3 +6,11 @@ bool remote_debug = true;	// Its like debugging for the debugger
 // Kernel options
 // Make sure this is the same as the value in boot.h
 const ulong KERNEL_VM_BASE = 0xFFFFFFFF80000000;
+
+// Debugging options
+const auto DEBUG_PAGING = true;
+const auto DEBUG_PAGEFAULTS = true;
+const auto DEBUG_PMEM = true;
+const auto DEBUG_INTERRUPTS = true;
+const auto DEBUG_MPTABLE = true;
+const auto DEBUG_LAPIC = true;

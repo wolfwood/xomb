@@ -17,6 +17,8 @@ import kernel.core.multiboot;
 
 import kernel.dev.vga;
 
+import kernel.dev.keyboard;
+
 //imports
 import config;
 import kernel.globals;
@@ -47,13 +49,14 @@ and "addr," the address of the multiboot variable, passed by the GRUB bootloader
 			GRUB bootloader.
 */
 
-	kmutex apMutex;
+kmutex apMutex;
+kmutex apDoneMutex;
 
 extern(C) void kmain_ap()
 {
 	apMutex.lock();
 	printLogSuccess();
-	apMutex.unlock();
+	apDoneMutex.unlock();
 
 	for(;;) { }
 }
@@ -132,8 +135,6 @@ extern(C) void kmain(uint magic, uint addr)
 	syscall.setHandler(&syscall.syscallHandler);
 	printLogSuccess();
 
-
-
 	// TESTING MUTEXES
 	printLogLine("Testing Kernel Locks");
 	int failcode = test_kmutex();
@@ -147,16 +148,17 @@ extern(C) void kmain(uint magic, uint addr)
 	}
 
 	apMutex.lock();
-
+	apDoneMutex.lock();
+	
 	// initialize multiprocessor information
 	mp.init();
 
 	// initialize IO APIC
 	mp.initIOAPIC();
-
+	
 	// initialize Local APIC
 	mp.initAPIC();
-
+	
 	printLogLine("Initializing HPET");
 	if (HPET.init() == ErrorVal.Success)
 	{
@@ -169,9 +171,12 @@ extern(C) void kmain(uint magic, uint addr)
 
 	printLogLine("The second CPU will post OK");
 	apMutex.unlock();
-	apMutex.lock();	
+	apDoneMutex.lock();	
 
 	kprintfln!("")();
+	
+	kprintfln!("Keyboards?")();
+	kbd_init();
 
 	kprintfln!("Jumping to User Mode...\n")();
 

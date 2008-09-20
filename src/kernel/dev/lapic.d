@@ -27,6 +27,9 @@ import kernel.dev.mp;
 // For support utils and printing
 import kernel.core.util;
 
+// For debug config values
+import config;
+
 
 align(1) struct apicRegisterSpace {
 	/* 0000 */ uint reserved0;				ubyte[12] padding0;
@@ -176,35 +179,44 @@ struct LocalAPIC
 		// go through the list of AP APIC IDs
 		for (uint i=0; i<mpInformation.processor_count; i++)
 		{
+			// This next line will prevent the CPU from initializing itself in the middle
+			// of running.  This will prevent us from totally failing while booting :P
+			if(mpInformation.processors[i].localAPICID == mpInformation.apicRegisters.localApicId)
+				continue;
+
 			printLogLine("Initializing CPU");
 			processorEntry* curProcessor = mpInformation.processors[i];
 	
 			// Universal Algorithm
 	
-			//kprintfln!("cpu: send INIT")();
+			ulong p;
+			for (ulong o=0; o < 10000; o++)
+			{
+				p = o << 5 + 10;			
+			}
+			kdebugfln!(DEBUG_LAPIC, "cpu: send INIT")();
 	
 			sendINIT(mpInformation, curProcessor.localAPICID);
 	
-			uint p;
-			for (uint o=0; o < 10000; o++)
+			for (ulong o=0; o < 10000; o++)
 			{
 				p = o << 5 + 10;			
 			}
 	
-			//kprintfln!("cpu: send Startup")();
+			kdebugfln!(DEBUG_LAPIC, "cpu: send Startup")();
 	
 			sendStartup(mpInformation, curProcessor.localAPICID);	
 			
-			for (uint o=0; o < 10000; o++)
+			for (ulong o=0; o < 10000; o++)
 			{
 				p = o << 5 + 10;			
 			}
 	
-			//kprintfln!("cpu: send Startup... again")();	
+			kdebugfln!(DEBUG_LAPIC, "cpu: send Startup... again")();	
 	
 			sendStartup(mpInformation, curProcessor.localAPICID);			
 			
-			for (uint o=0; o < 10000; o++)
+			for (ulong o=0; o < 10000; o++)
 			{
 				p = o << 5 + 10;			
 			}

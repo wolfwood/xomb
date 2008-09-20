@@ -450,6 +450,24 @@ static:
 			}
 		}
 	}
+
+	template kdebugfln(bool verbose, char[] Format, bool lock = true)
+	{
+		void kdebugfln(Args...)(Args args)
+		{
+			static if(verbose) {
+				if (lock) {
+					printLock.lock();
+				}
+				mixin(ConvertFormat!(Format, Args));
+				putchar('\n');
+				if (lock) {
+					printLock.unlock();
+				}
+			}
+		}
+	}
+
 	 
 	void printStruct(T)(ref T s, bool recursive = false, ulong indent = 0, bool lock = true)
 	{
@@ -599,6 +617,7 @@ alias Console.kprintf kprintf;
 alias Console.kprintfln kprintfln;
 alias Console.printStruct printStruct;
 alias Console.printArray printArray;
+alias Console.kdebugfln kdebugfln;
 
 extern(C) void kprintString(char* s)
 {

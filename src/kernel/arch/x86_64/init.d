@@ -4,7 +4,7 @@ import kernel.log;
 
 import kernel.arch.select;
 
-import idt = kernel.arch.x86_64.idt;
+import kernel.arch.x86_64.idt;
 import gdt = kernel.arch.x86_64.gdt;
 
 import kernel.mem.vmem;
@@ -36,6 +36,10 @@ static:
 		}
 	}
 
+	void ignoreHandler(interrupt_stack* stack)
+	{
+	}
+
 	void boot()
 	{
 		printLogLine("Installing GDT");
@@ -49,6 +53,8 @@ static:
 
 		printLogLine("Installing Paging Mechanism");
 		idt.setCustomHandler(idt.Type.PageFault, &vMem.pageFaultHandler);
+		idt.setCustomHandler(idt.Type.UnknownInterrupt, &ignoreHandler);
+
 		printLogSuccess();
 	}
 

@@ -310,6 +310,11 @@ alias void function(interrupt_stack*) InterruptHandler;
 
 private InterruptHandler[256] InterruptHandlers;
 
+public void ignoreHandler(interrupt_stack* stak) 
+{
+}
+
+
 void setCustomHandler(size_t i, InterruptHandler h, int ist = -1)
 {
 	assert(i < InterruptHandlers.length, "Invalid handler index");
@@ -321,16 +326,16 @@ void setCustomHandler(size_t i, InterruptHandler h, int ist = -1)
 }
 
 void stack_dump(interrupt_stack* r) {
-	kprintfln!("r15: 0x{x} / r14: 0x{x} / r13: 0x{x} / r12: 0x{x} / r11: 0x{x}")
+	kdebugfln!(DEBUG_INTERRUPTS, "r15: 0x{x} / r14: 0x{x} / r13: 0x{x} / r12: 0x{x} / r11: 0x{x}")
 			(r.r15, r.r14, r.r13, r.r12, r.r11);
 
-	kprintfln!("r10: 0x{x} / r9: 0x{x} / r8: 0x{x} / rbp: 0x{x} / rdi: 0x{x}")
+	kdebugfln!(DEBUG_INTERRUPTS, "r10: 0x{x} / r9: 0x{x} / r8: 0x{x} / rbp: 0x{x} / rdi: 0x{x}")
 			(r.r10, r.r9, r.r8, r.rbp, r.rdi);
 
-	kprintfln!("rsi: 0x{x} / rdx: 0x{x} / rcx: 0x{x} / rbx: 0x{x} / rax: 0x{x}")
+	kdebugfln!(DEBUG_INTERRUPTS, "rsi: 0x{x} / rdx: 0x{x} / rcx: 0x{x} / rbx: 0x{x} / rax: 0x{x}")
 			(r.rsi, r.rdx, r.rcx, r.rbx, r.rax);
 
-	kprintfln!("ss: 0x{x} / rsp: 0x{x} / cs: 0x{x}")(r.ss, r.rsp, r.cs);
+	kdebugfln!(DEBUG_INTERRUPTS, "ss: 0x{x} / rsp: 0x{x} / cs: 0x{x}")(r.ss, r.rsp, r.cs);
 }
 
 /* All of our Exception handling Interrupt Service Routines will
@@ -349,11 +354,11 @@ extern(C) void faultHandler(interrupt_stack* r)
 	}
 
 	if(r.int_no < 32) {
-		kprintfln!("{}. Code = {}, IP = {x}")(exceptionMessages[r.int_no], r.err_code, r.rip);
-		kprintfln!("Stack dump:")();
+		kdebugfln!(DEBUG_INTERRUPTS, "{}. Code = {}, IP = {x}")(exceptionMessages[r.int_no], r.err_code, r.rip);
+		kdebugfln!(DEBUG_INTERRUPTS, "Stack dump:")();
 		stack_dump(r);
 	} else {
-		kprintfln!("Unknown exception {}.")(r.int_no);
+		kdebugfln!(DEBUG_INTERRUPTS, "Unknown exception {}.")(r.int_no);
 	}
 
 	asm{hlt;}

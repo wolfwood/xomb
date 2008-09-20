@@ -104,40 +104,40 @@ struct vMem
 		// Bit 4 = I/D bit - 1 if instruction fetch, otherwise 0
 		// The rest of the error code byte is considered reserved
 
-		//kprintfln!("\n Page fault. Code = {}, IP = 0x{x}, VA = 0x{x}, RBP = 0x{x}\n")(ir_stack.err_code, ir_stack.rip, addr, ir_stack.rbp);
+		kdebugfln!(DEBUG_PAGEFAULTS, "\n Page fault. Code = {}, IP = 0x{x}, VA = 0x{x}, RBP = 0x{x}\n")(ir_stack.err_code, ir_stack.rip, addr, ir_stack.rbp);
 
 		if((ir_stack.err_code & 1) == 0) 
 		{
-			//kprintfln!("Error due to page not present!")();
+			kdebugfln!(DEBUG_PAGEFAULTS, "Error due to page not present!")();
 
 			if((ir_stack.err_code & 2) != 0)
 			{
-				//kprintfln!("Error due to write fault.")();
+				kdebugfln!(DEBUG_PAGEFAULTS, "Error due to write fault.")();
 			}
 			else
 			{
-				//kprintfln!("Error due to read fault.")();
+				kdebugfln!(DEBUG_PAGEFAULTS, "Error due to read fault.")();
 			}
 
 			if((ir_stack.err_code & 4) != 0)
 			{
-				//kprintfln!("Error occurred in usermode.")();
+				kdebugfln!(DEBUG_PAGEFAULTS, "Error occurred in usermode.")();
 				// In this case we need to send a signal to the libOS handler
 			}
 			else
 			{
-				//kprintfln!("Error occurred in supervised mode.")();
+				kdebugfln!(DEBUG_PAGEFAULTS, "Error occurred in supervised mode.")();
 				// In this case we're super concerned and need to handle the fault
 			}
 
 			if((ir_stack.err_code & 8) != 0)
 			{
-				//kprintfln!("Tried to read from a reserved field in PTE!")();
+				kdebugfln!(DEBUG_PAGEFAULTS, "Tried to read from a reserved field in PTE!")();
 			}
 
 			if((ir_stack.err_code & 16) != 0)
 			{
-				//kprintfln!("Instruction fetch error!")();
+				kdebugfln!(DEBUG_PAGEFAULTS, "Instruction fetch error!")();
 			}
 		}
 	}
@@ -232,19 +232,19 @@ struct vMem
 		// the physical start of the kernel mapping is not known
 		global_mem_regions.kernel_mapped.physical_start = global_mem_regions.kernel_mapped.virtual_start;
 		
-		//kprintfln!("virtual mapping starts: {x}")(global_mem_regions.kernel_mapped.virtual_start);
+		kdebugfln!(DEBUG_PAGING, "virtual mapping starts: {x}")(global_mem_regions.kernel_mapped.virtual_start);
 
 
-		//kprintfln!("kernel_size in pages = {}")(kernel_size);
-		//kprintfln!("kernel_size in bytes = {}")(kernel_size * PAGE_SIZE);
-		//kprintfln!("PageLevel 4 addr = {}")(pageLevel4.ptr);
-		//kprintfln!("Pagelevel 3 addr = {}, {x}")(pageLevel3.ptr, pageLevel4[511].pml4e);
-		//kprintfln!("Pagelevel 2 addr = {}, {x}")(pageLevel2.ptr, pageLevel3[510].pml3e);
-		//kprintfln!("Pagelevel 1 addr = {x}")(pageLevel2[0].pml2e);
+		kdebugfln!(DEBUG_PAGING, "kernel_size in pages = {}")(kernel_size);
+		kdebugfln!(DEBUG_PAGING, "kernel_size in bytes = {}")(kernel_size * PAGE_SIZE);
+		kdebugfln!(DEBUG_PAGING, "PageLevel 4 addr = {}")(pageLevel4.ptr);
+		kdebugfln!(DEBUG_PAGING, "Pagelevel 3 addr = {}, {x}")(pageLevel3.ptr, pageLevel4[511].pml4e);
+	    kdebugfln!(DEBUG_PAGING, "Pagelevel 2 addr = {}, {x}")(pageLevel2.ptr, pageLevel3[510].pml3e);
+		kdebugfln!(DEBUG_PAGING, "Pagelevel 1 addr = {x}")(pageLevel2[0].pml2e);
 
 		pml1[] tmp = (cast(pml1*)(pageLevel2[1].pml2e - 0x7))[0 .. 512];
 
-		//kprintfln!("Page address: {x}")(tmp[0].pml1e);
+		kdebugfln!(DEBUG_PAGING, "Page address: {x}")(tmp[0].pml1e);
 
 		asm {
 			"mov %0, %%rax" :: "o" pageLevel4.ptr;
@@ -258,7 +258,7 @@ struct vMem
 		
 		pageLevel3 = getPml3(511);
 
-		//kprintfln!("Done Mapping ... {}")(pageLevel3[0].present);
+		kdebugfln!(DEBUG_PAGING, "Done Mapping ... {}")(pageLevel3[0].present);
 	}
 
 	private void mapRam(ref pml3[] pageLevel3)
@@ -341,7 +341,7 @@ struct vMem
 		// set the virtual range, it will be returned from the function
 		virtualRangeStart = global_mem_regions.kernel_mapped.virtual_start + global_mem_regions.kernel_mapped.length;
 
-		//kprintfln!("start: {} {} {}")(virtualRangeStart, global_mem_regions.kernel_mapped.virtual_start, pMem.mem_size);
+		kdebugfln!(DEBUG_PAGING, "start: {} {} {}")(virtualRangeStart, global_mem_regions.kernel_mapped.virtual_start, pMem.mem_size);
 		// get the initial page tables to alter
 
 		// increment the kernel mapping region
@@ -438,7 +438,7 @@ struct vMem
 			}
 		}
 		
-		//kprintfln!("virtual Start: {x} for length: {}")(virtualRangeStart, physicalRangeLength);
+		kdebugfln!(DEBUG_PAGING, "virtual Start: {x} for length: {}")(virtualRangeStart, physicalRangeLength);
 
 		vMemMutex.unlock();
 		return ErrorVal.Success;
@@ -451,13 +451,13 @@ struct vMem
 		vMemMutex.lock();
 
 		ulong vm_addr_long = cast(ulong)vm_address;
-		//kprintfln!("The kernel end page addr in physical memory = {x}")(vm_addr_long);
+		kdebugfln!(DEBUG_PAGING, "The kernel end page addr in physical memory = {x}")(vm_addr_long);
 		
 		// Request a page of physical memory
 		auto phys = pMem.requestPage();
 		
 		static if(usermode)
-			kprintfln!("physical address: {}")(phys);
+			kdebugfln!(DEBUG_PAGING, "physical address: {}")(phys);
 
 		// Make sure we know where the end of the kernel now is
 
@@ -483,7 +483,7 @@ struct vMem
 		long pml_index4 = vm_addr_long & 0x1FF;
 
 		// Get the index in to the page table
-		//kprintfln!("level 4 Index = {}")(pml_index);
+	    kdebugfln!(DEBUG_PAGING, "level 4 Index = {}")(pml_index4);
 		// Check to see if the level 4 [entry] is there (it damn well better be if it does't want to be hit... again)
 		
 		pl3 = allocatePml3(pml_index4, usermode);
@@ -587,7 +587,7 @@ struct vMem
 		v_address >>= 9;
 		pml_index4 = v_address & 0x1FF;
 		
-		//kprintfln!("{} {} {} {}")(pml_index4, pml_index3, pml_index2, pml_index1);
+		kdebugfln!(DEBUG_PAGING, "{} {} {} {}")(pml_index4, pml_index3, pml_index2, pml_index1);
 
 		// Step 1: Traversing the page table
 
