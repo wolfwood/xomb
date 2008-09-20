@@ -14,3 +14,4 @@ const auto DEBUG_PMEM = true;
 const auto DEBUG_INTERRUPTS = true;
 const auto DEBUG_MPTABLE = true;
 const auto DEBUG_LAPIC = true;
+const auto DEBUG_IOAPIC = true;

@@ -10,6 +10,8 @@ import kernel.error;
 
 import kernel.log;
 
+import config;
+
 enum IOAPICRegister{
 	IOAPICID,
 	IOAPICVER,
@@ -121,7 +123,7 @@ struct IOAPIC
 
 		ubyte apicVersion, maxRedirectionEntry;
 		getIOApicVersion(apicVersion, maxRedirectionEntry);
-		kprintfln!("IO Ver: 0x{x} MaxRedirectEntry: 0x{x}")(apicVersion, maxRedirectionEntry);
+		kdebugfln!(DEBUG_IOAPIC,"IO Ver: 0x{x} MaxRedirectEntry: 0x{x}")(apicVersion, maxRedirectionEntry);
 		printLogSuccess();
 	}
 
