@@ -455,7 +455,7 @@ static:
 	{
 		void kdebugfln(Args...)(Args args)
 		{
-			static if(verbose) {
+			static if(DEBUG_ALL || verbose) {
 				if (lock) {
 					printLock.lock();
 				}

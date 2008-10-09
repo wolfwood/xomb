@@ -8,6 +8,13 @@ bool remote_debug = true;	// Its like debugging for the debugger
 const ulong KERNEL_VM_BASE = 0xFFFFFFFF80000000;
 
 // Debugging options
+// Setting DEBUG_ALL to true will cause *ALL* debug
+// flags to turn on.  If you only want to see some
+// debug messages, turn DEBUG_ALL off, and only
+// turn on the debug messages you wish to see.
+const auto DEBUG_ALL = true;
+
+// Individual debug options
 const auto DEBUG_PAGING = true;
 const auto DEBUG_PAGEFAULTS = true;
 const auto DEBUG_PMEM = true;
