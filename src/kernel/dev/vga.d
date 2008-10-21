@@ -5,6 +5,8 @@ through VGA.
 
 module kernel.dev.vga;
 
+import config;
+
 import kernel.arch.locks;
 
 import kernel.core.system;
