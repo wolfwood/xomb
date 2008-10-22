@@ -259,15 +259,13 @@ private ErrorVal initConfigurationTable()
 
 	for (uint i=0; i< mpInformation.configTable.entryCount; i++)
 	{		
-		if (lastState <= cast(int)(*curAddr))
-		{
-			lastState = *curAddr;
-		}
-		else
+		if (lastState > cast(int)(*curAddr))
 		{
 			// this is a problem
-			return ErrorVal.Fail;
+			//kprintfln!("Unacceptable Table Structure!")();
+			//return ErrorVal.Fail;
 		}
+		lastState = *curAddr;
 		switch(*curAddr)
 		{
 			case 0:
