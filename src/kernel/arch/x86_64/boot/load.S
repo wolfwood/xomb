@@ -121,8 +121,8 @@ long_entry_ap:
 		pushq %rax
 		popf
 
-		/* go into the kernel */
-		call EXT_C(kmain_ap)
+		/* go into kernel */
+		call EXT_C(apEntry)
 
 		/* just halt */
 		hlt

@@ -49,17 +49,6 @@ and "addr," the address of the multiboot variable, passed by the GRUB bootloader
 			GRUB bootloader.
 */
 
-kmutex apMutex;
-kmutex apDoneMutex;
-
-extern(C) void kmain_ap()
-{
-	apMutex.lock();
-	printLogSuccess();
-	apDoneMutex.unlock();
-
-	for(;;) { }
-}
 
 extern(C) void kmain(uint magic, uint addr)
 {	
@@ -146,9 +135,6 @@ extern(C) void kmain(uint magic, uint addr)
 	{
 		printLogFail();	
 	}
-
-	apMutex.lock();
-	apDoneMutex.lock();
 	
 	// initialize multiprocessor information
 	mp.init();
@@ -168,10 +154,6 @@ extern(C) void kmain(uint magic, uint addr)
 	{
 		printLogFail();
 	}
-
-	printLogLine("The second CPU will post OK");
-	apMutex.unlock();
-	apDoneMutex.lock();	
 
 	kprintfln!("")();
 	

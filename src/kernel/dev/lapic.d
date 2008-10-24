@@ -17,6 +17,8 @@ import kernel.globals;
 // Error codes
 import kernel.error;
 
+import kernel.arch.locks;
+
 // for logging
 import kernel.kmain;
 
@@ -173,6 +175,8 @@ struct LocalAPIC
 		mpInformation.apicRegisters.spuriousIntVector |= 0x100;
 		//kprintfln!("{}")(mpInformation.apicRegisters.spuriousIntVector);
 	}
+
+	kmutex apLock;
 	
 	void startAPs(ref mpBase mpInformation)
 	{
@@ -183,6 +187,8 @@ struct LocalAPIC
 			// of running.  This will prevent us from totally failing while booting :P
 			if(mpInformation.processors[i].localAPICID == mpInformation.apicRegisters.localApicId)
 				continue;
+
+			apLock.lock();
 
 			printLogLine("Initializing CPU");
 			processorEntry* curProcessor = mpInformation.processors[i];
@@ -220,6 +226,9 @@ struct LocalAPIC
 			{
 				p = o << 5 + 10;			
 			}
+
+			apLock.lock();
+			apLock.unlock();
 	
 			printLogSuccess();
 		}
@@ -275,4 +284,69 @@ struct LocalAPIC
 		mpInformation.apicRegisters.interruptCommandLo = loword;
 	}
 
+}
+
+extern (C) void apEntry()
+{
+	// set paging
+
+	void* pl4 = (cast(void*)vMem.pageLevel4.ptr) - vMem.VM_BASE_ADDR;
+	
+	asm {
+		"movq %0, %%rax" :: "o" pl4;
+		"movq %%rax, %%cr3";
+	}
+
+	// set idt
+
+	// set gdt
+
+	// set apic
+
+	// set syscall (lstar)
+
+	kdebugfln!(DEBUG_APENTRY, "AP - Entry")();
+
+	volatile void* apStack;
+	volatile void* apStackSupplementary;
+
+	if (vMem.getKernelPage(apStack) == ErrorVal.Success)
+	{
+		// apStack is the address of a 4KB page
+		// within the kernel space
+
+		for (int i = 1; i<4; i++)
+		{
+			if (vMem.getKernelPage(apStackSupplementary) != ErrorVal.Success)
+			{
+				// Crap!
+				kdebugfln!(DEBUG_APENTRY, "Error - Cannot Allocate Stack")();
+			}
+		}
+	}			
+	else
+	{
+		kprintfln!("Error - Cannot Allocate Stack")();
+	}
+
+	kdebugfln!(DEBUG_APENTRY, "AP - Stack Space Allocated")();
+
+	// Set Stack
+
+	asm {
+		
+		"movq %0, %%rsp" :: "o" apStack;
+	
+	}
+
+	apExec();
+}
+
+void apExec()
+{
+	//kprintfln!("EXEC")();
+
+	LocalAPIC.apLock.unlock();
+
+	for(;;) {}
 }

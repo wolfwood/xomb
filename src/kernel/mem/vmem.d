@@ -20,6 +20,11 @@ import kernel.mem.pmem;
 import kernel.mem.regions; 
 
 
+struct vMem
+{
+
+static:
+
 // Page Table Structures
 
 align(1) struct pml4
@@ -71,11 +76,6 @@ pml3[] kernel_mapping;
  * This should handle everything when a page fault
  * occurs.
  */
-
-struct vMem
-{
-
-	static:
 
 	kmutex vMemMutex;
 
@@ -154,12 +154,8 @@ struct vMem
 		
 		global_mem_regions.kernel.physical_start = cast(ubyte*)0x100000;
 		global_mem_regions.kernel.virtual_start = cast(ubyte*)0xffffffff80000000;
-		global_mem_regions.kernel.length = kernel_size;
-		// kernel_vm_end will be used for house keeping later
-		//kernel_vm_end = (kernel_size * PAGE_SIZE);
-
-		//kernel_vm_end += PAGE_SIZE + kernel_vm_start;
-		
+		global_mem_regions.kernel.length = kernel_size * PAGE_SIZE;
+				
 		// zero it out.
 		pageLevel4[] = pml4.init;
 		
@@ -203,8 +199,10 @@ struct vMem
 		pml1[] pageLevel1;
 
 		auto addr = 0x00; 		// Current addr
+
+		int i, j;
 		
-		for(int i = 0, j = 0; i < kernel_size; i += 512, j++) {
+		for(i = kernel_size-1, j = 0; i >= 0; j++) {
 			// Make some page table entries
 			pageLevel1 = (cast(pml1*)pMem.requestPage())[0 .. 512];
 
@@ -213,13 +211,16 @@ struct vMem
 			pageLevel2[j].pml2e |= 0x7;
 			
 			// Now map all the physical addresses :)  YAY!
-			for(int z = 0; z < 512; z++) {
+			for(int z = 0; z < 512 && i >= 0; z++, i--) {
 				pageLevel1[z].pml1e = addr;
 				pageLevel1[z].pml1e |= 0x87;
 				addr += 4096;
 			}
+			kprintfln!("i pos = {} j = {}")(i,j);
 		}
 		
+		kprintfln!("i = {} j = {}")(i,j);
+
 		// Lets map in all of our phyiscal memory here, just so we can write to it
 		// without a chicken and the egg problem...
 		mapRam(pageLevel3);
@@ -357,9 +358,9 @@ struct vMem
 		long pml_index1;
 
 		// get the initial page table entry to set, allocating page tables as necessary
-		allocatePageEntries(virtualRangeStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+		allocateKernelPageEntries(virtualRangeStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
 
-		retrievePageEntries(virtualRangeStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+		//retrievePageEntries(virtualRangeStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
 
 		pl2 = getPml2(pl3, pml_index3);
 		pl1 = getPml1(pl2, pml_index2);
@@ -446,19 +447,17 @@ struct vMem
 
 	// Function to get a physical page of memory and map it in to virtual memory
 	// Returns: 1 on success, -1 on failure
-	ErrorVal getPage(bool usermode)(void* vm_address) {
+	ErrorVal getPage(bool usermode)(out void* vm_address) {
 
+		//return ErrorVal.Success;
 		vMemMutex.lock();
 
+		vm_address = global_mem_regions.kernel.virtual_start + global_mem_regions.kernel.length;
+
 		ulong vm_addr_long = cast(ulong)vm_address;
+		//kprintfln!("ptr: vm_address: {}")(vm_address);
 		kdebugfln!(DEBUG_PAGING, "The kernel end page addr in physical memory = {x}")(vm_addr_long);
 		
-		// Request a page of physical memory
-		auto phys = pMem.requestPage();
-		
-		static if(usermode)
-			kdebugfln!(DEBUG_PAGING, "physical address: {}")(phys);
-
 		// Make sure we know where the end of the kernel now is
 
 		ulong vm_addr = vm_addr_long;
@@ -468,48 +467,40 @@ struct vMem
 		pml2[] pl2;
 		pml1[] pl1;
 
-		// Shift our VM address right by 12 bits
-		vm_addr_long >>= 12;
-
-		long pml_index1 = vm_addr_long & 0x1FF;
-
-		vm_addr_long >>= 9;
-		long pml_index2 = vm_addr_long & 0x1FF;
+		long pml_index1;
+		long pml_index2;
+		long pml_index3;
+		long pml_index4;
 		
-		vm_addr_long >>= 9;
-		long pml_index3 = vm_addr_long & 0x1FF;
+		retrievePageEntries(vm_address,pl3,pl2,pl1,pml_index4, pml_index3, pml_index2, pml_index1);
 		
-		vm_addr_long >>= 9;
-		long pml_index4 = vm_addr_long & 0x1FF;
-
-		// Get the index in to the page table
-	    kdebugfln!(DEBUG_PAGING, "level 4 Index = {}")(pml_index4);
-		// Check to see if the level 4 [entry] is there (it damn well better be if it does't want to be hit... again)
-		
-		pl3 = allocatePml3(pml_index4, usermode);
-
-		pl2 = allocatePml2(pl3, pml_index3, usermode);
-		
-		pl1 = allocatePml1(pl2, pml_index2, usermode);
-
-		// We need to ensure that we aren't writing to a page that is already mapped.s
-		if(!pl1[pml_index1].present)
+		if (pl1 !is null)
 		{
-			with(pl1[pml_index1])
+			if (pl1[pml_index1].present)
 			{
-				// set the whole address, which will also conveniently set the
-				// first 12 flag bits to zero.
-				pml1e = cast(ulong)phys;
-
-				// set initial bits
-				present = true;
-				rw = true;
-				us = usermode;
+				vMemMutex.unlock();
+				return ErrorVal.PageMapError;
 			}
-		} else {
-			vMemMutex.unlock();
-			return ErrorVal.PageMapError;
 		}
+
+		allocatePageEntries!(usermode)(vm_address,pl3,pl2,pl1,pml_index4, pml_index3, pml_index2, pml_index1);
+
+		// Request a page of physical memory
+		auto phys = pMem.requestPage();
+
+		static if (usermode)
+		{
+			kdebugfln!(DEBUG_PAGING, "physical address: {}")(phys);
+		}
+
+		pl1[pml_index1].pml1e = cast(ulong)phys;
+		pl1[pml_index1].pml1e |= 0x87;
+		pl1[pml_index1].us = usermode;
+		
+
+		// increase size of kernel map
+		global_mem_regions.kernel.length += PAGE_SIZE;		
+			
 		vMemMutex.unlock();
 		
 		// The page table puts the lotion on its skin or it gets the hose again...
@@ -611,31 +602,34 @@ struct vMem
 		pl1 = getPml1(pl2, pml_index2);
 	}
 
-	private ErrorVal allocatePageEntries(void* virtualAddress, out pml3[] pl3, out pml2[] pl2, out pml1[] pl1, out long pml_index4, out long pml_index3, out long pml_index2, out long pml_index1)
+	private ErrorVal allocatePageEntries(bool usermode)(void* virtualAddress, out pml3[] pl3, out pml2[] pl2, out pml1[] pl1, out long pml_index4, out long pml_index3, out long pml_index2, out long pml_index1)
 	{
 		retrievePageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
 
 		if (pl3 is null)
 		{
 			// need to allocate page level 3 before we continue
-			pl3 = allocatePml3(pml_index4);
+			pl3 = allocatePml3(pml_index4, usermode);
 		}
 		
 		if (pl2 is null)
 		{
 			// need to allocate page level 2 before we continue
-			pl2 = allocatePml2(pl3, pml_index3);
+			pl2 = allocatePml2(pl3, pml_index3, usermode);
 		}
 		
 		if (pl1 is null)
 		{
 			// need to allocate page level 1 before we continue
-			pl1 = allocatePml1(pl2, pml_index2);
+			pl1 = allocatePml1(pl2, pml_index2, usermode);
 		}
 
 		return ErrorVal.Success;
 	}
 
+	alias allocatePageEntries!(true) allocateUserPageEntries;
+	alias allocatePageEntries!(false) allocateKernelPageEntries;
+	
 
 
 
