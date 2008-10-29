@@ -60,7 +60,7 @@ extern(C) void kmain(uint magic, uint addr)
 
 	// Print initial booting information.
 	Console.setColors(Color.LowGreen, Color.Black);
-	kprintf!(" XOmB 0.0")();
+	kprintf!(" XOmB 0.0 $Rev$")();
 	Console.resetColors();
 	kprintf!("                               ")();
 
