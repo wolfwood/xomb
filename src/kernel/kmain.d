@@ -149,6 +149,7 @@ extern(C) void kmain(uint magic, uint addr)
 	if (HPET.init() == ErrorVal.Success)
 	{
 		printLogSuccess();
+		HPET.initTimer(0, 5000);
 	}
 	else
 	{

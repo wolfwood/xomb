@@ -182,7 +182,8 @@ struct mpBase {
 	compatibilityBusAddressSpaceModifierEntry*[maxCompatibilityBusAddressSpaceModifierEntries] compatibilityBusAddressSpaceModifiers;
 }
 
-private mpBase mpInformation;
+// XXX: Just to test interrupts changing this to public...  restore to private later.
+public mpBase mpInformation;
 
 ErrorVal init()
 {

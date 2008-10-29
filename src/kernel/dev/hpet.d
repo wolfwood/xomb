@@ -8,6 +8,11 @@ import kernel.mem.regions;
 import kernel.dev.vga;
 import kernel.dev.ioapic;
 
+import kernel.dev.mp;
+
+// Make mpInformation 
+
+
 template Tmaker(uint ID)
 {
 	const char[] Tmaker = ", \"T" ~ ID.stringof[0..$-1] ~ "_INT_STS\", 1";
@@ -27,7 +32,6 @@ align(1) struct hpetConfig {
 	mixin(Bitfield!(capabilitiesAndID, "REV_ID", 8, "NUM_TIM_CAP", 5, "COUNT_SIZE_CAP", 1, "ReservedCap", 1, "LEG_RT_CAP", 1, "VENDOR_ID", 16,
 	"COUNTER_CLOCK_PERIOD", 32));
 	mixin(Bitfield!(configuration, "ENABLE_CNF", 1, "LEG_RT_CNF", 1, "Reserved1", 6, "ReservedNonOS", 8, "Reserved2", 48));
-//	mixin(Bitfield!(interruptStatus, "T0_INT_STS", 1, "T1_INT_STS", 1, "T2_INT_STS", 1, "T3_INT_STS", 1, "T4_INT_STS", 1, "T5_INT_STS", 1, "T6_INT_STS", 1, "T7_INT_STS", 1, "T8_INT_STS", 1, "T9_INT_STS", 1, "T10_INT_STS", 1, "T11_INT_STS", 1, "T12_INT_STS", 1, "T13_INT_STS", 1, "T14_INT_STS", 1, "T15_INT_STS", 1, "T16_INT_STS", 1, "T17_INT_STS", 1, "T18_INT_STS", 1, "T19_INT_STS", 1, "T20_INT_STS", 1, "T21_INT_STS", 1, "T22_INT_STS", 1, "T23_INT_STS", 1, "T24_INT_STS", 1, "T25_INT_STS", 1, "T26_INT_STS", 1, "T27_INT_STS", 1, "T28_INT_STS", 1, "T28_INT_STS", 1, "T30_INT_STS", 1, "T31_INT_STS", 1, "Reserved", 32));
 	mixin("mixin(Bitfield!(interruptStatus" ~ Reduce!(Cat, Map!(Tmaker, Range!(32))) ~ ", \"ReservedStatus\", 32));");
 }
 
@@ -72,7 +76,7 @@ struct HPET
 		// resolve the address to the configuration table
 		hpetDevice.config = cast(hpetConfig*)virtHPETAddy;
 		
-		kprintfln!("NUM_TIM_CAP = {}")(hpetDevice.config.NUM_TIM_CAP);
+		//kprintfln!("NUM_TIM_CAP = {}")(hpetDevice.config.NUM_TIM_CAP);
 
 		// initialize the configuration to allow standard IOAPIC interrupts
 		hpetDevice.config.LEG_RT_CNF = 0;
@@ -83,7 +87,7 @@ struct HPET
 	
 		//printStruct(hpetDevice);
 
-		initTimer(0, 1000000);
+		//initTimer(0, 1000000);
 	
 		return ErrorVal.Success;
 	}
@@ -107,7 +111,8 @@ struct HPET
 		hpetDevice.timers[index].TYPE_CNF = 0;
 		
 		// we want edge-triggered interrupts
-		hpetDevice.timers[index].INT_TYPE_CNF = 0;
+		// do we?  Brian says no, and set it to level
+		hpetDevice.timers[index].INT_TYPE_CNF = 1;
 		
 		// we want to route to interrupt 'index'
 		hpetDevice.timers[index].INT_ROUTE_CNF = index;
@@ -119,10 +124,20 @@ struct HPET
 		// overflow of main counter will not matter
 		curcounter += (nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD);
 		
-		kprintfln!("counter updates by = {} for {}ns")(nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD, nanoSecondInterval / 1000000);
+
+		// TODO: change this to a debug
+		//kprintfln!("counter updates by = {} for {}ns")(nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD, nanoSecondInterval / 1000000);
 
 		// tell IOAPIC of our plans
-		//IOAPIC.setRedirectionTableEntry(0, );
+		// So the idea here is that we're going to put 'er in
+		// to physical mode here and send the apic ID of the first
+		// local apic.  Just to test...  we should probably fix this later.
+		IOAPIC.setRedirectionTableEntry(1, mpInformation.processors[1].localAPICID,
+						IOAPICInterruptType.Unmasked, IOAPICTriggerMode.LevelTriggered, 
+						IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
+						IOAPICDeliveryMode.LowestPriority, 0x22 );
+
+		IOAPIC.printTableEntry(1);
 
 		// we now want to enable the timer interrupt
 		hpetDevice.timers[index].INT_ENB_CNF = 1;

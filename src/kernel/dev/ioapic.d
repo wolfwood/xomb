@@ -31,13 +31,13 @@ enum IOAPICRegister{
 	IOREDTBL6HI,
 	IOREDTBL6LO,
 	IOREDTBL7HI,
-    IOREDTBL7LO,
+    	IOREDTBL7LO,
 	IOREDTBL8HI,
-    IOREDTBL8LO,
+    	IOREDTBL8LO,
 	IOREDTBL9HI,        
 	IOREDTBL9LO,
 	IOREDTBL10HI,
-    IOREDTBL10LO,
+   	IOREDTBL10LO,
 	IOREDTBL11HI,
 	IOREDTBL11LO,
 	IOREDTBL12HI,
@@ -132,6 +132,7 @@ struct IOAPIC
 		value = *(ioApicWindowRegister);
 	}
 
+
 	void writeRegister (IOAPICRegister reg, in uint value){
 		volatile *(ioApicRegisterSelect) = cast(uint)reg;
 		volatile *(ioApicWindowRegister) = value;
@@ -172,5 +173,39 @@ struct IOAPIC
 		writeRegister(cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0HI + (registerIndex*2)), valuehi);
 		writeRegister(cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), valuelo);
 	}
+
+
+       //Prints the information in the redirect table entries
+       void printTableEntry(uint tableEntry) {
+	 // Values that will be filled by readRegister
+	 uint hi, lo;
+	 // Make the calls
+	 readRegister(cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0HI + (tableEntry*2)), hi);
+	 readRegister(cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (tableEntry*2)), lo);
+
+	 kdebugfln!(DEBUG_IOAPIC, "Hi-value: {}")(hi);
+	 kdebugfln!(DEBUG_IOAPIC, "Lo-value: {}")(lo);
+
+
+	 // Rebuild the whole thing
+	 ulong whole = hi << 32;
+	 whole += lo;
+
+	 kdebugfln!(DEBUG_IOAPIC, "Whole value = 0x{x}")(whole);
+
+	 kdebugfln!(DEBUG_IOAPIC, "Destination field: {}")(whole & (0x8FL << 56));
+	 kdebugfln!(DEBUG_IOAPIC, "Interrupt mask: {}")(whole & (1 << 16));
+	 kdebugfln!(DEBUG_IOAPIC, "Trigger mode: {}")(whole & (1 << 15));
+	 kdebugfln!(DEBUG_IOAPIC, "Remote IRR: {}")(whole & (1 << 14));
+	 kdebugfln!(DEBUG_IOAPIC, "Interrupt input pin polarity: {}")(whole & (1 << 13));
+	 kdebugfln!(DEBUG_IOAPIC, "Delivery status {}")(whole & (1 << 12));
+	 kdebugfln!(DEBUG_IOAPIC, "Destination mode: {}")(whole & (1 << 11));
+	 kdebugfln!(DEBUG_IOAPIC, "Delivery mode: {}")(whole & (0xF << 10));
+	 kdebugfln!(DEBUG_IOAPIC, "Interrupt vector: {}")(whole & (0x8F));
+	 
+       }
+
+
+  
 
 }
