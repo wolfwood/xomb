@@ -132,7 +132,8 @@ struct HPET
 		// So the idea here is that we're going to put 'er in
 		// to physical mode here and send the apic ID of the first
 		// local apic.  Just to test...  we should probably fix this later.
-		IOAPIC.setRedirectionTableEntry(1, mpInformation.processors[1].localAPICID,
+		kprintfln!("HPET LocalAPICID Destination Field: {}")(mpInformation.processors[0].localAPICID);
+		IOAPIC.setRedirectionTableEntry(1, mpInformation.processors[0].localAPICID,
 						IOAPICInterruptType.Unmasked, IOAPICTriggerMode.LevelTriggered, 
 						IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
 						IOAPICDeliveryMode.LowestPriority, 0x22 );

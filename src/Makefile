@@ -1,5 +1,7 @@
 # Makefile for XOmB
 
+svn propset svn:keywords "Revision" kernel/kmain.d
+
 MY_ARCH := $(shell uname)
 
 # default compile options

@@ -62,7 +62,9 @@ extern(C) void kmain(uint magic, uint addr)
 	Console.setColors(Color.LowGreen, Color.Black);
 	kprintf!(" XOmB 0.0 $Rev$")();
 	Console.resetColors();
-	kprintf!("                               ")();
+	int x,y;
+	Console.getPosition(x,y);
+	Console.setPosition(80-40, y);
 
 	// Print out our slogan. Literally, "We came, we saw, we conquered."
 	Console.setColors(Color.Yellow, Color.LowBlue);

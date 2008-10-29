@@ -174,38 +174,44 @@ struct IOAPIC
 		writeRegister(cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), valuelo);
 	}
 
+	//Prints the information in the redirect table entries
+	void printTableEntry(uint tableEntry) 
+	{
+		// Values that will be filled by readRegister
+		uint hi, lo;
+		// Make the calls
+		readRegister(cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0HI + (tableEntry*2)), hi);
+		readRegister(cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (tableEntry*2)), lo);
 
-       //Prints the information in the redirect table entries
-       void printTableEntry(uint tableEntry) {
-	 // Values that will be filled by readRegister
-	 uint hi, lo;
-	 // Make the calls
-	 readRegister(cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0HI + (tableEntry*2)), hi);
-	 readRegister(cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (tableEntry*2)), lo);
-
-	 kdebugfln!(DEBUG_IOAPIC, "Hi-value: {}")(hi);
-	 kdebugfln!(DEBUG_IOAPIC, "Lo-value: {}")(lo);
+		kdebugfln!(DEBUG_IOAPIC, "Hi-value: {}")(hi);
+		kdebugfln!(DEBUG_IOAPIC, "Lo-value: {}")(lo);
 
 
-	 // Rebuild the whole thing
-	 ulong whole = cast(ulong)hi << 32;
-	 whole += lo;
+		// Rebuild the whole thing
+		ulong whole = cast(ulong)hi;
+		whole <<= 32;
+		whole += cast(ulong)lo;
 
-	 kdebugfln!(DEBUG_IOAPIC, "Whole value = 0x{x}")(whole);
-
-	 kdebugfln!(DEBUG_IOAPIC, "Destination field: {}")(whole & (0x8FUL << 56));
-	 kdebugfln!(DEBUG_IOAPIC, "Interrupt mask: {}")(whole & (1 << 16));
-	 kdebugfln!(DEBUG_IOAPIC, "Trigger mode: {}")(whole & (1 << 15));
-	 kdebugfln!(DEBUG_IOAPIC, "Remote IRR: {}")(whole & (1 << 14));
-	 kdebugfln!(DEBUG_IOAPIC, "Interrupt input pin polarity: {}")(whole & (1 << 13));
-	 kdebugfln!(DEBUG_IOAPIC, "Delivery status {}")(whole & (1 << 12));
-	 kdebugfln!(DEBUG_IOAPIC, "Destination mode: {}")(whole & (1 << 11));
-	 kdebugfln!(DEBUG_IOAPIC, "Delivery mode: {}")(whole & (0xF << 10));
-	 kdebugfln!(DEBUG_IOAPIC, "Interrupt vector: {}")(whole & 0x8F);
+		kdebugfln!(DEBUG_IOAPIC, "Interrupt vector: {}")(whole & 0xFF);
+		whole >>= 8;
+		kdebugfln!(DEBUG_IOAPIC, "Delivery Mode: {}")(whole & 0x7);
+		whole >>= 3;
+		kdebugfln!(DEBUG_IOAPIC, "Destination Mode: {}")(whole & 0x1);
+		whole >>= 1;
+		kdebugfln!(DEBUG_IOAPIC, "Delivery Status: {}")(whole & 0x1);
+		whole >>= 1;
+		kdebugfln!(DEBUG_IOAPIC, "Interrupt input pin polarity: {}")(whole & 0x1);
+		whole >>= 1;
+		kdebugfln!(DEBUG_IOAPIC, "Remote IRR: {}")(whole & 0x1);
+		whole >>= 1;
+		kdebugfln!(DEBUG_IOAPIC, "Trigger Mode: {}")(whole & 0x1);
+		whole >>= 1;
+		kdebugfln!(DEBUG_IOAPIC, "Interrupt Mask: {}")(whole & 0x1);
+		whole >>= 40;
+		kdebugfln!(DEBUG_IOAPIC, "Destination Field: {}")(whole & 0xFF);
 	 
        }
 
 
   
-
 }
