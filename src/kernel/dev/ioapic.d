@@ -188,12 +188,12 @@ struct IOAPIC
 
 
 	 // Rebuild the whole thing
-	 ulong whole = hi << 32;
+	 ulong whole = cast(ulong)hi << 32;
 	 whole += lo;
 
 	 kdebugfln!(DEBUG_IOAPIC, "Whole value = 0x{x}")(whole);
 
-	 kdebugfln!(DEBUG_IOAPIC, "Destination field: {}")(whole & (0x8FL << 56));
+	 kdebugfln!(DEBUG_IOAPIC, "Destination field: {}")(whole & (0x8FUL << 56));
 	 kdebugfln!(DEBUG_IOAPIC, "Interrupt mask: {}")(whole & (1 << 16));
 	 kdebugfln!(DEBUG_IOAPIC, "Trigger mode: {}")(whole & (1 << 15));
 	 kdebugfln!(DEBUG_IOAPIC, "Remote IRR: {}")(whole & (1 << 14));
@@ -201,7 +201,7 @@ struct IOAPIC
 	 kdebugfln!(DEBUG_IOAPIC, "Delivery status {}")(whole & (1 << 12));
 	 kdebugfln!(DEBUG_IOAPIC, "Destination mode: {}")(whole & (1 << 11));
 	 kdebugfln!(DEBUG_IOAPIC, "Delivery mode: {}")(whole & (0xF << 10));
-	 kdebugfln!(DEBUG_IOAPIC, "Interrupt vector: {}")(whole & (0x8F));
+	 kdebugfln!(DEBUG_IOAPIC, "Interrupt vector: {}")(whole & 0x8F);
 	 
        }
 
