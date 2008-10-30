@@ -99,12 +99,15 @@ struct pMem
 
 		// Set the first part of the bitmap to all used
 		bitmap[0 .. num_used / 8] = cast(ubyte)0xFF;
-		
+
+		// The reset of the bitmap is 0 to mean unused
+		bitmap[num_used / 8 + 1 .. $] = 0;
+
 		// Where we change from used to unused, figure out the bit pattern to put in that slot
-		if(num_used % 8 !=0) {
+		if(num_used % 8 != 0) {
 			bitmap[num_used / 8 + 1] = 0xFF >> (8 - (num_used % 8));
 		}
-		
+
 		return ErrorVal.Success;
 	}
 

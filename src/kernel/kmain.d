@@ -111,6 +111,7 @@ extern(C) void kmain(uint magic, uint addr)
 	printLogLine("Installing Page Tables");
 	vMem.install();
 	printLogSuccess();
+	printLogLine("Are we there yet?");
 
 	// Now that page tables are implemented,
 	// Map in the BIOS regions.
