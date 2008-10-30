@@ -137,16 +137,19 @@ static:
 		{
 			printLogFail();
 			kprintfln!("-- Your computer is not cool enough, we need SYSCALL and SYSRET.")();
+			for(;;) {}
 			asm { cli; hlt; }
 		}
 
 		// check for x2APIC
-		if(!(cpuidAX(0x1) & (1 << 21)))
+		/*if(!(cpuidCX(0x1) & (1 << 21)))
 		{
 			printLogFail();
 			kprintfln!("-- Your computer is not cool enough, we need x2APIC")();
+			for(;;) {}
 			asm { cli; hlt; }
 		}
+		*/
 
 		// we have total success
 		printLogSuccess();
