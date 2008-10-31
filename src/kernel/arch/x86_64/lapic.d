@@ -180,8 +180,8 @@ struct LocalAPIC
 		MP.mpInformation.apicRegisters = cast(apicRegisterSpace*)(apicRange);
 		//kprintfln!("local APIC address: {x}")(MP.mpInformation.apicRegisters);
 
-		kprintfln!("local APIC version: 0x{x}")(MP.mpInformation.apicRegisters.localApicIdVersion & 0xFF);	
-		kprintfln!("number of LVT Entries: {}")((MP.mpInformation.apicRegisters.localApicIdVersion >> 16) + 1);
+		kdebugfln!(DEBUG_LAPIC, "local APIC version: 0x{x}")(MP.mpInformation.apicRegisters.localApicIdVersion & 0xFF);	
+		kdebugfln!(DEBUG_LAPIC, "number of LVT Entries: {}")((MP.mpInformation.apicRegisters.localApicIdVersion >> 16) + 1);
 	}
 	
 	void enableLocalApic()

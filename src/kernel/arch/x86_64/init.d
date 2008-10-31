@@ -89,20 +89,20 @@ static:
 		ret <<= 32;
 		ret |= lo;
 
-		kprintfln!("readMSR: 0x{x}")(ret);		
+		//kprintfln!("readMSR: 0x{x}")(ret);		
 
 		return ret;
 	}
 
 	void writeMSR(uint MSR, ulong value)
 	{
-		kprintfln!("writeMSR : value : 0x{x}")(value);
+		//kprintfln!("writeMSR : value : 0x{x}")(value);
 
 		uint hi, lo;
 		lo = value & 0xFFFFFFFF;
 		hi = value >> 32UL;
 
-		kprintfln!("writeMSR : hi : 0x{x} : lo : 0x{x}")(hi,lo);
+		//kprintfln!("writeMSR : hi : 0x{x} : lo : 0x{x}")(hi,lo);
 
 		asm
 		{

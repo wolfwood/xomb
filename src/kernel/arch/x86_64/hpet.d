@@ -160,11 +160,15 @@ struct HPET
 		kprintfln!("1")();
 		kprintfln!("POSSIBLE: {x}")(hpetDevice.config.timers[index].INT_ROUTE_CAP);
 
-		uint routingInterrupt = 1;
-		while (!(routingInterrupt & hpetDevice.config.timers[index].INT_ROUTE_CAP))
+		uint routingInterrupt = 0;
+		while (!((1 << routingInterrupt) & hpetDevice.config.timers[index].INT_ROUTE_CAP) && routingInterrupt < 32)
 		{
-			routingInterrupt <<= 1;
+			routingInterrupt++;
 		}
+
+		if (routingInterrupt >= 32) { return; }
+
+		kprintfln!("route int: {}")(routingInterrupt);
 
 		if (hpetDevice.config.timers[index].SIZE_CAP == 0)
 		{
@@ -204,7 +208,7 @@ struct HPET
 		//IOAPIC.printTableEntry(routingInterrupt);
 
 		// enable timer interrupts
-		timerVal |= (1 << 2);
+		//timerVal |= (1 << 2);
 
 		kprintfln!("4")();
 	
