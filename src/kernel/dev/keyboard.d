@@ -1,6 +1,6 @@
 module kernel.dev.keyboard;
 
-import kernel.dev.ioapic;
+import kernel.arch.x86_64.ioapic;
 
 void kbd_init() {
 	

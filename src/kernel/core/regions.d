@@ -1,7 +1,7 @@
-module kernel.mem.regions;
+module kernel.core.regions;
 
 import kernel.core.util;
-import kernel.mem.vmem;
+import kernel.arch.x86_64.vmem;
 import kernel.core.multiboot;
 
 import kernel.dev.vga;
@@ -12,7 +12,6 @@ struct mem_region
 	ubyte* physical_start;
 	ulong length;
 }
-
 
 struct global_mem_region {
 

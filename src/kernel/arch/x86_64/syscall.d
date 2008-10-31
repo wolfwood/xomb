@@ -1,14 +1,14 @@
 module kernel.arch.x86_64.syscall;
 
 
-
-
 import kernel.dev.vga;
 
 import user.syscall;
 import kernel.core.util;
-import kernel.mem.vmem;
+import kernel.arch.x86_64.vmem;
 import kernel.error;
+
+import kernel.core.syscall;
 
 /**
 This function declares a handler for system calls. It accepts a pointer to a function (h).
@@ -19,6 +19,8 @@ Params:
 */
 void setHandler(void* h)
 {
+	// TODO: USE MSR ROUTINES IN kernel.arch.x86_64.init TO SET THESE!!!
+
 	const ulong STAR_MSR = 0xc000_0081;
 	const ulong LSTAR_MSR = 0xc000_0082;
 	const ulong SFMASK_MSR = 0xc000_0084;
@@ -83,12 +85,12 @@ template MakeSyscallDispatchCase(uint idx)
 	static if(!is(SyscallRetTypes[idx] == void))
 		const char[] MakeSyscallDispatchCase =
 `case ` ~ idx.stringof ~ `:
-	return syscall` ~ Capitalize!(SyscallName!(idx)) ~ `(*(cast(` ~ SyscallRetTypes[idx].stringof ~
+	return Syscall.` ~ SyscallName!(idx) ~ `(*(cast(` ~ SyscallRetTypes[idx].stringof ~
 	`*)ret), cast(` ~ ArgsStruct!(idx) ~ `*)params);`;
 	else
 		const char[] MakeSyscallDispatchCase =
 `case ` ~ idx.stringof ~ `:
-	return syscall` ~ Capitalize!(SyscallName!(idx)) ~ `(cast(` ~ ArgsStruct!(idx) ~ `*)params);`;
+	return Syscall.` ~ SyscallName!(idx) ~ `(cast(` ~ ArgsStruct!(idx) ~ `*)params);`;
 }
 
 template MakeSyscallDispatchList()
@@ -108,36 +110,3 @@ extern(C) void syscallDispatcher(ulong ID, void* ret, void* params)
 	mixin(MakeSyscallDispatchList!());
 }
 
-// Syscall Implementations
-
-// add two numbers, a and b, and return the result
-// ulong add(long a, long b)
-SyscallError syscallAdd(out long ret, AddArgs* params)
-{
-	ret = params.a + params.b;
-	return SyscallError.OK;
-}
-
-// void allocPage(void* virtAddr)
-SyscallError syscallAllocPage(out ulong ret, AllocPageArgs* params)
-{
-	if(vMem.getUserPage(params.va) == ErrorVal.Success)
-		ret = SyscallError.OK;
-	else
-		ret = SyscallError.Failcopter;
-		
-	return cast(SyscallError)ret;
-}
-
-// void exit(ulong retval)
-SyscallError syscallExit(ExitArgs* params)
-{
-	kprintfln!("WARNING: exit() not yet implemented")();
-	return SyscallError.Failcopter;
-}
-
-SyscallError syscallFreePage(FreePageArgs* params)
-{
-
-	return SyscallError.OK;
-}

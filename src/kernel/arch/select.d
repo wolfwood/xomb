@@ -21,6 +21,8 @@ public import syscall = kernel.arch.x86_64.syscall;
 // LOCKS
 public import kernel.arch.locks;
 
+// VMEM
+public import kernel.arch.x86_64.vmem;
 
 
 

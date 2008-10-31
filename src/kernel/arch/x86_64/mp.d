@@ -1,21 +1,18 @@
 //this takes care of detecting multiple processors
-module kernel.dev.mp;
+module kernel.arch.x86_64.mp;
 
 // log
-import kernel.log;
+import kernel.core.log;
 
-import kernel.kmain;
+import kernel.core.error;
 
-import kernel.arch.select;
-
-import kernel.error;
-import kernel.mem.regions;
-import kernel.mem.vmem;
 import kernel.core.util;
 import kernel.dev.vga;
 
-import kernel.dev.lapic;
-import kernel.dev.ioapic;
+import kernel.arch.x86_64.lapic;
+import kernel.arch.x86_64.ioapic;
+import kernel.arch.x86_64.vmem;
+import kernel.core.regions;
 
 import config;
 
@@ -182,10 +179,30 @@ struct mpBase {
 	compatibilityBusAddressSpaceModifierEntry*[maxCompatibilityBusAddressSpaceModifierEntries] compatibilityBusAddressSpaceModifiers;
 }
 
-// XXX: Just to test interrupts changing this to public...  restore to private later.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+struct MP
+{
+static:
+private:
+
 public mpBase mpInformation;
 
-ErrorVal init()
+
+
+public ErrorVal init()
 {
 	printLogLine("Finding the MP Table");
 
@@ -346,7 +363,7 @@ private ErrorVal initConfigurationTable()
 	return ErrorVal.Success;
 }
 
-mpFloatingPointer* scan(ubyte* start, ubyte* end)
+private mpFloatingPointer* scan(ubyte* start, ubyte* end)
 {
 	for(ubyte* currentByte = start; currentByte < end-3; currentByte++)
 	{
@@ -371,18 +388,18 @@ mpFloatingPointer* scan(ubyte* start, ubyte* end)
 	return null;
 }
 
-void initIOAPIC()
+public void initIOAPIC()
 {
-	IOAPIC.init(mpInformation, mpInformation.ioApics[0]);
+	IOAPIC.init(mpInformation.ioApics[0]);
 }
 
-void initAPIC()
+public void initAPIC()
 {
 	// start up application processors and APIC bus
-	LocalAPIC.init(mpInformation);
+	LocalAPIC.init();
 }
 
-bool isChecksumValid(ubyte* startAddr, uint length)
+private bool isChecksumValid(ubyte* startAddr, uint length)
 {
 	ubyte* endAddr = startAddr + length;
 	int acc;
@@ -392,4 +409,7 @@ bool isChecksumValid(ubyte* startAddr, uint length)
 	}
 
 	return ((acc &= 0xFF) == 0);
+}
+
+
 }

@@ -1,15 +1,15 @@
 // idt.d - all the idt goodness you can handle
 module kernel.arch.x86_64.idt;
 
-import gdt = kernel.arch.x86_64.gdt;
+import kernel.arch.x86_64.gdt;
 
 import kernel.dev.vga;
 
 import kernel.core.util;
 
-import kernel.mem.vmem;
+//import kernel.arch.x86_64.vmem;
 
-alias gdt.IntGateDesc64 IDTEntry;
+alias GDT.IntGateDesc64 IDTEntry;
 
 public align(1) struct IDTPtr
 {
@@ -19,10 +19,30 @@ public align(1) struct IDTPtr
 
 public extern(C) IDTPtr idtp;
 
+
+/* This defines what the stack looks like after an ISR was running */
+align(1) struct interrupt_stack
+{	
+	// registers we pushed
+	long r15, r14, r13,	r12, r11, r10, r9, r8, rbp, rdi, rsi, rdx, rcx, rbx, rax;
+
+	// data, pushed by isr
+	long int_no, err_code;
+
+	// pushed automatically by the processor
+	long rip, cs, rflags, rsp, ss;
+}
+
+
+alias void function(interrupt_stack*) InterruptHandler;
+
+private InterruptHandler[256] InterruptHandlers;
+
 struct IDT
 {
 
 static:
+private:
 
 public enum StackType : uint
 {
@@ -41,7 +61,7 @@ public enum StackType : uint
 *  "Unhandled Interrupt" exception */
 IDTEntry[256] Entries;
 
-public void setGate(uint num, gdt.SysSegType64 gateType, ulong funcPtr, uint dplFlags, uint istFlags)
+public void setGate(uint num, GDT.SysSegType64 gateType, ulong funcPtr, uint dplFlags, uint istFlags)
 {
 	with(Entries[num])
 	{
@@ -58,15 +78,15 @@ public void setGate(uint num, gdt.SysSegType64 gateType, ulong funcPtr, uint dpl
 
 void setIntGate(uint num, void* funcPtr, uint ist = 0)
 {
-	setGate(num, gdt.SysSegType64.IntGate, cast(ulong)funcPtr, 0, ist);
+	setGate(num, GDT.SysSegType64.IntGate, cast(ulong)funcPtr, 0, ist);
 }
 
 void setSysGate(uint num, void* funcPtr, uint ist = 0)
 {
-	setGate(num, gdt.SysSegType64.IntGate, cast(ulong)funcPtr, 3, ist);
+	setGate(num, GDT.SysSegType64.IntGate, cast(ulong)funcPtr, 3, ist);
 }
 
-void install()
+public void install()
 {
 	idtp.limit = (IDTEntry.sizeof * Entries.length) - 1;
 	idtp.base = cast(ulong)Entries.ptr;
@@ -113,7 +133,7 @@ void install()
 	setIDT();
 }
 
-void setIDT()
+public void setIDT()
 {
 	asm {
 		naked;
@@ -200,61 +220,6 @@ mixin(ISR!(35));
 mixin(ISR!(36));
 mixin(ISR!(128));
 
-extern(C) void isr_common()
-{
-	asm
-	{
-		naked;
-		"pushq %%rax";
-		"pushq %%rbx";
-		"pushq %%rcx";
-		"pushq %%rdx";
-		"pushq %%rsi";
-		"pushq %%rdi";
-		"pushq %%rbp";
-		"pushq %%r8";
-		"pushq %%r9";
-		"pushq %%r10";
-		"pushq %%r11";
-		"pushq %%r12";
-		"pushq %%r13";
-		"pushq %%r14";
-		"pushq %%r15";
-
-		// we don't have to push %rsp, %rip and flags; they are pushed
-		// automatically on an interrupt
-
-		"mov %%rsp, %%rdi";
-		"call fault_handler";
-
-		"popq %%r15";
-		"popq %%r14";
-		"popq %%r13";
-		"popq %%r12";
-		"popq %%r11";
-		"popq %%r10";
-		"popq %%r9";
-		"popq %%r8";
-		"popq %%rbp";
-		"popq %%rdi";
-		"popq %%rsi";
-		"popq %%rdx";
-		"popq %%rcx";
-		"popq %%rbx";
-		"popq %%rax";
-		
-		// A haiku
-		// We need to print a stack trace
-		// I hate a-s-m
-		// This is a job for Jarrett
-
-		// Cleans up the pushed error code and pushed ISR num
-		"add $16, %%rsp";
-
-		"iretq";         /* pops 5 things in order: rIP, CS, rFLAGS, rSP, and SS */
-	}
-}
-
 enum Type
 {
 	DivByZero = 0,
@@ -316,24 +281,7 @@ private const char[][] exceptionMessages =
 	"SYSCALL" //128
 ];
 
-/* This defines what the stack looks like after an ISR was running */
-align(1) struct interrupt_stack
-{	
-	// registers we pushed
-	long r15, r14, r13,	r12, r11, r10, r9, r8, rbp, rdi, rsi, rdx, rcx, rbx, rax;
-
-	// data, pushed by isr
-	long int_no, err_code;
-
-	// pushed automatically by the processor
-	long rip, cs, rflags, rsp, ss;
-}
-
-alias void function(interrupt_stack*) InterruptHandler;
-
-private InterruptHandler[256] InterruptHandlers;
-
-void setCustomHandler(size_t i, InterruptHandler h, int ist = -1)
+public void setCustomHandler(size_t i, InterruptHandler h, int ist = -1)
 {
 	assert(i < InterruptHandlers.length, "Invalid handler index");
 
@@ -356,6 +304,8 @@ void stack_dump(interrupt_stack* r) {
 	kprintfln!("ss: 0x{x} / rsp: 0x{x} / cs: 0x{x}")(r.ss, r.rsp, r.cs);
 }
 
+}
+
 /* All of our Exception handling Interrupt Service Routines will
 *  point to this function. This will tell us what exception has
 *  happened! Right now, we simply halt the system by hitting an
@@ -372,9 +322,9 @@ extern(C) void fault_handler(interrupt_stack* r)
 	}
 
 	if(r.int_no < 32) {
-		kprintfln!("{}. Code = {}, IP = {x}", false)(exceptionMessages[r.int_no], r.err_code, r.rip);
+		kprintfln!("{}. Code = {}, IP = {x}", false)(IDT.exceptionMessages[r.int_no], r.err_code, r.rip);
 		kprintfln!("Stack dump:", false)();
-		stack_dump(r);
+		IDT.stack_dump(r);
 	} else {
 		kprintfln!("Unknown exception {}.", false)(r.int_no);
 	}
@@ -382,4 +332,57 @@ extern(C) void fault_handler(interrupt_stack* r)
 	asm{hlt;}
 }
 
+extern(C) void isr_common()
+{
+	asm
+	{
+		naked;
+		"pushq %%rax";
+		"pushq %%rbx";
+		"pushq %%rcx";
+		"pushq %%rdx";
+		"pushq %%rsi";
+		"pushq %%rdi";
+		"pushq %%rbp";
+		"pushq %%r8";
+		"pushq %%r9";
+		"pushq %%r10";
+		"pushq %%r11";
+		"pushq %%r12";
+		"pushq %%r13";
+		"pushq %%r14";
+		"pushq %%r15";
+
+		// we don't have to push %rsp, %rip and flags; they are pushed
+		// automatically on an interrupt
+
+		"mov %%rsp, %%rdi";
+		"call fault_handler";
+
+		"popq %%r15";
+		"popq %%r14";
+		"popq %%r13";
+		"popq %%r12";
+		"popq %%r11";
+		"popq %%r10";
+		"popq %%r9";
+		"popq %%r8";
+		"popq %%rbp";
+		"popq %%rdi";
+		"popq %%rsi";
+		"popq %%rdx";
+		"popq %%rcx";
+		"popq %%rbx";
+		"popq %%rax";
+		
+		// A haiku
+		// We need to print a stack trace
+		// I hate a-s-m
+		// This is a job for Jarrett
+
+		// Cleans up the pushed error code and pushed ISR num
+		"add $16, %%rsp";
+
+		"iretq";         /* pops 5 things in order: rIP, CS, rFLAGS, rSP, and SS */
+	}
 }

@@ -1,14 +1,14 @@
 //This is in charge of the HPET timer device
-module kernel.dev.hpet;
+module kernel.arch.x86_64.hpet;
 
-import kernel.error;
+import kernel.core.error;
 import kernel.core.util;
-import kernel.mem.vmem;
-import kernel.mem.regions;
+import kernel.arch.x86_64.vmem;
+import kernel.core.regions;
 import kernel.dev.vga;
-import kernel.dev.ioapic;
-import kernel.dev.lapic;
-import kernel.dev.mp;
+import kernel.arch.x86_64.ioapic;
+import kernel.arch.x86_64.lapic;
+import kernel.arch.x86_64.mp;
 
 // Make mpInformation 
 
@@ -141,8 +141,9 @@ struct HPET
 		// So the idea here is that we're going to put 'er in
 		// to physical mode here and send the apic ID of the first
 		// local apic.  Just to test...  we should probably fix this later.
-		kprintfln!("HPET LocalAPICID Destination Field: {}")(mpInformation.processors[0].localAPICID);
-		IOAPIC.setRedirectionTableEntry(1, LocalAPIC.getLocalAPICId(mpInformation),
+		//kprintfln!("HPET LocalAPICID Destination Field: {}")(MP.mpInformation.processors[0].localAPICID);
+		
+		IOAPIC.setRedirectionTableEntry(1, LocalAPIC.getLocalAPICId(),
 						IOAPICInterruptType.Unmasked, IOAPICTriggerMode.LevelTriggered, 
 						IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
 						IOAPICDeliveryMode.Fixed, 35 );

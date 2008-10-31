@@ -84,7 +84,7 @@ void setMessage(char[] msg...)
 	outMessage[msg.length] = 0;
 }
 
-void handle_exception(IDT.interrupt_stack* ir_stack){
+void handle_exception(interrupt_stack* ir_stack){
 
 	// If kgdb remote (target) debugging is on
 	if (remote_debug)
@@ -227,21 +227,21 @@ void set_debug_traps(){
 	// set up exception handler for 0,1,3-14,16, using an IST stack
 	// also remember the old handler?
 
-	idt.setCustomHandler(idt.Type.DivByZero,		&handle_exception);
-	idt.setCustomHandler(idt.Type.Debug,			&handle_exception);
-	idt.setCustomHandler(idt.Type.Breakpoint,		&handle_exception);
-	idt.setCustomHandler(idt.Type.INTO,				&handle_exception);
-	idt.setCustomHandler(idt.Type.OutOfBounds,		&handle_exception);
-	idt.setCustomHandler(idt.Type.InvalidOpcode,	&handle_exception);
-	idt.setCustomHandler(idt.Type.NoCoproc,			&handle_exception);
-	idt.setCustomHandler(idt.Type.DoubleFault,		&handle_exception);
-	idt.setCustomHandler(idt.Type.CoprocSegOver,	&handle_exception);
-	idt.setCustomHandler(idt.Type.BadTSS,			&handle_exception);
-	idt.setCustomHandler(idt.Type.SegNotPresent,	&handle_exception);
-	idt.setCustomHandler(idt.Type.StackFault,		&handle_exception);
-	idt.setCustomHandler(idt.Type.GPF,				&handle_exception);
-	idt.setCustomHandler(idt.Type.PageFault,		&handle_exception);
-	idt.setCustomHandler(idt.Type.CoprocFault,		&handle_exception);
+	IDT.setCustomHandler(IDT.Type.DivByZero,		&handle_exception);
+	IDT.setCustomHandler(IDT.Type.Debug,			&handle_exception);
+	IDT.setCustomHandler(IDT.Type.Breakpoint,		&handle_exception);
+	IDT.setCustomHandler(IDT.Type.INTO,				&handle_exception);
+	IDT.setCustomHandler(IDT.Type.OutOfBounds,		&handle_exception);
+	IDT.setCustomHandler(IDT.Type.InvalidOpcode,	&handle_exception);
+	IDT.setCustomHandler(IDT.Type.NoCoproc,			&handle_exception);
+	IDT.setCustomHandler(IDT.Type.DoubleFault,		&handle_exception);
+	IDT.setCustomHandler(IDT.Type.CoprocSegOver,	&handle_exception);
+	IDT.setCustomHandler(IDT.Type.BadTSS,			&handle_exception);
+	IDT.setCustomHandler(IDT.Type.SegNotPresent,	&handle_exception);
+	IDT.setCustomHandler(IDT.Type.StackFault,		&handle_exception);
+	IDT.setCustomHandler(IDT.Type.GPF,				&handle_exception);
+	IDT.setCustomHandler(IDT.Type.PageFault,		&handle_exception);
+	IDT.setCustomHandler(IDT.Type.CoprocFault,		&handle_exception);
 
 	initialized = true;
 }
@@ -407,27 +407,27 @@ int computeSignal(int exceptionVector)
 {
 	switch (exceptionVector)
 	{
-		case idt.Type.DivByZero:		return 8;
-		case idt.Type.Debug:			return 5;
-		case idt.Type.Breakpoint:		return 5;
-		case idt.Type.INTO:				return 16;
-		case idt.Type.OutOfBounds:		return 16;
-		case idt.Type.InvalidOpcode:  	return 4;
-		case idt.Type.NoCoproc:			return 8;
-		case idt.Type.DoubleFault:		return 7;
-		case idt.Type.CoprocSegOver:	return 11;
-		case idt.Type.BadTSS:			return 11;
-		case idt.Type.SegNotPresent:	return 11;
-		case idt.Type.StackFault:		return 11;
-		case idt.Type.GPF:				return 11;
-		case idt.Type.PageFault:		return 11;
-		case idt.Type.CoprocFault:		return 7;
+		case IDT.Type.DivByZero:		return 8;
+		case IDT.Type.Debug:			return 5;
+		case IDT.Type.Breakpoint:		return 5;
+		case IDT.Type.INTO:				return 16;
+		case IDT.Type.OutOfBounds:		return 16;
+		case IDT.Type.InvalidOpcode:  	return 4;
+		case IDT.Type.NoCoproc:			return 8;
+		case IDT.Type.DoubleFault:		return 7;
+		case IDT.Type.CoprocSegOver:	return 11;
+		case IDT.Type.BadTSS:			return 11;
+		case IDT.Type.SegNotPresent:	return 11;
+		case IDT.Type.StackFault:		return 11;
+		case IDT.Type.GPF:				return 11;
+		case IDT.Type.PageFault:		return 11;
+		case IDT.Type.CoprocFault:		return 7;
 		default:						return 7;
 	}
 }
 
 // Converts the current interrupt stack to the format gdb expects
-void regs2gdb(IDT.interrupt_stack* ir_stack)
+void regs2gdb(interrupt_stack* ir_stack)
 {
 	tempStack.rax = ir_stack.rax;
 	tempStack.rdx = ir_stack.rdx;
@@ -449,7 +449,7 @@ void regs2gdb(IDT.interrupt_stack* ir_stack)
 	tempStack.rflags = ir_stack.rflags;
 }
 
-void gdb2regs(IDT.interrupt_stack* ir_stack)
+void gdb2regs(interrupt_stack* ir_stack)
 {
 	ir_stack.rax = tempStack.rax;
 	ir_stack.rdx = tempStack.rdx;

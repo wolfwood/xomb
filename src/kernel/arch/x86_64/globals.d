@@ -1,8 +1,8 @@
 // This module contains linker definitions
 
-module kernel.globals;
+module kernel.arch.x86_64.globals;
 
-import kernel.mem.vmem;
+import kernel.arch.x86_64.vmem;
 
 struct Globals
 {

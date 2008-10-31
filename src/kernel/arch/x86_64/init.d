@@ -1,13 +1,11 @@
 module kernel.arch.x86_64.init;
 
-import kernel.log;
-
-import kernel.arch.select;
+import kernel.core.log;
 
 import kernel.arch.x86_64.idt;
-import gdt = kernel.arch.x86_64.gdt;
+import kernel.arch.x86_64.gdt;
 
-import kernel.mem.vmem;
+import kernel.arch.x86_64.vmem;
 
 import kernel.dev.vga;
 
@@ -117,7 +115,7 @@ static:
 		}
 	}
 
-	void ignoreHandler(IDT.interrupt_stack* s)
+	void ignoreHandler(interrupt_stack* s)
 	{
 	}
 
@@ -125,7 +123,7 @@ static:
 	{
 		printLogLine("Installing GDT");
 		// install the Global Descriptor Table (GDT) and the Interrupt Descriptor Table (IDT)
-		gdt.install();
+		GDT.install();
 		printLogSuccess();
 
 		printLogLine("Installing IDT");

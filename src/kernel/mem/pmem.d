@@ -15,7 +15,7 @@ import kernel.error;
 import kernel.core.util;
 import kernel.core.multiboot;
  
-import kernel.globals;
+import kernel.arch.x86_64.globals;
  
 import kernel.dev.vga;
  

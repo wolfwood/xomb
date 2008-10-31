@@ -1,14 +1,14 @@
-module kernel.dev.ioapic;
+module kernel.arch.x86_64.ioapic;
 
 import kernel.dev.vga;
-import kernel.dev.mp;
-import kernel.dev.lapic;
 
-import kernel.mem.vmem;
+import kernel.arch.x86_64.mp;
+import kernel.arch.x86_64.lapic;
+import kernel.arch.x86_64.vmem;
 
-import kernel.error;
+import kernel.core.error;
 
-import kernel.log;
+import kernel.core.log;
 
 import config;
 
@@ -102,7 +102,7 @@ struct IOAPIC
 	uint* ioApicRegisterSelect;
 	uint* ioApicWindowRegister;
 
-	void init(ref mpBase mpInformation, ioAPICEntry* ioApicEntry)
+	void init(ioAPICEntry* ioApicEntry)
 	{	
 		printLogLine("Initializing IO APIC");
 

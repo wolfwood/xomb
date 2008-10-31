@@ -13,6 +13,13 @@ module kernel.arch.x86_64.gdt;
 
 import kernel.core.util;
 
+
+struct GDT
+{
+
+static:
+private:
+
 /**
 The various kinds of system segment types.
 */
@@ -176,11 +183,6 @@ align(1) struct GDTPtr
 }
 
 /**
-The pointer to the GDT that we use when do do LGDT.
-*/
-private extern(C) GDTPtr gp;
-
-/**
 The GDT data itself.  Since an entry can be 8 or 16 bytes long (THANKS INTEL AND AMD),
 we have to do some scary shit to make this work right.  Pointer hacking and such.
 */
@@ -291,7 +293,7 @@ void setNull(int num)
 /**
 Set up and install the default GDT.
 */
-void install()
+public void install()
 {
 	gp.limit = (typeof(Entries[0]).sizeof * Entries.length) - 1;
 	gp.base = cast(ulong)Entries.ptr;
@@ -310,6 +312,11 @@ void install()
 	// WTF do we set the RSP0-2 members to?!
 	//tss_struct.rsp0 = tss_struct.rsp1 = tss_struct.rsp2 =
 
+	setGDT();
+}
+
+public void setGDT()
+{
 	asm
 	{
 		"lgdt (gp)";
@@ -317,3 +324,12 @@ void install()
 		"ltr %%ax";
 	}
 }
+
+}
+
+/**
+The pointer to the GDT that we use when do do LGDT.
+*/
+private extern(C) GDT.GDTPtr gp;
+
+

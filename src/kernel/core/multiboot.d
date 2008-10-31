@@ -4,16 +4,16 @@ module kernel.core.multiboot;
 
 import kernel.dev.vga;
 
-import kernel.log;
+import kernel.core.log;
 
-import kernel.error;
+import kernel.core.error;
 
 import kernel.core.util;
 import system = kernel.core.system;
-import kernel.mem.regions;
-import kernel.mem.vmem;
+import kernel.core.regions;
+import kernel.arch.x86_64.vmem;
 
-import kernel.globals;
+import kernel.arch.x86_64.globals;
 
 /** multiboot.d
 	This file declares structures and constants used by GRUB for the multiboot header.

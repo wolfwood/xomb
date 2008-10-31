@@ -8,9 +8,9 @@ Written: 2007
 module kernel.kmain;
 
 // log
-import kernel.log;
+import kernel.core.log;
 
-import kernel.mem.vmem;
+import kernel.arch.x86_64.vmem;
 import kernel.mem.pmem;
 
 import kernel.core.multiboot;
@@ -21,7 +21,7 @@ import kernel.dev.keyboard;
 
 //imports
 import config;
-import kernel.globals;
+import kernel.arch.x86_64.globals;
 
 import gdb.kgdb_stub;
 
@@ -33,11 +33,9 @@ import kernel.core.system;
 import kernel.core.util;
 import multiboot = kernel.core.multiboot;
 
-import lapic = kernel.dev.lapic;
+import kernel.arch.x86_64.mp;
 
-import mp = kernel.dev.mp;
-
-import kernel.dev.hpet;
+import kernel.arch.x86_64.hpet;
 
 /**
 This is the main function of PGOS. It is executed once GRUB loads
@@ -139,13 +137,13 @@ extern(C) void kmain(uint magic, uint addr)
 	}
 	
 	// initialize multiprocessor information
-	mp.init();
+	MP.init();
 
 	// initialize IO APIC
-	mp.initIOAPIC();
+	MP.initIOAPIC();
 	
 	// initialize Local APIC
-	mp.initAPIC();
+	MP.initAPIC();
 	
 	printLogLine("Initializing HPET");
 	if (HPET.init() == ErrorVal.Success)
