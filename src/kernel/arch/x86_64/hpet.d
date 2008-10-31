@@ -18,6 +18,17 @@ template Tmaker(uint ID)
 	const char[] Tmaker = ", \"T" ~ ID.stringof[0..$-1] ~ "_INT_STS\", 1";
 }
 
+//Maps to the individual timers
+align(1) struct timerInfo {
+	ulong configurationAndCap;
+	ulong comparatorValue;
+	ulong FSBInterrruptRoute;
+	ulong reserved;
+	
+	mixin(Bitfield!(configurationAndCap, "Reserved1", 1, "INT_TYPE_CNF", 1, "INT_ENB_CNF", 1, "TYPE_CNF", 1, "PER_INT_CAP", 1, "SIZE_CAP", 1, "VAL_SET_CNF", 1, "Reserved2", 1, "MODE_CNF", 1, "INT_ROUTE_CNF", 5, "FSB_EN_CNF", 1, "FSB_INT_DEL_CAP", 1, "Reserved3", 16, "INT_ROUTE_CAP", 32));
+}
+
+
 //Maps to the memory that holds the configuration data for HPET
 align(1) struct hpetConfig {
 	ulong capabilitiesAndID;	// 0x00
@@ -52,6 +63,7 @@ align(1) struct hpetConfig {
 	ulong reserved27;			// 0xE8
 	ulong mainCounterValue;		// 0xF0
 	ulong reserved28;
+	timerInfo[32] timers;
 
 	mixin(Bitfield!(capabilitiesAndID, "REV_ID", 8, "NUM_TIM_CAP", 5, "COUNT_SIZE_CAP", 1, "ReservedCap", 1, "LEG_RT_CAP", 1, "VENDOR_ID", 16,
 	"COUNTER_CLOCK_PERIOD", 32));
@@ -59,20 +71,9 @@ align(1) struct hpetConfig {
 	mixin("mixin(Bitfield!(interruptStatus" ~ Reduce!(Cat, Map!(Tmaker, Range!(32))) ~ ", \"ReservedStatus\", 32));");
 }
 
-//Maps to the individual timers
-align(1) struct timerInfo {
-	ulong configurationAndCap;
-	ulong comparatorValue;
-	ulong FSBInterrruptRoute;
-	ulong reserved;
-	
-	mixin(Bitfield!(configurationAndCap, "Reserved1", 1, "INT_TYPE_CNF", 1, "INT_ENB_CNF", 1, "TYPE_CNF", 1, "PER_INT_CAP", 1, "SIZE_CAP", 1, "VAL_SET_CNF", 1, "Reserved2", 1, "MODE_CNF", 1, "INT_ROUTE_CNF", 5, "FSB_EN_CNF", 1, "FSB_INT_DEL_CAP", 1, "Reserved3", 16, "INT_ROUTE_CAP", 32));
-}
-
 //Brings everything together for HPET
 struct hpetDev {
 	hpetConfig* config;
-	timerInfo[] timers;
 	ubyte* physHPETAddress = cast(ubyte*)0xFED00000;
 }
 
@@ -87,15 +88,15 @@ struct HPET
 	{
 		// get the virtual address of the HPET within the BIOS device map region
 		ubyte* virtHPETAddy = global_mem_regions.device_maps.virtual_start + (hpetDevice.physHPETAddress - global_mem_regions.device_maps.physical_start);
-		//if(virtHPETAddy > (global_mem_regions.device_maps.virtual_start + global_mem_regions.device_maps.length))
-		//{
+		if(virtHPETAddy > (global_mem_regions.device_maps.virtual_start + global_mem_regions.device_maps.length))
+		{
 			// map in the region then
-			if (vMem.mapRange(hpetDevice.physHPETAddress, hpetConfig.sizeof + (32 * timerInfo.sizeof) + 4096, virtHPETAddy)
+			if (vMem.mapRange(hpetDevice.physHPETAddress, hpetConfig.sizeof + (32 * timerInfo.sizeof), virtHPETAddy)
 					!= ErrorVal.Success)
 			{
 				return ErrorVal.Fail;
 			}
-		//}
+		}
 
 		kprintfln!("A")();
 	
@@ -117,11 +118,12 @@ struct HPET
 		kprintfln!("D")();
 
 		// resolve the array of timers
-		hpetDevice.timers = (cast(timerInfo*)virtHPETAddy+hpetConfig.sizeof)[0..hpetDevice.config.NUM_TIM_CAP];
+		//hpetDevice.timers = (cast(timerInfo*)virtHPETAddy+hpetConfig.sizeof)[0..hpetDevice.config.NUM_TIM_CAP];
 	
 		//printStruct(hpetDevice);
 		kprintfln!("E")();
 		initTimer(0, 1000000);
+		
 
 		kprintfln!("timer counter: {}")(hpetDevice.config.mainCounterValue);
 
@@ -156,9 +158,15 @@ struct HPET
 		// we want a 64-bit timer
 
 		kprintfln!("1")();
-		kprintfln!("POSSIBLE: {x}")(hpetDevice.timers[index].INT_ROUTE_CAP);
+		kprintfln!("POSSIBLE: {x}")(hpetDevice.config.timers[index].INT_ROUTE_CAP);
 
-		if (hpetDevice.timers[index].SIZE_CAP == 0)
+		uint routingInterrupt = 1;
+		while (!(routingInterrupt & hpetDevice.config.timers[index].INT_ROUTE_CAP))
+		{
+			routingInterrupt <<= 1;
+		}
+
+		if (hpetDevice.config.timers[index].SIZE_CAP == 0)
 		{
 			kprintfln!("Computer does not support 64 bit HPET.")();
 		}
@@ -175,7 +183,7 @@ struct HPET
 		timerVal |= (1 << 1);
 		
 		// we want to route to interrupt 'index + 1'
-		//hpetDevice.timers[index].INT_ROUTE_CNF = 1; //index + 1
+		//hpetDevice.timers[index].INT_ROUTE_CNF = routingInterrupt; //index + 1
 		timerVal |= (1 << 9);
 	
 		// TODO: change this to a debug
@@ -188,12 +196,12 @@ struct HPET
 		//kprintfln!("HPET LocalAPICID Destination Field: {}")(MP.mpInformation.processors[0].localAPICID);
 		
 		kprintfln!("3")();
-		IOAPIC.setRedirectionTableEntry(1, LocalAPIC.getLocalAPICId(),
+		IOAPIC.setRedirectionTableEntry(routingInterrupt, LocalAPIC.getLocalAPICId(),
 						IOAPICInterruptType.Unmasked, IOAPICTriggerMode.LevelTriggered, 
 						IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
 						IOAPICDeliveryMode.Fixed, 35 );
 
-		//IOAPIC.printTableEntry(1);
+		//IOAPIC.printTableEntry(routingInterrupt);
 
 		// enable timer interrupts
 		timerVal |= (1 << 2);
@@ -210,11 +218,11 @@ struct HPET
 		curcounter += factor;
 
 		kprintfln!("5")();
-		hpetDevice.timers[index].comparatorValue = hpetDevice.config.mainCounterValue + factor;
+		hpetDevice.config.timers[index].comparatorValue = hpetDevice.config.mainCounterValue + factor;
 
 		kprintfln!("6")();
 		// we now want to enable the timer
-		hpetDevice.timers[index].configurationAndCap = timerVal;
+		hpetDevice.config.timers[index].configurationAndCap = timerVal;
 		
 	}
 
@@ -225,7 +233,7 @@ struct HPET
 		nanoSecondInterval *= 1000000;
 
 		// halt timer
-		hpetDevice.timers[index].INT_ENB_CNF = 0;
+		hpetDevice.config.timers[index].INT_ENB_CNF = 0;
 		
 		// get the main counter
 		ulong curcounter = hpetDevice.config.mainCounterValue;
@@ -235,7 +243,7 @@ struct HPET
 		curcounter += (nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD);
 
 		// we now want to enable the timer interrupt
-		hpetDevice.timers[index].INT_ENB_CNF = 1;
+		hpetDevice.config.timers[index].INT_ENB_CNF = 1;
 	}
 
 }
