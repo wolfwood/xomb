@@ -15,7 +15,7 @@ import kernel.error;
 import kernel.core.util;
 import kernel.core.multiboot;
  
-import kernel.arch.x86_64.globals;
+import kernel.globals;
  
 import kernel.dev.vga;
  
@@ -43,7 +43,7 @@ struct pMem
     // install the pmem bitmap
     auto mod = cast(module_t*)(cast(module_t*)mbi.mods_addr + mbi.mods_count - 1);
     ulong endAddr = mod.mod_end;
-    mem_size = endAddr;
+    mem_size = mbi.mem_upper * 1024;
  
     // print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
     //kdebugfln!(DEBUG_PMEM, "mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
@@ -51,7 +51,11 @@ struct pMem
  
     // If endAddr is aligned already we'll just add 0, so no biggie
     // Address of where to start pages
-    pages_start_addr = cast(ubyte*)(endAddr + (endAddr % PAGE_SIZE));      // Available start address for paging
+    if(endAddr % PAGE_SIZE == 0) {
+        pages_start_addr = cast(ubyte*)endAddr;      // Available start address for paging
+    } else {
+        pages_start_addr = cast(ubyte*)(endAddr + PAGE_SIZE - (endAddr % PAGE_SIZE));
+    }
     // Free space avail for pages
     ulong pages_free_size = (cast(ulong)mbi.mem_upper * 1024) - cast(ulong)pages_start_addr;    // Free space available to us
  
@@ -66,16 +70,21 @@ struct pMem
     // Determine bitmap size
     // Total number of pages in teh system
  
-    mem_size = mbi.mem_upper * 1024;
     ulong num_pages = mem_size / PAGE_SIZE;
+    if(mem_size % PAGE_SIZE) {
+        num_pages ++;
+    }
  
     //kdebugfln!(DEBUG_PMEM, "Num of pages = {}")(num_pages);
     
     // Size the bitmap needs to be
     ulong bitmap_size = (num_pages / 8);      // Bitmap size in bytes
-    if(bitmap_size % PAGE_SIZE != 0) {      // If it is not 4k aligned
-      bitmap_size += PAGE_SIZE - (bitmap_size % PAGE_SIZE);  // Pad the size off to keep things page aligned
+    if(num_pages % 8) {
+        bitmap_size ++;
     }
+//    if(bitmap_size % PAGE_SIZE != 0) {      // If it is not 4k aligned
+//      bitmap_size += PAGE_SIZE - (bitmap_size % PAGE_SIZE);  // Pad the size off to keep things page aligned
+//    }
     
     //kdebugfln!(DEBUG_PMEM, "Bitmap size in bytes = {}")(bitmap_size);    
  
@@ -89,17 +98,25 @@ struct pMem
     // First find the number of pages that are used
     // Number of used pages to init the mapping
     ulong num_used = (cast(ulong)pages_start_addr + bitmap_size) / PAGE_SIZE;  // Find number of used pages so far
+    if(bitmap_size % PAGE_SIZE != 0) {
+        num_used ++;
+    }
     //kdebugfln!(DEBUG_PMEM, "Number of used pages = {}")(num_used);
- 
+
     // Set the first part of the bitmap to all used
     bitmap[0 .. num_used / 8] = cast(ubyte)0xFF;
-    
-    // Where we change from used to unused, figure out the bit pattern to put in that slot
-    bitmap[num_used / 8] = 0xFF >> (8 - (num_used % 8));
+    //kdebugfln!(DEBUG_PMEM, "bitmap[0 .. {}] = cast(ubyte)0xFF")(num_used / 8);
     
     // The reset of the bitmap is 0 to mean unused
-    bitmap[num_used / 8 + 1 .. $] = 0;
- 
+    bitmap[num_used / 8 .. $] = 0;
+    //kdebugfln!(DEBUG_PMEM, "bitmap[{} .. $] = 0")(num_used / 8);
+
+    // Where we change from used to unused, figure out the bit pattern to put in that slot
+    if(num_used % 8 != 0) {
+        bitmap[num_used / 8] = 0xFF >> (8 - (num_used % 8));
+        //kdebugfln!(DEBUG_PMEM, "bitmap[{}] = 0xFF >> (8 - ({}))")(num_used / 8, num_used % 8);
+    }
+
     return ErrorVal.Success;
   }
  
