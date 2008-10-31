@@ -216,11 +216,8 @@ pml3[] kernel_mapping;
 				pageLevel1[z].pml1e |= 0x87;
 				addr += 4096;
 			}
-			kprintfln!("i pos = {} j = {}")(i,j);
 		}
 		
-		kprintfln!("i = {} j = {}")(i,j);
-
 		// Lets map in all of our phyiscal memory here, just so we can write to it
 		// without a chicken and the egg problem...
 		mapRam(pageLevel3);

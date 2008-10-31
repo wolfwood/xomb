@@ -75,12 +75,15 @@ struct HPET
 	
 		// resolve the address to the configuration table
 		hpetDevice.config = cast(hpetConfig*)virtHPETAddy;
+
+		ulong configVal = hpetDevice.config.configuration;
 		
 		//kprintfln!("NUM_TIM_CAP = {}")(hpetDevice.config.NUM_TIM_CAP);
 
 		// initialize the configuration to allow standard IOAPIC interrupts
-		hpetDevice.config.LEG_RT_CNF = 0;
-		hpetDevice.config.ENABLE_CNF = 0;
+		//hpetDevice.config.LEG_RT_CNF = 0;
+		//hpetDevice.config.ENABLE_CNF = 0;
+		configVal &= ~(0x3);
 
 		hpetDevice.config.mainCounterValue = 0;
 
@@ -91,7 +94,17 @@ struct HPET
 
 		initTimer(0, 1000000);
 
-		hpetDevice.config.ENABLE_CNF = 1;
+		kprintfln!("timer counter: {}")(hpetDevice.config.mainCounterValue);
+
+		//hpetDevice.config.ENABLE_CNF = 1;
+		//hpetDevice.config |= 1;
+		configVal |= 1;
+		hpetDevice.config.configuration = configVal;
+	
+		for(;;)
+		{
+			kprintfln!("timer counter: {}")(hpetDevice.config.mainCounterValue);
+		}
 	
 		return ErrorVal.Success;
 	}
@@ -102,38 +115,36 @@ struct HPET
 		// update to femptoseconds
 		nanoSecondInterval *= 1000000;
 
-		// write 0 to reserved
-		hpetDevice.timers[index].Reserved1 = 0;
-		hpetDevice.timers[index].Reserved2 = 0;
-		hpetDevice.timers[index].Reserved3 = 0;
+		ulong timerVal;
+
+		// write 0 to reservei
+		//hpetDevice.timers[index].Reserved1 = 0;
+		//hpetDevice.timers[index].Reserved2 = 0;
+		//hpetDevice.timers[index].Reserved3 = 0;
 
 		// we want a 64-bit timer
+
+		//kprintfln!("POSSIBLE: {x}")(hpetDevice.timers[index].INT_ROUTE_CAP);
+
 		if (hpetDevice.timers[index].SIZE_CAP == 0)
 		{
 			kprintfln!("Computer does not support 64 bit HPET.")();
 		}
-		hpetDevice.timers[index].MODE_CNF = 0;
+		//hpetDevice.timers[index].MODE_CNF = 0;
+		//hpetDevice.timers[index].FSB_EN_CNF = 0;
 
-		// we want a non-periodic timer
-		hpetDevice.timers[index].TYPE_CNF = 0;
+		// we want a non-periodic timer (one-shot!)
+		//hpetDevice.timers[index].TYPE_CNF = 0;
 		
 		// we want edge-triggered interrupts
 		// do we?  Brian says no, and set it to level
-		hpetDevice.timers[index].INT_TYPE_CNF = 1;
+		//hpetDevice.timers[index].INT_TYPE_CNF = 1;
+		timerVal |= (1 << 1);
 		
 		// we want to route to interrupt 'index + 1'
-		hpetDevice.timers[index].INT_ROUTE_CNF = 1; //index + 1
-		
-		// get the main counter
-		ulong curcounter = hpetDevice.config.mainCounterValue;
-
-		// update to the new value
-		// overflow of main counter will not matter
-		curcounter += (nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD);
-
-		hpetDevice.timers[index].comparatorValue = curcounter;
-		
-
+		//hpetDevice.timers[index].INT_ROUTE_CNF = 1; //index + 1
+		timerVal |= (1 << 9);
+	
 		// TODO: change this to a debug
 		//kprintfln!("counter updates by = {} for {}ns")(nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD, nanoSecondInterval / 1000000);
 
@@ -148,10 +159,24 @@ struct HPET
 						IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
 						IOAPICDeliveryMode.Fixed, 35 );
 
-		IOAPIC.printTableEntry(1);
+		//IOAPIC.printTableEntry(1);
 
-		// we now want to enable the timer interrupt
-		hpetDevice.timers[index].INT_ENB_CNF = 1;
+		// enable timer interrupts
+		timerVal |= (1 << 2);
+	
+		// get the main counter
+		ulong curcounter = hpetDevice.config.mainCounterValue;
+
+		// update to the new value
+		// overflow of main counter will not matter
+		ulong factor = (nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD);
+		kprintfln!("factor: {}")(factor);
+		curcounter += factor;
+
+		hpetDevice.timers[index].comparatorValue = hpetDevice.config.mainCounterValue + factor;
+
+		// we now want to enable the timer
+		hpetDevice.timers[index].configurationAndCap = timerVal;
 	}
 
 	// the function to reset a timer that has been initialized when it has already fired

@@ -124,7 +124,7 @@ struct LocalAPIC
 	
 		startAPs();
 
-		initTimer();
+		//initTimer();
 		
 	}
 	
@@ -192,6 +192,7 @@ struct LocalAPIC
 
 		// enable NMI
 		MP.mpInformation.apicRegisters.lint0LocalVectorTable = 0x400;
+		MP.mpInformation.apicRegisters.lint1LocalVectorTable = 0x400;
 	}
 
 	kmutex apLock;
@@ -226,6 +227,7 @@ struct LocalAPIC
 		kprintfln!("Timer!!!", false)();
 
 		MP.mpInformation.apicRegisters.EOI = 0;
+	
 	}
 
 	uint getLocalAPICId()
