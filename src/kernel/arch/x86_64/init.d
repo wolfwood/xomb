@@ -74,39 +74,50 @@ static:
 	// Will read a MSR (Model-Specific-Register)
 	ulong readMSR(uint MSR)
 	{
+		ulong ret;
+		uint hi,lo;
 		asm
 		{
-			naked;
 			// move the MSR index to $ECX
-			"movl %%edi, %%ecx";
+			"movl %0, %%ecx" :: "o" MSR;
 			// read the MSR
 			"rdmsr";
-			// the D ABI returns ulong as the HI in $EDX and the LO in $EAX
-			// this is the same as what is set by the processor
-			"retq";
+			
+			// HI : $EDX, LO : $EAX
+			"movl %%edx, %0; movl %%eax, %1;" :: "o" hi, "o" lo;
 		}
+
+		ret = hi;
+		ret <<= 32;
+		ret |= lo;
+
+		kprintfln!("readMSR: 0x{x}")(ret);		
+
+		return ret;
 	}
 
 	void writeMSR(uint MSR, ulong value)
 	{
+		kprintfln!("writeMSR : value : 0x{x}")(value);
+
+		uint hi, lo;
+		lo = value & 0xFFFFFFFF;
+		hi = value >> 32UL;
+
+		kprintfln!("writeMSR : hi : 0x{x} : lo : 0x{x}")(hi,lo);
+
 		asm
 		{
-			naked;
 			// move the MSR index to $ECX
-			"movl %%edi, %%ecx";
-			// move the value to its perspective registers
+			// also, move the value to its perspective registers
 			// HI : $EDX
 			// LO : $EAX
-			"movl %%esi, %%eax";
-			"mov 32, %%cl";
-			"sar %%cl, %%rsi";
-			"movl %%esi, %%edx";
+			"movl %0, %%ecx; movl %1, %%eax; movl %2, %%edx" :: "o" MSR, "o" lo, "o" hi;
 			"wrmsr";
-			"retq";
 		}
 	}
 
-	void ignoreHandler(interrupt_stack* stack)
+	void ignoreHandler(IDT.interrupt_stack* s)
 	{
 	}
 
@@ -118,12 +129,12 @@ static:
 		printLogSuccess();
 
 		printLogLine("Installing IDT");
-		idt.install();
+		IDT.install();
 		printLogSuccess();
 
 		printLogLine("Installing Paging Mechanism");
-		idt.setCustomHandler(idt.Type.PageFault, &vMem.pageFaultHandler);
-		idt.setCustomHandler(idt.Type.UnknownInterrupt, &ignoreHandler);
+		IDT.setCustomHandler(IDT.Type.PageFault, &vMem.pageFaultHandler);
+		IDT.setCustomHandler(IDT.Type.UnknownInterrupt, &ignoreHandler);
 
 		printLogSuccess();
 	}

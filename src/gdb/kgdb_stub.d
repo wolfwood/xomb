@@ -46,7 +46,7 @@
 // get a number of support functions
 import gdb.kgdb_support;
 
-import idt = kernel.arch.x86_64.idt;
+import kernel.arch.x86_64.idt;
 import kernel.dev.vga;
 
 import config;
@@ -84,7 +84,7 @@ void setMessage(char[] msg...)
 	outMessage[msg.length] = 0;
 }
 
-void handle_exception(idt.interrupt_stack* ir_stack){
+void handle_exception(IDT.interrupt_stack* ir_stack){
 
 	// If kgdb remote (target) debugging is on
 	if (remote_debug)
@@ -427,7 +427,7 @@ int computeSignal(int exceptionVector)
 }
 
 // Converts the current interrupt stack to the format gdb expects
-void regs2gdb(idt.interrupt_stack* ir_stack)
+void regs2gdb(IDT.interrupt_stack* ir_stack)
 {
 	tempStack.rax = ir_stack.rax;
 	tempStack.rdx = ir_stack.rdx;
@@ -449,7 +449,7 @@ void regs2gdb(idt.interrupt_stack* ir_stack)
 	tempStack.rflags = ir_stack.rflags;
 }
 
-void gdb2regs(idt.interrupt_stack* ir_stack)
+void gdb2regs(IDT.interrupt_stack* ir_stack)
 {
 	ir_stack.rax = tempStack.rax;
 	ir_stack.rdx = tempStack.rdx;

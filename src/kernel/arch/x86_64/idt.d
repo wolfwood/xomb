@@ -19,6 +19,11 @@ public align(1) struct IDTPtr
 
 public extern(C) IDTPtr idtp;
 
+struct IDT
+{
+
+static:
+
 public enum StackType : uint
 {
 	StackFault = 1,
@@ -98,9 +103,23 @@ void install()
 	setIntGate(29, &isr29);
 	setIntGate(30, &isr30);
 	setIntGate(31, &isr31);
+	setIntGate(32, &isr32);
+	setIntGate(33, &isr33);
+	setIntGate(34, &isr34);
+	setIntGate(35, &isr35);
+	setIntGate(36, &isr36);
 	setSysGate(0x80, &isr128);
 
-	asm { "lidt (idtp)"; }
+	setIDT();
+}
+
+void setIDT()
+{
+	asm {
+		naked;
+		"lidt (idtp)";
+		"retq";
+	}
 }
 
 /*
@@ -174,6 +193,11 @@ mixin(ISR!(28));
 mixin(ISR!(29));
 mixin(ISR!(30));
 mixin(ISR!(31));
+mixin(ISR!(32));
+mixin(ISR!(33));
+mixin(ISR!(34));
+mixin(ISR!(35));
+mixin(ISR!(36));
 mixin(ISR!(128));
 
 extern(C) void isr_common()
@@ -293,7 +317,7 @@ private const char[][] exceptionMessages =
 ];
 
 /* This defines what the stack looks like after an ISR was running */
-private align(1) struct interrupt_stack
+align(1) struct interrupt_stack
 {	
 	// registers we pushed
 	long r15, r14, r13,	r12, r11, r10, r9, r8, rbp, rdi, rsi, rdx, rcx, rbx, rax;
@@ -348,12 +372,14 @@ extern(C) void fault_handler(interrupt_stack* r)
 	}
 
 	if(r.int_no < 32) {
-		kprintfln!("{}. Code = {}, IP = {x}")(exceptionMessages[r.int_no], r.err_code, r.rip);
-		kprintfln!("Stack dump:")();
+		kprintfln!("{}. Code = {}, IP = {x}", false)(exceptionMessages[r.int_no], r.err_code, r.rip);
+		kprintfln!("Stack dump:", false)();
 		stack_dump(r);
 	} else {
-		kprintfln!("Unknown exception {}.")(r.int_no);
+		kprintfln!("Unknown exception {}.", false)(r.int_no);
 	}
 
 	asm{hlt;}
+}
+
 }

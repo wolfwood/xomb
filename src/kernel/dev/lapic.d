@@ -17,6 +17,7 @@ import kernel.globals;
 // Error codes
 import kernel.error;
 
+import kernel.arch.x86_64.idt;
 import kernel.arch.locks;
 
 // for logging
@@ -25,6 +26,9 @@ import kernel.kmain;
 // Needs the MP Configuration Table
 // and the MP information to get the addresses
 import kernel.dev.mp;
+
+// Needs MSR functions in Cpu
+import kernel.arch.select;
 
 // For support utils and printing
 import kernel.core.util;
@@ -103,6 +107,8 @@ struct LocalAPIC
 {
 
 	static:
+
+	
 	
 	void init(ref mpBase mpInformation)
 	{
@@ -115,6 +121,8 @@ struct LocalAPIC
 		printLogSuccess();
 	
 		startAPs(mpInformation);
+
+		//initTimer(mpInformation);
 		
 	}
 	
@@ -122,6 +130,10 @@ struct LocalAPIC
 	{
 		// map the address space of the APIC
 		ubyte* apicRange;
+
+		ulong MSRValue = Cpu.readMSR(0x1B);
+		MSRValue |= (1 << 11);
+		Cpu.writeMSR(0x1B, MSRValue);
 		
 		if (mpInformation.pointerTable.mpFeatures2 & 0b1000_0000)
 		{
@@ -165,7 +177,9 @@ struct LocalAPIC
 		// get the apic address space, and add it to the base information
 		mpInformation.apicRegisters = cast(apicRegisterSpace*)(apicRange);
 		//kprintfln!("local APIC address: {x}")(mpInformation.apicRegisters);
-	
+
+		kprintfln!("local APIC version: 0x{x}")(mpInformation.apicRegisters.localApicIdVersion & 0xFF);	
+		kprintfln!("number of LVT Entries: {}")((mpInformation.apicRegisters.localApicIdVersion >> 16) + 1);
 		enableLocalApic(mpInformation);
 	}
 	
@@ -174,18 +188,52 @@ struct LocalAPIC
 		// enable the APIC (just in case it is not enabled)
 		mpInformation.apicRegisters.spuriousIntVector |= 0x100;
 		//kprintfln!("{}")(mpInformation.apicRegisters.spuriousIntVector);
+
+		// enable NMI
+		mpInformation.apicRegisters.lint0LocalVectorTable = 0x400;
 	}
 
 	kmutex apLock;
+
+	void initTimer(ref mpBase mpInformation)
+	{
+		uint timerValue;
+
+		// periodic
+		timerValue |= (1 << 17);
+
+		// masked or nonmasked
+		//timerValue |= (1 << 16);
+
+		// delivery status
+		//timerValue |= (1 << 12); // 0: idle, 1: send pending
+
+		// vector
+		timerValue |= 35;
+	
+
+
+
+		mpInformation.apicRegisters.tmrDivideConfiguration |= 0b1011;
+		
+		mpInformation.apicRegisters.tmrLocalVectorTable = timerValue;
+		mpInformation.apicRegisters.tmrInitialCount = 1000;
+	}
+
+	uint getLocalAPICId(ref mpBase mpInformation)
+	{
+		return mpInformation.apicRegisters.localApicId >> 24;
+	}
 	
 	void startAPs(ref mpBase mpInformation)
 	{
+		uint myLocalId = getLocalAPICId(mpInformation);
 		// go through the list of AP APIC IDs
 		for (uint i=0; i<mpInformation.processor_count; i++)
 		{
 			// This next line will prevent the CPU from initializing itself in the middle
 			// of running.  This will prevent us from totally failing while booting :P
-			if(mpInformation.processors[i].localAPICID == mpInformation.apicRegisters.localApicId)
+			if(mpInformation.processors[i].localAPICID == myLocalId)
 				continue;
 
 			apLock.lock();
@@ -230,7 +278,7 @@ struct LocalAPIC
 			apLock.lock();
 			apLock.unlock();
 	
-			printLogSuccess();
+			//printLogSuccess();
 		}
 	}
 	
@@ -299,6 +347,8 @@ extern (C) void apEntry()
 
 	// set idt
 
+	IDT.setIDT();
+
 	// set gdt
 
 	// set apic
@@ -345,6 +395,8 @@ extern (C) void apEntry()
 void apExec()
 {
 	//kprintfln!("EXEC")();
+
+	printLogSuccess();
 
 	LocalAPIC.apLock.unlock();
 

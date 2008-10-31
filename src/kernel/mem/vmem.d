@@ -6,10 +6,10 @@
 
 module kernel.mem.vmem;
 
-import idt = kernel.arch.x86_64.idt;
 import kernel.dev.vga;
 
 import kernel.arch.locks;
+import kernel.arch.x86_64.idt;
 
 import kernel.error;
 import config;
@@ -87,7 +87,7 @@ pml3[] kernel_mapping;
 	                            // Changing this value WILL IMPACT THE VALUE ABOVE IT!!!!!!!!!
 
 
-	void pageFaultHandler(idt.interrupt_stack* ir_stack) 
+	void pageFaultHandler(IDT.interrupt_stack* ir_stack) 
 	{
 		// First we need to determine why the page fault happened
 		// This ulong will contain the address of the section of memory being faulted on

@@ -12,6 +12,9 @@ module kernel.arch.select;
 // CPU
 public import kernel.arch.x86_64.init;
 
+// IDT
+//public import kernel.arch.x86_64.idt;
+
 // SYSCALL
 public import syscall = kernel.arch.x86_64.syscall;
 

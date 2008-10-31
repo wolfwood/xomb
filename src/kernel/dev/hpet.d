@@ -7,7 +7,7 @@ import kernel.mem.vmem;
 import kernel.mem.regions;
 import kernel.dev.vga;
 import kernel.dev.ioapic;
-
+import kernel.dev.lapic;
 import kernel.dev.mp;
 
 // Make mpInformation 
@@ -80,14 +80,18 @@ struct HPET
 
 		// initialize the configuration to allow standard IOAPIC interrupts
 		hpetDevice.config.LEG_RT_CNF = 0;
-		hpetDevice.config.ENABLE_CNF = 1;
+		hpetDevice.config.ENABLE_CNF = 0;
+
+		hpetDevice.config.mainCounterValue = 0;
 
 		// resolve the array of timers
 		hpetDevice.timers = (cast(timerInfo*)virtHPETAddy+hpetConfig.sizeof)[0..hpetDevice.config.NUM_TIM_CAP];
 	
 		//printStruct(hpetDevice);
 
-		//initTimer(0, 1000000);
+		initTimer(0, 1000000);
+
+		hpetDevice.config.ENABLE_CNF = 1;
 	
 		return ErrorVal.Success;
 	}
@@ -104,8 +108,11 @@ struct HPET
 		hpetDevice.timers[index].Reserved3 = 0;
 
 		// we want a 64-bit timer
+		if (hpetDevice.timers[index].SIZE_CAP == 0)
+		{
+			kprintfln!("Computer does not support 64 bit HPET.")();
+		}
 		hpetDevice.timers[index].MODE_CNF = 0;
-		hpetDevice.timers[index].SIZE_CAP = 1;
 
 		// we want a non-periodic timer
 		hpetDevice.timers[index].TYPE_CNF = 0;
@@ -114,8 +121,8 @@ struct HPET
 		// do we?  Brian says no, and set it to level
 		hpetDevice.timers[index].INT_TYPE_CNF = 1;
 		
-		// we want to route to interrupt 'index'
-		hpetDevice.timers[index].INT_ROUTE_CNF = index;
+		// we want to route to interrupt 'index + 1'
+		hpetDevice.timers[index].INT_ROUTE_CNF = 1; //index + 1
 		
 		// get the main counter
 		ulong curcounter = hpetDevice.config.mainCounterValue;
@@ -123,6 +130,8 @@ struct HPET
 		// update to the new value
 		// overflow of main counter will not matter
 		curcounter += (nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD);
+
+		hpetDevice.timers[index].comparatorValue = curcounter;
 		
 
 		// TODO: change this to a debug
@@ -133,10 +142,10 @@ struct HPET
 		// to physical mode here and send the apic ID of the first
 		// local apic.  Just to test...  we should probably fix this later.
 		kprintfln!("HPET LocalAPICID Destination Field: {}")(mpInformation.processors[0].localAPICID);
-		IOAPIC.setRedirectionTableEntry(1, mpInformation.processors[0].localAPICID,
+		IOAPIC.setRedirectionTableEntry(1, LocalAPIC.getLocalAPICId(mpInformation),
 						IOAPICInterruptType.Unmasked, IOAPICTriggerMode.LevelTriggered, 
 						IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
-						IOAPICDeliveryMode.LowestPriority, 0x22 );
+						IOAPICDeliveryMode.Fixed, 35 );
 
 		IOAPIC.printTableEntry(1);
 
