@@ -90,7 +90,7 @@ struct HPET
 		//if(virtHPETAddy > (global_mem_regions.device_maps.virtual_start + global_mem_regions.device_maps.length))
 		//{
 			// map in the region then
-			if (vMem.mapRange(hpetDevice.physHPETAddress, hpetConfig.sizeof + (32 * timerInfo.sizeof), virtHPETAddy)
+			if (vMem.mapRange(hpetDevice.physHPETAddress, hpetConfig.sizeof + (32 * timerInfo.sizeof) + 4096, virtHPETAddy)
 					!= ErrorVal.Success)
 			{
 				return ErrorVal.Fail;
@@ -155,12 +155,14 @@ struct HPET
 
 		// we want a 64-bit timer
 
-		//kprintfln!("POSSIBLE: {x}")(hpetDevice.timers[index].INT_ROUTE_CAP);
+		kprintfln!("1")();
+		kprintfln!("POSSIBLE: {x}")(hpetDevice.timers[index].INT_ROUTE_CAP);
 
 		if (hpetDevice.timers[index].SIZE_CAP == 0)
 		{
 			kprintfln!("Computer does not support 64 bit HPET.")();
 		}
+		kprintfln!("2")();
 		//hpetDevice.timers[index].MODE_CNF = 0;
 		//hpetDevice.timers[index].FSB_EN_CNF = 0;
 
@@ -185,6 +187,7 @@ struct HPET
 		// local apic.  Just to test...  we should probably fix this later.
 		//kprintfln!("HPET LocalAPICID Destination Field: {}")(MP.mpInformation.processors[0].localAPICID);
 		
+		kprintfln!("3")();
 		IOAPIC.setRedirectionTableEntry(1, LocalAPIC.getLocalAPICId(),
 						IOAPICInterruptType.Unmasked, IOAPICTriggerMode.LevelTriggered, 
 						IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
@@ -194,6 +197,8 @@ struct HPET
 
 		// enable timer interrupts
 		timerVal |= (1 << 2);
+
+		kprintfln!("4")();
 	
 		// get the main counter
 		ulong curcounter = hpetDevice.config.mainCounterValue;
@@ -204,10 +209,13 @@ struct HPET
 		kprintfln!("factor: {}")(factor);
 		curcounter += factor;
 
+		kprintfln!("5")();
 		hpetDevice.timers[index].comparatorValue = hpetDevice.config.mainCounterValue + factor;
 
+		kprintfln!("6")();
 		// we now want to enable the timer
 		hpetDevice.timers[index].configurationAndCap = timerVal;
+		
 	}
 
 	// the function to reset a timer that has been initialized when it has already fired
