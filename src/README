@@ -10,8 +10,6 @@ Contents:
 --------------------------------------------------------------------------------
 1. Directory Structure
 --------------------------------------------------------------------------------
-/src			<- Root source directory
-				-- Only thing you should need to modify in here is a Makefile (maybe)
 
 /src/kernel		   <- Kernel code including kmain and kernel data structures (idt, gdt, etc)
 /src/kernel/boot   <- Bootstrap code
@@ -23,6 +21,19 @@ Contents:
 
 /src/gcc		   <- Guts 'n Magic so that the compiler won't die when trying to build
 				   -- This is a DO NOT TOUCH directory (unless you know what you're doing)
+
+bochsrc.sample	   <- A sample bochs configuration for XOmB.  Copy to bochsrc.
+config.d.sample	   <- The default configuration.  Copy this to config.d.
+linker.ld		   <- The kernel's linker script.  Tells it how to build.
+Makefile		   <- The main makefile for the kernel.  Use "make iso" to build.
+menu.lst		   <- Used to configure GRUB on the .iso.
+object.d		   <- Another obnoxious D requirement, the Object class.
+
+--- AFTER BUILDING ---
+
+xomb.dump		   <- The XOmB disassembly dump.
+xomb.iso		   <- The XOmB ISO!
+
 
 
 --------------------------------------------------------------------------------

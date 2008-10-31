@@ -1,0 +1,29 @@
+This readme is provided as a quick and dirty guide to the XOmB source tree.
+It may not be up to date, and there may not be much good information in here,
+so don't hate on us if this is worthless to you!!
+
+Contents:
+		1. Directory Structure
+		2. 
+
+
+--------------------------------------------------------------------------------
+1. Directory Structure
+--------------------------------------------------------------------------------
+
+dstubs.d		   <- D Runtime (incomplete; merely stubs)
+elf.d			   <- Elf handling
+error.d			   <- The error values returned by many functions
+invariant		   <- Special D stub
+log.d			   <- The logging mechanism used by XOmB
+multiboot.d		   <- Handles GRUB multiboot information
+regions.d		   <- Handles GRUB memory map regions
+syscall.d		   <- The system calls of XOmB
+system.d		   <- Some common functions.  strlen, etc
+unwind.d		   <- D interfacing with unwind library
+util.d			   <- Useful templates
+
+
+--------------------------------------------------------------------------------
+2. Something
+--------------------------------------------------------------------------------
