@@ -20,14 +20,38 @@ template Tmaker(uint ID)
 
 //Maps to the memory that holds the configuration data for HPET
 align(1) struct hpetConfig {
-	ulong capabilitiesAndID;
-	ulong reserved1;
-	ulong configuration;
-	ulong reserved2;
-	ulong interruptStatus;
-	ulong reserved3;
-	ulong mainCounterValue;
-	ulong reserved4;
+	ulong capabilitiesAndID;	// 0x00
+	ulong reserved1;			// 0x08
+	ulong configuration;		// 0x10
+	ulong reserved2;			// 0x18
+	ulong interruptStatus;		// 0x20
+	ulong reserved3;			// 0x28
+	ulong reserved4;			// 0x30
+	ulong reserved5;			// 0x38
+	ulong reserved6;			// 0x40
+	ulong reserved7;			// 0x48
+	ulong reserved8;			// 0x50
+	ulong reserved9;			// 0x58
+	ulong reserved10;			// 0x60
+	ulong reserved11;			// 0x68
+	ulong reserved12;			// 0x70
+	ulong reserved13;			// 0x78
+	ulong reserved14;			// 0x80
+	ulong reserved15;			// 0x88
+	ulong reserved16;			// 0x90
+	ulong reserved17;			// 0x98
+	ulong reserved18;			// 0xA0
+	ulong reserved19;			// 0xA8
+	ulong reserved20;			// 0xB0
+	ulong reserved21;			// 0xB8
+	ulong reserved22;			// 0xC0
+	ulong reserved23;			// 0xC8
+	ulong reserved24;			// 0xD0
+	ulong reserved25;			// 0xD8
+	ulong reserved26;			// 0xE0
+	ulong reserved27;			// 0xE8
+	ulong mainCounterValue;		// 0xF0
+	ulong reserved28;
 
 	mixin(Bitfield!(capabilitiesAndID, "REV_ID", 8, "NUM_TIM_CAP", 5, "COUNT_SIZE_CAP", 1, "ReservedCap", 1, "LEG_RT_CAP", 1, "VENDOR_ID", 16,
 	"COUNTER_CLOCK_PERIOD", 32));
@@ -63,21 +87,24 @@ struct HPET
 	{
 		// get the virtual address of the HPET within the BIOS device map region
 		ubyte* virtHPETAddy = global_mem_regions.device_maps.virtual_start + (hpetDevice.physHPETAddress - global_mem_regions.device_maps.physical_start);
-		if(virtHPETAddy > (global_mem_regions.device_maps.virtual_start + global_mem_regions.device_maps.length))
-		{
+		//if(virtHPETAddy > (global_mem_regions.device_maps.virtual_start + global_mem_regions.device_maps.length))
+		//{
 			// map in the region then
 			if (vMem.mapRange(hpetDevice.physHPETAddress, hpetConfig.sizeof + (32 * timerInfo.sizeof), virtHPETAddy)
 					!= ErrorVal.Success)
 			{
 				return ErrorVal.Fail;
 			}
-		}
+		//}
+
+		kprintfln!("A")();
 	
 		// resolve the address to the configuration table
 		hpetDevice.config = cast(hpetConfig*)virtHPETAddy;
-
+		
 		ulong configVal = hpetDevice.config.configuration;
 		
+		kprintfln!("B")();
 		//kprintfln!("NUM_TIM_CAP = {}")(hpetDevice.config.NUM_TIM_CAP);
 
 		// initialize the configuration to allow standard IOAPIC interrupts
@@ -85,13 +112,15 @@ struct HPET
 		//hpetDevice.config.ENABLE_CNF = 0;
 		configVal &= ~(0x3);
 
+		kprintfln!("C")();
 		hpetDevice.config.mainCounterValue = 0;
+		kprintfln!("D")();
 
 		// resolve the array of timers
 		hpetDevice.timers = (cast(timerInfo*)virtHPETAddy+hpetConfig.sizeof)[0..hpetDevice.config.NUM_TIM_CAP];
 	
 		//printStruct(hpetDevice);
-
+		kprintfln!("E")();
 		initTimer(0, 1000000);
 
 		kprintfln!("timer counter: {}")(hpetDevice.config.mainCounterValue);
@@ -99,7 +128,9 @@ struct HPET
 		//hpetDevice.config.ENABLE_CNF = 1;
 		//hpetDevice.config |= 1;
 		configVal |= 1;
+		kprintfln!("config: {}")(configVal);
 		hpetDevice.config.configuration = configVal;
+		kprintfln!("config: {}")(hpetDevice.config.configuration);
 	
 		for(;;)
 		{
