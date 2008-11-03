@@ -138,6 +138,73 @@ static:
 		printLogSuccess();
 	}
 
+	void ioOut(T, char[] port)(int data)
+	{
+		static assert (port[$-1] == 'h', "Cannot reduce port number.  Give port as a hex string.  Ex: \"64h\"");
+			
+		static if (is(T == ubyte) || is(T == byte))
+		{		
+			asm {
+				"movb %0, %%al" :: "o" data;
+				"outb %%al, $0x" ~ port[0..$-1];
+			}
+		}
+		else static if(is(T == ushort) || is(T == short))
+		{
+			asm {
+				"movw %0, %%ax" :: "o" data;
+				"outw %%ax, $0x" ~ port[0..$-1];
+			}
+		}
+		else static if(is(T == uint) || is(T==int))
+		{
+			asm {
+				"movl %0, %%eax" :: "o" data;
+				"outl %%eax, $0x" ~ port[0..$-1];
+			}
+		}
+		else
+		{
+			static assert(false, "Cannot determine data type.  Usage: ioOut!(byte, \"64h\")(0xFE).  Can be: byte, short, int.");
+		}
+	}
+
+	T ioIn(T, char[] port)()
+	{
+		static assert (port[$-1] == 'h', "Cannot reduce port number.  Give port as a hex string.  Ex: \"64h\"");
+		
+		T ret;	
+		static if (is(T == ubyte) || is(T == byte))
+		{		
+			asm {
+				"inb $0x" ~ port[0..$-1] ~ ", %%al; movb %%al, %0" :: "o" ret;
+			}
+		}
+		else static if(is(T == ushort) || is(T == short))
+		{
+			asm {
+				"inb $0x" ~ port[0..$-1] ~ ", %%ax; movw %%ax, %0" :: "o" ret;
+			}
+		}
+		else static if(is(T == uint) || is(T==int))
+		{
+			asm {
+				"inb $0x" ~ port[0..$-1] ~ ", %%eax; movl %%eax, %0" :: "o" ret;
+			}
+		}
+		else
+		{
+			static assert(false, "Cannot determine data type.  Usage: ioIn!(byte, \"64h\")().  Can be: byte, short, int.");
+		}
+		return ret;
+	}
+
+	void reset()
+	{
+		// write 0xFE to the keyboard controller (port 64h)
+		ioOut!(byte, "64h")(0xfe);
+	}
+
 	void validate()
 	{	
 		printLogLine("Validating CPU Functionality");

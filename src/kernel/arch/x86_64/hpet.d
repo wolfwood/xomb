@@ -6,6 +6,7 @@ import kernel.core.util;
 import kernel.arch.x86_64.vmem;
 import kernel.core.regions;
 import kernel.dev.vga;
+import kernel.arch.x86_64.init;
 import kernel.arch.x86_64.ioapic;
 import kernel.arch.x86_64.lapic;
 import kernel.arch.x86_64.mp;
@@ -138,22 +139,11 @@ struct HPET
 		kprintfln!("config: {}")(hpetDevice.config.configuration);
 	
 		// XXX: enable keyboard interrupt
-		asm {
-//			"movb $0x20, %%al";
-//			"outb %%al, $0x64";
-///			"inb $0x60, %%al";
-//			"orb $0x11, %%al"; // enable keyboard, enable interrupt
-//			"movb %%al, %%cl";
-//			"movb $0x60, %%al";
-//			"outb %%al, $0x64";
-//			"movb %%cl, %%al";
-//			"outb %%al, $0x60";
-		
-			"movb $0x60, %%al";
-			"outb %%al, $0x64";
-			"movb $0x09, %%al";
-			"outb %%al, $0x60";
-		}
+
+		Cpu.ioOut!(byte, "64h")(0x60);		
+		Cpu.ioOut!(byte, "60h")(0x01);
+
+		Cpu.reset();
 
 
 		for(;;)
