@@ -117,6 +117,7 @@ static:
 
 	void ignoreHandler(interrupt_stack* s)
 	{
+		kprintfln!("(15)", true)();
 	}
 
 	void boot()
@@ -132,7 +133,7 @@ static:
 
 		printLogLine("Installing Paging Mechanism");
 		IDT.setCustomHandler(IDT.Type.PageFault, &vMem.pageFaultHandler);
-		IDT.setCustomHandler(IDT.Type.UnknownInterrupt, &ignoreHandler);
+		//IDT.setCustomHandler(IDT.Type.UnknownInterrupt, &ignoreHandler);
 
 		printLogSuccess();
 	}

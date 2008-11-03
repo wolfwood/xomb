@@ -106,6 +106,29 @@ struct IOAPIC
 	{	
 		printLogLine("Initializing IO APIC");
 
+		// turn off 8259a		
+		// write 0xFF to ports 0x21, 0xA1
+		asm {
+			"movb $0xff, %%al";
+			"outb %%al, $0x21";		
+		}
+		asm {
+			"movb $0xff, %%al";
+			"outb %%al, $0xA1";		
+		}
+
+		// redirect 8259a to IOAPIC (precaution)
+		// write 0x70 to port 0x22
+		// write 0x01 to port 0x23
+		asm {
+			"movb $0x70, %%al";
+			"outb %%al, $0x22";		
+		}
+		asm {
+			"movb $0x01, %%al";
+			"outb %%al, $0x23";
+		}
+
 		// map IOAPIC region
 		ubyte* IOAPICVirtAddr;
 
