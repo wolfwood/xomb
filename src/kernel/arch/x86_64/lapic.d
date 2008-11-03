@@ -125,7 +125,10 @@ struct LocalAPIC
 		startAPs();
 
 		//initTimer();
-		
+			
+		// THIS WILL SEND AN INTERRUPT AND FIRE THE ISR
+		IDT.setCustomHandler(35, &timerProc);
+		sendIPI(35, DeliveryMode.Fixed, 0, 0, getLocalAPICId());
 	}
 	
 	void initLocalApic()
@@ -186,13 +189,22 @@ struct LocalAPIC
 	
 	void enableLocalApic()
 	{
-		// enable the APIC (just in case it is not enabled)
-		MP.mpInformation.apicRegisters.spuriousIntVector |= 0x100;
-		//kprintfln!("{}")(mpInformation.apicRegisters.spuriousIntVector);
+		// enable extINT, NMI interrupts
+		MP.mpInformation.apicRegisters.lint0LocalVectorTable = 0x08700; //extINT
+		MP.mpInformation.apicRegisters.lint1LocalVectorTable = 0x00400; //NMI
 
-		// enable NMI
-		MP.mpInformation.apicRegisters.lint0LocalVectorTable = 0x400;
-		MP.mpInformation.apicRegisters.lint1LocalVectorTable = 0x400;
+		// set task priority register (to not block any interrupts)
+		MP.mpInformation.apicRegisters.taskPriority = 0x0;		
+
+		// enable the APIC (just in case it is not enabled)
+		MP.mpInformation.apicRegisters.spuriousIntVector |= 0x10F;
+		//kprintfln!("{}")(mpInformation.apicRegisters.spuriousIntVector);
+	
+		// enable extINT, NMI interrupts
+		MP.mpInformation.apicRegisters.lint0LocalVectorTable = 0x08700; //extINT
+		MP.mpInformation.apicRegisters.lint1LocalVectorTable = 0x00400; //NMI
+
+
 	}
 
 	kmutex apLock;
@@ -213,9 +225,6 @@ struct LocalAPIC
 
 		// vector
 		timerValue |= 35;
-		
-		IDT.setCustomHandler(35, &timerProc);
-
 		MP.mpInformation.apicRegisters.tmrDivideConfiguration |= 0b1011;
 		
 		MP.mpInformation.apicRegisters.tmrLocalVectorTable = timerValue;

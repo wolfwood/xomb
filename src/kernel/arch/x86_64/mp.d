@@ -316,6 +316,7 @@ private ErrorVal initConfigurationTable()
 				if (mpInformation.ioInterrupt_count != maxIOInterruptEntries)
 				{
 					mpInformation.ioInterrupts[mpInformation.ioInterrupt_count] = cast(ioInterruptEntry*)curAddr;
+					//printStruct(*mpInformation.ioInterrupts[mpInformation.ioInterrupt_count]);
 					mpInformation.ioInterrupt_count++;
 					//kprintfln!("io int: {}")(mpInformation.ioInterrupt_count);
 				}
