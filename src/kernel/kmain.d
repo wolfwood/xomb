@@ -90,9 +90,6 @@ extern(C) void kmain(uint magic, uint addr)
 	// if this fails, the CPU will hang.
 	Cpu.validate();
 
-	// boot and initialize the primary CPU
-	Cpu.boot();
-
 	printLogLine("Installing Heap Allocator");
 	// Set up the heap memory allocator
 	if (pMem.install(mbi) == ErrorVal.Success)
@@ -106,10 +103,9 @@ extern(C) void kmain(uint magic, uint addr)
 
 	//pMem.test();
 
-	printLogLine("Installing Page Tables");
-	vMem.install();
-	printLogSuccess();
-
+	// boot and initialize the primary CPU
+	Cpu.install();
+	
 	// Now that page tables are implemented,
 	// Map in the BIOS regions.
 
@@ -119,11 +115,7 @@ extern(C) void kmain(uint magic, uint addr)
 	Cpu.enableInterrupts();
 
 	//kprintfln!("Setting lstar, star and SF_MASK...")();
-
-	printLogLine("Installing Syscall Handler");
-	syscall.setHandler(&syscall.syscallHandler);
-	printLogSuccess();
-
+	
 	// TESTING MUTEXES
 	printLogLine("Testing Kernel Locks");
 	int failcode = test_kmutex();

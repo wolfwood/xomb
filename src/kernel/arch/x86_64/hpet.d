@@ -117,15 +117,15 @@ struct HPET
 		//hpetDevice.config.ENABLE_CNF = 0;
 		configVal &= ~(0x3);
 
-		kprintfln!("C")();
+		//kprintfln!("C")();
 		hpetDevice.config.mainCounterValue = 0;
-		kprintfln!("D")();
+		//kprintfln!("D")();
 
 		// resolve the array of timers
 		//hpetDevice.timers = (cast(timerInfo*)virtHPETAddy+hpetConfig.sizeof)[0..hpetDevice.config.NUM_TIM_CAP];
 	
 		//printStruct(hpetDevice);
-		kprintfln!("E")();
+		//kprintfln!("E")();
 		initTimer(0, 1000000);
 		
 
@@ -134,22 +134,20 @@ struct HPET
 		//hpetDevice.config.ENABLE_CNF = 1;
 		//hpetDevice.config |= 1;
 		configVal |= 1;
-		kprintfln!("config: {}")(configVal);
+		//kprintfln!("config: {}")(configVal);
 		hpetDevice.config.configuration = configVal;
-		kprintfln!("config: {}")(hpetDevice.config.configuration);
+		//kprintfln!("config: {}")(hpetDevice.config.configuration);
 	
 		// XXX: enable keyboard interrupt
 
-		Cpu.ioOut!(byte, "64h")(0x60);		
-		Cpu.ioOut!(byte, "60h")(0x01);
+		//Cpu.reset();
 
-		Cpu.reset();
-
-
-		for(;;)
+		
+		while(hpetDevice.config.mainCounterValue < hpetDevice.config.timers[0].comparatorValue)
 		{
 			kprintfln!("timer counter: {} / {}")(hpetDevice.config.mainCounterValue, hpetDevice.config.timers[0].comparatorValue);
 		}
+		kprintfln!("timer counter: {} / {}")(hpetDevice.config.mainCounterValue, hpetDevice.config.timers[0].comparatorValue);
 	
 		return ErrorVal.Success;
 	}
@@ -176,9 +174,9 @@ struct HPET
 		// we want a 64-bit timer
 
 		uint ROUTE_CAP = (*hpetTimerReg) >> 32UL;
-		kprintfln!("1")();
+		//kprintfln!("1")();
 		//kprintfln!("POSSIBLE: {x}")(hpetDevice.config.timers[index].INT_ROUTE_CAP);
-		kprintfln!("PSSOIBLE: {x}")(ROUTE_CAP);
+		//kprintfln!("PSSOIBLE: {x}")(ROUTE_CAP);
 
 		uint routingInterrupt = 0;
 		while (!((1 << routingInterrupt) & ROUTE_CAP) && routingInterrupt < 32)
@@ -188,15 +186,15 @@ struct HPET
 
 		if (routingInterrupt >= 32) { return; }
 
-		kprintfln!("route int: {}")(routingInterrupt);
+		//kprintfln!("route int: {}")(routingInterrupt);
 
 		// tell IOAPIC of our plans
 		// So the idea here is that we're going to put 'er in
 		// to physical mode here and send the apic ID of the first
 		// local apic.  Just to test...  we should probably fix this later.
-		kprintfln!("HPET LocalAPICID Destination Field: {}")(MP.mpInformation.processors[0].localAPICID);
+		//kprintfln!("HPET LocalAPICID Destination Field: {}")(MP.mpInformation.processors[0].localAPICID);
 		
-		kprintfln!("3")();
+		//kprintfln!("3")();
 		IOAPIC.setRedirectionTableEntry(10, LocalAPIC.getLocalAPICId(),
 					IOAPICInterruptType.Unmasked, IOAPICTriggerMode.EdgeTriggered, 
 					IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
@@ -223,33 +221,33 @@ struct HPET
 		//{/
 		//	kprintfln!("Computer does not support 64 bit HPET.")();
 		//}
-		kprintfln!("2")();
+		//kprintfln!("2")();
 		//hpetDevice.config.timers[index].MODE_CNF = 0;
 		volatile *hpetTimerReg &= ~(1UL << 8UL);
-		kprintfln!("3")();
+		//kprintfln!("3")();
 		//hpetDevice.config.timers[index].FSB_EN_CNF = 0;
 		volatile *hpetTimerReg &= ~(1UL << 14UL);
-		kprintfln!("4")();
+		//kprintfln!("4")();
 		// we want a non-periodic timer (one-shot!)
 		//hpetDevice.config.timers[index].TYPE_CNF = 0;
 		volatile *hpetTimerReg &= ~(1UL << 3UL);
-		kprintfln!("5")();
+		//kprintfln!("5")();
 	
 		// we want edge-triggered interrupts
 		// do we?  Brian says no, and set it to level
 		// Wilkie says it makes this crash.
 		//hpetDevice.config.timers[index].INT_TYPE_CNF = 1;
 		timerVal |= (1 << 1);
-		kprintfln!("6")();
+		//kprintfln!("6")();
 		
 		// we want to route to interrupt 'index + 1'
 		//hpetDevice.config.timers[index].INT_ROUTE_CNF = routingInterrupt; //index + 1
 		volatile *hpetTimerReg |= (cast(ulong)routingInterrupt << 9UL);
 		timerVal |= (1 << 9);
-		kprintfln!("7")();
+		//kprintfln!("7")();
 
 		// TODO: change this to a debug
-		kprintfln!("counter updates by = {} for {}ns")(nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD, nanoSecondInterval / 1000000);
+		//kprintfln!("counter updates by = {} for {}ns")(nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD, nanoSecondInterval / 1000000);
 
 				// enable timer interrupts
 		//timerVal |= (1 << 2);
@@ -257,7 +255,7 @@ struct HPET
 		//enable!
 		//hpetDevice.config.timers[index].INT_ENB_CNF = 1;
 		
-		kprintfln!("4")();
+		//kprintfln!("4")();
 	
 		// get the main counter
 		ulong curcounter = hpetDevice.config.mainCounterValue;
@@ -268,12 +266,12 @@ struct HPET
 		kprintfln!("factor: {}")(factor);
 		curcounter += factor;
 	
-		kprintfln!("5")();
+		//kprintfln!("5")();
 		//hpetDevice.config.timers[index].comparatorValue = hpetDevice.config.mainCounterValue + factor;
 		ulong* hpetTimerCounter = cast(ulong*)(hpetDevice.virtHPETAddress + 0x108 + (0x20 * index));
 		volatile *hpetTimerCounter = 7000000;
 
-		kprintfln!("6")();
+		//kprintfln!("6")();
 		// we now want to enable the timer
 		//hpetDevice.config.timers[index].configurationAndCap = timerVal;
 		

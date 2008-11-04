@@ -355,6 +355,8 @@ struct LocalAPIC
 
 extern (C) void apEntry()
 {
+	kdebugfln!(DEBUG_APENTRY, "AP - Entry")();
+	
 	// set paging
 
 	void* pl4 = (cast(void*)vMem.pageLevel4.ptr) - vMem.VM_BASE_ADDR;
@@ -364,20 +366,14 @@ extern (C) void apEntry()
 		"movq %%rax, %%cr3";
 	}
 
-	// set idt
-
-	//IDT.setIDT();
-
-	// set gdt
-
-	//GDT.setGDT();
-	//IDT.setIDT();
-
-	// set syscall (lstar)
-
+	// run common boot
+	// this sets up GDT, IDT and SYSCALL
+	Cpu.boot();	
+	
 	// enable local apic
+	LocalAPIC.enableLocalApic();
 
-	kdebugfln!(DEBUG_APENTRY, "AP - Entry")();
+	kdebugfln!(DEBUG_APENTRY, "AP - Boot of CPU Complete")();
 
 	volatile void* apStack;
 	volatile void* apStackSupplementary;

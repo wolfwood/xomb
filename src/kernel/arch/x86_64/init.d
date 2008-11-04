@@ -4,7 +4,7 @@ import kernel.core.log;
 
 import kernel.arch.x86_64.idt;
 import kernel.arch.x86_64.gdt;
-
+import syscall = kernel.arch.x86_64.syscall;
 import kernel.arch.x86_64.vmem;
 
 import kernel.dev.vga;
@@ -120,7 +120,7 @@ static:
 		kprintfln!("(15)", true)();
 	}
 
-	void boot()
+	void install()
 	{
 		printLogLine("Installing GDT");
 		// install the Global Descriptor Table (GDT) and the Interrupt Descriptor Table (IDT)
@@ -133,9 +133,29 @@ static:
 
 		printLogLine("Installing Paging Mechanism");
 		IDT.setCustomHandler(IDT.Type.PageFault, &vMem.pageFaultHandler);
+		// XXX: I want to know when this happens:
 		//IDT.setCustomHandler(IDT.Type.UnknownInterrupt, &ignoreHandler);
-
 		printLogSuccess();
+
+		printLogLine("Installing Page Tables");
+		vMem.install();
+		printLogSuccess();
+
+		boot();
+	}
+
+	// common boot
+	// - This function is common to all processors
+	void boot()
+	{
+		// assign gdt
+		GDT.setGDT();
+
+		// assign idt
+		IDT.setIDT();
+
+		// assign syscall handler
+		syscall.setHandler(&syscall.syscallHandler);
 	}
 
 	void ioOut(T, char[] port)(int data)

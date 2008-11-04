@@ -311,8 +311,15 @@ public void install()
 
 	// WTF do we set the RSP0-2 members to?!
 	//tss_struct.rsp0 = tss_struct.rsp1 = tss_struct.rsp2 =
-
 	setGDT();
+
+	// set task register
+	// XXX: Why does it restart if I do this on an AP?
+	asm
+	{
+		"movw $0x30, %%ax" ::: "ax";
+		"ltr %%ax";
+	}
 }
 
 public void setGDT()
@@ -320,8 +327,6 @@ public void setGDT()
 	asm
 	{
 		"lgdt (gp)";
-		"movw $0x30, %%ax" ::: "ax";
-		"ltr %%ax";
 	}
 }
 
