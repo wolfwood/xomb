@@ -2,18 +2,22 @@ module kernel.dev.keyboard;
 
 import kernel.arch.x86_64.init;
 import kernel.arch.x86_64.ioapic;
+import kernel.arch.x86_64.pic;
+
 import kernel.dev.vga;
 
 import config;
 
 void kbd_init() {
+
+	PIC.enableIRQ(1);
 	
-	IOAPIC.setRedirectionTableEntry(1, 0xFF, IOAPICInterruptType.Unmasked, 
-									IOAPICTriggerMode.EdgeTriggered, 
-									IOAPICInputPinPolarity.HighActive,
-									IOAPICDestinationMode.Physical,
-									IOAPICDeliveryMode.ExtINT,
-										35);
+	//IOAPIC.setRedirectionTableEntry(1,1, 0xFF, IOAPICInterruptType.Unmasked, 
+	//								IOAPICTriggerMode.EdgeTriggered, 
+	//								IOAPICInputPinPolarity.HighActive,
+	//								IOAPICDestinationMode.Physical,
+	//								IOAPICDeliveryMode.ExtINT,
+	//									35);
 
 	// tell the controller we are going to set the command byte	
 	Cpu.ioOut!(byte, "64h")(0x60);    

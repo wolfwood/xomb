@@ -128,6 +128,19 @@ public void install()
 	setIntGate(34, &isr34);
 	setIntGate(35, &isr35);
 	setIntGate(36, &isr36);
+	setIntGate(37, &isr37);
+	setIntGate(38, &isr38);
+	setIntGate(39, &isr39);
+	setIntGate(40, &isr40);
+	setIntGate(41, &isr41);
+	setIntGate(42, &isr42);
+	setIntGate(43, &isr43);
+	setIntGate(44, &isr44);
+	setIntGate(45, &isr45);
+	setIntGate(46, &isr46);
+	setIntGate(47, &isr47);
+	setIntGate(48, &isr48);
+	setIntGate(49, &isr49);
 	setSysGate(0x80, &isr128);
 
 	setIDT();
@@ -218,6 +231,19 @@ mixin(ISR!(33));
 mixin(ISR!(34));
 mixin(ISR!(35));
 mixin(ISR!(36));
+mixin(ISR!(37));
+mixin(ISR!(38));
+mixin(ISR!(39));
+mixin(ISR!(40));
+mixin(ISR!(41));
+mixin(ISR!(42));
+mixin(ISR!(43));
+mixin(ISR!(44));
+mixin(ISR!(45));
+mixin(ISR!(46));
+mixin(ISR!(47));
+mixin(ISR!(48));
+mixin(ISR!(49));
 mixin(ISR!(128));
 
 enum Type

@@ -54,10 +54,10 @@ extern(C) void kmain(uint magic, uint addr)
 	int mb_flag = 0;
 
 	// Clear the screen in order to begin printing.
-	Console.cls();
+	Console.cls(true);
 
 	// Print initial booting information.
-	Console.setColors(Color.LowGreen, Color.Black);
+	Console.setColors(Color.HighGreen, Color.Black);
 	kprintf!(" XOmB 0.0 $Rev$")();
 	Console.resetColors();
 	int x,y;
@@ -66,7 +66,9 @@ extern(C) void kmain(uint magic, uint addr)
 
 	// Print out our slogan. Literally, "We came, we saw, we conquered."
 	Console.setColors(Color.Yellow, Color.LowBlue);
-	kprintfln!("Venimus, vidimus, vicimus!  --PittGeeks\n")();
+	kprintfln!("Venimus, vidimus, vicimus!  --PittGeeks")();
+	Console.setColors(Color.LowGreen, Color.Black);
+	kprintf!("--------------------------------------------------------------------------------")();
 	Console.resetColors();
 
 	// get the globals from the linker definitions

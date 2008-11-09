@@ -307,6 +307,7 @@ private ErrorVal initConfigurationTable()
 				if (mpInformation.ioAPIC_count != maxIOAPICEntries)
 				{
 					mpInformation.ioApics[mpInformation.ioAPIC_count] = cast(ioAPICEntry*)curAddr;
+					//printStruct(*mpInformation.ioApics[mpInformation.ioAPIC_count]);
 					mpInformation.ioAPIC_count++;
 					kdebugfln!(DEBUG_MPTABLE, "IO APIC: {}")(mpInformation.ioAPIC_count);
 				}
@@ -326,6 +327,7 @@ private ErrorVal initConfigurationTable()
 				if (mpInformation.localInterrupt_count != maxLocalInterruptEntries)
 				{
 					mpInformation.localInterrupts[mpInformation.localInterrupt_count] = cast(localInterruptEntry*)curAddr;
+					//printStruct(*mpInformation.localInterrupts[mpInformation.localInterrupt_count]);
 					mpInformation.localInterrupt_count++;
 					kdebugfln!(DEBUG_MPTABLE, "local int: {}")(mpInformation.localInterrupt_count);
 				}
@@ -391,7 +393,8 @@ private mpFloatingPointer* scan(ubyte* start, ubyte* end)
 
 public void initIOAPIC()
 {
-	IOAPIC.init(mpInformation.ioApics[0]);
+	IOAPIC.initFromMP(mpInformation.ioApics[0..mpInformation.ioAPIC_count]);
+	IOAPIC.setRedirectionTableEntriesFromMP(mpInformation.ioInterrupts[0..mpInformation.ioInterrupt_count]);
 }
 
 public void initAPIC()

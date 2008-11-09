@@ -174,6 +174,9 @@ struct Console
 {
 static:
 
+	// The number of "reserved" header lines
+	const uint ReservedLines = 2;
+
 	/// The number of columns a standard screen is wide.
 	const uint Columns = 80;
 	
@@ -198,15 +201,24 @@ static:
 	/**
 	This method clears the screen and returns the cursor to its default position.
 	*/
-	void cls()
+	void cls(bool all = false)
 	{	
 		printLock.lock();
 		/// Set all pieces of video memory to nothing.
-		for(int i = 0; i < Columns * Lines * 2; i++)
+		int i;
+		if (all) { i = 0; } else { i = ReservedLines * Columns * 2; }
+		for(; i < Columns * Lines * 2; i++)
 			volatile *(VideoMem + i) = 0;
 		coordLock.lock();
 		xpos = 0;
-		ypos = 0;
+		if (all)
+		{
+			ypos = 0;
+		}
+		else
+		{
+			ypos = ReservedLines;
+		}
 		coordLock.unlock();
 		printLock.unlock();
 	}
@@ -339,6 +351,7 @@ static:
 	*/
 	private void scrollDisplay(int numlines)
 	{
+
 		/// The function received no lines. Do nothing.
 		if(numlines <= 0)
 			return;
@@ -351,8 +364,8 @@ static:
 			return;
 		}
 
-		int cury = 0;
-		int offset1 = 0;
+		int cury = ReservedLines;
+		int offset1 = ReservedLines * Columns;
 		int offset2 = numlines * Columns;
 
 		/// Go through everything in memory and copy it the proper amount

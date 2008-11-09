@@ -122,14 +122,15 @@ struct LocalAPIC
 		enableLocalApic();
 		printLogSuccess();
 	
+		IDT.setCustomHandler(35, &timerProc);
+		
 		startAPs();
 
 		//initTimer();
 			
 		// THIS WILL SEND AN INTERRUPT AND FIRE THE ISR
-		IDT.setCustomHandler(35, &timerProc);
-		sendIPI(35, DeliveryMode.Fixed, 0, 0, getLocalAPICId());
-	}
+		//sendIPI(35, DeliveryMode.Fixed, 0, 0, getLocalAPICId());
+	}	
 	
 	void initLocalApic()
 	{
@@ -189,6 +190,19 @@ struct LocalAPIC
 	
 	void enableLocalApic()
 	{
+		// switch from PIC to APIC
+		// using IMCR registers
+		Cpu.ioOut!(byte, "22h")(0x70);
+		Cpu.ioOut!(byte, "23h")(0x01);
+
+		// set the Logical Destination Register (LDR)
+		MP.mpInformation.apicRegisters.logicalDestination = (1 << getLocalAPICId()) << 24;
+	
+		// set the Destination Format Register (DFR)	
+		// enable the Flat Model for addressing Logical APIC IDs
+		// set bits 28-31 to 1, all other bits are reserved and should be 1
+		MP.mpInformation.apicRegisters.destinationFormat = 0xFFFFFFFF;
+
 		// enable extINT, NMI interrupts
 		MP.mpInformation.apicRegisters.lint0LocalVectorTable = 0x08700; //extINT
 		MP.mpInformation.apicRegisters.lint1LocalVectorTable = 0x00400; //NMI
@@ -200,11 +214,15 @@ struct LocalAPIC
 		MP.mpInformation.apicRegisters.spuriousIntVector |= 0x10F;
 		//kprintfln!("{}")(mpInformation.apicRegisters.spuriousIntVector);
 	
-		// enable extINT, NMI interrupts
+		// enable extINT, NMI interrupts (by setting to unmasked, bit 16 = 1)
+	
+		// LINT0 : ExtINT, Level Triggered
 		MP.mpInformation.apicRegisters.lint0LocalVectorTable = 0x08700; //extINT
+
+		// LINT1 : NMI (Non-Masked Interrupts)
 		MP.mpInformation.apicRegisters.lint1LocalVectorTable = 0x00400; //NMI
 
-
+		kprintfln!("DFR: {x} LDR: {x}")(MP.mpInformation.apicRegisters.destinationFormat, MP.mpInformation.apicRegisters.logicalDestination);
 	}
 
 	kmutex apLock;
@@ -413,7 +431,8 @@ extern (C) void apEntry()
 void apExec()
 {
 	//kprintfln!("EXEC")();
-
+	LocalAPIC.sendIPI(35, LocalAPIC.DeliveryMode.LowestPriority, true, 0, 0x1);
+	
 	printLogSuccess();
 
 	LocalAPIC.apLock.unlock();

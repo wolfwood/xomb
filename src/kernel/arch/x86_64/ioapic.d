@@ -100,14 +100,21 @@ struct IOAPIC
 {
 	static:
 
-	uint* ioApicRegisterSelect;
-	uint* ioApicWindowRegister;
+	// all possible virtual addresses for io apics
+	// indexed by the IO APIC ID
+	// (assuming only 16 can exist)
+
+	// null : indicates the absense of an io apic
+
+	uint* ioApicRegisterSelect[16];
+	uint* ioApicWindowRegister[16];
 
 	void init(ioAPICEntry* ioApicEntry)
 	{	
 		printLogLine("Initializing IO APIC");
 
-		PIC.disable();
+		//PIC.disable();
+		PIC.enableAll();
 
 		// redirect 8259a to IOAPIC (precaution)
 		// write 0x70 to port 0x22
@@ -133,35 +140,181 @@ struct IOAPIC
 			return;
 		}
 
-		ioApicRegisterSelect = cast(uint*)(IOAPICVirtAddr);
-		ioApicWindowRegister = cast(uint*)(IOAPICVirtAddr + 0x10);
+		ioApicRegisterSelect[ioApicEntry.ioAPICID] = cast(uint*)(IOAPICVirtAddr);
+		ioApicWindowRegister[ioApicEntry.ioAPICID] = cast(uint*)(IOAPICVirtAddr + 0x10);
 
 		ubyte apicVersion, maxRedirectionEntry;
-		getIOApicVersion(apicVersion, maxRedirectionEntry);
+		getIOApicVersion(ioApicEntry.ioAPICID, apicVersion, maxRedirectionEntry);
 		kdebugfln!(DEBUG_IOAPIC,"IO Ver: 0x{x} MaxRedirectEntry: 0x{x}")(apicVersion, maxRedirectionEntry);
+
+		setIOApicID(ioApicEntry.ioAPICID, ioApicEntry.ioAPICID);
+
+		ubyte apicID;
+		getIOApicID(ioApicEntry.ioAPICID, apicID);
+		kprintfln!("IO APIC ID: {}")(apicID);
+
+
+		// print IO APIC Table
+		// for each redirection entry
+
+		uint valuehi;
+		uint valuelo;
+		for (int i = 0; i < 0 * maxRedirectionEntry; i++)
+		{
+			readRegister(ioApicEntry.ioAPICID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0HI + (i*2)), valuehi);
+			readRegister(ioApicEntry.ioAPICID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (i*2)), valuelo);
+		
+			// get delivery mode
+			valuelo >>= 8;
+			int dmode = valuelo & 0x07;
+			valuelo >>= 7;
+			int type = valuelo & 0x01;	
+
+			kprintfln!("PIN: {} DMODE: {x} TYPE: {x}")(i, dmode, type);
+		}
+
 		printLogSuccess();
 	}
 
-	void readRegister (IOAPICRegister reg, out uint value){
-		volatile *(ioApicRegisterSelect) = cast(uint)reg;
-		value = *(ioApicWindowRegister);
+	void initFromMP(ioAPICEntry*[] ioApics)
+	{
+		foreach(ioapic; ioApics)
+		{
+			init(ioapic);
+		}
+	}
+
+	void setRedirectionTableEntriesFromMP(ioInterruptEntry*[] ioEntries)
+	{
+		IOAPICTriggerMode trigMode;
+		IOAPICInterruptType intMasked = IOAPICInterruptType.Unmasked;
+		IOAPICInputPinPolarity intPolarity;
+		IOAPICDeliveryMode intType;
+
+		foreach(ioentry; ioEntries)
+		{
+			kprintf!("IRQ {} to INT {} in IOAPIC Pin {} .. ")(ioentry.sourceBusIRQ, 35, ioentry.destinationIOAPICIntin);
+			// get trigger mode
+			if (ioentry.el == 0)
+			{
+				// depends on the bus type (this is stupid, but ok)
+				trigMode = IOAPICTriggerMode.EdgeTriggered;
+			}			
+			else if (ioentry.el == 1)
+			{
+				// edge triggered
+				trigMode = IOAPICTriggerMode.EdgeTriggered;
+			}
+			else if (ioentry.el == 3)
+			{
+				// level triggered
+				trigMode = IOAPICTriggerMode.LevelTriggered;
+			}
+			else
+			{
+				// invalid, undefined
+				trigMode = IOAPICTriggerMode.EdgeTriggered;
+			}
+
+			//get polarity
+			if (ioentry.po == 0)
+			{
+				// depends on bus type
+				intPolarity = IOAPICInputPinPolarity.HighActive;
+			}
+			else if (ioentry.po == 1)
+			{
+				// active high
+				intPolarity = IOAPICInputPinPolarity.HighActive;
+			}
+			else if (ioentry.po == 3)
+			{
+				// active low
+				intPolarity = IOAPICInputPinPolarity.LowActive;
+			}
+			else 
+			{
+				// invalid, undefined
+				intPolarity = IOAPICInputPinPolarity.HighActive;
+			}
+
+			// interpret type
+			if (ioentry.interruptType == 0) // INT (common)
+			{
+				intType = IOAPICDeliveryMode.Fixed;
+			}
+			else if (ioentry.interruptType == 1) // NMI
+			{
+				intType = IOAPICDeliveryMode.NonMaskedInterrupt;
+			}
+			else if (ioentry.interruptType == 2) // SMI
+			{
+				intType = IOAPICDeliveryMode.SystemManagementInterrupt;
+			}
+			else if (ioentry.interruptType == 3) // ExtINT
+			{
+				intType = IOAPICDeliveryMode.ExtINT;
+			}
+
+			// XXX: set to hardcoded values... uncomment to match
+			// TODO: have values for 'bus conformity' ... I'd say just steal the linux values for this
+			setRedirectionTableEntry(ioentry.destinationIOAPICID, ioentry.destinationIOAPICIntin, 
+				// destination
+				0xFF,
+				// interrupt type
+				IOAPICInterruptType.Unmasked,
+				// trigger mode (edge, level)
+				IOAPICTriggerMode.EdgeTriggered, // trigMode,
+				// pin polarity
+				IOAPICInputPinPolarity.HighActive, // intPolarity,
+				// destination mode
+				IOAPICDestinationMode.Logical,
+				// delivery mode
+				IOAPICDeliveryMode.Fixed, // intType,
+				// vector
+				cast(ubyte)(33 + ioentry.destinationIOAPICIntin)
+			);
+		}
+	}
+
+	void readRegister (uint ioApicID, IOAPICRegister reg, out uint value){
+		volatile *(ioApicRegisterSelect[ioApicID]) = cast(uint)reg;
+		value = *(ioApicWindowRegister[ioApicID]);
 	}
 
 
-	void writeRegister (IOAPICRegister reg, in uint value){
-		volatile *(ioApicRegisterSelect) = cast(uint)reg;
-		volatile *(ioApicWindowRegister) = value;
+	void writeRegister (uint ioApicID, IOAPICRegister reg, in uint value){
+		volatile *(ioApicRegisterSelect[ioApicID]) = cast(uint)reg;
+		volatile *(ioApicWindowRegister[ioApicID]) = value;
 	}
 
-	void getIOApicVersion (out ubyte apicVersion, out ubyte maxRedirectionEntry){
+	void getIOApicVersion (uint ioApicID, out ubyte apicVersion, out ubyte maxRedirectionEntry){
 		uint value;
-		readRegister(IOAPICRegister.IOAPICVER, value);
+		readRegister(ioApicID, IOAPICRegister.IOAPICVER, value);
 		apicVersion = (value & 0xFF);
 		value >>= 16;
 		maxRedirectionEntry = (value & 0xFF);
 	}
 
-	void setRedirectionTableEntry (uint registerIndex,
+	void getIOApicID (uint ioApicID, out ubyte apicID)
+	{
+		uint value;
+		readRegister(ioApicID, IOAPICRegister.IOAPICID, value);
+		value >>= 24;
+		value &= 0x0F;
+
+		apicID = cast(ubyte)value;
+	}
+
+	void setIOApicID(uint ioApicID, ubyte apicID)
+	{
+		uint value;
+		value = cast(uint)apicID << 24;
+
+		writeRegister(ioApicID, IOAPICRegister.IOAPICID, value);
+	}
+
+	void setRedirectionTableEntry (uint ioApicID, uint registerIndex,
 		ubyte destinationField,
 		IOAPICInterruptType intType,
 		IOAPICTriggerMode triggerMode,
@@ -185,18 +338,18 @@ struct IOAPIC
 		valuelo <<= 8;
 		valuelo |= interruptVector;
 		
-		writeRegister(cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0HI + (registerIndex*2)), valuehi);
-		writeRegister(cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), valuelo);
+		writeRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0HI + (registerIndex*2)), valuehi);
+		writeRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), valuelo);
 	}
 
 	//Prints the information in the redirect table entries
-	void printTableEntry(uint tableEntry) 
+	void printTableEntry(uint ioApicID, uint tableEntry) 
 	{
 		// Values that will be filled by readRegister
 		uint hi, lo;
 		// Make the calls
-		readRegister(cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0HI + (tableEntry*2)), hi);
-		readRegister(cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (tableEntry*2)), lo);
+		readRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0HI + (tableEntry*2)), hi);
+		readRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (tableEntry*2)), lo);
 
 		kdebugfln!(DEBUG_IOAPIC, "Hi-value: {}")(hi);
 		kdebugfln!(DEBUG_IOAPIC, "Lo-value: {}")(lo);

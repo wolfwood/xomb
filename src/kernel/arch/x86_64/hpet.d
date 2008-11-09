@@ -195,25 +195,25 @@ struct HPET
 		//kprintfln!("HPET LocalAPICID Destination Field: {}")(MP.mpInformation.processors[0].localAPICID);
 		
 		//kprintfln!("3")();
-		IOAPIC.setRedirectionTableEntry(10, LocalAPIC.getLocalAPICId(),
-					IOAPICInterruptType.Unmasked, IOAPICTriggerMode.EdgeTriggered, 
-					IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
-					IOAPICDeliveryMode.NonMaskedInterrupt, 35 );
-		IOAPIC.setRedirectionTableEntry(8, LocalAPIC.getLocalAPICId(),
-						IOAPICInterruptType.Unmasked, IOAPICTriggerMode.EdgeTriggered, 
-						IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
-						IOAPICDeliveryMode.NonMaskedInterrupt, 35 );
-		IOAPIC.setRedirectionTableEntry(routingInterrupt, LocalAPIC.getLocalAPICId(),
-						IOAPICInterruptType.Unmasked, IOAPICTriggerMode.LevelTriggered, 
-						IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
-						IOAPICDeliveryMode.ExtINT, 35 );
-		IOAPIC.setRedirectionTableEntry(1, LocalAPIC.getLocalAPICId(),
-						IOAPICInterruptType.Unmasked, IOAPICTriggerMode.EdgeTriggered, 
-						IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
-						IOAPICDeliveryMode.NonMaskedInterrupt, 35 );
+		//IOAPIC.setRedirectionTableEntry(1,10, LocalAPIC.getLocalAPICId(),
+		//			IOAPICInterruptType.Unmasked, IOAPICTriggerMode.EdgeTriggered, 
+		//			IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
+		//			IOAPICDeliveryMode.NonMaskedInterrupt, 35 );
+		//IOAPIC.setRedirectionTableEntry(1,8, LocalAPIC.getLocalAPICId(),
+		//				IOAPICInterruptType.Unmasked, IOAPICTriggerMode.EdgeTriggered, 
+		//				IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
+		//				IOAPICDeliveryMode.NonMaskedInterrupt, 35 );
+		//IOAPIC.setRedirectionTableEntry(1,routingInterrupt, LocalAPIC.getLocalAPICId(),
+		//				IOAPICInterruptType.Unmasked, IOAPICTriggerMode.LevelTriggered, 
+		//				IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
+		//				IOAPICDeliveryMode.ExtINT, 35 );
+		//IOAPIC.setRedirectionTableEntry(1,1, LocalAPIC.getLocalAPICId(),
+		//				IOAPICInterruptType.Unmasked, IOAPICTriggerMode.EdgeTriggered, 
+		//				IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
+		//				IOAPICDeliveryMode.NonMaskedInterrupt, 35 );
 
 
-	//IOAPIC.printTableEntry(routingInterrupt);
+	//IOAPIC.printTableEntry(1,routingInterrupt);
 
 
 
