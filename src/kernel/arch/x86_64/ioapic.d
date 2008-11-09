@@ -5,6 +5,7 @@ import kernel.dev.vga;
 import kernel.arch.x86_64.mp;
 import kernel.arch.x86_64.lapic;
 import kernel.arch.x86_64.vmem;
+import kernel.arch.x86_64.pic;
 
 import kernel.core.error;
 
@@ -106,16 +107,7 @@ struct IOAPIC
 	{	
 		printLogLine("Initializing IO APIC");
 
-		// turn off 8259a		
-		// write 0xFF to ports 0x21, 0xA1
-		asm {
-			"movb $0xff, %%al";
-			"outb %%al, $0x21";		
-		}
-		asm {
-			"movb $0xff, %%al";
-			"outb %%al, $0xA1";		
-		}
+		PIC.disable();
 
 		// redirect 8259a to IOAPIC (precaution)
 		// write 0x70 to port 0x22
