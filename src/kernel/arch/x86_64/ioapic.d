@@ -113,8 +113,8 @@ struct IOAPIC
 	{	
 		printLogLine("Initializing IO APIC");
 
-		//PIC.disable();
-		PIC.enableAll();
+		PIC.disable();
+		//PIC.enableAll();
 
 		// redirect 8259a to IOAPIC (precaution)
 		// write 0x70 to port 0x22
@@ -193,7 +193,7 @@ struct IOAPIC
 
 		foreach(ioentry; ioEntries)
 		{
-			kprintf!("IRQ {} to INT {} in IOAPIC Pin {} .. ")(ioentry.sourceBusIRQ, 35, ioentry.destinationIOAPICIntin);
+			kprintf!("IRQ {} to INT {} in IOAPIC Pin {} .. ")(ioentry.sourceBusIRQ, 33 + ioentry.destinationIOAPICIntin, ioentry.destinationIOAPICIntin);
 			// get trigger mode
 			if (ioentry.el == 0)
 			{

@@ -134,7 +134,8 @@ static:
 		printLogLine("Installing Paging Mechanism");
 		IDT.setCustomHandler(IDT.Type.PageFault, &vMem.pageFaultHandler);
 		// XXX: I want to know when this happens:
-		//IDT.setCustomHandler(IDT.Type.UnknownInterrupt, &ignoreHandler);
+		IDT.setCustomHandler(IDT.Type.UnknownInterrupt, &ignoreHandler);
+
 		printLogSuccess();
 
 		printLogLine("Installing Page Tables");

@@ -87,6 +87,7 @@ void initBIOSRegions(memory_map_t[] mmap)
 
 void mapBIOSRegions()
 {
+	return;
 	vMem.mapRange(global_mem_regions.bios_data.physical_start, 
 				global_mem_regions.bios_data.length, 
 				global_mem_regions.bios_data.virtual_start);

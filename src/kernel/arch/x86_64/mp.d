@@ -216,9 +216,9 @@ public ErrorVal init()
 		tmp = scan(virtualAddress,virtualEnd);
 		if(tmp == null)
 		{
-			virtualAddress = cast(ubyte*)global_mem_regions.extended_bios_data.virtual_start;
+			/*virtualAddress = cast(ubyte*)global_mem_regions.extended_bios_data.virtual_start;
 			virtualEnd = virtualAddress + 0x400;
-			tmp = scan(virtualAddress,virtualEnd);
+			tmp = scan(virtualAddress,virtualEnd);*/
 			if(tmp == null)
 			{
 				printLogFail();

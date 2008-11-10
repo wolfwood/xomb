@@ -153,7 +153,7 @@ extern(C) void kmain(uint magic, uint addr)
 	kprintfln!("")();
 	
 	kprintfln!("Keyboards?")();
-	kbd_init();
+	Keyboard.init();
 
 	kprintfln!("Jumping to User Mode...\n")();
 
