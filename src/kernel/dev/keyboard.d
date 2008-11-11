@@ -29,17 +29,17 @@ void init() {
 	// simply unmask when ready
 
 	// tell the controller we are going to set the command byte	
-	Cpu.ioOut!(byte, "64h")(0x60);    
+	//Cpu.ioOut!(byte, "64h")(0x60);    
 
 	// write the command byte to enable keyboard interrupts
-	Cpu.ioOut!(byte, "60h")(0x01);
+	//Cpu.ioOut!(byte, "60h")(0x01);
 
 	// enable the keyboard (extra precaution?)
-	Cpu.ioOut!(byte, "64h")(0xAE);
+	//Cpu.ioOut!(byte, "64h")(0xAE);
 
-	ubyte status = Cpu.ioIn!(ubyte, "64h")();
+	//ubyte status = Cpu.ioIn!(ubyte, "64h")();
 	
-	kdebugfln!(DEBUG_KBD, "Keyboard - Current Status: {}")(status);
+	//kdebugfln!(DEBUG_KBD, "Keyboard - Current Status: {}")(status);
 
 	// enable the keyboard (alternate???)
 	//Cpu.ioOut!(byte, "60h")(0xF4);
@@ -49,20 +49,20 @@ void init() {
 	//kdebugfln!(DEBUG_KBD, "Keyboard - Current Status: {}")(status);
 
 	// get the command register from the keyboard controller
-	Cpu.ioOut!(ubyte, "64h")(0x20);
-	ubyte command = Cpu.ioIn!(ubyte, "60h")();
+	///Cpu.ioOut!(ubyte, "64h")(0x20);
+	//ubyte command = Cpu.ioIn!(ubyte, "60h")();
 
-	kdebugfln!(DEBUG_KBD, "Keyboard - Command Register: {}")(command);
+	//kdebugfln!(DEBUG_KBD, "Keyboard - Command Register: {}")(command);
 
 	// read P1 (input port)
-	Cpu.ioOut!(ubyte, "64h")(0xC0);
-	ubyte P1 = Cpu.ioIn!(ubyte, "60h")();
-	kdebugfln!(DEBUG_KBD, "Keyboard - P1: {}")(P1);
+	//Cpu.ioOut!(ubyte, "64h")(0xC0);
+	//ubyte P1 = Cpu.ioIn!(ubyte, "60h")();
+	//kdebugfln!(DEBUG_KBD, "Keyboard - P1: {}")(P1);
 
 	// read P2 (output port)
-	Cpu.ioOut!(ubyte, "64h")(0xD0);
-	ubyte P2 = Cpu.ioIn!(ubyte, "60h")();
-	kdebugfln!(DEBUG_KBD, "Keyboard - P2: {}")(P2);
+	//Cpu.ioOut!(ubyte, "64h")(0xD0);
+	//ubyte P2 = Cpu.ioIn!(ubyte, "60h")();
+	//kdebugfln!(DEBUG_KBD, "Keyboard - P2: {}")(P2);
 
 	// schematics of P1
 	// ----------------------
@@ -87,6 +87,7 @@ void init() {
 	// bit 7 - Keyboard Data
 
 	// unmask!
+	PIC.EOI(1);
 	IDT.setCustomHandler(34, &interruptDriver);
 	IOAPIC.unmaskIRQ(1);
 

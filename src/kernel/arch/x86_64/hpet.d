@@ -10,6 +10,7 @@ import kernel.arch.x86_64.init;
 import kernel.arch.x86_64.ioapic;
 import kernel.arch.x86_64.lapic;
 import kernel.arch.x86_64.mp;
+import kernel.arch.x86_64.idt;
 
 // Make mpInformation 
 
@@ -113,7 +114,7 @@ struct HPET
 		//kprintfln!("NUM_TIM_CAP = {}")(hpetDevice.config.NUM_TIM_CAP);
 
 		// initialize the configuration to allow standard IOAPIC interrupts
-		hpetDevice.config.LEG_RT_CNF = 1;
+		//hpetDevice.config.LEG_RT_CNF = 1;
 		//hpetDevice.config.ENABLE_CNF = 0;
 		configVal &= ~(0x3);
 
@@ -143,13 +144,24 @@ struct HPET
 		//Cpu.reset();
 
 		
-		while(hpetDevice.config.mainCounterValue < hpetDevice.config.timers[0].comparatorValue)
-		{
-			kprintfln!("timer counter: {} / {}")(hpetDevice.config.mainCounterValue, hpetDevice.config.timers[0].comparatorValue);
-		}
-		kprintfln!("timer counter: {} / {}")(hpetDevice.config.mainCounterValue, hpetDevice.config.timers[0].comparatorValue);
+		//while(hpetDevice.config.mainCounterValue < hpetDevice.config.timers[0].comparatorValue)
+		//{
+		//	kprintfln!("timer counter: {} / {}")(hpetDevice.config.mainCounterValue, hpetDevice.config.timers[0].comparatorValue);
+		//}
+		//kprintfln!("timer counter: {} / {}")(hpetDevice.config.mainCounterValue, hpetDevice.config.timers[0].comparatorValue);
 	
 		return ErrorVal.Success;
+	}
+
+	// test handler
+	void hpetHandler(interrupt_stack* s)
+	{
+		kprintfln!("HPET fired: {} {}",false)(hpetDevice.config.mainCounterValue, hpetDevice.config.timers[0].comparatorValue);
+
+		// acknowledge the interrupt
+		LocalAPIC.EOI();
+
+		// we could set another timer fire here
 	}
 	
 	// the function to start and equip a non-periodic timer
@@ -157,9 +169,13 @@ struct HPET
 	{
 		ulong* hpetTimerReg = cast(ulong*)( hpetDevice.virtHPETAddress + 0x100 + (0x20 * index));
 
-		//disable!
-		//hpetDevice.config.timers[index].INT_ENB_CNF = 0;
-		volatile *hpetTimerReg &= ~0x4UL;
+		IDT.setCustomHandler(36, &hpetHandler);
+
+		// disable!
+		hpetDevice.config.timers[index].INT_ENB_CNF = 0;
+		
+		// ack any outstanding interrupt?
+		hpetDevice.config.interruptStatus |= (1 << index);
 		
 		// update to femptoseconds
 		nanoSecondInterval *= 1000000;
@@ -167,9 +183,9 @@ struct HPET
 		ulong timerVal;
 
 		// write 0 to reservei
-		//hpetDevice.timers[index].Reserved1 = 0;
-		//hpetDevice.timers[index].Reserved2 = 0;
-		//hpetDevice.timers[index].Reserved3 = 0;
+		hpetDevice.config.timers[index].Reserved1 = 0;
+		hpetDevice.config.timers[index].Reserved2 = 0;
+		hpetDevice.config.timers[index].Reserved3 = 0;
 
 		// we want a 64-bit timer
 
@@ -192,59 +208,30 @@ struct HPET
 		// So the idea here is that we're going to put 'er in
 		// to physical mode here and send the apic ID of the first
 		// local apic.  Just to test...  we should probably fix this later.
-		//kprintfln!("HPET LocalAPICID Destination Field: {}")(MP.mpInformation.processors[0].localAPICID);
 		
 		//kprintfln!("3")();
-		//IOAPIC.setRedirectionTableEntry(1,10, LocalAPIC.getLocalAPICId(),
-		//			IOAPICInterruptType.Unmasked, IOAPICTriggerMode.EdgeTriggered, 
-		//			IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
-		//			IOAPICDeliveryMode.NonMaskedInterrupt, 35 );
-		//IOAPIC.setRedirectionTableEntry(1,8, LocalAPIC.getLocalAPICId(),
-		//				IOAPICInterruptType.Unmasked, IOAPICTriggerMode.EdgeTriggered, 
-		//				IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
-		//				IOAPICDeliveryMode.NonMaskedInterrupt, 35 );
-		//IOAPIC.setRedirectionTableEntry(1,routingInterrupt, LocalAPIC.getLocalAPICId(),
-		//				IOAPICInterruptType.Unmasked, IOAPICTriggerMode.LevelTriggered, 
-		//				IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
-		//				IOAPICDeliveryMode.ExtINT, 35 );
-		//IOAPIC.setRedirectionTableEntry(1,1, LocalAPIC.getLocalAPICId(),
-		//				IOAPICInterruptType.Unmasked, IOAPICTriggerMode.EdgeTriggered, 
-		//				IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
-		//				IOAPICDeliveryMode.NonMaskedInterrupt, 35 );
+		IOAPIC.setRedirectionTableEntry(1,routingInterrupt, LocalAPIC.getLocalAPICId(),
+					IOAPICInterruptType.Unmasked, IOAPICTriggerMode.EdgeTriggered, 
+					IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
+					IOAPICDeliveryMode.Fixed, 36 );
 
+		if (hpetDevice.config.timers[index].SIZE_CAP == 0)
+		{
+			kprintfln!("Computer does not support 64 bit HPET.")();
+		}
 
-	//IOAPIC.printTableEntry(1,routingInterrupt);
-
-
-
-		//if (hpetDevice.config.timers[index].SIZE_CAP == 0)
-		//{/
-		//	kprintfln!("Computer does not support 64 bit HPET.")();
-		//}
-		//kprintfln!("2")();
-		//hpetDevice.config.timers[index].MODE_CNF = 0;
-		volatile *hpetTimerReg &= ~(1UL << 8UL);
-		//kprintfln!("3")();
-		//hpetDevice.config.timers[index].FSB_EN_CNF = 0;
-		volatile *hpetTimerReg &= ~(1UL << 14UL);
-		//kprintfln!("4")();
+		hpetDevice.config.timers[index].MODE_CNF = 0;
+		hpetDevice.config.timers[index].FSB_EN_CNF = 0;
 		// we want a non-periodic timer (one-shot!)
-		//hpetDevice.config.timers[index].TYPE_CNF = 0;
-		volatile *hpetTimerReg &= ~(1UL << 3UL);
-		//kprintfln!("5")();
+		hpetDevice.config.timers[index].TYPE_CNF = 0;
 	
 		// we want edge-triggered interrupts
 		// do we?  Brian says no, and set it to level
-		// Wilkie says it makes this crash.
+		// Wilkie says it makes this crash.  And he wants to know why!
 		//hpetDevice.config.timers[index].INT_TYPE_CNF = 1;
-		timerVal |= (1 << 1);
-		//kprintfln!("6")();
 		
-		// we want to route to interrupt 'index + 1'
-		//hpetDevice.config.timers[index].INT_ROUTE_CNF = routingInterrupt; //index + 1
-		volatile *hpetTimerReg |= (cast(ulong)routingInterrupt << 9UL);
-		timerVal |= (1 << 9);
-		//kprintfln!("7")();
+		// we want to route to a good interrupt pin
+		hpetDevice.config.timers[index].INT_ROUTE_CNF = routingInterrupt;
 
 		// TODO: change this to a debug
 		//kprintfln!("counter updates by = {} for {}ns")(nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD, nanoSecondInterval / 1000000);
@@ -267,16 +254,11 @@ struct HPET
 		curcounter += factor;
 	
 		//kprintfln!("5")();
-		//hpetDevice.config.timers[index].comparatorValue = hpetDevice.config.mainCounterValue + factor;
-		ulong* hpetTimerCounter = cast(ulong*)(hpetDevice.virtHPETAddress + 0x108 + (0x20 * index));
-		volatile *hpetTimerCounter = 7000000;
+		hpetDevice.config.timers[index].comparatorValue = hpetDevice.config.mainCounterValue + 100;
 
-		//kprintfln!("6")();
 		// we now want to enable the timer
-		//hpetDevice.config.timers[index].configurationAndCap = timerVal;
 		
-		//volatile *hpetTimerReg |= 0x2;
-		volatile *hpetTimerReg |= 0x4;
+		hpetDevice.config.timers[index].INT_ENB_CNF = 1;
 		
 
 	}
