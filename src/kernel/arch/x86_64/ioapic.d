@@ -19,54 +19,8 @@ enum IOAPICRegister{
 	IOAPICID,
 	IOAPICVER,
 	IOAPICARB,
-	IOREDTBL0HI = 0x10,
-	IOREDTBL0LO,
-	IOREDTBL1HI,
-	IOREDTBL1LO,
-	IOREDTBL2HI,
-	IOREDTBL2LO,
-	IOREDTBL3HI,
-	IOREDTBL3LO,
-	IOREDTBL4HI,
-	IOREDTBL4LO,
-	IOREDTBL5HI,
-	IOREDTBL5LO,
-	IOREDTBL6HI,
-	IOREDTBL6LO,
-	IOREDTBL7HI,
-    	IOREDTBL7LO,
-	IOREDTBL8HI,
-    	IOREDTBL8LO,
-	IOREDTBL9HI,        
-	IOREDTBL9LO,
-	IOREDTBL10HI,
-   	IOREDTBL10LO,
-	IOREDTBL11HI,
-	IOREDTBL11LO,
-	IOREDTBL12HI,
-	IOREDTBL12LO,
-	IOREDTBL13HI,
-	IOREDTBL13LO,
-	IOREDTBL14HI,
-	IOREDTBL14LO,
-	IOREDTBL15HI,
-	IOREDTBL15LO,
-	IOREDTBL16HI,
-	IOREDTBL16LO,
-	IOREDTBL17HI,
-	IOREDTBL17LO,
-	IOREDTBL18HI,
-	IOREDTBL18LO,
-	IOREDTBL19HI,
-	IOREDTBL19LO,
-	IOREDTBL20HI,
-	IOREDTBL20LO,
-	IOREDTBL21HI,
-	IOREDTBL21LO,
-	IOREDTBL22HI,
-	IOREDTBL22LO,
-	IOREDTBL23HI,
-	IOREDTBL23LO
+	IOREDTBL0LO = 0x10,
+	IOREDTBL0HI,
 }
 
 enum IOAPICDestinationMode{
@@ -289,6 +243,33 @@ struct IOAPIC
 
 	void setRedirectionTableEntriesFromACPI(entryInterruptSourceOverride*[] ioEntries, entryNMISource*[] nmiSources)
 	{
+		// the ACPI tables, unlike the MP tables, show only the differences to a 1-1 mapping
+		// of ISA irqs (hence, overrides)
+
+		// So, set the first interrupts to a 1-1 mapping
+		for(int i=0; i<16; i++)
+		{
+			ubyte curIOAPICID = ACPI.getIOAPICIDFromGSI(i);
+
+			setRedirectionTableEntry(curIOAPICID, i, 
+				// destination
+				0xFF,
+				// interrupt type
+				IOAPICInterruptType.Masked,
+				// trigger mode (edge, level)
+				IOAPICTriggerMode.EdgeTriggered, // trigMode,
+				// pin polarity
+				IOAPICInputPinPolarity.HighActive, // intPolarity,
+				// destination mode
+				IOAPICDestinationMode.Logical,
+				// delivery mode
+				IOAPICDeliveryMode.Fixed, // intType,
+				// vector
+				cast(ubyte)(33 + i)
+			);
+
+		}
+
 		IOAPICTriggerMode trigMode;
 		IOAPICInterruptType intMasked = IOAPICInterruptType.Unmasked;
 		IOAPICInputPinPolarity intPolarity;
@@ -356,7 +337,7 @@ struct IOAPIC
 				// vector
 				cast(ubyte)(33 + ioentry.globalSystemInterrupt)
 			);
-		}
+	}
 
 		foreach(ioentry; nmiSources)
 		{

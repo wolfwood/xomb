@@ -200,8 +200,8 @@ struct LocalAPIC
 		apicRegisters.destinationFormat = 0xFFFFFFFF;
 
 		// enable extINT, NMI interrupts
-		apicRegisters.lint0LocalVectorTable = 0x08700; //extINT
-		apicRegisters.lint1LocalVectorTable = 0x00400; //NMI
+		//apicRegisters.lint0LocalVectorTable = 0x08700; //extINT
+		//apicRegisters.lint1LocalVectorTable = 0x00400; //NMI
 
 		// set task priority register (to not block any interrupts)
 		apicRegisters.taskPriority = 0x0;		
@@ -213,10 +213,10 @@ struct LocalAPIC
 		// enable extINT, NMI interrupts (by setting to unmasked, bit 16 = 1)
 	
 		// LINT0 : ExtINT, Edge Triggered (0x008700 for Level)
-		apicRegisters.lint0LocalVectorTable = 0x00700; //extINT
+		apicRegisters.lint0LocalVectorTable = 0x00722; //extINT
 
 		// LINT1 : NMI (Non-Masked Interrupts)
-		apicRegisters.lint1LocalVectorTable = 0x00400; //NMI
+		apicRegisters.lint1LocalVectorTable = 0x00422; //NMI
 
 		kprintfln!("DFR: {x} LDR: {x}")(apicRegisters.destinationFormat, apicRegisters.logicalDestination);
 	}

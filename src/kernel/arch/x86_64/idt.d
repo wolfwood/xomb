@@ -355,6 +355,7 @@ extern(C) void fault_handler(interrupt_stack* r)
 		kprintfln!("Unknown exception {}.", false)(r.int_no);
 	}
 
+	for(;;){}
 	asm{hlt;}
 }
 

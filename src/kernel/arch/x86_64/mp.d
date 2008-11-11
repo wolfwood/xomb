@@ -366,8 +366,6 @@ private ErrorVal initConfigurationTable()
 		}
 	}
 
-	for (;;) {}
-
 	return ErrorVal.Success;
 }
 
