@@ -23,6 +23,9 @@ void init() {
 	//								IOAPICDeliveryMode.ExtINT,
 	//									35);
 
+	// already done, IO APIC has this irq mapped...
+	// simply unmask when ready
+
 	// tell the controller we are going to set the command byte	
 	Cpu.ioOut!(byte, "64h")(0x60);    
 
@@ -80,6 +83,9 @@ void init() {
 	// bit 5 - IRQ 12 (0: active, 1: inactive)	// commonly Mouse IRQ
 	// bit 6 - Keyboard Clock
 	// bit 7 - Keyboard Data
+
+	// unmask!
+	IOAPIC.unmaskIRQ(1);
 
 	// write to P2
 	// NOTE: a write with bit 0 set to 0 WILL RESET THE CPU!!

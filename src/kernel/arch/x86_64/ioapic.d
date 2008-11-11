@@ -56,6 +56,10 @@ struct IOAPIC
 {
 	static:
 
+	// stores which IO APIC pin a particular IRQ is connected
+	uint irqToPin[16] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+	uint irqToIOAPIC[16] = [0];
+
 	// all possible virtual addresses for io apics
 	// indexed by the IO APIC ID
 	// (assuming only 16 can exist)
@@ -107,7 +111,7 @@ struct IOAPIC
 
 		ubyte apicID;
 		getIOApicID(ioAPICID, apicID);
-		kprintfln!("IO APIC ID: {}")(apicID);
+		//kprintfln!("IO APIC ID: {}")(apicID);
 
 
 		// print IO APIC Table
@@ -157,7 +161,11 @@ struct IOAPIC
 
 		foreach(ioentry; ioEntries)
 		{
-			kprintf!("IRQ {} to INT {} in IOAPIC Pin {} .. ")(ioentry.sourceBusIRQ, 33 + ioentry.destinationIOAPICIntin, ioentry.destinationIOAPICIntin);
+			//kprintf!("IRQ {} to INT {} in IOAPIC Pin {} .. ")(ioentry.sourceBusIRQ, 33 + ioentry.destinationIOAPICIntin, ioentry.destinationIOAPICIntin);
+
+			irqToPin[ioentry.sourceBusIRQ] = ioentry.destinationIOAPICIntin;
+			irqToPin[ioentry.sourceBusIRQ] = ioentry.destinationIOAPICID;
+
 			// get trigger mode
 			if (ioentry.el == 0)
 			{
@@ -226,7 +234,7 @@ struct IOAPIC
 				// destination
 				0xFF,
 				// interrupt type
-				IOAPICInterruptType.Unmasked,
+				IOAPICInterruptType.Masked,
 				// trigger mode (edge, level)
 				IOAPICTriggerMode.EdgeTriggered, // trigMode,
 				// pin polarity
@@ -250,6 +258,10 @@ struct IOAPIC
 		for(int i=0; i<16; i++)
 		{
 			ubyte curIOAPICID = ACPI.getIOAPICIDFromGSI(i);
+			ubyte curIOAPICPin = ACPI.getIOAPICPinFromGSI(i);
+
+			irqToPin[i] = curIOAPICPin;
+			irqToIOAPIC[i] = curIOAPICID;
 
 			setRedirectionTableEntry(curIOAPICID, i, 
 				// destination
@@ -277,7 +289,8 @@ struct IOAPIC
 
 		foreach(ioentry; ioEntries)
 		{
-			kprintf!("IRQ {} to INT {} in IOAPIC Pin {} .. ")(ioentry.source, 33 + ioentry.globalSystemInterrupt, ioentry.globalSystemInterrupt);
+			//kprintf!("IRQ {} to INT {} in IOAPIC Pin {} .. ")(ioentry.source, 33 + ioentry.globalSystemInterrupt, ioentry.globalSystemInterrupt);
+
 			// get trigger mode
 			if (ioentry.el == 0) {
 				// depends on the bus type (this is stupid, but ok)
@@ -318,14 +331,18 @@ struct IOAPIC
 			intType = IOAPICDeliveryMode.ExtINT;
 
 			ubyte destIOAPICID = ACPI.getIOAPICIDFromGSI(ioentry.globalSystemInterrupt);
-			
+			ubyte destIOAPICPin = ACPI.getIOAPICPinFromGSI(ioentry.globalSystemInterrupt);
+		
+			irqToPin[ioentry.source] = destIOAPICPin;
+			irqToIOAPIC[ioentry.source] = destIOAPICID;
+
 			// XXX: set to hardcoded values... uncomment to match
 			// TODO: have values for 'bus conformity' ... I'd say just steal the linux values for this
-			setRedirectionTableEntry(destIOAPICID, ioentry.globalSystemInterrupt, 
+			setRedirectionTableEntry(destIOAPICID, destIOAPICPin, 
 				// destination
 				0xFF,
 				// interrupt type
-				IOAPICInterruptType.Unmasked,
+				IOAPICInterruptType.Masked,
 				// trigger mode (edge, level)
 				IOAPICTriggerMode.EdgeTriggered, // trigMode,
 				// pin polarity
@@ -341,7 +358,7 @@ struct IOAPIC
 
 		foreach(ioentry; nmiSources)
 		{
-			kprintf!("IOAPIC Pin {} (NMI) .. ")(ioentry.globalSystemInterrupt);
+			//kprintf!("IOAPIC Pin {} (NMI) .. ")(ioentry.globalSystemInterrupt);
 			// get trigger mode
 			if (ioentry.el == 0) {
 				// depends on the bus type (this is stupid, but ok)
@@ -389,7 +406,7 @@ struct IOAPIC
 				// destination
 				0xFF,
 				// interrupt type
-				IOAPICInterruptType.Unmasked,
+				IOAPICInterruptType.Masked,
 				// trigger mode (edge, level)
 				IOAPICTriggerMode.EdgeTriggered, // trigMode,
 				// pin polarity
@@ -469,6 +486,36 @@ struct IOAPIC
 		writeRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), valuelo);
 	}
 
+	void unmaskRedirectionTableEntry(uint ioApicID, uint registerIndex)
+	{
+		uint lo;
+		
+		// read former entry values
+		readRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), lo);
+
+		// set the value necessary
+		// reset bit 0 of the hi word
+		lo &= ~(1 << 16);
+
+		// write it back
+		writeRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), lo);
+	}
+
+	void maskRedirectionTableEntry(uint ioApicID, uint registerIndex)
+	{
+		uint lo;
+
+		// read former entry values
+		readRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), lo);
+	
+		// set the value necessary
+		// reset bit 0 of the hi word
+		lo |= (1 << 16);
+
+		// write it back
+		writeRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), lo);
+	}
+
 	//Prints the information in the redirect table entries
 	void printTableEntry(uint ioApicID, uint tableEntry) 
 	{
@@ -504,9 +551,16 @@ struct IOAPIC
 		kdebugfln!(DEBUG_IOAPIC, "Interrupt Mask: {}")(whole & 0x1);
 		whole >>= 40;
 		kdebugfln!(DEBUG_IOAPIC, "Destination Field: {}")(whole & 0xFF);
-	 
-       }
+	}
 
+	void unmaskIRQ(uint irq)
+	{
+		unmaskRedirectionTableEntry(irqToIOAPIC[irq], irqToPin[irq]);		
+	}
 
+	void maskIRQ(uint irq)
+	{
+		maskRedirectionTableEntry(irqToIOAPIC[irq], irqToPin[irq]);
+	}
   
 }

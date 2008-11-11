@@ -299,7 +299,7 @@ static:
 			return ErrorVal.Fail;
 		}
 
-		printStruct(*ptrMADT);
+		//printStruct(*ptrMADT);
 
 		// read the MADT
 		readMADT();
@@ -518,5 +518,25 @@ static:
 		}
 
 		return 0xFF; // an invalid id, means failure
+	}
+	
+	ubyte getIOAPICPinFromGSI(uint gsi)
+	{
+		foreach(ioapic; acpiMPInformation.IOAPICs)
+		{
+			if (gsi < ioapic.globalSystemInterruptBase)
+			{
+				continue;
+			}
+				
+			ubyte apicVer, apicMax;	
+			IOAPIC.getIOApicVersion(ioapic.IOAPICID, apicVer, apicMax);
+			if (gsi < ioapic.globalSystemInterruptBase + apicMax + 1)
+			{
+				return gsi - ioapic.globalSystemInterruptBase;
+			}
+		}
+
+		return gsi;
 	}
 }
