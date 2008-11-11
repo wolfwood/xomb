@@ -218,7 +218,7 @@ struct LocalAPIC
 		// LINT1 : NMI (Non-Masked Interrupts)
 		apicRegisters.lint1LocalVectorTable = 0x00422; //NMI
 
-		kprintfln!("DFR: {x} LDR: {x}")(apicRegisters.destinationFormat, apicRegisters.logicalDestination);
+		//kprintfln!("DFR: {x} LDR: {x}")(apicRegisters.destinationFormat, apicRegisters.logicalDestination);
 	}
 
 	kmutex apLock;
@@ -243,6 +243,11 @@ struct LocalAPIC
 		
 		apicRegisters.tmrLocalVectorTable = timerValue;
 		apicRegisters.tmrInitialCount = 1000;
+	}
+
+	void EOI()
+	{
+		apicRegisters.EOI = 0;
 	}
 
 	void timerProc(interrupt_stack* s)
@@ -448,7 +453,7 @@ extern (C) void apEntry()
 void apExec()
 {
 	//kprintfln!("EXEC")();
-	LocalAPIC.sendIPI(35, LocalAPIC.DeliveryMode.LowestPriority, true, 0, 0x1);
+	//LocalAPIC.sendIPI(35, LocalAPIC.DeliveryMode.LowestPriority, true, 0, 0x1);
 	
 	printLogSuccess();
 

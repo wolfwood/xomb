@@ -3,6 +3,8 @@ module kernel.dev.keyboard;
 import kernel.arch.x86_64.init;
 import kernel.arch.x86_64.ioapic;
 import kernel.arch.x86_64.pic;
+import kernel.arch.x86_64.idt;
+import kernel.arch.x86_64.lapic;
 
 import kernel.dev.vga;
 
@@ -85,23 +87,38 @@ void init() {
 	// bit 7 - Keyboard Data
 
 	// unmask!
+	IDT.setCustomHandler(34, &interruptDriver);
 	IOAPIC.unmaskIRQ(1);
 
 	// write to P2
 	// NOTE: a write with bit 0 set to 0 WILL RESET THE CPU!!
-	ubyte newP2 = (1 << 0) | (1 << 4) | (1 << 1); // do not reset CPU, keep Gate-A20 enabled (sigh), and assert IRQ1
-	Cpu.ioOut!(ubyte, "64h")(0xD1);
-	Cpu.ioOut!(ubyte, "60h")(newP2);
+	//ubyte newP2 = (1 << 0) | (1 << 4) | (1 << 1); // do not reset CPU, keep Gate-A20 enabled (sigh), and assert IRQ1
+	//Cpu.ioOut!(ubyte, "64h")(0xD1);
+	//Cpu.ioOut!(ubyte, "60h")(newP2);
 
-	Cpu.ioOut!(ubyte, "64h")(0xD0);
-	P2 = Cpu.ioIn!(ubyte, "60h")();
-	kdebugfln!(DEBUG_KBD, "Keyboard - P2 (after activating IRQ1): {}")(P2);
+	//Cpu.ioOut!(ubyte, "64h")(0xD0);
+	//P2 = Cpu.ioIn!(ubyte, "60h")();
+	//kdebugfln!(DEBUG_KBD, "Keyboard - P2 (after activating IRQ1): {}")(P2);
 
+	// no more! we have intarups!
+	//pollingDriver();
 
-	pollingDriver();
+	// we still need to flush the buffer though
+	//common()
 }
 
 static bool keyState[256];
+
+bool upState = false;
+
+// an interrupt driven approach
+void interruptDriver(interrupt_stack*s)
+{
+	common();
+
+	PIC.EOI(1);
+	LocalAPIC.EOI();		
+}
 
 // a polling keyboard driver
 void pollingDriver()
@@ -111,50 +128,59 @@ void pollingDriver()
 	// when this is true, we can interpret what is in this buffer
 
 	ubyte status;
-	ubyte data;
 
-	// set scan code
+	// set scan code set (set 3)
 	Cpu.ioOut!(ubyte, "64h")(0xF0);
 	status = Cpu.ioIn!(ubyte, "60h")();
 	Cpu.ioOut!(ubyte, "60h")(0x03);
 	status = Cpu.ioIn!(ubyte, "60h")();
 
-	bool upState = false;
-
 	for(;;) {
-		status = Cpu.ioIn!(ubyte, "64h")();
 
-		if (status & 0x1)
-		{
-			// (THIS IS WHERE AN INTERRUPT WOULD FIRE)
-
-			// output buffer full
-			data = Cpu.ioIn!(ubyte, "60h")();
-
-			if (data == 0xf0)
-			{
-				// it is an up code
-				upState = true;
-			}
-			else
-			{
-				keyState[data] = !upState;
-				ubyte translated = translateScancode(data);
-
-				if (translated != 0 && !upState)
-				{
-					// printable character
-					kprintf!("{}")(cast(char)translated);
-				}
-				if (upState) {
-				//kprintf!("{} = {}")(data, 0);
-				} else {
-				//kprintf!("{} = {}")(data, 1);
-				}
-				upState = false;
-			}
-		}				
+		common();
+	
 	}
+}
+
+private void common()
+{
+	kprintf!("int", false)();
+
+	//for (;;) 
+	{
+		ubyte status = Cpu.ioIn!(ubyte, "64h")();
+
+		//if (!(status & 0x1)) { break; }
+
+		// output buffer full
+		ubyte data = Cpu.ioIn!(ubyte, "60h")();
+
+		//if (data == 0x0) { break; }
+
+		if (data == 0xf0)
+		{
+			// it is an up code
+			upState = true;
+		}
+		else
+		{
+			keyState[data] = !upState;
+			ubyte translated = translateScancode(data);
+	
+			if (translated != 0 && !upState)
+			{
+				// printable character
+				kprintf!("{}", false)(cast(char)translated);
+			}
+			if (upState) {
+			//kprintf!("{} = {}")(data, 0);
+			} else {
+			//kprintf!("{} = {}")(data, 1);
+			}	
+			upState = false;
+		}
+	}
+	kprintf!("iret",false)();
 }
 
 ubyte translate[256] = 

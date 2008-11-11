@@ -65,4 +65,19 @@ static:
 		}
 	}
 
+	void EOI(uint irq)
+	{
+		if (irq < 8)
+		{
+			// Pic Master
+			Cpu.ioOut!(ubyte, "20h")(0x20);
+		}
+		else
+		{
+			// Pic Slave
+			Cpu.ioOut!(ubyte, "20h")(0x20);
+			Cpu.ioOut!(ubyte, "A0h")(0x20);
+		}
+	}
+
 }

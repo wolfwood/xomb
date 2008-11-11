@@ -164,7 +164,7 @@ struct IOAPIC
 			//kprintf!("IRQ {} to INT {} in IOAPIC Pin {} .. ")(ioentry.sourceBusIRQ, 33 + ioentry.destinationIOAPICIntin, ioentry.destinationIOAPICIntin);
 
 			irqToPin[ioentry.sourceBusIRQ] = ioentry.destinationIOAPICIntin;
-			irqToPin[ioentry.sourceBusIRQ] = ioentry.destinationIOAPICID;
+			irqToIOAPIC[ioentry.sourceBusIRQ] = ioentry.destinationIOAPICID;
 
 			// get trigger mode
 			if (ioentry.el == 0)
