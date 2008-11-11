@@ -6,6 +6,8 @@ import kernel.arch.x86_64.mp;
 import kernel.arch.x86_64.lapic;
 import kernel.arch.x86_64.vmem;
 import kernel.arch.x86_64.pic;
+import kernel.arch.x86_64.init;
+import kernel.arch.x86_64.acpi;
 
 import kernel.core.error;
 
@@ -109,23 +111,23 @@ struct IOAPIC
 	uint* ioApicRegisterSelect[16];
 	uint* ioApicWindowRegister[16];
 
-	void init(ioAPICEntry* ioApicEntry)
+	void init(ubyte ioAPICID, void* ioAPICAddress, bool hasIMCR)
 	{	
 		printLogLine("Initializing IO APIC");
 
 		PIC.disable();
 		//PIC.enableAll();
 
-		// redirect 8259a to IOAPIC (precaution)
-		// write 0x70 to port 0x22
-		// write 0x01 to port 0x23
-		asm {
-			"movb $0x70, %%al";
-			"outb %%al, $0x22";		
-		}
-		asm {
-			"movb $0x01, %%al";
-			"outb %%al, $0x23";
+		// disable PIC Mode via IMCR (if necessary)
+
+		// check MP table for bit 7 of feature byte 2
+		// this determines presence of IMCR
+		if (hasIMCR) 
+		{
+			// write 0x70 to port 0x22
+			// write 0x01 to port 0x23
+			Cpu.ioOut!(ubyte, "22h")(0x70);
+			Cpu.ioOut!(ubyte, "23h")(0x01);
 		}
 
 		// map IOAPIC region
@@ -133,36 +135,36 @@ struct IOAPIC
 
 		// this function will set IOAPICVirtAddr to the virtual address of the bios region
 		if (vMem.mapRange(
-			cast(ubyte*)ioApicEntry.ioAPICAddress,
+			cast(ubyte*)ioAPICAddress,
 			4096,
 			IOAPICVirtAddr) != ErrorVal.Success)
 		{
 			return;
 		}
 
-		ioApicRegisterSelect[ioApicEntry.ioAPICID] = cast(uint*)(IOAPICVirtAddr);
-		ioApicWindowRegister[ioApicEntry.ioAPICID] = cast(uint*)(IOAPICVirtAddr + 0x10);
+		ioApicRegisterSelect[ioAPICID] = cast(uint*)(IOAPICVirtAddr);
+		ioApicWindowRegister[ioAPICID] = cast(uint*)(IOAPICVirtAddr + 0x10);
 
 		ubyte apicVersion, maxRedirectionEntry;
-		getIOApicVersion(ioApicEntry.ioAPICID, apicVersion, maxRedirectionEntry);
+		getIOApicVersion(ioAPICID, apicVersion, maxRedirectionEntry);
 		kdebugfln!(DEBUG_IOAPIC,"IO Ver: 0x{x} MaxRedirectEntry: 0x{x}")(apicVersion, maxRedirectionEntry);
 
-		setIOApicID(ioApicEntry.ioAPICID, ioApicEntry.ioAPICID);
+		setIOApicID(ioAPICID, 15);
 
 		ubyte apicID;
-		getIOApicID(ioApicEntry.ioAPICID, apicID);
+		getIOApicID(ioAPICID, apicID);
 		kprintfln!("IO APIC ID: {}")(apicID);
 
 
 		// print IO APIC Table
 		// for each redirection entry
 
-		uint valuehi;
+		/*uint valuehi;
 		uint valuelo;
 		for (int i = 0; i < 0 * maxRedirectionEntry; i++)
 		{
-			readRegister(ioApicEntry.ioAPICID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0HI + (i*2)), valuehi);
-			readRegister(ioApicEntry.ioAPICID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (i*2)), valuelo);
+			readRegister(ioAPICID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0HI + (i*2)), valuehi);
+			readRegister(ioAPICID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (i*2)), valuelo);
 		
 			// get delivery mode
 			valuelo >>= 8;
@@ -171,16 +173,24 @@ struct IOAPIC
 			int type = valuelo & 0x01;	
 
 			kprintfln!("PIN: {} DMODE: {x} TYPE: {x}")(i, dmode, type);
-		}
+		}*/
 
 		printLogSuccess();
 	}
 
-	void initFromMP(ioAPICEntry*[] ioApics)
+	void initFromMP(ioAPICEntry*[] ioApics, bool hasIMCR)
 	{
 		foreach(ioapic; ioApics)
 		{
-			init(ioapic);
+			init(ioapic.ioAPICID, cast(ubyte*)ioapic.ioAPICAddress, hasIMCR);
+		}
+	}
+
+	void initFromACPI(entryIOAPIC*[] ioApics, bool hasIMCR)
+	{
+		foreach(ioapic; ioApics)
+		{
+			init(ioapic.IOAPICID, cast(ubyte*)ioapic.IOAPICAddr, hasIMCR);
 		}
 	}
 
@@ -273,6 +283,142 @@ struct IOAPIC
 				IOAPICDeliveryMode.Fixed, // intType,
 				// vector
 				cast(ubyte)(33 + ioentry.destinationIOAPICIntin)
+			);
+		}
+	}
+
+	void setRedirectionTableEntriesFromACPI(entryInterruptSourceOverride*[] ioEntries, entryNMISource*[] nmiSources)
+	{
+		IOAPICTriggerMode trigMode;
+		IOAPICInterruptType intMasked = IOAPICInterruptType.Unmasked;
+		IOAPICInputPinPolarity intPolarity;
+		IOAPICDeliveryMode intType;
+
+		foreach(ioentry; ioEntries)
+		{
+			kprintf!("IRQ {} to INT {} in IOAPIC Pin {} .. ")(ioentry.source, 33 + ioentry.globalSystemInterrupt, ioentry.globalSystemInterrupt);
+			// get trigger mode
+			if (ioentry.el == 0) {
+				// depends on the bus type (this is stupid, but ok)
+				trigMode = IOAPICTriggerMode.EdgeTriggered;
+			}			
+			else if (ioentry.el == 1) {
+				// edge triggered
+				trigMode = IOAPICTriggerMode.EdgeTriggered;
+			}
+			else if (ioentry.el == 3) {			
+				// level triggered
+				trigMode = IOAPICTriggerMode.LevelTriggered;
+			}
+			else {			
+				// invalid, undefined
+				trigMode = IOAPICTriggerMode.EdgeTriggered;
+			}
+
+			//get polarity
+			if (ioentry.po == 0) {			
+				// depends on bus type
+				intPolarity = IOAPICInputPinPolarity.HighActive;
+			}
+			else if (ioentry.po == 1) {			
+				// active high
+				intPolarity = IOAPICInputPinPolarity.HighActive;
+			}
+			else if (ioentry.po == 3) {			
+				// active low
+				intPolarity = IOAPICInputPinPolarity.LowActive;
+			}
+			else {			
+				// invalid, undefined
+				intPolarity = IOAPICInputPinPolarity.HighActive;
+			}
+
+			// interpret type			
+			intType = IOAPICDeliveryMode.ExtINT;
+
+			ubyte destIOAPICID = ACPI.getIOAPICIDFromGSI(ioentry.globalSystemInterrupt);
+			
+			// XXX: set to hardcoded values... uncomment to match
+			// TODO: have values for 'bus conformity' ... I'd say just steal the linux values for this
+			setRedirectionTableEntry(destIOAPICID, ioentry.globalSystemInterrupt, 
+				// destination
+				0xFF,
+				// interrupt type
+				IOAPICInterruptType.Unmasked,
+				// trigger mode (edge, level)
+				IOAPICTriggerMode.EdgeTriggered, // trigMode,
+				// pin polarity
+				IOAPICInputPinPolarity.HighActive, // intPolarity,
+				// destination mode
+				IOAPICDestinationMode.Logical,
+				// delivery mode
+				IOAPICDeliveryMode.Fixed, // intType,
+				// vector
+				cast(ubyte)(33 + ioentry.globalSystemInterrupt)
+			);
+		}
+
+		foreach(ioentry; nmiSources)
+		{
+			kprintf!("IOAPIC Pin {} (NMI) .. ")(ioentry.globalSystemInterrupt);
+			// get trigger mode
+			if (ioentry.el == 0) {
+				// depends on the bus type (this is stupid, but ok)
+				trigMode = IOAPICTriggerMode.EdgeTriggered;
+			}			
+			else if (ioentry.el == 1) {
+				// edge triggered
+				trigMode = IOAPICTriggerMode.EdgeTriggered;
+			}
+			else if (ioentry.el == 3) {			
+				// level triggered
+				trigMode = IOAPICTriggerMode.LevelTriggered;
+			}
+			else {			
+				// invalid, undefined
+				trigMode = IOAPICTriggerMode.EdgeTriggered;
+			}
+
+			//get polarity
+			if (ioentry.po == 0) {			
+				// depends on bus type
+				intPolarity = IOAPICInputPinPolarity.HighActive;
+			}
+			else if (ioentry.po == 1) {			
+				// active high
+				intPolarity = IOAPICInputPinPolarity.HighActive;
+			}
+			else if (ioentry.po == 3) {			
+				// active low
+				intPolarity = IOAPICInputPinPolarity.LowActive;
+			}
+			else {			
+				// invalid, undefined
+				intPolarity = IOAPICInputPinPolarity.HighActive;
+			}
+
+			// interpret type			
+			intType = IOAPICDeliveryMode.NonMaskedInterrupt;
+
+			ubyte destIOAPICID = ACPI.getIOAPICIDFromGSI(ioentry.globalSystemInterrupt);
+			
+			// XXX: set to hardcoded values... uncomment to match
+			// TODO: have values for 'bus conformity' ... I'd say just steal the linux values for this
+			setRedirectionTableEntry(destIOAPICID, ioentry.globalSystemInterrupt, 
+				// destination
+				0xFF,
+				// interrupt type
+				IOAPICInterruptType.Unmasked,
+				// trigger mode (edge, level)
+				IOAPICTriggerMode.EdgeTriggered, // trigMode,
+				// pin polarity
+				IOAPICInputPinPolarity.HighActive, // intPolarity,
+				// destination mode
+				IOAPICDestinationMode.Logical,
+				// delivery mode
+				IOAPICDeliveryMode.Fixed, // intType,
+				// vector
+				cast(ubyte)(33 + ioentry.globalSystemInterrupt)
 			);
 		}
 	}

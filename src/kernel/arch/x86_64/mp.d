@@ -159,7 +159,6 @@ align(1) struct compatibilityBusAddressSpaceModifierEntry {
 // this is exposed to the kernel
 struct mpBase {
 	mpFloatingPointer* pointerTable;
-	apicRegisterSpace* apicRegisters;
 	mpConfigurationTable* configTable;
 	uint processor_count;
 	processorEntry*[maxProcessorEntries] processors;
@@ -275,6 +274,8 @@ private ErrorVal initConfigurationTable()
 
 	int lastState = 0;
 
+	kdebugfln!(DEBUG_MPTABLE, "MP TABLE: # entries: {}")(mpInformation.configTable.entryCount);
+
 	for (uint i=0; i< mpInformation.configTable.entryCount; i++)
 	{		
 		if (lastState > cast(int)(*curAddr))
@@ -300,6 +301,7 @@ private ErrorVal initConfigurationTable()
 				{
 					mpInformation.busses[mpInformation.bus_count] = cast(busEntry*)curAddr;
 					mpInformation.bus_count++;
+					kdebugfln!(DEBUG_MPTABLE, "bus entry: {}")(mpInformation.bus_count);
 				}
 				curAddr += busEntry.sizeof;
 				break;
@@ -319,7 +321,7 @@ private ErrorVal initConfigurationTable()
 					mpInformation.ioInterrupts[mpInformation.ioInterrupt_count] = cast(ioInterruptEntry*)curAddr;
 					//printStruct(*mpInformation.ioInterrupts[mpInformation.ioInterrupt_count]);
 					mpInformation.ioInterrupt_count++;
-					//kprintfln!("io int: {}")(mpInformation.ioInterrupt_count);
+					kdebugfln!(DEBUG_MPTABLE, "io int: {}")(mpInformation.ioInterrupt_count);
 				}
 				curAddr += ioInterruptEntry.sizeof;
 				break;
@@ -327,9 +329,9 @@ private ErrorVal initConfigurationTable()
 				if (mpInformation.localInterrupt_count != maxLocalInterruptEntries)
 				{
 					mpInformation.localInterrupts[mpInformation.localInterrupt_count] = cast(localInterruptEntry*)curAddr;
-					//printStruct(*mpInformation.localInterrupts[mpInformation.localInterrupt_count]);
+					printStruct(*mpInformation.localInterrupts[mpInformation.localInterrupt_count]);
 					mpInformation.localInterrupt_count++;
-					kdebugfln!(DEBUG_MPTABLE, "local int: {}")(mpInformation.localInterrupt_count);
+					kdebugfln!(true | DEBUG_MPTABLE, "local int: {}")(mpInformation.localInterrupt_count);
 				}
 				curAddr += localInterruptEntry.sizeof;
 				break;
@@ -359,9 +361,12 @@ private ErrorVal initConfigurationTable()
 				break;
 			default:
 				// WTF
+				kprintfln!("Unknown Table Entry: {}")(*curAddr);
 				break;
 		}
 	}
+
+	for (;;) {}
 
 	return ErrorVal.Success;
 }
@@ -393,14 +398,19 @@ private mpFloatingPointer* scan(ubyte* start, ubyte* end)
 
 public void initIOAPIC()
 {
-	IOAPIC.initFromMP(mpInformation.ioApics[0..mpInformation.ioAPIC_count]);
+	bool hasIMCR;
+	hasIMCR = ((mpInformation.pointerTable.mpFeatures2 & 0x80) != 0);
+
+	IOAPIC.initFromMP(mpInformation.ioApics[0..mpInformation.ioAPIC_count], hasIMCR);
 	IOAPIC.setRedirectionTableEntriesFromMP(mpInformation.ioInterrupts[0..mpInformation.ioInterrupt_count]);
 }
 
 public void initAPIC()
 {
 	// start up application processors and APIC bus
-	LocalAPIC.init();
+	LocalAPIC.init(cast(void*)mpInformation.configTable.addressOfLocalAPIC);
+
+	LocalAPIC.startAPsFromMP(mpInformation.processors[0..mpInformation.processor_count]);
 }
 
 private bool isChecksumValid(ubyte* startAddr, uint length)

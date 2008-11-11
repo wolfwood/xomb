@@ -42,6 +42,13 @@ void initBIOSRegions(memory_map_t[] mmap)
 {
 	foreach(int z, map; mmap)
 	{
+		if (map.type == 1)
+		{
+			// indicates ram
+			// ignore? pMem takes care of it?
+			continue;
+		}
+
 		// For sanity...
 		ulong base_addr = map.base_addr_high << 32;
 		base_addr += map.base_addr_low;
@@ -83,6 +90,11 @@ void initBIOSRegions(memory_map_t[] mmap)
 		}
 
 	}
+
+	// Do not trust the multiboot?
+	ushort physStartEBDA = *(cast(ushort*)0x40E);
+	global_mem_regions.extended_bios_data.physical_start = cast(ubyte*)((cast(ulong)physStartEBDA) << 4);
+	global_mem_regions.extended_bios_data.length = 4096;
 }
 
 void mapBIOSRegions()

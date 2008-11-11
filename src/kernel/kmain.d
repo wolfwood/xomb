@@ -34,7 +34,7 @@ import kernel.core.util;
 import multiboot = kernel.core.multiboot;
 
 import kernel.arch.x86_64.mp;
-
+import kernel.arch.x86_64.acpi;
 import kernel.arch.x86_64.hpet;
 
 /**
@@ -129,15 +129,30 @@ extern(C) void kmain(uint magic, uint addr)
 	{
 		printLogFail();	
 	}
-	
-	// initialize multiprocessor information
-	MP.init();
 
-	// initialize IO APIC
-	MP.initIOAPIC();
+	if (ACPI.init() == ErrorVal.Success)
+	{
+		// use ACPI Tables
+
+		// initialize IO APICs
+		ACPI.initIOAPIC();
+
+		// initialize Local APICs
+		ACPI.initAPIC();
+	}
+	else
+	{
+		// fall back on the MP tables
 	
-	// initialize Local APIC
-	MP.initAPIC();
+		// initialize multiprocessor information
+		MP.init();
+
+		// initialize IO APICs
+		MP.initIOAPIC();
+	
+		// initialize Local APICs
+		MP.initAPIC();
+	}
 	
 	printLogLine("Initializing HPET");
 	if (HPET.init() == ErrorVal.Success)
