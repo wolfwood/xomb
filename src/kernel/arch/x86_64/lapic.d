@@ -212,7 +212,7 @@ struct LocalAPIC
 	
 		// enable extINT, NMI interrupts (by setting to unmasked, bit 16 = 1)
 	
-		// LINT0 : ExtINT, Level Triggered
+		// LINT0 : ExtINT, Edge Triggered (0x008700 for Level)
 		apicRegisters.lint0LocalVectorTable = 0x00700; //extINT
 
 		// LINT1 : NMI (Non-Masked Interrupts)
