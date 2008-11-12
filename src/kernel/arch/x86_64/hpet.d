@@ -103,53 +103,22 @@ struct HPET
 
 		hpetDevice.virtHPETAddress = virtHPETAddy;
 
-		kprintfln!("A")();
-	
 		// resolve the address to the configuration table
 		hpetDevice.config = cast(hpetConfig*)virtHPETAddy;
 		
-		ulong configVal = hpetDevice.config.configuration;
-		
-		kprintfln!("B")();
 		//kprintfln!("NUM_TIM_CAP = {}")(hpetDevice.config.NUM_TIM_CAP);
 
 		// initialize the configuration to allow standard IOAPIC interrupts
 		//hpetDevice.config.LEG_RT_CNF = 1;
-		//hpetDevice.config.ENABLE_CNF = 0;
-		configVal &= ~(0x3);
+		hpetDevice.config.ENABLE_CNF = 1; // enable counter?
 
-		//kprintfln!("C")();
 		hpetDevice.config.mainCounterValue = 0;
-		//kprintfln!("D")();
-
-		// resolve the array of timers
-		//hpetDevice.timers = (cast(timerInfo*)virtHPETAddy+hpetConfig.sizeof)[0..hpetDevice.config.NUM_TIM_CAP];
 	
-		//printStruct(hpetDevice);
-		//kprintfln!("E")();
 		initTimer(0, 1000000);
 		
 
 		kprintfln!("timer counter: {} / {}")(hpetDevice.config.mainCounterValue, hpetDevice.config.timers[0].comparatorValue);
-
-		//hpetDevice.config.ENABLE_CNF = 1;
-		//hpetDevice.config |= 1;
-		configVal |= 1;
-		//kprintfln!("config: {}")(configVal);
-		hpetDevice.config.configuration = configVal;
-		//kprintfln!("config: {}")(hpetDevice.config.configuration);
-	
-		// XXX: enable keyboard interrupt
-
-		//Cpu.reset();
-
 		
-		//while(hpetDevice.config.mainCounterValue < hpetDevice.config.timers[0].comparatorValue)
-		//{
-		//	kprintfln!("timer counter: {} / {}")(hpetDevice.config.mainCounterValue, hpetDevice.config.timers[0].comparatorValue);
-		//}
-		//kprintfln!("timer counter: {} / {}")(hpetDevice.config.mainCounterValue, hpetDevice.config.timers[0].comparatorValue);
-	
 		return ErrorVal.Success;
 	}
 
@@ -162,6 +131,7 @@ struct HPET
 		LocalAPIC.EOI();
 
 		// we could set another timer fire here
+		initTimer(0, 1000000);
 	}
 	
 	// the function to start and equip a non-periodic timer
@@ -250,15 +220,16 @@ struct HPET
 		// update to the new value
 		// overflow of main counter will not matter
 		ulong factor = (nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD);
-		kprintfln!("factor: {}")(factor);
+		//kprintfln!("factor: {}")(factor);
 		curcounter += factor;
 	
 		//kprintfln!("5")();
-		hpetDevice.config.timers[index].comparatorValue = hpetDevice.config.mainCounterValue + 100;
+		hpetDevice.config.timers[index].comparatorValue = curcounter;
 
 		// we now want to enable the timer
-		
+		//hpetDevice.config.timers[index].INT_TYPE_CNF = 1;
 		hpetDevice.config.timers[index].INT_ENB_CNF = 1;
+		//hpetDevice.config.timers[index].INT_TYPE_CNF = 1;
 		
 
 	}

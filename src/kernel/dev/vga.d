@@ -370,7 +370,7 @@ static:
 
 		/// Go through everything in memory and copy it the proper amount
 		/// to increase the number of lines on the screen.
-		for(; cury < Lines - numlines; cury++)
+		for(; cury <= Lines - numlines; cury++)
 		{
 			for(int curx = 0; curx < Columns; curx++)
 			{
@@ -381,7 +381,7 @@ static:
 			offset1 += Columns;
 		}
 
-		for(; cury < Lines; cury++)
+		for(; cury <= Lines; cury++)
 		{
 			for(int curx = 0; curx < Columns; curx++)
 			{
