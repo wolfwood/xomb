@@ -129,14 +129,14 @@ struct HPET
 
 	// test handler
 	void hpetHandler(interrupt_stack* s)
-	{
-		kprintfln!("HPET fired: {} {}",false)(hpetDevice.config.mainCounterValue, hpetDevice.config.timers[0].comparatorValue);
+	{			
+		kprintfln!("!",false)();
 
 		// acknowledge the interrupt
 		LocalAPIC.EOI();
 
 		// we could set another timer fire here
-		initTimer(0, 1000000000000);
+		resetTimer(0, 1000000000000);
 	}
 	
 	// the function to start and equip a non-periodic timer
@@ -157,7 +157,7 @@ struct HPET
 
 		ulong timerVal;
 
-		// write 0 to reservei
+		// write 0 to reserve
 		hpetDevice.config.timers[index].Reserved1 = 0;
 		hpetDevice.config.timers[index].Reserved2 = 0;
 		hpetDevice.config.timers[index].Reserved3 = 0;
@@ -185,10 +185,18 @@ struct HPET
 		// local apic.  Just to test...  we should probably fix this later.
 		
 		//kprintfln!("3")();
-		IOAPIC.setRedirectionTableEntry(1,routingInterrupt, LocalAPIC.getLocalAPICId(),
-					IOAPICInterruptType.Unmasked, IOAPICTriggerMode.EdgeTriggered, 
-					IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
-					IOAPICDeliveryMode.Fixed, 36 );
+		///IOAPIC.setRedirectionTableEntry(1,routingInterrupt, LocalAPIC.getLocalAPICId(),
+		//			IOAPICInterruptType.Unmasked, IOAPICTriggerMode.EdgeTriggered, 
+		//			IOAPICInputPinPolarity.HighActive, IOAPICDestinationMode.Physical,
+		//			IOAPICDeliveryMode.Fixed, 36 );
+
+		kprintfln!("(supposed) ID: {} PIN: {}")(1, routingInterrupt);
+
+		// ioapic pin = routingInterrupt, vector 36, edge triggered, highactive
+		IOAPIC.setPin(routingInterrupt, 36, false, true);
+
+		// unmask the ioapic
+		IOAPIC.unmaskPin(routingInterrupt);
 
 		if (hpetDevice.config.timers[index].SIZE_CAP == 0)
 		{
@@ -243,7 +251,7 @@ struct HPET
 	void resetTimer(uint index, ulong nanoSecondInterval)
 	{
 		// update to femptoseconds
-		nanoSecondInterval *= 1000000;
+		nanoSecondInterval *= 1000;
 
 		// halt timer
 		hpetDevice.config.timers[index].INT_ENB_CNF = 0;
@@ -254,6 +262,8 @@ struct HPET
 		// update to the new value
 		// overflow of main counter will not matter
 		curcounter += (nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD);
+
+		hpetDevice.config.timers[index].comparatorValue = curcounter;
 
 		// we now want to enable the timer interrupt
 		hpetDevice.config.timers[index].INT_ENB_CNF = 1;

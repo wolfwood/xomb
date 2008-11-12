@@ -28,21 +28,36 @@ void init() {
 	// already done, IO APIC has this irq mapped...
 	// simply unmask when ready
 
+	ubyte ack;
+
 	// tell the controller we are going to set the command byte	
-	//Cpu.ioOut!(byte, "64h")(0x60);    
+	Cpu.ioOut!(byte, "64h")(0x60);
+
+	// get ack?
+	ack = Cpu.ioIn!(ubyte, "60h")();   
+	kprintfln!("ack? {x}")(ack);
 
 	// write the command byte to enable keyboard interrupts
-	//Cpu.ioOut!(byte, "60h")(0x01);
+	Cpu.ioOut!(byte, "60h")(0x01);
+
+	// get ack?
+	ack = Cpu.ioIn!(ubyte, "60h")();
+	kprintfln!("ack? {x}")(ack);
 
 	// enable the keyboard (extra precaution?)
-	//Cpu.ioOut!(byte, "64h")(0xAE);
+	Cpu.ioOut!(byte, "64h")(0xAE);
+
+	ack = Cpu.ioIn!(ubyte, "60h")();
+	kprintfln!("ack? {x}")(ack);
 
 	//ubyte status = Cpu.ioIn!(ubyte, "64h")();
 	
 	//kdebugfln!(DEBUG_KBD, "Keyboard - Current Status: {}")(status);
 
 	// enable the keyboard (alternate???)
-	//Cpu.ioOut!(byte, "60h")(0xF4);
+	Cpu.ioOut!(byte, "60h")(0xF4);
+	ack = Cpu.ioIn!(ubyte, "60h")();
+	kprintfln!("ack? {x}")(ack);
 
 	//status = Cpu.ioIn!(ubyte, "64h")();
 
@@ -138,18 +153,22 @@ void pollingDriver()
 
 	for(;;) {
 
-		common();
+		status = Cpu.ioIn!(ubyte, "64h")();
+
+		if (status  & 0x1) { 
+			common();
+		}
 	
 	}
 }
 
 private void common()
 {
-	kprintf!("int", false)();
+//	kprintf!("int", false)();
 
 	//for (;;) 
 	{
-		ubyte status = Cpu.ioIn!(ubyte, "64h")();
+		//ubyte status = Cpu.ioIn!(ubyte, "64h")();
 
 		//if (!(status & 0x1)) { break; }
 
@@ -181,7 +200,7 @@ private void common()
 			upState = false;
 		}
 	}
-	kprintf!("iret",false)();
+//	kprintf!("iret",false)();
 }
 
 ubyte translate[256] = 

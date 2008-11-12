@@ -60,6 +60,9 @@ struct IOAPIC
 	uint irqToPin[16] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
 	uint irqToIOAPIC[16] = [0];
 
+	uint pinToIOAPIC[256] = [0];
+	uint numPins = 0;
+
 	// all possible virtual addresses for io apics
 	// indexed by the IO APIC ID
 	// (assuming only 16 can exist)
@@ -68,7 +71,10 @@ struct IOAPIC
 
 	uint* ioApicRegisterSelect[16];
 	uint* ioApicWindowRegister[16];
+	uint ioApicStartingPin[16]; // the starting pin index of the ioapic
 
+	// we assume we set up io apics in order!
+	// the first io apic to get called gets pin 0 .. pin maxRedirEnt (inclusive)
 	void init(ubyte ioAPICID, void* ioAPICAddress, bool hasIMCR)
 	{	
 		printLogLine("Initializing IO APIC");
@@ -106,6 +112,15 @@ struct IOAPIC
 		ubyte apicVersion, maxRedirectionEntry;
 		getIOApicVersion(ioAPICID, apicVersion, maxRedirectionEntry);
 		kdebugfln!(DEBUG_IOAPIC,"IO Ver: 0x{x} MaxRedirectEntry: 0x{x}")(apicVersion, maxRedirectionEntry);
+
+		maxRedirectionEntry++;
+
+		ioApicStartingPin[ioAPICID] = numPins;
+		for(int i = 0; i < maxRedirectionEntry; i++)
+		{
+			pinToIOAPIC[i + numPins] = ioAPICID;
+		}
+		numPins += maxRedirectionEntry;
 
 		setIOApicID(ioAPICID, 15);
 
@@ -150,6 +165,71 @@ struct IOAPIC
 		{
 			init(ioapic.IOAPICID, cast(ubyte*)ioapic.IOAPICAddr, hasIMCR);
 		}
+	}
+
+	// will set the redirection table entry and mask the pin.
+	// you will need to unmask the pin again
+	ErrorVal setPin(uint pin, uint vector, bool levelTriggered, bool highActive)
+	{
+		if (pin >= numPins) 
+		{
+			// error: no pin available
+			return ErrorVal.Fail;	
+		}	
+
+		uint IOAPICID = pinToIOAPIC[pin];
+		uint IOAPICPin = pin - ioApicStartingPin[IOAPICID];
+
+		setRedirectionTableEntry(IOAPICID, IOAPICPin, 
+			// give the destination field
+			LocalAPIC.getLocalAPICId(),
+			// interrupt type
+			IOAPICInterruptType.Masked,
+			// trigger mode
+			IOAPICTriggerMode.EdgeTriggered, //(levelTriggered ? IOAPICTriggerMode.LevelTriggered : IOAPICTriggerMode.EdgeTriggered),
+			// polarity
+			IOAPICInputPinPolarity.HighActive, //(highActive ? IOAPICInputPinPolarity.HighActive : IOAPICInputPinPolarity.LowActive ),
+			// destination mode
+			IOAPICDestinationMode.Physical,
+			// delivery mode
+			IOAPICDeliveryMode.Fixed,
+			// interrupt vector
+			vector
+		);
+
+		return ErrorVal.Success;
+	}
+
+	ErrorVal maskPin(uint pin)
+	{
+		if (pin >= numPins)
+		{
+			// error: no pin available
+			return ErrorVal.Fail;
+		}
+
+		uint IOAPICID = pinToIOAPIC[pin]; 
+		uint IOAPICPin = pin - ioApicStartingPin[IOAPICID];
+
+		maskRedirectionTableEntry(IOAPICID, IOAPICPin);
+
+		return ErrorVal.Success;
+	}
+
+	ErrorVal unmaskPin(uint pin)
+	{
+		if (pin >= numPins)
+		{
+			// error: no pin available
+			return ErrorVal.Fail;
+		}
+
+		uint IOAPICID = pinToIOAPIC[pin]; 
+		uint IOAPICPin = pin - ioApicStartingPin[IOAPICID];
+
+		unmaskRedirectionTableEntry(IOAPICID, IOAPICPin);
+
+		return ErrorVal.Success;
 	}
 
 	void setRedirectionTableEntriesFromMP(ioInterruptEntry*[] ioEntries)
@@ -421,13 +501,13 @@ struct IOAPIC
 		}
 	}
 
-	void readRegister (uint ioApicID, IOAPICRegister reg, out uint value){
+	private void readRegister (uint ioApicID, IOAPICRegister reg, out uint value){
 		volatile *(ioApicRegisterSelect[ioApicID]) = cast(uint)reg;
 		value = *(ioApicWindowRegister[ioApicID]);
 	}
 
 
-	void writeRegister (uint ioApicID, IOAPICRegister reg, in uint value){
+	private void writeRegister (uint ioApicID, IOAPICRegister reg, in uint value){
 		volatile *(ioApicRegisterSelect[ioApicID]) = cast(uint)reg;
 		volatile *(ioApicWindowRegister[ioApicID]) = value;
 	}
@@ -450,7 +530,7 @@ struct IOAPIC
 		apicID = cast(ubyte)value;
 	}
 
-	void setIOApicID(uint ioApicID, ubyte apicID)
+	private void setIOApicID(uint ioApicID, ubyte apicID)
 	{
 		uint value;
 		value = cast(uint)apicID << 24;
@@ -458,7 +538,7 @@ struct IOAPIC
 		writeRegister(ioApicID, IOAPICRegister.IOAPICID, value);
 	}
 
-	void setRedirectionTableEntry (uint ioApicID, uint registerIndex,
+	private void setRedirectionTableEntry (uint ioApicID, uint registerIndex,
 		ubyte destinationField,
 		IOAPICInterruptType intType,
 		IOAPICTriggerMode triggerMode,
@@ -486,7 +566,7 @@ struct IOAPIC
 		writeRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), valuelo);
 	}
 
-	void unmaskRedirectionTableEntry(uint ioApicID, uint registerIndex)
+	private void unmaskRedirectionTableEntry(uint ioApicID, uint registerIndex)
 	{
 		uint lo;
 		
@@ -501,7 +581,7 @@ struct IOAPIC
 		writeRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), lo);
 	}
 
-	void maskRedirectionTableEntry(uint ioApicID, uint registerIndex)
+	private void maskRedirectionTableEntry(uint ioApicID, uint registerIndex)
 	{
 		uint lo;
 
@@ -517,7 +597,7 @@ struct IOAPIC
 	}
 
 	//Prints the information in the redirect table entries
-	void printTableEntry(uint ioApicID, uint tableEntry) 
+	private void printTableEntry(uint ioApicID, uint tableEntry) 
 	{
 		// Values that will be filled by readRegister
 		uint hi, lo;
@@ -553,14 +633,22 @@ struct IOAPIC
 		kdebugfln!(DEBUG_IOAPIC, "Destination Field: {}")(whole & 0xFF);
 	}
 
-	void unmaskIRQ(uint irq)
+	ErrorVal unmaskIRQ(uint irq)
 	{
-		unmaskRedirectionTableEntry(irqToIOAPIC[irq], irqToPin[irq]);		
+		// no good... no irqs above 15
+		if (irq > 15) { return ErrorVal.Fail; }
+	
+		unmaskRedirectionTableEntry(irqToIOAPIC[irq], irqToPin[irq]);
+		return ErrorVal.Success;
 	}
 
-	void maskIRQ(uint irq)
+	ErrorVal maskIRQ(uint irq)
 	{
+		// no good... no irqs above 15
+		if (irq > 15) { return ErrorVal.Fail; }
+
 		maskRedirectionTableEntry(irqToIOAPIC[irq], irqToPin[irq]);
+		return ErrorVal.Success;
 	}
   
 }

@@ -178,7 +178,20 @@ extern(C) void kmain(uint magic, uint addr)
 	{
 		// Jump to user mode.
 		"movq $testUser, %%rcx" ::: "rcx";
-		"movq $0, %%r11" ::: "r11";
+
+		// r11 contains the EFLAGS
+		// the EFLAGS will be set upon the sysretq
+		// we used to push $0 (but that disables interrupts!!!)
+
+		// we could push the current EFLAGS to r11
+		//"pushf";
+		//"pop %%r11";
+
+		// but for now, let's just enable interrupts
+		// beware of the IOPL flag! (figure 2-4, section 2-13 of System Guide A Intel)
+		// http://en.wikipedia.org/wiki/FLAGS_register_(computing)
+
+		"movq $(1 << 9), %%r11" ::: "r11";
 		"sysretq";
 	}
 
@@ -189,6 +202,11 @@ import user.syscall;
 
 extern(C) void testUser()
 {
+	//Cpu.enableInterrupts();
+	//asm {
+	//	sti;
+	//}//
+		
 	for(;;){}
 	kprintfln!("In User Mode.")();
 // 
