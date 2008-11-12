@@ -170,6 +170,8 @@ extern(C) void kmain(uint magic, uint addr)
 	kprintfln!("Keyboards?")();
 	Keyboard.init();
 
+	//for (;;) {}
+
 	kprintfln!("Jumping to User Mode...\n")();
 
 	asm
@@ -187,6 +189,7 @@ import user.syscall;
 
 extern(C) void testUser()
 {
+	for(;;){}
 	kprintfln!("In User Mode.")();
 // 
 // 	auto ptr = cast(long*)0x1000;

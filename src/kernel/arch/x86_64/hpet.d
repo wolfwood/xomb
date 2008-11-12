@@ -119,7 +119,7 @@ struct HPET
 
 		hpetDevice.config.mainCounterValue = 0;
 	
-		initTimer(0, 1000000);
+		initTimer(0, 1000000000000);
 		
 
 		kprintfln!("timer counter: {} / {}")(hpetDevice.config.mainCounterValue, hpetDevice.config.timers[0].comparatorValue);
@@ -136,7 +136,7 @@ struct HPET
 		LocalAPIC.EOI();
 
 		// we could set another timer fire here
-		initTimer(0, 1000000);
+		initTimer(0, 1000000000000);
 	}
 	
 	// the function to start and equip a non-periodic timer
@@ -153,7 +153,7 @@ struct HPET
 		hpetDevice.config.interruptStatus |= (1 << index);
 		
 		// update to femptoseconds
-		nanoSecondInterval *= 1000000;
+		nanoSecondInterval *= 1000;
 
 		ulong timerVal;
 
