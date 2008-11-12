@@ -93,7 +93,7 @@ pml3[] kernel_mapping;
 		// This ulong will contain the address of the section of memory being faulted on
 		void* addr;
 		// This is the dirty asm that gets the address for us...
-		asm { "mov %%cr2, %%rax" ::: "rax"; "movq %%rax, %0" :: "m" addr; }
+		//asm { "mov %%cr2, %%rax" ::: "rax"; "movq %%rax, %0" :: "m" addr; }
 		// And this is a print to show us whats going on
 
 		// Page fault error code is as follows (page 225 of AMD System docs):
@@ -214,6 +214,7 @@ pml3[] kernel_mapping;
 			for(int z = 0; z < 512 && i >= 0; z++, i--) {
 				pageLevel1[z].pml1e = addr;
 				pageLevel1[z].pml1e |= 0x87;
+				//pageLevel1[z].us = 1;
 				addr += 4096;
 			}
 		}

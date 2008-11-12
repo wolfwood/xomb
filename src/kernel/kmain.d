@@ -191,7 +191,7 @@ extern(C) void kmain(uint magic, uint addr)
 		// beware of the IOPL flag! (figure 2-4, section 2-13 of System Guide A Intel)
 		// http://en.wikipedia.org/wiki/FLAGS_register_(computing)
 
-		"movq $(1 << 9), %%r11" ::: "r11";
+		"movq $((1 << 9) | (3 << 12)), %%r11" ::: "r11";
 		"sysretq";
 	}
 
@@ -207,7 +207,7 @@ extern(C) void testUser()
 	//	sti;
 	//}//
 		
-	for(;;){}
+	//for(;;){}
 	kprintfln!("In User Mode.")();
 // 
 // 	auto ptr = cast(long*)0x1000;
@@ -223,6 +223,8 @@ extern(C) void testUser()
 // 		kprintfln!("Page allocation failed..")();
 
 	user.syscall.exit(0);
+
+	for(;;) {}
 
 	while(true)
 	{

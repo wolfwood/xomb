@@ -136,7 +136,7 @@ struct HPET
 		LocalAPIC.EOI();
 
 		// we could set another timer fire here
-		resetTimer(0, 1000000000000);
+		//resetTimer(0, 1000000000000);
 	}
 	
 	// the function to start and equip a non-periodic timer
