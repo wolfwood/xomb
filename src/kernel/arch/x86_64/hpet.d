@@ -89,6 +89,11 @@ struct HPET
 	//initialize out HPET timer
 	ErrorVal init()
 	{
+		//This shuts off the PIT since its started by grub
+		Cpu.ioOut!(byte,"43h")(0x30);
+		Cpu.ioOut!(byte,"40h")(0x00);
+		Cpu.ioOut!(byte,"40h")(0x00);
+
 		// get the virtual address of the HPET within the BIOS device map region
 		ubyte* virtHPETAddy = global_mem_regions.device_maps.virtual_start + (hpetDevice.physHPETAddress - global_mem_regions.device_maps.physical_start);
 		if(virtHPETAddy > (global_mem_regions.device_maps.virtual_start + global_mem_regions.device_maps.length))
