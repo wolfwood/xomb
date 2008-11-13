@@ -191,6 +191,8 @@ extern(C) void kmain(uint magic, uint addr)
 		// http://en.wikipedia.org/wiki/FLAGS_register_(computing)
 
 		"movq $((1 << 9) | (3 << 12)), %%r11" ::: "r11";
+		//"movq $(3 << 12), %%r11" ::: "r11";
+		//"movq $0, %%r11" ::: "r11";
 		"sysretq";
 	}
 
@@ -211,7 +213,7 @@ extern(C) void testUser()
 
 	kprintfln!("")();
 	Console.setColors(Color.Yellow, Color.Black);
-	kprintf!("You")();
+	kprintf!(" You")();
 	Console.setColors(Color.White, Color.Black);
 	kprintf!(" : ")();
 	Console.setColors(Color.HighBlue, Color.Black);
@@ -258,7 +260,7 @@ void charProc(char chr)
 		Console.setColors(Color.HighGreen, Color.Black);
 		kprintfln!("*drools*\n")();
 		Console.setColors(Color.Yellow, Color.Black);
-		kprintf!("You")();
+		kprintf!(" You")();
 		Console.setColors(Color.White, Color.Black);
 		kprintf!(" : ")();
 		Console.setColors(Color.HighBlue, Color.Black);

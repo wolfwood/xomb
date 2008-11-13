@@ -21,6 +21,32 @@ void setHandler(void* h)
 {
 	// TODO: USE MSR ROUTINES IN kernel.arch.x86_64.init TO SET THESE!!!
 
+
+	// STAR (MSR: 0xC0000081)
+	// [0..31]	: Target EIP address	: During SYSCALL, this is copied into EIP if we were 
+	//									:   in 32 bit mode
+	// [32..47]	: CS, SS Base (CALL)	: During SYSCALL, the contents of this field are copied to 
+	//									:   the CS register, and the SS register (plus 1000b)
+	// [48..63]	: CS, SS Base (RET)		: Ditto, except during SYSRET
+
+	// WHAT DOES THIS MEAN?
+	// - SYSRET will set CS (the current code segment) to point to the selector given + 16
+	// - This entry better be the code segment
+	// - Selectors are given as the ((selector index into GDT) << 3) | (RPL)
+	// - RPL: The ring it will change to.  For SYSRET, this would be 3, SYSCALL, 0
+	// - SYSRET will set SS (the current stack segment) to the value of CS + 8
+	// - This entry better be the data segment
+	// - This means you have a DataSegment followed by a CodeSegment in your GDT
+	// - You point to the entry BEFORE the DataSegment
+
+	// LSTAR (MSR: 0xC0000082)
+	// - simply holds the RIP of the syscall handler
+
+	// SFMASK (MSR: 0xC0000084)
+	// [0..31]	: SYSCALL Flag Mask		: Will reset bits in RFLAGS.  
+	//									: If a bit is 1 here, it will reset the bit in RFLAGS.
+	//									: If the bit is 0, nothing will happen 
+
 	const ulong STAR_MSR = 0xc000_0081;
 	const ulong LSTAR_MSR = 0xc000_0082;
 	const ulong SFMASK_MSR = 0xc000_0084;

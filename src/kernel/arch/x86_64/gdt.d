@@ -61,10 +61,10 @@ A struct that represents a code segment descriptor in 64-bit mode.
 */
 align(1) struct CodeSegDesc64
 {
-	uint zero0 = 0;
+	uint zero0 = 0x0000ffff;
 	ubyte zero1 = 0;
-	ubyte flags1 = 0b0001_1000;
-	ubyte flags2;
+	ubyte flags1 = 0b11111101;
+	ubyte flags2 = 0;//0xaf;
 	ubyte zero2 = 0;
 
 	mixin(Bitfield!(flags1, "zero3", 2, "c", 1, "ones0", 2, "dpl", 2, "p", 1));
@@ -78,12 +78,13 @@ A struct that represents a data segment descriptor in 64-bit mode.
 */
 align(1) struct DataSegDesc64
 {
-	uint zero0 = 0;
+	uint zero0 = 0x0000ffff;
 	ubyte zero1 = 0;
-	ubyte flags = 0b0001_0000;
-	ushort zero2 = 0;
+	ubyte flags = 0b11110011;
+	ubyte zero2 = 0xcf;
+	ubyte zero3 = 0;
 
-	mixin(Bitfield!(flags, "zero3", 5, "dpl", 2, "p", 1));
+	mixin(Bitfield!(flags, "zero4", 5, "dpl", 2, "p", 1));
 }
 
 static assert(DataSegDesc64.sizeof == 8);
