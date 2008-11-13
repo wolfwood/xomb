@@ -109,36 +109,32 @@ pml3[] kernel_mapping;
 		if((ir_stack.err_code & 1) == 0) 
 		{
 			kdebugfln!(DEBUG_PAGEFAULTS, "Error due to page not present!")();
-
-			if((ir_stack.err_code & 2) != 0)
-			{
-				kdebugfln!(DEBUG_PAGEFAULTS, "Error due to write fault.")();
-			}
-			else
-			{
-				kdebugfln!(DEBUG_PAGEFAULTS, "Error due to read fault.")();
-			}
-
-			if((ir_stack.err_code & 4) != 0)
-			{
-				kdebugfln!(DEBUG_PAGEFAULTS, "Error occurred in usermode.")();
-				// In this case we need to send a signal to the libOS handler
-			}
-			else
-			{
-				kdebugfln!(DEBUG_PAGEFAULTS, "Error occurred in supervised mode.")();
-				// In this case we're super concerned and need to handle the fault
-			}
-
-			if((ir_stack.err_code & 8) != 0)
-			{
-				kdebugfln!(DEBUG_PAGEFAULTS, "Tried to read from a reserved field in PTE!")();
-			}
-
-			if((ir_stack.err_code & 16) != 0)
-			{
-				kdebugfln!(DEBUG_PAGEFAULTS, "Instruction fetch error!")();
-			}
+		}
+		if((ir_stack.err_code & 2) != 0)
+		{
+			kdebugfln!(DEBUG_PAGEFAULTS, "Error due to write fault.")();
+		}
+		else
+		{
+			kdebugfln!(DEBUG_PAGEFAULTS, "Error due to read fault.")();
+		}
+		if((ir_stack.err_code & 4) != 0)
+		{
+			kdebugfln!(DEBUG_PAGEFAULTS, "Error occurred in usermode.")();
+			// In this case we need to send a signal to the libOS handler
+		}
+		else
+		{
+			kdebugfln!(DEBUG_PAGEFAULTS, "Error occurred in supervised mode.")();
+			// In this case we're super concerned and need to handle the fault
+		}
+		if((ir_stack.err_code & 8) != 0)
+		{
+			kdebugfln!(DEBUG_PAGEFAULTS, "Tried to read from a reserved field in PTE!")();
+		}
+		if((ir_stack.err_code & 16) != 0)
+		{
+			kdebugfln!(DEBUG_PAGEFAULTS, "Instruction fetch error!")();
 		}
 	}
 
@@ -356,7 +352,7 @@ pml3[] kernel_mapping;
 		long pml_index1;
 
 		// get the initial page table entry to set, allocating page tables as necessary
-		allocateKernelPageEntries(virtualRangeStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+		allocateUserPageEntries(virtualRangeStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
 
 		//retrievePageEntries(virtualRangeStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
 

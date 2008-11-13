@@ -14,6 +14,17 @@ struct Keyboard {
 
 static:
 
+void function(ubyte code) downFunc;
+void function(ubyte code) upFunc;
+void function(char chr) charFunc;
+
+void mapFunctions(void function(ubyte) downProc, void function(ubyte) upProc, void function(char) charProc)
+{
+	downFunc = downProc;
+	upFunc = upProc;
+	charFunc = charProc;
+}
+
 void init() {
 
 	//PIC.enableIRQ(1);
@@ -34,21 +45,30 @@ void init() {
 	Cpu.ioOut!(byte, "64h")(0x60);
 
 	// get ack?
-	ack = Cpu.ioIn!(ubyte, "60h")();   
-	kprintfln!("ack? {x}")(ack);
+	ack = 0;
+	while (ack != 0xFA)
+	{
+		ack = Cpu.ioIn!(ubyte, "60h")();   
+	}
 
 	// write the command byte to enable keyboard interrupts
 	Cpu.ioOut!(byte, "60h")(0x01);
 
 	// get ack?
-	ack = Cpu.ioIn!(ubyte, "60h")();
-	kprintfln!("ack? {x}")(ack);
+	ack = 0;
+	while(ack != 0xFA)
+	{
+		ack = Cpu.ioIn!(ubyte, "60h")();
+	}
 
 	// enable the keyboard (extra precaution?)
 	Cpu.ioOut!(byte, "64h")(0xAE);
 
-	ack = Cpu.ioIn!(ubyte, "60h")();
-	kprintfln!("ack? {x}")(ack);
+	ack = 0;
+	while(ack != 0xFA)
+	{
+		ack = Cpu.ioIn!(ubyte, "60h")();
+	}
 
 	//ubyte status = Cpu.ioIn!(ubyte, "64h")();
 	
@@ -56,8 +76,12 @@ void init() {
 
 	// enable the keyboard (alternate???)
 	Cpu.ioOut!(byte, "60h")(0xF4);
-	ack = Cpu.ioIn!(ubyte, "60h")();
-	kprintfln!("ack? {x}")(ack);
+	
+	ack = 0;
+	while (ack != 0xFA)
+	{
+		ack = Cpu.ioIn!(ubyte, "60h")();
+	}
 
 	//status = Cpu.ioIn!(ubyte, "64h")();
 
@@ -164,43 +188,34 @@ void pollingDriver()
 
 private void common()
 {
-//	kprintf!("int", false)();
+	// output buffer full
+	ubyte data = Cpu.ioIn!(ubyte, "60h")();
 
-	//for (;;) 
+	if (data == 0xf0)
 	{
-		//ubyte status = Cpu.ioIn!(ubyte, "64h")();
-
-		//if (!(status & 0x1)) { break; }
-
-		// output buffer full
-		ubyte data = Cpu.ioIn!(ubyte, "60h")();
-
-		//if (data == 0x0) { break; }
-
-		if (data == 0xf0)
-		{
-			// it is an up code
-			upState = true;
-		}
-		else
-		{
-			keyState[data] = !upState;
-			ubyte translated = translateScancode(data);
-	
-			if (translated != 0 && !upState)
-			{
-				// printable character
-				kprintf!("{}", false)(cast(char)translated);
-			}
-			if (upState) {
-			//kprintf!("{} = {}")(data, 0);
-			} else {
-			//kprintf!("{} = {}")(data, 1);
-			}	
-			upState = false;
-		}
+		// it is an up code
+		upState = true;
 	}
-//	kprintf!("iret",false)();
+	else
+	{
+		keyState[data] = !upState;
+		ubyte translated = translateScancode(data);
+	
+		if (translated != 0 && !upState)
+		{
+			// printable character
+			// kprintf!("{}{}", false)(cast(char)translated, charFunc);
+			if (charFunc) { charFunc(cast(char)translated); }
+		}
+		if (upState) {
+			//kprintf!("{} = {}")(data, 0);
+			if (upFunc) { upFunc(data); }
+		} else {
+			//kprintf!("{} = {}")(data, 1);
+			if (downFunc) { downFunc(data); }
+		}	
+		upState = false;
+	}
 }
 
 ubyte translate[256] = 

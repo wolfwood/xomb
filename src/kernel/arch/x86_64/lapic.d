@@ -219,6 +219,8 @@ struct LocalAPIC
 		apicRegisters.lint1LocalVectorTable = 0x00422; //NMI
 
 		//kprintfln!("DFR: {x} LDR: {x}")(apicRegisters.destinationFormat, apicRegisters.logicalDestination);
+
+		EOI();
 	}
 
 	kmutex apLock;
@@ -245,6 +247,10 @@ struct LocalAPIC
 		apicRegisters.tmrInitialCount = 1000;
 	}
 
+	// EOI (end of interrupt)
+	// acknowledge an interrupt on the local apic
+	// really only important for level-triggered stuff,
+	// but doesn't hurt to just to it anyway
 	void EOI()
 	{
 		apicRegisters.EOI = 0;

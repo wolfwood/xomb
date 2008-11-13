@@ -166,13 +166,12 @@ extern(C) void kmain(uint magic, uint addr)
 	}
 
 	kprintfln!("")();
-	
-	kprintfln!("Keyboards?")();
-	Keyboard.init();
 
 	//for (;;) {}
 
 	kprintfln!("Jumping to User Mode...\n")();
+
+	Console.setColors(Color.LowBlue, Color.Black);
 
 	asm
 	{
@@ -202,13 +201,23 @@ import user.syscall;
 
 extern(C) void testUser()
 {
-	//Cpu.enableInterrupts();
-	//asm {
-	//	sti;
-	//}//
-		
-	//for(;;){}
 	kprintfln!("In User Mode.")();
+	kprintfln!("Keyboards!")();
+
+	kprintfln!("")();
+
+	Console.setColors(Color.White, Color.Black);
+	kprintfln!("   Talk to XOmB!  ")();
+
+	kprintfln!("")();
+	Console.setColors(Color.Yellow, Color.Black);
+	kprintf!("You")();
+	Console.setColors(Color.White, Color.Black);
+	kprintf!(" : ")();
+	Console.setColors(Color.HighBlue, Color.Black);
+
+	Keyboard.mapFunctions(&downProc, &upProc, &charProc);
+	Keyboard.init();
 // 
 // 	auto ptr = cast(long*)0x1000;
 // 
@@ -222,11 +231,40 @@ extern(C) void testUser()
 // 	else
 // 		kprintfln!("Page allocation failed..")();
 
-	user.syscall.exit(0);
-
-	for(;;) {}
+	//user.syscall.exit(0);
 
 	while(true)
 	{
+	}
+}
+
+void downProc(ubyte code)
+{
+}
+
+void upProc(ubyte code)
+{
+}
+
+void charProc(char chr)
+{
+	if (chr == '\n')
+	{
+		kprintfln!("\n")();
+		Console.setColors(Color.Yellow, Color.Black);
+		kprintf!("XOmB")();
+		Console.setColors(Color.White, Color.Black);
+		kprintf!(" : ")();
+		Console.setColors(Color.HighGreen, Color.Black);
+		kprintfln!("*drools*\n")();
+		Console.setColors(Color.Yellow, Color.Black);
+		kprintf!("You")();
+		Console.setColors(Color.White, Color.Black);
+		kprintf!(" : ")();
+		Console.setColors(Color.HighBlue, Color.Black);
+	}
+	else
+	{
+		kprintf!("{}")(chr);
 	}
 }

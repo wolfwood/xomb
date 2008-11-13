@@ -83,7 +83,7 @@ align(1) struct DataSegDesc64
 	ubyte flags = 0b0001_0000;
 	ushort zero2 = 0;
 
-	mixin(Bitfield!(flags, "zero3", 7, "p", 1));
+	mixin(Bitfield!(flags, "zero3", 5, "dpl", 2, "p", 1));
 }
 
 static assert(DataSegDesc64.sizeof == 8);
@@ -218,20 +218,22 @@ void setCodeSegment64(int num, bool conforming, ubyte DPL, bool present)
 
 /**
 Set a 64-bit data segment.  Data segment descriptors only take up one slot.
-These are a testament to "why does this stuff even exist in 64 bit mode?".  Out of 8 bytes,
-one bit is significant.  Sigh.
+These are a testament to "why does this stuff even exist in 64 bit mode?".
+
+Three bits are significant! The present bit and the DPL.  (used by IRETQ apparently)
 
 Params:
 	num = The entry index.  See the module description.
 	present = Whether or not the segment is loaded into memory.
 */
-void setDataSegment64(int num, bool present)
+void setDataSegment64(int num, bool present, ubyte DPL)
 {
 	DataSegDesc64 ds;
 
 	with(ds)
 	{
 		p = present;
+		dpl = DPL;
 	}
 	
 	*cast(DataSegDesc64*)&Entries[num] = ds;
@@ -301,12 +303,12 @@ public void install()
 	setNull(0);
 	setNull(1);
 	setCodeSegment64(2, true, 0, true);
-	setDataSegment64(3, true);
-	setDataSegment64(4, true);
+	setDataSegment64(3, true, 0);
+	setDataSegment64(4, true, 0);
 	setSysSegment64(6, 0x67, (cast(ulong)&tss_struct)-0xFFFFFFFF80000000, SysSegType64.AvailTSS, 0, true, false, false);
 
 	// for SYSCALL and SYSRET
-	setDataSegment64(8, true);
+	setDataSegment64(8, true, 3);
 	setCodeSegment64(9, true, 3, true);
 
 	// WTF do we set the RSP0-2 members to?!
