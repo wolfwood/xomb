@@ -210,7 +210,7 @@ pml3[] kernel_mapping;
 			for(int z = 0; z < 512 && i >= 0; z++, i--) {
 				pageLevel1[z].pml1e = addr;
 				pageLevel1[z].pml1e |= 0x87;
-				pageLevel1[z].us = 1;
+				//pageLevel1[z].us = 1;
 				addr += 4096;
 			}
 		}
@@ -289,7 +289,7 @@ pml3[] kernel_mapping;
 				for(int z = 0; z < 512; z++) {
 					pageLevel1[z].pml1e = addr;
 					pageLevel1[z].pml1e |= 0x87;
-					pageLevel1[z].us = 1;
+					//pageLevel1[z].us = 1;
 					addr += 4096;
 				}
 			}
