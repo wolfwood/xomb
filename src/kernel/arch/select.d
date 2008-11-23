@@ -13,7 +13,7 @@ module kernel.arch.select;
 public import kernel.arch.x86_64.init;
 
 // IDT
-//public import kernel.arch.x86_64.idt;
+public import kernel.arch.x86_64.idt;
 
 // SYSCALL
 public import syscall = kernel.arch.x86_64.syscall;
@@ -24,7 +24,8 @@ public import kernel.arch.locks;
 // VMEM
 public import kernel.arch.x86_64.vmem;
 
-
+// TIMER
+public import kernel.arch.x86_64.hpet;
 
 
 // try and get rid of the dependencies on these:

@@ -38,11 +38,13 @@ APP_LDFLAGS = -nostdlib -nodefaultlibs -b elf64-x86-64
 
 # file list
 ASM = kernel/arch/x86_64/boot/boot.S kernel/arch/x86_64/boot/load.S kernel/arch/x86_64/boot/trampoline.S
-DFILES = kernel/core/syscall.d kernel/arch/x86_64/globals.d kernel/arch/x86_64/init.d kernel/core/log.d kernel/arch/x86_64/gdt.d kernel/arch/x86_64/lapic.d kernel/arch/x86_64/ioapic.d kernel/kmain.d kernel/dev/vga.d kernel/core/system.d kernel/core/multiboot.d kernel/arch/x86_64/idt.d kernel/arch/x86_64/syscall.d gdb/kgdb_support.d gdb/kgdb_stub.d kernel/arch/x86_64/vmem.d kernel/core/regions.d kernel/mem/pmem.d config.d kernel/core/util.d user/syscall.d kernel/core/error.d kernel/arch/x86_64/hpet.d kernel/arch/locks.d kernel/arch/x86_64/locks.d kernel/arch/x86_64/mp.d kernel/dev/keyboard.d kernel/arch/x86_64/pic.d kernel/arch/x86_64/acpi.d
+DFILES = kernel/core/elf.d kernel/core/syscall.d kernel/arch/x86_64/globals.d kernel/arch/x86_64/init.d kernel/core/log.d kernel/arch/x86_64/gdt.d kernel/arch/x86_64/lapic.d kernel/arch/x86_64/ioapic.d kernel/kmain.d kernel/dev/vga.d kernel/core/multiboot.d kernel/arch/x86_64/idt.d kernel/arch/x86_64/syscall.d gdb/kgdb_support.d gdb/kgdb_stub.d kernel/arch/x86_64/vmem.d kernel/core/regions.d kernel/mem/pmem.d config.d kernel/core/error.d kernel/arch/x86_64/hpet.d kernel/arch/locks.d kernel/arch/x86_64/locks.d kernel/arch/x86_64/mp.d kernel/dev/keyboard.d kernel/arch/x86_64/pic.d kernel/arch/x86_64/acpi.d kernel/environment/scheduler.d kernel/core/modules.d kernel/environment/table.d
 
-RTFILES := $(shell ls std/typeinfo/*.d) object.d kernel/core/invariant.d kernel/core/dstubs.d std/c/stdarg.d
+RTFILES := $(shell ls std/typeinfo/*.d) object.d kernel/core/invariant.d kernel/core/dstubs.d std/c/stdarg.d kernel/core/system.d user/syscall.d kernel/core/util.d
 APP := application/application.d
 OBJS = $(ASM:.S=.o) $(DFILES:.d=.o) $(RTFILES:.d=.o)
+
+RUNTIMEOBJS = $(RTFILES:.d=.o)
 
 # vars
 KERNEL_IMG = xomb
@@ -57,6 +59,7 @@ ISO_NAME = xomb.iso
 # will give a disassembled dump
 all: setup $(KERNEL_IMG)
 	rm -f xomb.dump && x86_64-pc-elf-objdump -d -S -r xomb > xomb.dump
+	rm -f application.dump && x86_64-pc-elf-objdump -d -S -r application/application > application/application.dump
 	@echo ""
 	@echo "OS successfully compiled, to make a bootable CD ISO, run:"
 	@echo "        make iso"
@@ -72,7 +75,7 @@ all: setup $(KERNEL_IMG)
 # kernel link
 $(KERNEL_IMG): $(OBJS) application/application.o
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
-	$(LD) $(LDFLAGS) -o application/application application/application.o -dN $(OBJS)
+	$(LD) $(APP_LDFLAGS) -o application/application application/application.o -dN $(RUNTIMEOBJS)
 
 # creates the GRUB iso image
 iso: all

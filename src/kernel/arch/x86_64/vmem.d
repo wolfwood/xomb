@@ -58,8 +58,7 @@ align(1) struct pml1
 	"d", 1, "pat", 1, "g", 1, "avl", 3, "address", 41, "available", 10, "nx", 1));
 }
 
-
-
+alias pml4* PageTable;
 
 
 // Entry point in to the page table
@@ -93,7 +92,10 @@ pml3[] kernel_mapping;
 		// This ulong will contain the address of the section of memory being faulted on
 		void* addr;
 		// This is the dirty asm that gets the address for us...
-		//asm { "mov %%cr2, %%rax" ::: "rax"; "movq %%rax, %0" :: "m" addr; }
+		if ((ir_stack.err_code & 4) == 0)
+		{
+			asm { "mov %%cr2, %%rax" ::: "rax"; "movq %%rax, %0" :: "m" addr; }
+		}
 		// And this is a print to show us whats going on
 
 		// Page fault error code is as follows (page 225 of AMD System docs):
@@ -237,9 +239,9 @@ pml3[] kernel_mapping;
 	    kdebugfln!(DEBUG_PAGING, "Pagelevel 2 addr = {}, {x}")(pageLevel2.ptr, pageLevel3[510].pml3e);
 		kdebugfln!(DEBUG_PAGING, "Pagelevel 1 addr = {x}")(pageLevel2[0].pml2e);
 
-		pml1[] tmp = (cast(pml1*)(pageLevel2[1].pml2e - 0x7))[0 .. 512];
+		//pml1[] tmp = (cast(pml1*)(pageLevel2[1].pml2e - 0x7))[0 .. 512];
 
-		kdebugfln!(DEBUG_PAGING, "Page address: {x}")(tmp[0].pml1e);
+		//kdebugfln!(DEBUG_PAGING, "Page address: {x}")(tmp[0].pml1e);
 
 		asm {
 			"mov %0, %%rax" :: "o" pageLevel4.ptr;
@@ -625,8 +627,18 @@ pml3[] kernel_mapping;
 	alias allocatePageEntries!(true) allocateUserPageEntries;
 	alias allocatePageEntries!(false) allocateKernelPageEntries;
 	
+	// Initialize a user page table from the kernel page table
+	// It should have mapped in the kernel stuff (protected, of course)
+	void initUserPageTable(PageTable pageTable)
+	{
+		// initialize the page table
+		pml4[] pgTable = pageTable[0 .. 512];
 
+		pgTable[] = pml4.init;
 
+		// map in the higher-half kernel
+		pgTable[511].pml4e = pageLevel4[511].pml4e;
+	}	
 
 	// These spawn functions basically create a new pmlX[], and save us from having
 	// to retype the two lines of code every time.  Yay code reuse!?

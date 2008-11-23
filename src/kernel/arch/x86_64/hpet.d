@@ -119,11 +119,6 @@ struct HPET
 
 		hpetDevice.config.mainCounterValue = 0;
 	
-		initTimer(0, 1000000000000);
-		
-
-		kprintfln!("timer counter: {} / {}")(hpetDevice.config.mainCounterValue, hpetDevice.config.timers[0].comparatorValue);
-		
 		return ErrorVal.Success;
 	}
 
@@ -140,11 +135,11 @@ struct HPET
 	}
 	
 	// the function to start and equip a non-periodic timer
-	void initTimer(uint index, ulong nanoSecondInterval)
+	void initTimer(uint index, ulong picoSecondInterval, InterruptHandler intHandler)
 	{
 		ulong* hpetTimerReg = cast(ulong*)( hpetDevice.virtHPETAddress + 0x100 + (0x20 * index));
 
-		IDT.setCustomHandler(36, &hpetHandler);
+		//IDT.setCustomHandler(36, &hpetHandler);
 
 		// disable!
 		hpetDevice.config.timers[index].INT_ENB_CNF = 0;
@@ -153,7 +148,7 @@ struct HPET
 		hpetDevice.config.interruptStatus |= (1 << index);
 		
 		// update to femptoseconds
-		nanoSecondInterval *= 1000;
+		picoSecondInterval *= 1000;
 
 		ulong timerVal;
 
@@ -194,6 +189,7 @@ struct HPET
 
 		// ioapic pin = routingInterrupt, vector 36, edge triggered, highactive
 		IOAPIC.setPin(routingInterrupt, 36, false, true);
+		IDT.setCustomHandler(36, intHandler);
 
 		// unmask the ioapic
 		IOAPIC.unmaskPin(routingInterrupt);
@@ -217,7 +213,6 @@ struct HPET
 		hpetDevice.config.timers[index].INT_ROUTE_CNF = routingInterrupt;
 
 		// TODO: change this to a debug
-		//kprintfln!("counter updates by = {} for {}ns")(nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD, nanoSecondInterval / 1000000);
 
 				// enable timer interrupts
 		//timerVal |= (1 << 2);
@@ -232,7 +227,7 @@ struct HPET
 
 		// update to the new value
 		// overflow of main counter will not matter
-		ulong factor = (nanoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD);
+		ulong factor = (picoSecondInterval / hpetDevice.config.COUNTER_CLOCK_PERIOD);
 		//kprintfln!("factor: {}")(factor);
 		curcounter += factor;
 	

@@ -7,6 +7,8 @@ import kernel.dev.vga;
 
 import kernel.core.util;
 
+import kernel.arch.x86_64.context_switch;
+
 //import kernel.arch.x86_64.vmem;
 
 alias GDT.IntGateDesc64 IDTEntry;
@@ -361,47 +363,20 @@ extern(C) void fault_handler(interrupt_stack* r)
 
 extern(C) void isr_common()
 {
+	mixin(contextSwitchSave!());
+	
 	asm
 	{
 		naked;
-		"pushq %%rax";
-		"pushq %%rbx";
-		"pushq %%rcx";
-		"pushq %%rdx";
-		"pushq %%rsi";
-		"pushq %%rdi";
-		"pushq %%rbp";
-		"pushq %%r8";
-		"pushq %%r9";
-		"pushq %%r10";
-		"pushq %%r11";
-		"pushq %%r12";
-		"pushq %%r13";
-		"pushq %%r14";
-		"pushq %%r15";
-
-		// we don't have to push %rsp, %rip and flags; they are pushed
-		// automatically on an interrupt
-
 		"mov %%rsp, %%rdi";
 		"call fault_handler";
-
-		"popq %%r15";
-		"popq %%r14";
-		"popq %%r13";
-		"popq %%r12";
-		"popq %%r11";
-		"popq %%r10";
-		"popq %%r9";
-		"popq %%r8";
-		"popq %%rbp";
-		"popq %%rdi";
-		"popq %%rsi";
-		"popq %%rdx";
-		"popq %%rcx";
-		"popq %%rbx";
-		"popq %%rax";
+	}
+	
+	mixin(contextSwitchRestore!());
 		
+	asm
+	{
+		naked;
 		// A haiku
 		// We need to print a stack trace
 		// I hate a-s-m

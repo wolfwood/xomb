@@ -1,7 +1,6 @@
 module kernel.core.multiboot;
 
 
-
 import kernel.dev.vga;
 
 import kernel.core.log;
@@ -10,7 +9,10 @@ import kernel.core.error;
 
 import kernel.core.util;
 import system = kernel.core.system;
+
 import kernel.core.regions;
+import kernel.core.modules;
+
 import kernel.arch.x86_64.vmem;
 
 import kernel.arch.x86_64.globals;
@@ -200,7 +202,7 @@ ErrorVal test_mb_header(uint magic, multiboot_info_t *multi_boot_struct)
 	if(CHECK_FLAG(multi_boot_struct.flags, 3))
 	{
 		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
-		//kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)multi_boot_struct.mods_count, cast(int)multi_boot_struct.mods_addr);
+		kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)multi_boot_struct.mods_count, cast(int)multi_boot_struct.mods_addr);
 
 		module_t* mod;
 		int i;
@@ -218,6 +220,9 @@ ErrorVal test_mb_header(uint magic, multiboot_info_t *multi_boot_struct)
 		//jumpTo(0, multi_boot_struct);
 		//return;
 		}
+
+		// init modules separately
+		GRUBModules.init(multi_boot_struct);
 	}
 
 	// Bits 4 and 5 are mutually exclusive!

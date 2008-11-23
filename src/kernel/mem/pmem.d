@@ -46,8 +46,8 @@ struct pMem
     mem_size = mbi.mem_upper * 1024;
  
     // print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
-    //kdebugfln!(DEBUG_PMEM, "mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
-    //kdebugfln!(DEBUG_PMEM, "mods_end = 0x{x}")(endAddr);
+    kdebugfln!(DEBUG_PMEM, "mods_count = {}, mods_addr = 0x{x}")(cast(int)mbi.mods_count, cast(int)mbi.mods_addr);
+    kdebugfln!(DEBUG_PMEM, "mods_end = 0x{x}")(endAddr);
  
     // If endAddr is aligned already we'll just add 0, so no biggie
     // Address of where to start pages
@@ -146,6 +146,7 @@ struct pMem
             // Return the address of the free page
  
             pMemMutex.unlock();
+            kdebugfln!(DEBUG_PMEM, "pMem: requestPage(): addr: {x}")(addr);
             return (addr);
           }
           

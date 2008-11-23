@@ -10,6 +10,7 @@ import kernel.error;
 
 import kernel.core.syscall;
 
+
 /**
 This function declares a handler for system calls. It accepts a pointer to a function (h).
 h will be called to fully handle the system call, depending on the register values for the system call.
@@ -82,6 +83,23 @@ void setHandler(void* h)
 		"xorl %%edx, %%edx\n"
 		"movl %0, %%ecx" :: "i" SFMASK_MSR : "eax", "edx", "ecx";
 		"wrmsr";
+	}
+}
+
+void jumpToUser(void* address)
+{
+	asm{
+		naked;
+
+		// place the address into rcx from rdi (the 1st argument)
+		"movq %%rdi, %%rcx" ::: "rcx";
+		
+		// enable IF flag and allow all ports with the IOPL
+		// http://en.wikipedia.org/wiki/FLAGS_register_(computing)
+		"movq $((1 << 9) | (3 << 12)), %%r11" ::: "r11";
+
+		// perform the SYSRET
+		"sysretq";		
 	}
 }
 

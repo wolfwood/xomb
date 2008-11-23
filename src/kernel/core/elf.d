@@ -13,6 +13,11 @@ module kernel.core.elf;
 
 import kernel.core.multiboot;
 
+struct ELF
+{
+
+static:
+
 alias void* Elf64_Addr;	   // size 8
 alias ulong Elf64_Off;	   // size 8
 alias ushort Elf64_Half;   // size 2
@@ -489,8 +494,10 @@ ulong elf64_hash(char *name)
 	while (*name)
 	{
 		h = (h << 4) + *name++;
-		if (g = h & 0xf0000000)
+		if ((g = h & 0xf0000000) != 0)
+		{
 			h ^= g >> 24;
+		}
 		h &= 0x0fffffff;
 	}
 	return h;
@@ -532,18 +539,14 @@ Params:
 	mbi = A pointer to the multiboot information structure, allowing this function
 		to interperet the module data properly.
 */
-void jumpTo(uint moduleNumber, multiboot_info_t* mbi)
+
+// gets the entry point at the ELF header located at address
+void* getEntry(void* address)
 {
-	// get a pointer to the loaded module.
-	module_t* mod = &(cast(module_t*)mbi.mods_addr)[moduleNumber];
-
-	// get the memory address of the module's starting point.
-	// also, get a pointer to the module's ELF header.
-	void* start = cast(void*)mod.mod_start;
-	Elf64_Ehdr* header = cast(Elf64_Ehdr*)start;
-
+	Elf64_Ehdr* header = cast(Elf64_Ehdr*)address;
+	
 	// find all the sections in the module's ELF Section header.
-	Elf64_Shdr[] sections = (cast(Elf64_Shdr*)(start + header.e_shoff))[0 .. header.e_shnum];
+	Elf64_Shdr[] sections = (cast(Elf64_Shdr*)(address + header.e_shoff))[0 .. header.e_shnum];
 	Elf64_Shdr* strTable = &sections[header.e_shstrndx];
 
 	// go to the first section in the section header.
@@ -551,6 +554,7 @@ void jumpTo(uint moduleNumber, multiboot_info_t* mbi)
 
 	// declare a void function which can be called to jump to the memory position of
 	// __start().
-	void function() entry = cast(void function())(start + text.sh_offset);
-	entry();
+	return (address + text.sh_offset);
+}
+
 }

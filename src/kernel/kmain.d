@@ -35,7 +35,8 @@ import multiboot = kernel.core.multiboot;
 
 import kernel.arch.x86_64.mp;
 import kernel.arch.x86_64.acpi;
-import kernel.arch.x86_64.hpet;
+
+import kernel.environment.scheduler;
 
 /**
 This is the main function of PGOS. It is executed once GRUB loads
@@ -158,12 +159,25 @@ extern(C) void kmain(uint magic, uint addr)
 	if (HPET.init() == ErrorVal.Success)
 	{
 		printLogSuccess();
-		//HPET.initTimer(0, 5000);
 	}
 	else
 	{
 		printLogFail();
 	}
+
+	printLogLine("Initializing Scheduler");
+	if (Scheduler.init() == ErrorVal.Success)
+	{
+		printLogSuccess();
+	}
+	else
+	{
+		printLogFail();
+	}
+
+	Scheduler.run();
+
+	// should not return from this
 
 	kprintfln!("")();
 
@@ -173,28 +187,7 @@ extern(C) void kmain(uint magic, uint addr)
 
 	Console.setColors(Color.LowBlue, Color.Black);
 
-	asm
-	{
-		// Jump to user mode.
-		"movq $testUser, %%rcx" ::: "rcx";
-
-		// r11 contains the EFLAGS
-		// the EFLAGS will be set upon the sysretq
-		// we used to push $0 (but that disables interrupts!!!)
-
-		// we could push the current EFLAGS to r11
-		//"pushf";
-		//"pop %%r11";
-
-		// but for now, let's just enable interrupts
-		// beware of the IOPL flag! (figure 2-4, section 2-13 of System Guide A Intel)
-		// http://en.wikipedia.org/wiki/FLAGS_register_(computing)
-
-		"movq $((1 << 9) | (3 << 12)), %%r11" ::: "r11";
-		//"movq $(3 << 12), %%r11" ::: "r11";
-		//"movq $0, %%r11" ::: "r11";
-		"sysretq";
-	}
+	syscall.jumpToUser(&testUser);
 
 	kprintfln!("BACK!!!")();
 }
