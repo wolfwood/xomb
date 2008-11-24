@@ -31,7 +31,7 @@ import kernel.core.log;
 import kernel.arch.x86_64.mp;
 
 // Needs MSR functions in Cpu
-import kernel.arch.x86_64.init;
+import kernel.arch.x86_64.cpu;
 
 // For support utils and printing
 import kernel.core.util;
@@ -123,7 +123,7 @@ struct LocalAPIC
 		enableLocalApic();
 		printLogSuccess();
 	
-		IDT.setCustomHandler(35, &timerProc);
+		//Interrupts.setCustomHandler(35, &timerProc);
 		
 		//startAPs();
 
@@ -256,7 +256,7 @@ struct LocalAPIC
 		apicRegisters.EOI = 0;
 	}
 
-	void timerProc(interrupt_stack* s)
+	void timerProc(InterruptStack* s)
 	{
 		kprintfln!("Timer!!!", false)();
 

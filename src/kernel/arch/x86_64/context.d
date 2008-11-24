@@ -1,4 +1,4 @@
-module kernel.arch.x86_64.context_switch;
+module kernel.arch.x86_64.context;
 
 /*
 
@@ -72,6 +72,30 @@ template contextSwitchRestore()
 		"popq %%rcx";
 		"popq %%rbx";
 		"popq %%rax";
+	}
+	`;
+}
+
+template contextStackRestore(char[] stackPtr)
+{
+	const char[] contextStackRestore = `
+	asm 
+	{
+		"popq %%rcx" ::: "rcx";
+		"movq %0, %%rax" :: "o" ` ~ stackPtr ~ ` : "rax";
+		"movq %%rax, %%rsp" ::: "rax";
+		"pushq %%rcx" ::: "rcx";
+	}
+	`;
+}
+
+template contextStackSave(char[] stackPtr)
+{
+	const char[] contextStackSave = `
+	asm
+	{
+		"movq %%rsp, %%rax" ::: "rax";
+		"movq %%rax, %0" :: "o" ` ~ stackPtr ~ ` : "rax";
 	}
 	`;
 }

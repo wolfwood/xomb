@@ -2,7 +2,8 @@
 
 module kernel.environment.table;
 
-import kernel.arch.select;
+import kernel.arch.vmem;
+import kernel.arch.context;	// context switch save, restore
 
 import kernel.core.error;
 import kernel.core.modules;
@@ -13,8 +14,11 @@ struct Environment
 {
 	vMem.PageTable pageTable;	// The page table
 
+	uint id;					// environment id
+
 	void* stack;				// stack
-	//void* heap;				// heap (probably want information about the pages)
+	void* stackPtr;			// current stack pointer
+	//void* heap;				// heap (probably want information about the individual pages)
 
 	void* contextSpace;			// Where the code lives
 	ulong contextSize;			// Size of the context space
@@ -34,24 +38,78 @@ struct Environment
 		// code lives at where GRUB tells us it lives
 		// contextSpace...
 
-		// map in context space
-		// vMem.mapUser...
+		// map in context space (1:1 mapping)
+		// map(physaddr, length)
+		pageTable.map(cast(ubyte*)GRUBModules.getStart(modNumber), GRUBModules.getLength(modNumber));
 
 		entry = GRUBModules.getEntry(modNumber);		
 	}
 
+	void* tmpPtr;
+	// code executed as this environment gets set to run
+	ErrorVal preamble()
+	{
+		// use page table
+		pageTable.use();
+
+		// use stack
+	//	mixin(contextStackRestore!("stackPtr"));
+
+		////void* tmpPtr;
+		//mixin(contextStackSave!("tmpPtr"));
+
+		kprintfln!("Stack switched: {x}")(tmpPtr);
+
+		return ErrorVal.Success;
+	}
+
+	// code executed as this environment gets switched
+	ErrorVal postamble()
+	{
+		return ErrorVal.Success;
+	}
+
 	ErrorVal initPageTable()
 	{
-		void* pageAddr;
-		if (vMem.getKernelPage(pageAddr) == ErrorVal.Fail)
+		pageTable.init();
+		
+		return ErrorVal.Success;		
+	}
+
+	ErrorVal initStack()
+	{
+//		kprintfln!("bla!!!!!")();
+		if (vMem.getUserPage(stack) == ErrorVal.Fail)
 		{
 			return ErrorVal.Fail;
 		}
+//		kprintfln!("booooooo!!!")();
+		if (vMem.getUserPage(stackPtr) == ErrorVal.Fail)
+		{
+			return ErrorVal.Fail;
+		}
+		kprintfln!("boo!")();
+		stackPtr += vMem.PAGE_SIZE;
+
+		kprintfln!("ha! stack: {x}")(stackPtr);
+
+		// now, context save (for sanity of scheduling)
+		//mixin(contextSwitchSave!());	
 	
-		pageTable = cast(vMem.PageTable)(pageAddr);
-		vMem.initUserPageTable(pageTable);
-		
-		return ErrorVal.Success;		
+		return ErrorVal.Success;
+	}
+
+	// deconstruct the environment
+	void uninit()
+	{
+		kprintfln!("uninit page")();
+		// free the pages we used
+		pageTable.uninit();
+
+		kprintfln!("uninit stack")();
+		// free stack
+		vMem.freePage(stack);
+		vMem.freePage(stack + vMem.PAGE_SIZE);
 	}
 }
 
@@ -63,7 +121,7 @@ struct EnvironmentTable
 static: 
 
 	Environment** addr;	// address of the environment table
-	int length;	// number of environments in the table
+	int count;	// number of environments in the table
 
 	const int MAX_ENVIRONMENTS = 1024;
 
@@ -82,6 +140,7 @@ static:
 		// retain the address
 		addr = cast(Environment**)pageAddr;
 
+		// double the size (allow 1024 entries)
 		vMem.getKernelPage(pageAddr);
 
 		return ErrorVal.Success;
@@ -89,7 +148,7 @@ static:
 
 	ErrorVal newEnvironment(out Environment* environment)
 	{
-		if (length == MAX_ENVIRONMENTS)
+		if (count== MAX_ENVIRONMENTS)
 		{
 			return ErrorVal.Fail;
 		}
@@ -112,6 +171,8 @@ static:
 			return ErrorVal.Fail;
 		}
 
+		kprintfln!("asdfasdf")();
+	
 		void* envEntry;
 		if (vMem.getKernelPage(envEntry) == ErrorVal.Fail)
 		{
@@ -126,11 +187,19 @@ static:
 		// should zero out the initial sections
 		*environment = Environment.init;	
 
+		// set id
+		environment.id = i;
+
 		// now we can set up common stuff
 		environment.initPageTable();	// create a user page table
 
+		kprintfln!("init stack")();
+		environment.initStack();
+
 		// up the length
-		length++;
+		count++;
+
+		kprintfln!("count: {}")(count);
 
 		return ErrorVal.Success;
 	}
@@ -145,5 +214,31 @@ static:
 
 		return null;
 	}
+
+	void removeEnvironment(uint environmentIndex)
+	{
+		if (environmentIndex >= MAX_ENVIRONMENTS || addr[environmentIndex] is null)
+		{
+			kprintfln!("Scheduler: removeEnvironment(): ERROR: invalid environment index")();
+			return;
+		}
+
+		// decrement length
+		count--;
+
+		kprintfln!("count: {}")(count);
+
+		// uninitialize internals of environment
+		addr[environmentIndex].uninit();
+
+		kprintfln!("Scheduler: removeEnvironment(): Environment Uninitialized")();
+		// free page used by environment descriptor
+		vMem.freePage(addr[environmentIndex]);
+
+		kprintfln!("Scheduler: removeEnvironment(): Environment Page Freed")();
+		// remove from table
+		addr[environmentIndex] = null;
+	}
+
 }
 

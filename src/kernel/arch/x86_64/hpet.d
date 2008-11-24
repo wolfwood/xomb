@@ -6,7 +6,7 @@ import kernel.core.util;
 import kernel.arch.x86_64.vmem;
 import kernel.core.regions;
 import kernel.dev.vga;
-import kernel.arch.x86_64.init;
+import kernel.arch.x86_64.cpu;
 import kernel.arch.x86_64.ioapic;
 import kernel.arch.x86_64.lapic;
 import kernel.arch.x86_64.mp;
@@ -123,7 +123,7 @@ struct HPET
 	}
 
 	// test handler
-	void hpetHandler(interrupt_stack* s)
+	void hpetHandler(InterruptStack* s)
 	{			
 		kprintfln!("!",false)();
 
@@ -189,7 +189,7 @@ struct HPET
 
 		// ioapic pin = routingInterrupt, vector 36, edge triggered, highactive
 		IOAPIC.setPin(routingInterrupt, 36, false, true);
-		IDT.setCustomHandler(36, intHandler);
+		Interrupts.setCustomHandler(36, intHandler);
 
 		// unmask the ioapic
 		IOAPIC.unmaskPin(routingInterrupt);

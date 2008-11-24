@@ -11,6 +11,11 @@ import kernel.error;
 import kernel.core.syscall;
 
 
+struct Syscall
+{
+
+static:
+
 /**
 This function declares a handler for system calls. It accepts a pointer to a function (h).
 h will be called to fully handle the system call, depending on the register values for the system call.
@@ -86,13 +91,14 @@ void setHandler(void* h)
 	}
 }
 
-void jumpToUser(void* address)
+void jumpToUser(void* stackPtr, void* address)
 {
 	asm{
 		naked;
 
 		// place the address into rcx from rdi (the 1st argument)
-		"movq %%rdi, %%rcx" ::: "rcx";
+		"movq %%rsi, %%rcx" ::: "rcx";
+		"movq %%rdi, %%rsp" ::: "rdi";
 		
 		// enable IF flag and allow all ports with the IOPL
 		// http://en.wikipedia.org/wiki/FLAGS_register_(computing)
@@ -111,30 +117,67 @@ void syscallHandler()
 	asm
 	{
 		naked;
+
+		// emulate interrupt stack
+		"pushq $0"; //$((8 << 3) | 3)";	// USER_DS (SS)
+		"pushq %%rsp";			// STACK
+		"pushq %%r11";			// RFLAGS
+		"pushq $0"; //$((9 << 3) | 3)";	// USER_CS
+		"pushq %%rcx";			// RIP
+		"pushq $0";			// ERROR CODE
+		"pushq $0";			// INTERRUPT NUMBER
+
+		"callq syscallDispatcher";
+
+		"addq $16, %%rsp"; 
+		"popq %%rcx";
+		"addq $8, %%rsp";
+		"popq %%r11";
+		"addq $16, %%rsp"; //popq %%rsp";
+
+		//"add $16, %%rsp";
+
+		//"iretq";
 		// make sure to preserve the return address and flags
 		//"pushq %%rbp";
 		//"movq %%rbp, %%rsp";
-		"pushq %%rcx";
-		"pushq %%r11";
-		"callq syscallDispatcher";
-		"popq %%r11";
-		"popq %%rcx";
+		//"pushq %%rcx";
+		//"pushq %%r11";
+		//"callq syscallDispatcher";
+		//"popq %%r11";
+		//"popq %%rcx";
 		//"popq %%rbp";
 		"sysretq";
 	}
 }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 template MakeSyscallDispatchCase(uint idx)
 {
 	static if(!is(SyscallRetTypes[idx] == void))
 		const char[] MakeSyscallDispatchCase =
 `case ` ~ idx.stringof ~ `:
-	return Syscall.` ~ SyscallName!(idx) ~ `(*(cast(` ~ SyscallRetTypes[idx].stringof ~
+	return SyscallImplementations.` ~ SyscallName!(idx) ~ `(*(cast(` ~ SyscallRetTypes[idx].stringof ~
 	`*)ret), cast(` ~ ArgsStruct!(idx) ~ `*)params);`;
 	else
 		const char[] MakeSyscallDispatchCase =
 `case ` ~ idx.stringof ~ `:
-	return Syscall.` ~ SyscallName!(idx) ~ `(cast(` ~ ArgsStruct!(idx) ~ `*)params);`;
+	return SyscallImplementations.` ~ SyscallName!(idx) ~ `(cast(` ~ ArgsStruct!(idx) ~ `*)params);`;
 }
 
 template MakeSyscallDispatchList()
@@ -148,9 +191,17 @@ template MakeSyscallDispatchList()
 }`;
 }
 
+
+
 extern(C) void syscallDispatcher(ulong ID, void* ret, void* params)
 {
-	//kprintfln!("Syscall: ID = 0x{x}, ret = 0x{x}, params = 0x{x}")(ID, ret, params);
+	void* stackPtr;
+	asm {
+		"movq %%rsp, %%rax" ::: "rax";
+		"movq %%rax, %0" :: "o" stackPtr : "rax";
+	}
+	kprintfln!("Syscall: ID = 0x{x}, ret = 0x{x}, params = 0x{x}, rsp = 0x{x}")(ID, ret, params, stackPtr);
 	mixin(MakeSyscallDispatchList!());
 }
+
 

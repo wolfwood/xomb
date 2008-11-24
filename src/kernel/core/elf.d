@@ -13,6 +13,8 @@ module kernel.core.elf;
 
 import kernel.core.multiboot;
 
+import kernel.arch.vmem;
+
 struct ELF
 {
 
@@ -554,7 +556,7 @@ void* getEntry(void* address)
 
 	// declare a void function which can be called to jump to the memory position of
 	// __start().
-	return (address + text.sh_offset);
+	return ((address + text.sh_offset) - vMem.VM_BASE_ADDR);
 }
 
 }

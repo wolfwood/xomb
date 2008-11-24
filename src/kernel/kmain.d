@@ -25,7 +25,7 @@ import kernel.arch.x86_64.globals;
 
 import gdb.kgdb_stub;
 
-import kernel.arch.select;
+import kernel.arch.locks;
 
 import kernel.error;
 import kernel.core.elf;
@@ -35,6 +35,9 @@ import multiboot = kernel.core.multiboot;
 
 import kernel.arch.x86_64.mp;
 import kernel.arch.x86_64.acpi;
+
+import kernel.arch.timer;
+import kernel.arch.cpu;
 
 import kernel.environment.scheduler;
 
@@ -109,11 +112,6 @@ extern(C) void kmain(uint magic, uint addr)
 	// boot and initialize the primary CPU
 	Cpu.install();
 	
-	// Now that page tables are implemented,
-	// Map in the BIOS regions.
-
-	multiboot.mapRegions();
-
 	// Turn general interrupts on, so the computer can deal with errors and faults.
 	Cpu.enableInterrupts();
 
@@ -156,7 +154,7 @@ extern(C) void kmain(uint magic, uint addr)
 	}
 	
 	printLogLine("Initializing HPET");
-	if (HPET.init() == ErrorVal.Success)
+	if (Timer.init() == ErrorVal.Success)
 	{
 		printLogSuccess();
 	}
@@ -187,7 +185,7 @@ extern(C) void kmain(uint magic, uint addr)
 
 	Console.setColors(Color.LowBlue, Color.Black);
 
-	syscall.jumpToUser(&testUser);
+	//syscall.jumpToUser(&testUser);
 
 	kprintfln!("BACK!!!")();
 }

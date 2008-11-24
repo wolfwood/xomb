@@ -7,9 +7,11 @@ import user.syscall;
 import kernel.core.error;
 import kernel.dev.vga;
 
-import kernel.arch.select;
+import kernel.arch.vmem;
 
-struct Syscall
+import kernel.environment.scheduler;
+
+struct SyscallImplementations
 {
 
 static:
@@ -40,7 +42,10 @@ public:
 	SyscallError exit(ExitArgs* params)
 	{
 		kprintfln!("WARNING: exit() not yet implemented")();
-		return SyscallError.Failcopter;
+
+		Scheduler.exit();		
+
+		return SyscallError.OK;
 	}
 	
 	SyscallError freePage(FreePageArgs* params)

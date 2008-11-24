@@ -1,6 +1,6 @@
 module kernel.arch.x86_64.pic;
 
-import kernel.arch.x86_64.init;
+import kernel.arch.x86_64.cpu;
 
 struct PIC
 {

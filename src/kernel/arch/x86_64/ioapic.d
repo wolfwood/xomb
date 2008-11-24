@@ -6,7 +6,7 @@ import kernel.arch.x86_64.mp;
 import kernel.arch.x86_64.lapic;
 import kernel.arch.x86_64.vmem;
 import kernel.arch.x86_64.pic;
-import kernel.arch.x86_64.init;
+import kernel.arch.x86_64.cpu;
 import kernel.arch.x86_64.acpi;
 
 import kernel.core.error;

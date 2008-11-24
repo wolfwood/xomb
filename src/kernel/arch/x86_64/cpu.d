@@ -1,11 +1,13 @@
-module kernel.arch.x86_64.init;
+module kernel.arch.x86_64.cpu;
 
 import kernel.core.log;
 
 import kernel.arch.x86_64.idt;
 import kernel.arch.x86_64.gdt;
-import syscall = kernel.arch.x86_64.syscall;
+import kernel.arch.x86_64.syscall;
 import kernel.arch.x86_64.vmem;
+
+import multiboot = kernel.core.multiboot;
 
 import kernel.dev.vga;
 
@@ -115,7 +117,7 @@ static:
 		}
 	}
 
-	void ignoreHandler(interrupt_stack* s)
+	void ignoreHandler(InterruptStack* s)
 	{
 		kprintfln!("(15)", true)();
 	}
@@ -128,13 +130,13 @@ static:
 		printLogSuccess();
 
 		printLogLine("Installing IDT");
-		IDT.install();
+		Interrupts.install();
 		printLogSuccess();
 
 		printLogLine("Installing Paging Mechanism");
-		IDT.setCustomHandler(IDT.Type.PageFault, &vMem.pageFaultHandler);
+		Interrupts.setCustomHandler(Interrupts.Type.PageFault, &vMem.pageFaultHandler);
 		// XXX: I want to know when this happens:
-		IDT.setCustomHandler(IDT.Type.UnknownInterrupt, &ignoreHandler);
+		Interrupts.setCustomHandler(Interrupts.Type.UnknownInterrupt, &ignoreHandler);
 
 		printLogSuccess();
 
@@ -142,7 +144,13 @@ static:
 		vMem.install();
 		printLogSuccess();
 
+		// use the page tables, gdt, etc
 		boot();
+		
+		// Now that page tables are implemented,
+		// Map in the BIOS regions.
+
+		multiboot.mapRegions();
 	}
 
 	// common boot
@@ -153,10 +161,10 @@ static:
 		GDT.setGDT();
 
 		// assign idt
-		IDT.setIDT();
+		Interrupts.setIDT();
 
 		// assign syscall handler
-		syscall.setHandler(&syscall.syscallHandler);
+		Syscall.setHandler(&Syscall.syscallHandler);
 	}
 
 	void ioOut(T, char[] port)(int data)

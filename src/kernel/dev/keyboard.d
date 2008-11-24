@@ -1,6 +1,6 @@
 module kernel.dev.keyboard;
 
-import kernel.arch.x86_64.init;
+import kernel.arch.x86_64.cpu;
 import kernel.arch.x86_64.ioapic;
 import kernel.arch.x86_64.pic;
 import kernel.arch.x86_64.idt;
@@ -127,7 +127,7 @@ void init() {
 
 	// unmask!
 	PIC.EOI(1);
-	IDT.setCustomHandler(34, &interruptDriver);
+	Interrupts.setCustomHandler(34, &interruptDriver);
 	IOAPIC.unmaskIRQ(1);
 
 	// write to P2
@@ -152,7 +152,7 @@ static bool keyState[256];
 bool upState = false;
 
 // an interrupt driven approach
-void interruptDriver(interrupt_stack*s)
+void interruptDriver(InterruptStack* s)
 {
 	common();
 

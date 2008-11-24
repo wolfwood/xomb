@@ -7,7 +7,7 @@
  
 module kernel.mem.pmem;
  
-import kernel.arch.select;
+import kernel.arch.vmem;
  
 import kernel.arch.locks;
  

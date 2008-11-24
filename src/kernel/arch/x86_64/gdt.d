@@ -314,6 +314,10 @@ public void install()
 
 	// WTF do we set the RSP0-2 members to?!
 	//tss_struct.rsp0 = tss_struct.rsp1 = tss_struct.rsp2 =
+	asm {
+		"movq %%rsp, %%rax" ::: "rax";
+		"movq %%rax, %0" :: "o" tss_struct.rsp0 : "rax";
+	}
 	setGDT();
 
 	// set task register

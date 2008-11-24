@@ -3,13 +3,14 @@ module kernel.arch.x86_64.idt;
 
 import kernel.arch.x86_64.gdt;
 
+import kernel.core.error;
 import kernel.dev.vga;
 
 import kernel.core.util;
 
-import kernel.arch.x86_64.context_switch;
+import kernel.arch.x86_64.context;
 
-//import kernel.arch.x86_64.vmem;
+import kernel.arch.x86_64.vmem;
 
 alias GDT.IntGateDesc64 IDTEntry;
 
@@ -21,9 +22,8 @@ public align(1) struct IDTPtr
 
 public extern(C) IDTPtr idtp;
 
-
 /* This defines what the stack looks like after an ISR was running */
-align(1) struct interrupt_stack
+align(1) struct InterruptStack
 {	
 	// registers we pushed
 	long r15, r14, r13,	r12, r11, r10, r9, r8, rbp, rdi, rsi, rdx, rcx, rbx, rax;
@@ -33,18 +33,37 @@ align(1) struct interrupt_stack
 
 	// pushed automatically by the processor
 	long rip, cs, rflags, rsp, ss;
+
+	void dump()
+	{
+		kprintfln!("r15: 0x{x} / r14: 0x{x} / r13: 0x{x} / r12: 0x{x} / r11: 0x{x}",false)
+			(r15, r14, r13, r12, r11);
+
+		kprintfln!("r10: 0x{x} / r9: 0x{x} / r8: 0x{x} / rbp: 0x{x} / rdi: 0x{x}",false)
+			(r10, r9, r8, rbp, rdi);
+
+		kprintfln!("rsi: 0x{x} / rdx: 0x{x} / rcx: 0x{x} / rbx: 0x{x} / rax: 0x{x}",false)
+			(rsi, rdx, rcx, rbx, rax);
+
+		kprintfln!("ss: 0x{x} / rsp: 0x{x} / cs: 0x{x}",false)(ss, rsp, cs);
+	}
+
+	long getErrorCode()
+	{
+		return err_code;
+	}
 }
 
+alias void function(InterruptStack* stack) InterruptHandler;
 
-alias void function(interrupt_stack*) InterruptHandler;
-
-private InterruptHandler[256] InterruptHandlers;
-
-struct IDT
+struct Interrupts
 {
 
 static:
 private:
+
+// vector of interrupt handling routines
+InterruptHandler[256] InterruptHandlers;
 
 public enum StackType : uint
 {
@@ -82,6 +101,7 @@ void setIntGate(uint num, void* funcPtr, uint ist = 0)
 {
 	setGate(num, GDT.SysSegType64.IntGate, cast(ulong)funcPtr, 0, ist);
 }
+
 
 void setSysGate(uint num, void* funcPtr, uint ist = 0)
 {
@@ -146,6 +166,8 @@ public void install()
 	setSysGate(0x80, &isr128);
 
 	setIDT();
+
+	installStack();
 }
 
 public void setIDT()
@@ -155,6 +177,19 @@ public void setIDT()
 		"lidt (idtp)";
 		"retq";
 	}
+}
+
+public ErrorVal installStack()
+{
+	// just use the current kernel stack
+	asm {
+		"movq %%rsp, %%rax" ::: "rax";
+		"movq %%rax, %0" :: "o" GDT.tss_struct.ist1 : "rax";
+	}
+
+	kprintfln!("stack ist: {x}")(GDT.tss_struct.ist1);
+	
+	return ErrorVal.Success;
 }
 
 /*
@@ -319,19 +354,6 @@ public void setCustomHandler(size_t i, InterruptHandler h, int ist = -1)
 		Entries[i].ist = ist;
 }
 
-void stack_dump(interrupt_stack* r) {
-	kprintfln!("r15: 0x{x} / r14: 0x{x} / r13: 0x{x} / r12: 0x{x} / r11: 0x{x}",false)
-			(r.r15, r.r14, r.r13, r.r12, r.r11);
-
-	kprintfln!("r10: 0x{x} / r9: 0x{x} / r8: 0x{x} / rbp: 0x{x} / rdi: 0x{x}",false)
-			(r.r10, r.r9, r.r8, r.rbp, r.rdi);
-
-	kprintfln!("rsi: 0x{x} / rdx: 0x{x} / rcx: 0x{x} / rbx: 0x{x} / rax: 0x{x}",false)
-			(r.rsi, r.rdx, r.rcx, r.rbx, r.rax);
-
-	kprintfln!("ss: 0x{x} / rsp: 0x{x} / cs: 0x{x}",false)(r.ss, r.rsp, r.cs);
-}
-
 }
 
 /* All of our Exception handling Interrupt Service Routines will
@@ -341,18 +363,18 @@ void stack_dump(interrupt_stack* r) {
 *  serviced as a 'locking' mechanism to prevent an IRQ from
 *  happening and messing up kernel data structures */
 
-extern(C) void fault_handler(interrupt_stack* r)
+extern(C) void fault_handler(InterruptStack* r)
 {
-	if(InterruptHandlers[r.int_no])
+	if(Interrupts.InterruptHandlers[r.int_no])
 	{
-		InterruptHandlers[r.int_no](r);
+		Interrupts.InterruptHandlers[r.int_no](r);
 		return;
 	}
 
 	if(r.int_no < 32) {
-		kprintfln!("{}. Code = {}, IP = {x}", false)(IDT.exceptionMessages[r.int_no], r.err_code, r.rip);
+		kprintfln!("{}. Code = {}, IP = {x}", false)(Interrupts.exceptionMessages[r.int_no], r.err_code, r.rip);
 		kprintfln!("Stack dump:", false)();
-		IDT.stack_dump(r);
+		r.dump();
 	} else {
 		kprintfln!("Unknown exception {}.", false)(r.int_no);
 	}
@@ -388,3 +410,5 @@ extern(C) void isr_common()
 		"iretq";         /* pops 5 things in order: rIP, CS, rFLAGS, rSP, and SS */
 	}
 }
+
+

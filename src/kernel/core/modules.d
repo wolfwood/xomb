@@ -4,7 +4,7 @@ module kernel.core.modules;
 
 import kernel.core.elf;
 import kernel.core.multiboot;
-import kernel.arch.select;
+import kernel.arch.vmem;
 
 import kernel.dev.vga;
 
@@ -21,14 +21,32 @@ static:
 		length = mbi.mods_count;
 	}
 
+	void* getStart(uint modNumber)
+	{
+		if (modNumber >= length) { return null; }
+		
+		module_t* mod = mods + modNumber;
+		
+		return cast(void*)mod.mod_start;
+	}
+
+	ulong getLength(uint modNumber)
+	{
+		if (modNumber >= length) { return 0; }
+
+		module_t* mod = mods + modNumber;
+		
+		return (mod.mod_end - mod.mod_start);
+	}
+
 	void* getEntry(uint modNumber)
 	{
 		if (modNumber >= length) { return null; }
 
-		kprintfln!("mods: {x}")(mods);
+		//kprintfln!("mods: {x}")(mods);
 		module_t* mod = mods + modNumber;
 
-		kprintfln!("mod: {x} modStart: {x}")(mod, mod.mod_start);
+		//kprintfln!("mod: {x} modStart: {x}")(mod, mod.mod_start);
 
 		void* moduleAddress = cast(void*)mod.mod_start;
 		moduleAddress += vMem.VM_BASE_ADDR;

@@ -4,29 +4,15 @@ module kernel.arch.select;
 
 // just loading x86-64 for now
 
+const char[] architecture = "x86_64";
 
+template PublicArchImport(char[] mod)
+{
+	const char[] PublicArchImport = `
 
+		public import kernel.arch.` ~ architecture ~ `.` ~ mod ~ `;
 
-// Abstraction
+	`;
+}
 
-// CPU
-public import kernel.arch.x86_64.init;
-
-// IDT
-public import kernel.arch.x86_64.idt;
-
-// SYSCALL
-public import syscall = kernel.arch.x86_64.syscall;
-
-// LOCKS
-public import kernel.arch.locks;
-
-// VMEM
-public import kernel.arch.x86_64.vmem;
-
-// TIMER
-public import kernel.arch.x86_64.hpet;
-
-
-// try and get rid of the dependencies on these:
 
