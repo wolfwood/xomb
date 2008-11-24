@@ -17,7 +17,22 @@ struct Environment
 	uint id;					// environment id
 
 	void* stack;				// stack
-	void* stackPtr;			// current stack pointer
+	void* stackPtr;				// current stack pointer
+
+	void* registers;			// register stack
+								// where the registers are saved (and other context information)
+								// has a fairly complicated set up
+			
+								//  +0 - ptr to bottom (is at register stack)
+								//  +8 - SS (INT)
+								// +16 - RSP (INT)
+								// +24 - RFLAGS (INT)
+								// +32 - CS (INT)
+								// +40 - RIP (INT)
+								// +48 - ERROR CODE (INT)
+								// +56 - INT NUMBER (INT)
+								// +64 - GENERAL REGISTERS (contextSwitchSave!())
+
 	//void* heap;				// heap (probably want information about the individual pages)
 
 	void* contextSpace;			// Where the code lives
@@ -78,23 +93,26 @@ struct Environment
 
 	ErrorVal initStack()
 	{
-//		kprintfln!("bla!!!!!")();
+		// allocate 8K
 		if (vMem.getUserPage(stack) == ErrorVal.Fail)
 		{
 			return ErrorVal.Fail;
 		}
-//		kprintfln!("booooooo!!!")();
+
 		if (vMem.getUserPage(stackPtr) == ErrorVal.Fail)
 		{
 			return ErrorVal.Fail;
 		}
-		kprintfln!("boo!")();
+		
 		stackPtr += vMem.PAGE_SIZE;
 
-		kprintfln!("ha! stack: {x}")(stackPtr);
+		// allocate 4K register stack
+		pageTable.mapRegisterStack(registers);	
 
 		// now, context save (for sanity of scheduling)
 		//mixin(contextSwitchSave!());	
+
+
 	
 		return ErrorVal.Success;
 	}
@@ -185,13 +203,13 @@ static:
 		environment = addr[i];
 
 		// should zero out the initial sections
-		*environment = Environment.init;	
+		//*environment = Environment.init;	
 
 		// set id
 		environment.id = i;
 
 		// now we can set up common stuff
-		environment.initPageTable();	// create a user page table
+		environment.initPageTable();	// create a user page table	
 
 		kprintfln!("init stack")();
 		environment.initStack();

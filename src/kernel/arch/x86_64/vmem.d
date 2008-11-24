@@ -27,6 +27,22 @@ static:
 
 // Page Table Structures (for userspace environments)
 
+template FormVirtualAddress(ulong pl4, ulong pl3, ulong pl2, ulong pl1)
+{
+	static if (pl4 & 0x100) // if bit 8 is set, high canonical
+	{
+		const ulong FormVirtualAddress = 0xFFFF000000000000 | (pl1 << 12) | (pl2 << (12 + 9)) | (pl3 << (12 + 9 + 9)) | (pl4 << (12 + 9 + 9 + 9));	
+	}
+	else
+	{
+		const ulong FormVirtualAddress = (pl1 << 12) | (pl2 << (12 + 9)) | (pl3 << (12 + 9 + 9)) | (pl4 << (12 + 9 + 9 + 9));
+	}
+}
+
+const ulong REGISTER_STACK = (FormVirtualAddress!(510,511,511,511)) + PAGE_SIZE;
+
+pragma(msg, "HEEEEY! " ~ Itoh!(FormVirtualAddress!(510,511,511,511)));
+
 align(1) struct PageTable
 {
 	pml4* entries;
@@ -92,6 +108,34 @@ align(1) struct PageTable
 
 		// free level 4
 		pMem.freePage((cast(void*)entries) - VM_BASE_ADDR);
+	}
+
+	ErrorVal mapRegisterStack(out void* registerStack)
+	{
+		registerStack = pMem.requestPage();
+
+		// map this page into a consistant address
+		
+		pml1* pl1;
+		pml2* pl2;
+		pml3* pl3;
+
+		long pml_index4;
+		long pml_index3;
+		long pml_index2;
+		long pml_index1;
+
+		void* virtualAddress = cast(void*)(REGISTER_STACK - PAGE_SIZE);
+		
+		allocateKernelPageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1, entries);
+
+		kprintfln!("{x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
+
+		pl1[pml_index1].pml1e = (cast(ulong)registerStack) | 0x87;
+
+		registerStack = cast(void*)REGISTER_STACK;
+
+		return ErrorVal.Success;
 	}
 	
 	// This function will take a physical range (a BIOS region, perhaps) and

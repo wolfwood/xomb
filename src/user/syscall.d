@@ -1,7 +1,7 @@
 module user.syscall;
 
 import kernel.core.util;
-import kernel.arch.select;
+import kernel.arch.usersyscall;
 
 enum SyscallID : ulong
 {
@@ -62,24 +62,6 @@ template SyscallName(uint ID)
 template ArgsStruct(uint ID)
 {
 	const char[] ArgsStruct = Capitalize!(SyscallName!(ID)) ~ "Args";
-}
-
-extern(C) long nativeSyscall(ulong ID, void* ret, void* params)
-{
-	// arguments for x86-64:
-	// %rdi, %rsi, %rdx, %rcx, %r8, %r9
-	// %rcx is also used for the return address for the syscall
-	//   but we only need three arguments
-	//   so these should be there!
-
-	// I assume such in the syscall handler
-	asm
-	{
-		naked;
-		"syscall";
-		//"xorq %%rax, %%rax";
-		"retq";
-	}
 }
 
 template MakeSyscall(uint ID)

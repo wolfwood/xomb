@@ -6,6 +6,7 @@ import kernel.dev.vga;
 import user.syscall;
 import kernel.core.util;
 import kernel.arch.x86_64.vmem;
+import kernel.arch.x86_64.context;
 import kernel.error;
 
 import kernel.core.syscall;
@@ -109,6 +110,8 @@ void jumpToUser(void* stackPtr, void* address)
 	}
 }
 
+
+
 // alright, so %rdi, %rsi, %rdx are the registers loaded by NativeSyscall()
 //
 
@@ -118,22 +121,46 @@ void syscallHandler()
 	{
 		naked;
 
+		// switch to register stack
+		// preserve current rsp, somehow
+		
+		"movq %%rsp, %%rax";
+		"movq $" ~ Itoh!(vMem.REGISTER_STACK - 8) ~ ", %%rsp";
+
 		// emulate interrupt stack
-		"pushq $0"; //$((8 << 3) | 3)";	// USER_DS (SS)
+		"pushq $((8 << 4) | 3)";	// USER_DS (SS)
 		"pushq %%rsp";			// STACK
 		"pushq %%r11";			// RFLAGS
-		"pushq $0"; //$((9 << 3) | 3)";	// USER_CS
+		"pushq $((9 << 3) | 3)";	// USER_CS
 		"pushq %%rcx";			// RIP
 		"pushq $0";			// ERROR CODE
 		"pushq $0";			// INTERRUPT NUMBER
 
+		// push registers
+	}
+	
+	mixin(contextSwitchSave!());		
+
+	asm 
+	{
 		"callq syscallDispatcher";
+	}
+		
+	mixin(contextSwitchRestore!());
+
+	asm
+	{
 
 		"addq $16, %%rsp"; 
+
+		//"iretq";
+		
 		"popq %%rcx";
 		"addq $8, %%rsp";
 		"popq %%r11";
 		"addq $16, %%rsp"; //popq %%rsp";
+
+		"movq %%rax, %%rsp";
 
 		//"add $16, %%rsp";
 
@@ -152,9 +179,6 @@ void syscallHandler()
 }
 
 }
-
-
-
 
 
 
