@@ -12,15 +12,15 @@ const ulong KERNEL_VM_BASE = 0xFFFFFFFF80000000;
 // flags to turn on.  If you only want to see some
 // debug messages, turn DEBUG_ALL off, and only
 // turn on the debug messages you wish to see.
-const auto DEBUG_ALL = true;
+const auto DEBUG_ALL = false;
 
 // Individual debug options
-const auto DEBUG_PAGING = true;
-const auto DEBUG_PAGEFAULTS = true;
-const auto DEBUG_PMEM = true;
-const auto DEBUG_INTERRUPTS = true;
-const auto DEBUG_MPTABLE = true;
-const auto DEBUG_LAPIC = true;
-const auto DEBUG_IOAPIC = true;
-const auto DEBUG_APENTRY = true;
-const auto DEBUG_KBD = true;
+const auto DEBUG_PAGING = false;
+const auto DEBUG_PAGEFAULTS = false;
+const auto DEBUG_PMEM = false;
+const auto DEBUG_INTERRUPTS = false;
+const auto DEBUG_MPTABLE = false;
+const auto DEBUG_LAPIC = false;
+const auto DEBUG_IOAPIC = false;
+const auto DEBUG_APENTRY = false;
+const auto DEBUG_KBD = false;

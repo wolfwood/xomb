@@ -23,15 +23,15 @@ struct Environment
 								// where the registers are saved (and other context information)
 								// has a fairly complicated set up
 			
-								//  +0 - ptr to bottom (is at register stack)
-								//  +8 - SS (INT)
-								// +16 - RSP (INT)
-								// +24 - RFLAGS (INT)
-								// +32 - CS (INT)
-								// +40 - RIP (INT)
-								// +48 - ERROR CODE (INT)
-								// +56 - INT NUMBER (INT)
-								// +64 - GENERAL REGISTERS (contextSwitchSave!())
+								//  -0 - ptr to bottom (is at register stack)
+								//  -8 - SS (INT)
+								// -16 - RSP (INT)
+								// -24 - RFLAGS (INT)
+								// -32 - CS (INT)
+								// -40 - RIP (INT)
+								// -48 - ERROR CODE (INT)
+								// -56 - INT NUMBER (INT)
+								// -64 - GENERAL REGISTERS (contextSwitchSave!())
 
 	//void* heap;				// heap (probably want information about the individual pages)
 
@@ -159,7 +159,11 @@ static:
 		addr = cast(Environment**)pageAddr;
 
 		// double the size (allow 1024 entries)
-		vMem.getKernelPage(pageAddr);
+	
+		if (vMem.getKernelPage(pageAddr) == ErrorVal.Fail)
+		{
+			return ErrorVal.Fail;
+		}
 
 		return ErrorVal.Success;
 	}	

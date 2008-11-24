@@ -12,6 +12,7 @@ be taken up by it, making the next valid index 5.
 module kernel.arch.x86_64.gdt;
 
 import kernel.core.util;
+import kernel.dev.vga;
 
 
 struct GDT
@@ -314,7 +315,9 @@ public void install()
 
 	// WTF do we set the RSP0-2 members to?!
 	//tss_struct.rsp0 = tss_struct.rsp1 = tss_struct.rsp2 =
+	kprintfln!("hit!")();
 	asm {
+	  "hlt";
 		"movq %%rsp, %%rax" ::: "rax";
 		"movq %%rax, %0" :: "o" tss_struct.rsp0 : "rax";
 	}
