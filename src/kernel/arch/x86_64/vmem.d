@@ -40,8 +40,9 @@ template FormVirtualAddress(ulong pl4, ulong pl3, ulong pl2, ulong pl1)
 }
 
 const ulong REGISTER_STACK = (FormVirtualAddress!(510,511,511,511)) + PAGE_SIZE;
+const ulong ENVIRONMENT_STACK = (FormVirtualAddress!(510,511,511,509)) + (2 * PAGE_SIZE);
 
-pragma(msg, "HEEEEY! " ~ Itoh!(FormVirtualAddress!(510,511,511,511)));
+//pragma(msg, "HEEEEY! " ~ Itoh!(FormVirtualAddress!(510,511,511,511)));
 
 align(1) struct PageTable
 {
@@ -108,6 +109,44 @@ align(1) struct PageTable
 
 		// free level 4
 		pMem.freePage((cast(void*)entries) - VM_BASE_ADDR);
+	}
+
+	ErrorVal mapStack(out void* stack)
+	{
+		stack = pMem.requestPage();
+
+		pml1* pl1;
+		pml2* pl2;
+		pml3* pl3;
+
+		long pml_index4;
+		long pml_index3;
+		long pml_index2;
+		long pml_index1;
+
+		void* virtualAddress = cast(void*)(ENVIRONMENT_STACK - (2 * PAGE_SIZE));
+
+		allocateUserPageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1, entries);
+
+		kprintfln!("{x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
+
+		pl1[pml_index1].pml1e = (cast(ulong)stack) | 0x87;
+		pl1[pml_index1].us = 1;
+
+		virtualAddress += PAGE_SIZE;
+
+		stack = pMem.requestPage();
+
+		allocateUserPageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1, entries);
+
+		kprintfln!("{x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
+
+		pl1[pml_index1].pml1e = (cast(ulong)stack) | 0x87;
+		pl1[pml_index1].us = 1;
+		
+		stack = virtualAddress + PAGE_SIZE;
+
+		return ErrorVal.Success;
 	}
 
 	ErrorVal mapRegisterStack(out void* registerStack)

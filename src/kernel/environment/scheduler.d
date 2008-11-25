@@ -95,7 +95,6 @@ static:
 
 	void exit()
 	{
-		return;
 		EnvironmentTable.removeEnvironment(curEnvironment.id);
 
 		curEnvironment = null;
@@ -122,21 +121,13 @@ static:
 		// set up quantum timer
 		// set up interrupt handler
 
-	//	curEnvironment = null;
-		Timer.initTimer(quantumInterval, &quantumFire);
+	    //	curEnvironment = null;
+		//Timer.initTimer(quantumInterval, &quantumFire);
 
 		kprintfln!("environ stack: {x}")(curEnvironment.stackPtr);
 	
 		curEnvironment.preamble();
 
-		//mixin(contextStackRestore!("curEnvironment.stackPtr"));
-
-		//kprintfln!("environ stack: {x}")(curEnvironment.stackPtr);
-
-		//asm {
-		//	"movq %0, %%rsp" :: "m" curEnvironment.stackPtr;
-		//}
-
-		Syscall.jumpToUser(curEnvironment.stackPtr, curEnvironment.entry);
+		mixin(Syscall.jumpToUser!("curEnvironment.stackPtr", "curEnvironment.entry"));
 	}
 }

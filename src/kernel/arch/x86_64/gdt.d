@@ -317,7 +317,7 @@ public void install()
 	//tss_struct.rsp0 = tss_struct.rsp1 = tss_struct.rsp2 =
 	asm {
 		"movq %%rsp, %%rax" ::: "rax";
-		"movq %%rax, %0" :: "o" tss_struct.rsp0 : "rax";
+		"movq %%rax, %0" :: "o" tss_struct.ist1 : "rax";
 	}
 	setGDT();
 
