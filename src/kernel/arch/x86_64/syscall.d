@@ -92,14 +92,16 @@ void setHandler(void* h)
 	}
 }
 
-void jumpToUser(void* stackPtr, void* address)
+template jumpToUser(char[] stackPtr, char[] address)
 {
-	asm{
+    const char[] jumpToUser = `
+
+    asm{
 		naked;
 
 		// place the address into rcx from rdi (the 1st argument)
-		"movq %%rsi, %%rcx" ::: "rcx";
-		"movq %%rdi, %%rsp" ::: "rdi";
+		"movq %0, %%rcx" :: "m" ` ~ address ~ ` : "rcx";
+		"movq %0, %%rsp" :: "m" ` ~ stackPtr ~ `;
 		
 		// enable IF flag and allow all ports with the IOPL
 		// http://en.wikipedia.org/wiki/FLAGS_register_(computing)
@@ -108,6 +110,8 @@ void jumpToUser(void* stackPtr, void* address)
 		// perform the SYSRET
 		"sysretq";		
 	}
+
+    `;
 }
 
 
@@ -129,7 +133,7 @@ void syscallHandler()
 
 		// emulate interrupt stack
 		"pushq $((8 << 4) | 3)";	// USER_DS (SS)
-		"pushq %%rsp";			// STACK
+		"pushq %%rax";			// STACK
 		"pushq %%r11";			// RFLAGS
 		"pushq $((9 << 3) | 3)";	// USER_CS
 		"pushq %%rcx";			// RIP
@@ -158,7 +162,8 @@ void syscallHandler()
 		"popq %%rcx";
 		"addq $8, %%rsp";
 		"popq %%r11";
-		"addq $16, %%rsp"; //popq %%rsp";
+    "popq %%rax";
+		//"addq $8, %%rsp"; //popq %%rsp";
 
 		"movq %%rax, %%rsp";
 

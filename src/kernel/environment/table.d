@@ -93,26 +93,15 @@ struct Environment
 
 	ErrorVal initStack()
 	{
-		// allocate 8K
-		if (vMem.getUserPage(stack) == ErrorVal.Fail)
-		{
-			return ErrorVal.Fail;
-		}
-
-		if (vMem.getUserPage(stackPtr) == ErrorVal.Fail)
-		{
-			return ErrorVal.Fail;
-		}
-		
-		stackPtr += vMem.PAGE_SIZE;
+		// allocate 8K environment stack
+		pageTable.mapStack(stackPtr);
+		stack = stackPtr - (2 * vMem.PAGE_SIZE);
 
 		// allocate 4K register stack
 		pageTable.mapRegisterStack(registers);	
 
 		// now, context save (for sanity of scheduling)
 		//mixin(contextSwitchSave!());	
-
-
 	
 		return ErrorVal.Success;
 	}
@@ -188,8 +177,6 @@ static:
 			kprintfln!("BUG: EnvironmentTable.newEnvironment")();
 			return ErrorVal.Fail;
 		}
-
-		kprintfln!("asdfasdf")();
 	
 		void* envEntry;
 		if (vMem.getKernelPage(envEntry) == ErrorVal.Fail)
