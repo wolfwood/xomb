@@ -40,15 +40,17 @@ static:
 		}
 
 		// add a new environment
-		Environment* environ;
-		kprintfln!("Scheduler: Creating new environment.")();
-		EnvironmentTable.newEnvironment(environ);
-
-		// load an executable from the multiboot header
-		kprintfln!("Scheduler: Loading from GRUB module.")();
-
 		// Get all grub modules and load them in to the environment table
-		for(int i = 0; i < GRUBModules.getLength(); i++) {
+		for(int i = 0; i < GRUBModules.length; i++) 
+		{
+			Environment* environ;
+			kprintfln!("Scheduler: Creating new environment.")();
+
+			EnvironmentTable.newEnvironment(environ);
+
+			// load an executable from the multiboot header
+			kprintfln!("Scheduler: Loading from GRUB module.")();
+
 		  environ.loadGRUBModule(i);
 		}
 
@@ -100,7 +102,10 @@ static:
 
 	void yield()
 	{
-	  //curEnvironment = EnvironmentTable.nextEnvironment();
+		kprintfln!("Yield")();
+		curEnvironment.postamble();
+		
+	  //curEnvironment = EnvironmentTable.getEnvironment(0);
 	  //schedule();
 
 	  if(curEnvironment.id == 0) {
@@ -108,7 +113,8 @@ static:
 	  } else {
 	    curEnvironment = EnvironmentTable.getEnvironment(0);
 	  }
-
+		
+		curEnvironment.preamble();
 	  curEnvironment.execute();
 
 	}
@@ -143,9 +149,10 @@ static:
 		//Timer.initTimer(quantumInterval, &quantumFire);
 
 		kprintfln!("environ stack: {x}")(curEnvironment.stackPtr);
-	
-		curEnvironment.preamble();
 
+		curEnvironment.preamble();
+		curEnvironment.execute();
+	
 		mixin(Syscall.jumpToUser!("curEnvironment.stackPtr", "curEnvironment.entry"));
 	}
 }

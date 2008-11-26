@@ -5,13 +5,24 @@ module kernel.environment.table;
 import kernel.arch.vmem;
 import kernel.arch.context;	// context switch save, restore
 
+import kernel.arch.syscall;
+
 import kernel.core.error;
 import kernel.core.modules;
+import kernel.core.util;
 
 import kernel.dev.vga;
 
 struct Environment
 {
+
+	enum State
+	{
+		Ready,
+		Running,
+		Blocked,
+	}
+
 	vMem.PageTable pageTable;	// The page table
 
 	uint id;					// environment id
@@ -38,7 +49,9 @@ struct Environment
 	void* contextSpace;			// Where the code lives
 	ulong contextSize;			// Size of the context space
 
-	void* entry;				// Entry point, the address of the first instruction (in terms of the environment address space)
+	void* entry;				// Entry point, the address of the first instruction (in terms of the environment address space
+	
+	State state;				// state
 
 	// will load the environment (using a loader)
 	void load()
@@ -60,20 +73,17 @@ struct Environment
 		entry = GRUBModules.getEntry(modNumber);		
 	}
 
-	void* tmpPtr;
 	// code executed as this environment gets set to run
 	ErrorVal preamble()
 	{
 		// use page table
 		pageTable.use();
 
-		// use stack
-	//	mixin(contextStackRestore!("stackPtr"));
-
-		////void* tmpPtr;
-		//mixin(contextStackSave!("tmpPtr"));
-
-		kprintfln!("Stack switched: {x}")(tmpPtr);
+		// switch stack
+		//mixin(contextSwitchStack!());
+		if (state == State.Blocked) {
+			state = State.Running;
+		}
 
 		return ErrorVal.Success;
 	}
@@ -81,16 +91,33 @@ struct Environment
 	// Code for execute
   	ErrorVal execute()
   	{
-	       // Call the preamble code first, then execute.
-	       preamble();
-	       // WAS HERE!!!!!!!!
+		// first execution?
+		if (state == State.Ready)
+		{
 
-    	       return ErrorVal.Success;
+			//kprintfln!("state is ready {x}")(entry);
+			// has not been executed yet
+			state = State.Running;
+
+			// create a mock stack
+			mixin(contextSwitchPrepare!("entry"));
+
+			//mixin(Syscall.jumpToUser!("stackPtr", "entry"));
+
+			return ErrorVal.Success;
+		}
+		
+		// Call the preamble code first, then execute.
+		preamble();
+
+		return ErrorVal.Success;
   	}
 
 	// code executed as this environment gets switched
 	ErrorVal postamble()
 	{
+		state = State.Blocked;
+
 		return ErrorVal.Success;
 	}
 
@@ -112,7 +139,6 @@ struct Environment
 
 		// now, context save (for sanity of scheduling)
 		//mixin(contextSwitchSave!());	
-	
 		return ErrorVal.Success;
 	}
 
@@ -209,6 +235,9 @@ static:
 		// set id
 		environment.id = i;
 
+		// set it to ready (not running)
+		environment.state = Environment.State.Ready;
+
 		// now we can set up common stuff
 		environment.initPageTable();	// create a user page table	
 
@@ -259,7 +288,7 @@ static:
 		addr[environmentIndex] = null;
 	}
 
-  uint nextEnvironment(
+ 
 
 }
 

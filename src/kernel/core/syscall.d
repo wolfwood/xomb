@@ -52,7 +52,7 @@ public:
 		return SyscallError.OK;
 	}
 
-  	SyscallError yield() {
+  	SyscallError yield(YieldArgs* params) {
 		Scheduler.yield();
 		
 		return SyscallError.OK;

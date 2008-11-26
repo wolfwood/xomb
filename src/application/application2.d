@@ -11,7 +11,7 @@ void main()
  for (;;)
  {
 // exit(0);
-  yield();
+//  yield();
  }
 
  return;

@@ -42,7 +42,7 @@ template FormVirtualAddress(ulong pl4, ulong pl3, ulong pl2, ulong pl1)
 const ulong REGISTER_STACK = (FormVirtualAddress!(510,511,511,511)) + PAGE_SIZE;
 const ulong ENVIRONMENT_STACK = (FormVirtualAddress!(510,511,511,509)) + (2 * PAGE_SIZE);
 
-//pragma(msg, "HEEEEY! " ~ Itoh!(FormVirtualAddress!(510,511,511,511)));
+pragma(msg, "HEEEEY! " ~ Itoh!(cast(long)(FormVirtualAddress!(510,511,511,511))));
 
 align(1) struct PageTable
 {

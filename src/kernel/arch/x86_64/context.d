@@ -1,5 +1,8 @@
 module kernel.arch.x86_64.context;
 
+import kernel.arch.x86_64.vmem;
+import kernel.core.util;
+
 /*
 
 Template: contextSwitchSave, contextSwitchRestore
@@ -73,6 +76,62 @@ template contextSwitchRestore()
 		"popq %%rbx";
 		"popq %%rax";
 	}
+	`;
+}
+
+template contextSwitchStack()
+{
+	const char[] contextSwitchStack = `
+
+		asm {
+	
+			"movq $` ~ Itoa!(vMem.REGISTER_STACK) ~ `, %%rsp";
+
+		}
+
+	`;
+}
+
+template contextSwitchPrepare(char[] address)
+{
+	const char[] contextSwitchPrepare = `
+
+		asm {
+
+			"movq %%rsp, %%rcx";
+
+			"movq %0, %%rbx" :: "m" ` ~ address ~ ` : "rbx";
+
+			// switch to stack
+
+			"movq $` ~ Itoa!(vMem.REGISTER_STACK-8) ~ `, %%rsp";
+
+			// stack stuff
+
+			"pushq $0";
+			"movq $` ~ Itoa!(vMem.ENVIRONMENT_STACK) ~ `, %%rax";
+			"pushq %%rax";
+
+			"pushq $((1 << 9) | (3 << 12))";
+			"pushq $((9 << 3) | 3)";
+			//"addq $-8, %%rsp";
+			"pushq %%rbx";
+			"pushq $0";
+			"pushq $0";
+			
+
+		}
+
+		mixin(contextSwitchSave!());
+
+		asm {
+
+			"movq %%rsp, %%rax; movq %%rax, ` ~ Itoa!(vMem.REGISTER_STACK-8) ~ `";
+
+			"movq %%rcx, %%rsp";
+
+		}
+
 	`;
 }
 

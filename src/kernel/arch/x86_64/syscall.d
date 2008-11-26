@@ -92,9 +92,11 @@ void setHandler(void* h)
 	}
 }
 
+//pragma(msg, "" ~ Itoa!(cast(long)vMem.REGISTER_STACK));
+
 template jumpToUser(char[] stackPtr, char[] address)
 {
-    const char[] jumpToUser = `
+/*    const char[] jumpToUser = `
 
     asm{
 		naked;
@@ -112,6 +114,41 @@ template jumpToUser(char[] stackPtr, char[] address)
 	}
 
     `;
+ /*/
+	const char[] jumpToUser = `
+
+	asm {
+
+		naked;
+
+		"movq $` ~ Itoa!(vMem.REGISTER_STACK-8) ~ `, %%rsp";
+
+		// go to bottom of register stack
+		"popq %%rsp";
+
+	}
+
+	mixin(contextSwitchRestore!());
+
+	asm {
+
+		// get variables from stack
+		"addq $16, %%rsp";
+		"popq %%rcx";
+		"addq $8, %%rsp";
+		"popq %%r11";
+		"popq %%rax";
+
+		// switch to user stack
+		"movq %%rax, %%rsp";
+
+		// go to user
+		"sysretq";
+	}
+
+
+	`;
+	// */
 }
 
 
@@ -162,7 +199,7 @@ void syscallHandler()
 		"popq %%rcx";
 		"addq $8, %%rsp";
 		"popq %%r11";
-    "popq %%rax";
+		"popq %%rax";
 		//"addq $8, %%rsp"; //popq %%rsp";
 
 		"movq %%rax, %%rsp";
@@ -224,12 +261,12 @@ template MakeSyscallDispatchList()
 
 extern(C) void syscallDispatcher(ulong ID, void* ret, void* params)
 {
-	void* stackPtr;
-	asm {
-		"movq %%rsp, %%rax" ::: "rax";
-		"movq %%rax, %0" :: "o" stackPtr : "rax";
-	}
-	kprintfln!("Syscall: ID = 0x{x}, ret = 0x{x}, params = 0x{x}, rsp = 0x{x}")(ID, ret, params, stackPtr);
+	//void* stackPtr;
+	//asm {
+	//	"movq %%rsp, %%rax" ::: "rax";
+	//	"movq %%rax, %0" :: "o" stackPtr : "rax";
+	//}//
+	//kprintfln!("Syscall: ID = 0x{x}, ret = 0x{x}, params = 0x{x}, rsp = 0x{x}")(ID, ret, params, stackPtr);
 	mixin(MakeSyscallDispatchList!());
 }
 
