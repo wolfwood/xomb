@@ -78,6 +78,16 @@ struct Environment
 		return ErrorVal.Success;
 	}
 
+	// Code for execute
+  	ErrorVal execute()
+  	{
+	       // Call the preamble code first, then execute.
+	       preamble();
+	       // WAS HERE!!!!!!!!
+
+    	       return ErrorVal.Success;
+  	}
+
 	// code executed as this environment gets switched
 	ErrorVal postamble()
 	{
@@ -248,6 +258,8 @@ static:
 		// remove from table
 		addr[environmentIndex] = null;
 	}
+
+  uint nextEnvironment(
 
 }
 

@@ -46,7 +46,12 @@ static:
 
 		// load an executable from the multiboot header
 		kprintfln!("Scheduler: Loading from GRUB module.")();
-		environ.loadGRUBModule(0);
+
+		// Get all grub modules and load them in to the environment table
+		for(int i = 0; i < GRUBModules.getLength(); i++) {
+		  environ.loadGRUBModule(i);
+		}
+
 
 		return ErrorVal.Success;
 	}
@@ -93,6 +98,21 @@ static:
 		// return
 	}
 
+	void yield()
+	{
+	  //curEnvironment = EnvironmentTable.nextEnvironment();
+	  //schedule();
+
+	  if(curEnvironment.id == 0) {
+	    curEnvironment = EnvironmentTable.getEnvironment(1);
+	  } else {
+	    curEnvironment = EnvironmentTable.getEnvironment(0);
+	  }
+
+	  curEnvironment.execute();
+
+	}
+
 	void exit()
 	{
 		EnvironmentTable.removeEnvironment(curEnvironment.id);
@@ -118,10 +138,8 @@ static:
 
 		kprintfln!("Scheduler: About to jump to user at {x}")(curEnvironment.entry);
 
-		// set up quantum timer
-		// set up interrupt handler
 
-	    //	curEnvironment = null;
+		// set up interrupt handler
 		//Timer.initTimer(quantumInterval, &quantumFire);
 
 		kprintfln!("environ stack: {x}")(curEnvironment.stackPtr);

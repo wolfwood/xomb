@@ -41,7 +41,6 @@ public:
 	// void exit(ulong retval)
 	SyscallError exit(ExitArgs* params)
 	{
-		kprintfln!("WARNING: exit() not yet implemented")();
 
 		Scheduler.exit();		
 
@@ -52,6 +51,12 @@ public:
 	{	
 		return SyscallError.OK;
 	}
+
+  	SyscallError yield() {
+		Scheduler.yield();
+		
+		return SyscallError.OK;
+      	}
 	
 }
 			
