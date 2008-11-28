@@ -169,7 +169,7 @@ void syscallHandler()
 		"movq $" ~ Itoh!(vMem.REGISTER_STACK - 8) ~ ", %%rsp";
 
 		// emulate interrupt stack
-		"pushq $((8 << 4) | 3)";	// USER_DS (SS)
+		"pushq $((8 << 3) | 3)";	// USER_DS (SS)
 		"pushq %%rax";			// STACK
 		"pushq %%r11";			// RFLAGS
 		"pushq $((9 << 3) | 3)";	// USER_CS
@@ -184,7 +184,19 @@ void syscallHandler()
 
 	asm 
 	{
+		// save top of register stack
+		"movq %%rsp, %%rax; movq %%rax, " ~ Itoa!(vMem.REGISTER_STACK-8) ::: "rax"; 
+
+		// switch to KERNEL STACK
+		"movq $" ~ Itoa!(vMem.KERNEL_STACK) ~ ", %%rsp";
+
+		// call dispatcher
 		"callq syscallDispatcher";
+
+		// go to bottom of register stack
+		// the stack pointer is the first entry on the register stack
+		"movq $" ~ Itoa!(vMem.REGISTER_STACK-8) ~ ", %%rsp";
+		"popq %%rsp";
 	}
 		
 	mixin(contextSwitchRestore!());
@@ -194,28 +206,17 @@ void syscallHandler()
 
 		"addq $16, %%rsp"; 
 
+		// -- corresponds to iretq in interrupt handler -- //
 		//"iretq";
+		// -- corresponds to iretq in interrupt handler -- //
 		
 		"popq %%rcx";
 		"addq $8, %%rsp";
 		"popq %%r11";
 		"popq %%rax";
-		//"addq $8, %%rsp"; //popq %%rsp";
 
 		"movq %%rax, %%rsp";
 
-		//"add $16, %%rsp";
-
-		//"iretq";
-		// make sure to preserve the return address and flags
-		//"pushq %%rbp";
-		//"movq %%rbp, %%rsp";
-		//"pushq %%rcx";
-		//"pushq %%r11";
-		//"callq syscallDispatcher";
-		//"popq %%r11";
-		//"popq %%rcx";
-		//"popq %%rbp";
 		"sysretq";
 	}
 }

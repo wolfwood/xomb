@@ -6,6 +6,8 @@ import kernel.arch.x86_64.idt;
 import kernel.arch.x86_64.gdt;
 import kernel.arch.x86_64.syscall;
 import kernel.arch.x86_64.vmem;
+import kernel.arch.x86_64.pagefault;
+import kernel.arch.x86_64.pic;
 
 import multiboot = kernel.core.multiboot;
 
@@ -124,6 +126,21 @@ static:
 
 	void install()
 	{
+		//This shuts off the PIT since its started by grub
+		ioOut!(byte,"43h")(0x30);
+		ioOut!(byte,"40h")(0x00);
+		ioOut!(byte,"40h")(0x00);
+
+		PIC.EOI(0);
+
+		PIC.disable();
+
+		// EOI the PIT just incase
+		PIC.EOI(0);
+
+		// must be sure
+		PIC.disable();
+
 		printLogLine("Installing GDT");
 		// install the Global Descriptor Table (GDT) and the Interrupt Descriptor Table (IDT)
 		GDT.install();
@@ -134,7 +151,7 @@ static:
 		printLogSuccess();
 
 		printLogLine("Installing Paging Mechanism");
-		Interrupts.setCustomHandler(Interrupts.Type.PageFault, &vMem.pageFaultHandler);
+		Interrupts.setCustomHandler(Interrupts.Type.PageFault, &pageFaultHandler);
 		// XXX: I want to know when this happens:
 		Interrupts.setCustomHandler(Interrupts.Type.UnknownInterrupt, &ignoreHandler);
 
@@ -143,6 +160,8 @@ static:
 		printLogLine("Installing Page Tables");
 		vMem.install();
 		printLogSuccess();
+
+		vMem.installStack();
 
 		// use the page tables, gdt, etc
 		boot();

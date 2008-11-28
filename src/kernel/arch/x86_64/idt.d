@@ -1,7 +1,7 @@
 // idt.d - all the idt goodness you can handle
 module kernel.arch.x86_64.idt;
 
-import kernel.arch.x86_64.gdt;
+import kernel.arch.x86_64.descriptors;
 
 import kernel.core.error;
 import kernel.dev.vga;
@@ -12,7 +12,7 @@ import kernel.arch.x86_64.context;
 
 import kernel.arch.x86_64.vmem;
 
-alias GDT.IntGateDesc64 IDTEntry;
+alias IntGateDesc64 IDTEntry;
 
 public align(1) struct IDTPtr
 {
@@ -67,7 +67,8 @@ InterruptHandler[256] InterruptHandlers;
 
 public enum StackType : uint
 {
-	StackFault = 1,
+	RegisterStack = 1,
+	StackFault,
 	DoubleFault,
 	NMI,
 	Debug,
@@ -82,7 +83,7 @@ public enum StackType : uint
 *  "Unhandled Interrupt" exception */
 IDTEntry[256] Entries;
 
-public void setGate(uint num, GDT.SysSegType64 gateType, ulong funcPtr, uint dplFlags, uint istFlags)
+public void setGate(uint num, SysSegType64 gateType, ulong funcPtr, uint dplFlags, uint istFlags)
 {
 	with(Entries[num])
 	{
@@ -97,15 +98,15 @@ public void setGate(uint num, GDT.SysSegType64 gateType, ulong funcPtr, uint dpl
 	}
 }
 
-void setIntGate(uint num, void* funcPtr, uint ist = 0)
+void setIntGate(uint num, void* funcPtr, uint ist = StackType.RegisterStack)
 {
-	setGate(num, GDT.SysSegType64.IntGate, cast(ulong)funcPtr, 0, ist);
+	setGate(num, SysSegType64.IntGate, cast(ulong)funcPtr, 0, ist);
 }
 
 
-void setSysGate(uint num, void* funcPtr, uint ist = 0)
+void setSysGate(uint num, void* funcPtr, uint ist = StackType.RegisterStack)
 {
-	setGate(num, GDT.SysSegType64.IntGate, cast(ulong)funcPtr, 3, ist);
+	setGate(num, SysSegType64.IntGate, cast(ulong)funcPtr, 3, ist);
 }
 
 public void install()
@@ -121,14 +122,17 @@ public void install()
 	setIntGate(5, &isr5);
 	setIntGate(6, &isr6);
 	setIntGate(7, &isr7);
-	setIntGate(8, &isr8, StackType.DoubleFault);
+	// XXX : I ignore this right now, because the PIC still fires INT 8 for IRQ 0... i need to know how to get around this.
+	//     : We should not ignore this.  We should also not double fault.  Ever.
+	//setIntGate(8, &isr8, StackType.DoubleFault);
+	setIntGate(8, &isrIgnore, 0);
 	setIntGate(9, &isr9);
 	setIntGate(10, &isr10);
 	setIntGate(11, &isr11);
 	setIntGate(12, &isr12, StackType.StackFault);
 	setIntGate(13, &isr13);
 	setIntGate(14, &isr14);
-	setIntGate(15, &isr15);
+	setIntGate(15, &isrIgnore, 0);
 	setIntGate(16, &isr16);
 	setIntGate(17, &isr17);
 	setIntGate(18, &isr18, StackType.MCE);
@@ -182,12 +186,12 @@ public void setIDT()
 public ErrorVal installStack()
 {
 	// just use the current kernel stack
-	asm {
-		"movq %%rsp, %%rax" ::: "rax";
-		"movq %%rax, %0" :: "o" GDT.tss_struct.ist1 : "rax";
-	}
+//	asm {
+//		"movq %%rsp, %%rax" ::: "rax";
+//		"movq %%rax, %0" :: "o" tss_struct.ist1 : "rax";
+//	}
 
-	kprintfln!("stack ist: {x}")(GDT.tss_struct.ist1);
+//	kprintfln!("stack ist: {x}")(tss_struct.ist1);
 	
 	return ErrorVal.Success;
 }
@@ -229,6 +233,16 @@ template ISR(int num, bool needDummyError = true)
 			`jmp isr_common`;
 		}
 	}";
+}
+
+// simply ignore the interrupt
+extern(C) void isrIgnore()
+{
+	asm 
+	{
+		naked;
+		"iretq";
+	}
 }
 
 mixin(ISR!(0));
@@ -385,13 +399,42 @@ extern(C) void fault_handler(InterruptStack* r)
 
 extern(C) void isr_common()
 {
+	// TSS should have switched to REGISTER_STACK-8 
+	// (2nd entry, 1st is for saving top of stack)
+	// Hardware / ISRn() would have pushed the general
+	// stack information to the REGISTER_STACK
+
+	// SS
+	// RSP
+	// FLAGS
+	// CS
+	// RIP
+	// ERROR CODE
+	// INTERRUPT VECTOR #
+
 	mixin(contextSwitchSave!());
 	
 	asm
 	{
 		naked;
-		"mov %%rsp, %%rdi";
+		// save top of REGISTER_STACK
+		// also pass it as the first parameter (%rdi)
+		// to the fault handler
+		"movq %%rsp, %%rdi";
+		"movq %%rsp, %%rax";
+		"movq %%rax, " ~ Itoa!(vMem.REGISTER_STACK-8) ::: "rax";
+
+		// switch to KERNEL_STACK
+		"movq $" ~ Itoa!(vMem.KERNEL_STACK) ~ ", %%rsp";
+
+		// transfer control to the fault handler
 		"call fault_handler";
+
+		// switch back to REGISTER_STACK
+		"movq $" ~ Itoa!(vMem.REGISTER_STACK-8) ~ ", %%rsp";
+
+		// go to top of REGISTER_STACK
+		"popq %%rsp";
 	}
 	
 	mixin(contextSwitchRestore!());
@@ -399,10 +442,12 @@ extern(C) void isr_common()
 	asm
 	{
 		naked;
-		// A haiku
-		// We need to print a stack trace
-		// I hate a-s-m
-		// This is a job for Jarrett
+
+		// A haiku - saved here for posterity - we now love a-s-m
+
+			// We need to print a stack trace
+			// I hate a-s-m
+			// This is a job for Jarrett
 
 		// Cleans up the pushed error code and pushed ISR num
 		"add $16, %%rsp";

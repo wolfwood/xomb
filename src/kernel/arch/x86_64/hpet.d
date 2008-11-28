@@ -11,6 +11,7 @@ import kernel.arch.x86_64.ioapic;
 import kernel.arch.x86_64.lapic;
 import kernel.arch.x86_64.mp;
 import kernel.arch.x86_64.idt;
+import kernel.arch.x86_64.pic;
 
 // Make mpInformation 
 
@@ -86,14 +87,12 @@ struct HPET
 {
 	static:
 
+	bool inited = false;
+
 	//initialize out HPET timer
 	ErrorVal init()
 	{
-		//This shuts off the PIT since its started by grub
-		Cpu.ioOut!(byte,"43h")(0x30);
-		Cpu.ioOut!(byte,"40h")(0x00);
-		Cpu.ioOut!(byte,"40h")(0x00);
-
+		
 		// get the virtual address of the HPET within the BIOS device map region
 		ubyte* virtHPETAddy = global_mem_regions.device_maps.virtual_start + (hpetDevice.physHPETAddress - global_mem_regions.device_maps.physical_start);
 		if(virtHPETAddy > (global_mem_regions.device_maps.virtual_start + global_mem_regions.device_maps.length))
@@ -113,12 +112,22 @@ struct HPET
 		
 		//kprintfln!("NUM_TIM_CAP = {}")(hpetDevice.config.NUM_TIM_CAP);
 
+		hpetDevice.config.ENABLE_CNF = 0; // disable counter
+
+		hpetDevice.config.mainCounterValue = 0;
+		if (hpetDevice.config.mainCounterValue != 0)
+		{
+			// the timer does not exist
+			return ErrorVal.Fail;
+		}
+
 		// initialize the configuration to allow standard IOAPIC interrupts
 		//hpetDevice.config.LEG_RT_CNF = 1;
 		hpetDevice.config.ENABLE_CNF = 1; // enable counter?
 
 		hpetDevice.config.mainCounterValue = 0;
 	
+		inited = true;
 		return ErrorVal.Success;
 	}
 
@@ -137,6 +146,7 @@ struct HPET
 	// the function to start and equip a non-periodic timer
 	void initTimer(uint index, ulong picoSecondInterval, InterruptHandler intHandler)
 	{
+		if (inited == false) { return; }
 		ulong* hpetTimerReg = cast(ulong*)( hpetDevice.virtHPETAddress + 0x100 + (0x20 * index));
 
 		//IDT.setCustomHandler(36, &hpetHandler);

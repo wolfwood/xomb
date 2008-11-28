@@ -108,7 +108,6 @@ struct Environment
 		}
 		
 		// Call the preamble code first, then execute.
-		preamble();
 
 		return ErrorVal.Success;
   	}
@@ -132,7 +131,7 @@ struct Environment
 	{
 		// allocate 8K environment stack
 		pageTable.mapStack(stackPtr);
-		stack = stackPtr - (2 * vMem.PAGE_SIZE);
+		stack = stackPtr - (vMem.ENVIRONMENT_STACK_PAGES * vMem.PAGE_SIZE);
 
 		// allocate 4K register stack
 		pageTable.mapRegisterStack(registers);	

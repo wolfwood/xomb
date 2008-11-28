@@ -54,6 +54,7 @@ static:
 		  environ.loadGRUBModule(i);
 		}
 
+		Interrupts.setCustomHandler(Interrupts.Type.DivByZero, &quantumFire);
 
 		return ErrorVal.Success;
 	}
@@ -62,9 +63,9 @@ static:
 	void quantumFire(InterruptStack* stack)
 	{
 		// schedule!
-		//schedule();
+		schedule();
 
-		Timer.resetTimer(0, quantumInterval);
+		//Timer.resetTimer(0, quantumInterval);
 	}
 
 	// called to schedule a new process
@@ -77,14 +78,24 @@ static:
 			// isr_common()
 			// syscall_dispatcher()
 
-			mixin(contextStackSave!("curEnvironment.stackPtr"));
+			curEnvironment.postamble();
 		}
 
 		// find candidate for execution
+
+		kprintfln!("schedule(): Scheduling new environment.  Current eid: {}")(curEnvironment.id);
 		
 		// ... //
-		curEnvironment = EnvironmentTable.getEnvironment(0);
+	//	curEnvironment = EnvironmentTable.getEnvironment(0);
+	  if(curEnvironment.id == 0) {
+	    curEnvironment = EnvironmentTable.getEnvironment(1);
+	  } else {
+	    curEnvironment = EnvironmentTable.getEnvironment(0);
+	  }
 
+	  	kprintfln!("schedule(): New Environment Selected.  eid: {}")(curEnvironment.id);
+	
+	
 		// curEnvironment should be set to the next
 		// environment to be executed
 
@@ -94,28 +105,23 @@ static:
 		// the resulting return should get to the context
 		// switch restore code for the architecture
 
-		mixin(contextStackRestore!("curEnvironment.stackPtr"));
-		curEnvironment.preamble();				
+		//mixin(contextStackRestore!("curEnvironment.stackPtr"));
+		curEnvironment.preamble();
+		curEnvironment.execute();				
 
 		// return
 	}
 
 	void yield()
 	{
-		kprintfln!("Yield")();
-		curEnvironment.postamble();
+		kprintfln!("Yield from eid: {}")(curEnvironment.id);
+//		curEnvironment.postamble();
 		
 	  //curEnvironment = EnvironmentTable.getEnvironment(0);
-	  //schedule();
+	  schedule();
 
-	  if(curEnvironment.id == 0) {
-	    curEnvironment = EnvironmentTable.getEnvironment(1);
-	  } else {
-	    curEnvironment = EnvironmentTable.getEnvironment(0);
-	  }
-		
-		curEnvironment.preamble();
-	  curEnvironment.execute();
+//	curEnvironment.preamble();
+//	  curEnvironment.execute();
 
 	}
 
@@ -149,6 +155,9 @@ static:
 		//Timer.initTimer(quantumInterval, &quantumFire);
 
 		kprintfln!("environ stack: {x}")(curEnvironment.stackPtr);
+
+		Timer.initTimer(quantumInterval, &quantumFire);
+
 
 		curEnvironment.preamble();
 		curEnvironment.execute();

@@ -39,10 +39,38 @@ template FormVirtualAddress(ulong pl4, ulong pl3, ulong pl2, ulong pl1)
 	}
 }
 
-const ulong REGISTER_STACK = (FormVirtualAddress!(510,511,511,511)) + PAGE_SIZE;
-const ulong ENVIRONMENT_STACK = (FormVirtualAddress!(510,511,511,509)) + (2 * PAGE_SIZE);
+// Page Size constant
+const ulong PAGE_SIZE = 4096;			// 4k pages for us right now
 
-pragma(msg, "HEEEEY! " ~ Itoh!(cast(long)(FormVirtualAddress!(510,511,511,511))));
+// size of the kernel stack
+const ulong KERNEL_STACK_PAGES = 1;
+
+// size of the user stack
+const ulong ENVIRONMENT_STACK_PAGES = 2;
+
+// size of the register stack (context switch storage)
+const ulong REGISTER_STACK_PAGES = 1;
+
+// register stack
+const ulong REGISTER_STACK = (FormVirtualAddress!(510,511,511,512 - KERNEL_STACK_PAGES - REGISTER_STACK_PAGES)) + (REGISTER_STACK_PAGES * PAGE_SIZE);
+
+// user stack
+const ulong ENVIRONMENT_STACK = (FormVirtualAddress!(510,511,511,512 - KERNEL_STACK_PAGES - REGISTER_STACK_PAGES - ENVIRONMENT_STACK_PAGES)) + (ENVIRONMENT_STACK_PAGES * PAGE_SIZE);
+
+// kernel stack
+const ulong KERNEL_STACK = (FormVirtualAddress!(511,510,511,512 - KERNEL_STACK_PAGES)) + (KERNEL_STACK_PAGES * PAGE_SIZE);
+
+
+
+
+// RAM mapping
+const ulong VM_BASE_INDEX = 0;	// This index is where on the pageLevel3[] the physical memory should start to be mapped in
+	                            // Changing this value WILL IMPACT THE VALUE BELOW IT!!!!!!!!!
+
+const ulong VM_BASE_ADDR = FormVirtualAddress!(511,VM_BASE_INDEX,0,0); // Base address for virtual addresses when accessing the physical memory
+	                                        // that was mapped in to VM during our pages reinstall to prevent chicken/egg
+
+
 
 align(1) struct PageTable
 {
@@ -63,6 +91,7 @@ align(1) struct PageTable
 		entries[0..511] = pml4.init;
 
 		// map in the kernel
+		//entries[510].pml4e = pageLevel4[510].pml4e;
 		entries[511].pml4e = pageLevel4[511].pml4e;
 	}	
 
@@ -74,7 +103,7 @@ align(1) struct PageTable
 		pml1* pl1;
 	
 		// free entire pagetable from all levels
-
+		
 		// stop short of kernel mapping (pl4[511])
 		for (int i=0; i<511; i++)
 		{ // look at level 3s
@@ -113,8 +142,6 @@ align(1) struct PageTable
 
 	ErrorVal mapStack(out void* stack)
 	{
-		stack = pMem.requestPage();
-
 		pml1* pl1;
 		pml2* pl2;
 		pml3* pl3;
@@ -124,37 +151,31 @@ align(1) struct PageTable
 		long pml_index2;
 		long pml_index1;
 
-		void* virtualAddress = cast(void*)(ENVIRONMENT_STACK - (2 * PAGE_SIZE));
+		void* virtualAddress = cast(void*)(ENVIRONMENT_STACK - (ENVIRONMENT_STACK_PAGES * PAGE_SIZE));
 
-		allocateUserPageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1, entries);
+		while (virtualAddress != cast(void*)ENVIRONMENT_STACK)
+		{
+			stack = pMem.requestPage();
+			
+			allocateUserPageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1, entries);
 
-		kprintfln!("{x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
+			kprintfln!("estack: {x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
 
-		pl1[pml_index1].pml1e = (cast(ulong)stack) | 0x87;
-		pl1[pml_index1].us = 1;
+			// we set the entry to point to the newly allocated page
+			pl1[pml_index1].pml1e = (cast(ulong)stack) | 0x87; // present!
+			pl1[pml_index1].us = 1; // user mode access
 
-		virtualAddress += PAGE_SIZE;
+			virtualAddress += PAGE_SIZE;
 
-		stack = pMem.requestPage();
-
-		allocateUserPageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1, entries);
-
-		kprintfln!("{x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
-
-		pl1[pml_index1].pml1e = (cast(ulong)stack) | 0x87;
-		pl1[pml_index1].us = 1;
+		}
 		
-		stack = virtualAddress + PAGE_SIZE;
+		stack = cast(void*)ENVIRONMENT_STACK;
 
 		return ErrorVal.Success;
 	}
 
 	ErrorVal mapRegisterStack(out void* registerStack)
 	{
-		registerStack = pMem.requestPage();
-
-		// map this page into a consistant address
-		
 		pml1* pl1;
 		pml2* pl2;
 		pml3* pl3;
@@ -164,14 +185,23 @@ align(1) struct PageTable
 		long pml_index2;
 		long pml_index1;
 
-		void* virtualAddress = cast(void*)(REGISTER_STACK - PAGE_SIZE);
+		void* virtualAddress = cast(void*)(REGISTER_STACK - (REGISTER_STACK_PAGES * PAGE_SIZE));
+
+		while (virtualAddress != cast(void*)REGISTER_STACK)
+		{
+			registerStack = pMem.requestPage();
+			
+			allocateKernelPageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1, entries);
+
+			kprintfln!("rstack: {x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
+
+			// we set the entry to point to the newly allocated page
+			pl1[pml_index1].pml1e = (cast(ulong)registerStack) | 0x87; // present!
+
+			virtualAddress += PAGE_SIZE;
+
+		}
 		
-		allocateKernelPageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1, entries);
-
-		kprintfln!("{x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
-
-		pl1[pml_index1].pml1e = (cast(ulong)registerStack) | 0x87;
-
 		registerStack = cast(void*)REGISTER_STACK;
 
 		return ErrorVal.Success;
@@ -313,21 +343,21 @@ align(1) struct PageTable
 						pl3 = getPml3(entries, pml_index4);
 						if (pl3 is null)
 						{
-							pl3 = allocatePml3(entries, pml_index4);
+							pl3 = allocatePml3(entries, pml_index4, true);
 						}
 					}
 
 					pl2 = getPml2(pl3, pml_index3);
 					if (pl2 is null)
 					{
-						pl2 = allocatePml2(pl3, pml_index3);
+						pl2 = allocatePml2(pl3, pml_index3, true);
 					}
 				}
 				
 				pl1 = getPml1(pl2, pml_index2);
 				if (pl1 is null)
 				{
-					pl1 = allocatePml1(pl2, pml_index2);
+					pl1 = allocatePml1(pl2, pml_index2, true);
 				}
 			}
 		}
@@ -394,75 +424,7 @@ pml4[] pageLevel4;
 // in a variable called kernel_mapping
 pml3[] kernel_mapping;
 
-
-/* Handle faults -- the fault handler
- * This should handle everything when a page fault
- * occurs.
- */
-
 	kmutex vMemMutex;
-
-	// CONST for page size
-	const ulong PAGE_SIZE = 4096;			// 4k pages for us right now
-	const ulong VM_BASE_ADDR = 0xFFFFFF8000000000; // Base address for virtual addresses when accessing the physical memory
-	                                        // that was mapped in to VM during our pages reinstall to prevent chicken/egg
-	const ulong VM_BASE_INDEX = 0;	// This index is where on the pageLevel3[] the physical memory should start to be mapped in
-	                            // Changing this value WILL IMPACT THE VALUE ABOVE IT!!!!!!!!!
-
-
-	void pageFaultHandler(InterruptStack* ir_stack) 
-	{
-		// First we need to determine why the page fault happened
-		// This ulong will contain the address of the section of memory being faulted on
-		void* addr;
-		// This is the dirty asm that gets the address for us...
-		if ((ir_stack.err_code & 4) == 0)
-		{
-			//asm { "mov %%cr2, %%rax" ::: "rax"; "movq %%rax, %0" :: "m" addr; }
-		}
-		// And this is a print to show us whats going on
-
-		// Page fault error code is as follows (page 225 of AMD System docs):
-		// Bit 0 = P bit - set to 0 if fault was due to page not present, 1 otherwise
-		// Bit 1 = R/W bit - 0 for read, 1 for write fault
-		// Bit 2 = U/S bit - 0 if fault in supervisor mode, 1 if usermode
-		// Bit 3 = RSV bit - 1 if processor tried to read from a reserved field in PTE
-		// Bit 4 = I/D bit - 1 if instruction fetch, otherwise 0
-		// The rest of the error code byte is considered reserved
-
-		kdebugfln!(DEBUG_PAGEFAULTS, "\n Page fault. Code = {}, IP = 0x{x}, VA = 0x{x}, RBP = 0x{x}\n")(ir_stack.err_code, ir_stack.rip, addr, ir_stack.rbp);
-
-		if((ir_stack.err_code & 1) == 0) 
-		{
-			kdebugfln!(DEBUG_PAGEFAULTS, "Error due to page not present!")();
-		}
-		if((ir_stack.err_code & 2) != 0)
-		{
-			kdebugfln!(DEBUG_PAGEFAULTS, "Error due to write fault.")();
-		}
-		else
-		{
-			kdebugfln!(DEBUG_PAGEFAULTS, "Error due to read fault.")();
-		}
-		if((ir_stack.err_code & 4) != 0)
-		{
-			kdebugfln!(DEBUG_PAGEFAULTS, "Error occurred in usermode.")();
-			// In this case we need to send a signal to the libOS handler
-		}
-		else
-		{
-			kdebugfln!(DEBUG_PAGEFAULTS, "Error occurred in supervised mode.")();
-			// In this case we're super concerned and need to handle the fault
-		}
-		if((ir_stack.err_code & 8) != 0)
-		{
-			kdebugfln!(DEBUG_PAGEFAULTS, "Tried to read from a reserved field in PTE!")();
-		}
-		if((ir_stack.err_code & 16) != 0)
-		{
-			kdebugfln!(DEBUG_PAGEFAULTS, "Instruction fetch error!")();
-		}
-	}
 
 	void install()
 	{
@@ -580,6 +542,95 @@ pml3[] kernel_mapping;
 		pageLevel3 = getPml3(pageLevel4.ptr, 511)[0..511];
 
 		kdebugfln!(DEBUG_PAGING, "Done Mapping ... {}")(pageLevel3[0].present);
+	}
+
+	// install kernel stack at KERNEL_STACK - PAGE_SIZE
+	void installStack()
+	{
+		void* stack;
+
+		pml1* pl1;
+		pml2* pl2;
+		pml3* pl3;
+
+		long pml_index4;
+		long pml_index3;
+		long pml_index2;
+		long pml_index1;
+
+		void* virtualAddress;
+
+		// Install the User Stack.
+		// This stack is used by the environment.
+		// This stack is switched to the register stack, and then to the kernel stack
+		// during a context switch.
+
+		// NOTE: we do this first to ensure that pl4[510] gets user mode privileges.
+		// NOTE: no pages are mapped, we just ensure the page table can reach it for later
+		// mapping during an environment spawn.
+
+		// This is only 8KB
+
+		/*virtualAddress = cast(void*)(ENVIRONMENT_STACK - (ENVIRONMENT_STACK_PAGES * PAGE_SIZE));
+		while (virtualAddress != cast(void*)ENVIRONMENT_STACK)
+		{
+			allocateUserPageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+
+			kprintfln!("estack: {x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
+
+			// we reserve this page, but keep the page table entries leading to it.
+			pl1[pml_index1].pml1e = 0;
+
+			virtualAddress += PAGE_SIZE;
+
+		}*/
+
+		// Install the Kernel Stack.
+		// This stack is used when the kernel is trapped.
+		// Once the scheduler is running, the temp stack is no longer used.
+
+		// This is only 4KB
+		
+		virtualAddress = cast(void*)(KERNEL_STACK - (KERNEL_STACK_PAGES * PAGE_SIZE));
+
+		while (virtualAddress != cast(void*)KERNEL_STACK)
+		{
+			// allocate pages in memory
+			stack = pMem.requestPage();
+
+			allocateKernelPageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+
+			kprintfln!("kstack: {x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
+
+			pl1[pml_index1].pml1e = (cast(ulong)stack) | 0x87;
+
+			virtualAddress += PAGE_SIZE;
+		}
+
+		// Install the Register Stack.
+		// This stack is used by the context switcher.
+		// Simply contains the information necessary to switch registers.
+
+		// NOTE: no newly allocated pages mapped, only ensuring the page table entries exist in the kernel.
+
+		// This is only 4KB
+
+		/*
+		virtualAddress = cast(void*)(REGISTER_STACK - (REGISTER_STACK_PAGES * PAGE_SIZE));
+		while (virtualAddress != cast(void*)REGISTER_STACK)
+		{
+			allocateKernelPageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+
+			kprintfln!("rstack: {x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
+
+			// it initially is mapped to the kernel stack for kernel interrupts
+			pl1[pml_index1].pml1e = (cast(ulong)stack) | 0x87;
+
+			virtualAddress += PAGE_SIZE;
+
+		}*/
+
+		return ErrorVal.Success;
 	}
 
 	private void mapRam(ref pml3[] pageLevel3)

@@ -112,9 +112,6 @@ extern(C) void kmain(uint magic, uint addr)
 	// boot and initialize the primary CPU
 	Cpu.install();
 	
-	// Turn general interrupts on, so the computer can deal with errors and faults.
-	Cpu.enableInterrupts();
-
 	//kprintfln!("Setting lstar, star and SF_MASK...")();
 	
 	// TESTING MUTEXES
@@ -162,6 +159,9 @@ extern(C) void kmain(uint magic, uint addr)
 	{
 		printLogFail();
 	}
+
+	// Turn general interrupts on, so the computer can deal with errors and faults.
+	Cpu.enableInterrupts();
 
 	printLogLine("Initializing Scheduler");
 	if (Scheduler.init() == ErrorVal.Success)

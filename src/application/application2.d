@@ -12,6 +12,10 @@ void main()
  {
 // exit(0);
 //  yield();
+	int i=1;
+	i--;
+	int p=3;
+	p = 3 / i; 
  }
 
  return;

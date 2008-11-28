@@ -92,6 +92,11 @@ template contextSwitchStack()
 	`;
 }
 
+// For first time execute of an environment.
+// When an environment is spawned, its register stack is
+//   empty.  Therefore, we should fill it so that an iretq
+//   or sysretq can return to a brand new environment.
+//   It should be nifty.
 template contextSwitchPrepare(char[] address)
 {
 	const char[] contextSwitchPrepare = `
@@ -108,18 +113,26 @@ template contextSwitchPrepare(char[] address)
 
 			// stack stuff
 
-			"pushq $0";
+			// SS
+			"pushq $((8 << 3) | 3)";
+
+			// RSP (of environment)
 			"movq $` ~ Itoa!(vMem.ENVIRONMENT_STACK) ~ `, %%rax";
 			"pushq %%rax";
 
+			// FLAGS
 			"pushq $((1 << 9) | (3 << 12))";
+
+			// CS
 			"pushq $((9 << 3) | 3)";
-			//"addq $-8, %%rsp";
+
+			// RIP
 			"pushq %%rbx";
+
+			// EMULATE ERROR CODE, INTERRUPT VECTOR NUMBER
 			"pushq $0";
 			"pushq $0";
 			
-
 		}
 
 		mixin(contextSwitchSave!());
