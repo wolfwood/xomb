@@ -63,6 +63,7 @@ static:
 	void quantumFire(InterruptStack* stack)
 	{
 		// schedule!
+
 		schedule();
 
 		//Timer.resetTimer(0, quantumInterval);
@@ -156,7 +157,7 @@ static:
 
 		kprintfln!("environ stack: {x}")(curEnvironment.stackPtr);
 
-		Timer.initTimer(quantumInterval, &quantumFire);
+		//Timer.initTimer(quantumInterval, &quantumFire);
 
 
 		curEnvironment.preamble();
