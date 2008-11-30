@@ -1,0 +1,23 @@
+// Templated fibbonacci heap to implement all sorts of crazy schemes
+
+
+module util.heapNode;
+
+
+import kernel.core.error;
+
+// Will take two parameters:
+// nodeType = the type of the node's payload
+// nodeType* payloadPtr = a pointer to the data structure that is the payload of this node
+template heapNode(nodeType, nodeType* payloadPtr) {
+        
+    	void* leftChild;
+    	void* rightChild;
+    
+    	nodeType payload = cast(nodeType)payloadPtr;
+
+  	double priority = 0;
+  
+	ErrorVal add(heapNode!(nodeType, nodeType* payLoadPtr);
+
+}

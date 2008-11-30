@@ -32,8 +32,7 @@ static:
 
 	ErrorVal init()
 	{
-		// set up environment table
-
+	  	// set up environment table
 		if (EnvironmentTable.init() == ErrorVal.Fail)
 		{
 			return ErrorVal.Fail;
@@ -51,7 +50,7 @@ static:
 			// load an executable from the multiboot header
 			kprintfln!("Scheduler: Loading from GRUB module.")();
 
-		  environ.loadGRUBModule(i);
+			environ.loadGRUBModule(i);
 		}
 
 		Interrupts.setCustomHandler(Interrupts.Type.DivByZero, &quantumFire);

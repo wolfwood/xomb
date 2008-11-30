@@ -41,6 +41,8 @@ import kernel.arch.cpu;
 
 import kernel.environment.scheduler;
 
+import util.arrayHeap;
+
 /**
 This is the main function of PGOS. It is executed once GRUB loads
 fully. It accepts "magic," the magic number of the GRUB bootloader,
@@ -163,6 +165,29 @@ extern(C) void kmain(uint magic, uint addr)
 	// Turn general interrupts on, so the computer can deal with errors and faults.
 	Cpu.enableInterrupts();
 
+
+
+	alias arrayHeap!(char, 25) theHeap;
+	//testHeap intHeap;
+	//	alias intHeap.theHeap theHeap;
+
+	theHeap.init('a', 100.0);
+	kprintfln!("word!")();
+	theHeap.insert('b', 200.0);
+	
+	kprintfln!("fail?")();
+
+	theHeap.debugHeap();
+
+	kprintfln!("Fail!")();
+	
+	asm{
+		"cli; hlt";
+	}
+
+
+
+
 	printLogLine("Initializing Scheduler");
 	if (Scheduler.init() == ErrorVal.Success)
 	{
@@ -173,6 +198,8 @@ extern(C) void kmain(uint magic, uint addr)
 		printLogFail();
 	}
 
+	// Build a test heap!
+	
 	Scheduler.run();
 
 	// should not return from this
@@ -261,3 +288,4 @@ void charProc(char chr)
 		kprintf!("{}")(chr);
 	}
 }
+
