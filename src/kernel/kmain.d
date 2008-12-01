@@ -152,35 +152,44 @@ extern(C) void kmain(uint magic, uint addr)
 		MP.initAPIC();
 	}
 	
-	printLogLine("Initializing HPET");
-	if (Timer.init() == ErrorVal.Success)
-	{
-		printLogSuccess();
-	}
-	else
-	{
-		printLogFail();
-	}
+	//printLogLine("Initializing HPET");
+	//if (Timer.init() == ErrorVal.Success)
+	//{
+	//	printLogSuccess();
+	//}
+	//else
+	//{
+	//	printLogFail();
+	//}
 
 	// Turn general interrupts on, so the computer can deal with errors and faults.
-	Cpu.enableInterrupts();
+	//Cpu.enableInterrupts();
 
 
 
 	alias arrayHeap!(char, 25) theHeap;
-	//testHeap intHeap;
-	//	alias intHeap.theHeap theHeap;
 
-	theHeap.init('a', 100.0);
-	kprintfln!("word!")();
-	theHeap.insert('b', 200.0);
-	
-	kprintfln!("fail?")();
-
+	theHeap.init('a', 25);
 	theHeap.debugHeap();
+	theHeap.insert('b', 14);
+	theHeap.insert('c', 1);
+	theHeap.insert('d', 34);
+	theHeap.insert('e', 12);
+	theHeap.insert('f', 27);
 
-	kprintfln!("Fail!")();
+	kprintfln!("here we go!!")();
+
+	heapNode!(char) tempNode;
+
+	//theHeap.debugHeap();
 	
+	for(int e = theHeap.getSize(); e > 0; e--) {
+	 kprintfln!("popping")();
+	 tempNode = theHeap.pop();
+	 kprintfln!("Temp.payload = {} priority = {}")(tempNode.payload, tempNode.priority);
+	}
+	
+	theHeap.debugHeap();	
 	asm{
 		"cli; hlt";
 	}
