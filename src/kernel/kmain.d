@@ -189,6 +189,10 @@ extern(C) void kmain(uint magic, uint addr)
 	 kprintfln!("Temp.payload = {} priority = {}")(tempNode.payload, tempNode.priority);
 	}
 	
+	theHeap.insert('a', 200);
+	theHeap.insert('b', 300);
+	theHeap.insert('c', 500);
+
 	theHeap.debugHeap();	
 	asm{
 		"cli; hlt";

@@ -34,20 +34,20 @@ template arrayHeap(payloadType, int maxSize) {
   // Init our arrayHeap
   void init(payloadType rootPayload, int priority) {
 	// Figure out how many pages we need to allocate
-	kprintfln!("Value of maxZ = {}")((((heapNode.sizeof * maxSize) + (vMem.PAGE_SIZE % (heapNode.sizeof * maxSize))) / vMem.PAGE_SIZE));
+	//kprintfln!("Value of maxZ = {}")((((heapNode.sizeof * maxSize) + (vMem.PAGE_SIZE % (heapNode.sizeof * maxSize))) / vMem.PAGE_SIZE));
 	//	for(int z = 0; z <= (((heapNode.sizeof * maxSize) +  (vMem.PAGE_SIZE % (heapNode.sizeof * maxSize))) / vMem.PAGE_SIZE); z++) {
 	for(int z = 0; z <= (((heapNode.sizeof * maxSize) +  (vMem.PAGE_SIZE % (heapNode.sizeof * maxSize))) / vMem.PAGE_SIZE); z++) {
 	  // Assume we're going to get contiguous space here
-	  kprintfln!("Hit this inside stuff")();
+	  //kprintfln!("Hit this inside stuff")();
 	  if(vMem.getKernelPage(pageAddress) == ErrorVal.Fail) {
 		return ErrorVal.Fail;
 	  }
 	  // If we're on the first iteration point start of heap to there
 	  if(z == 0) {
-		kprintfln!("Z was zero, lets assign addresses mofo!")();
+		//kprintfln!("Z was zero, lets assign addresses mofo!")();
 		// Point our heap space to the start of the first page
 		theHeap = (cast(heapNode!(payloadType)*)pageAddress) - 1;
-		kprintfln!("pageAddress: {x} theHeap: {x}")(pageAddress, theHeap);
+		//kprintfln!("pageAddress: {x} theHeap: {x}")(pageAddress, theHeap);
 	  }   
 	}
 
@@ -56,14 +56,14 @@ template arrayHeap(payloadType, int maxSize) {
     theHeap[1].payload = cast(payloadType)rootPayload;
 	theHeap[1].priority = priority;
 
-	kprintfln!("theHeap payload: {}, priority: {}")(theHeap[1].payload, theHeap[1].priority);
+	//kprintfln!("theHeap payload: {}, priority: {}")(theHeap[1].payload, theHeap[1].priority);
 
 	// Increase the lastNode count
-	kprintfln!("tail: {}")(tail);
+	//kprintfln!("tail: {}")(tail);
 
 	tail = 2;
 
-	kprintfln!("tail: {}")(tail);
+	//kprintfln!("tail: {}")(tail);
 
   }
   
@@ -82,17 +82,20 @@ template arrayHeap(payloadType, int maxSize) {
 		break;
 	  }
 	  
-	  heapNode!(payloadType) temp = theHeap[i / 2];
-	  theHeap[i / 2] = theHeap[i];
-	  theHeap[i] = temp;
-
+	  swap((i/2), i);
+	  
 	  i /= 2;
 	}
-
 	// Increment tail so we know the new real end
 	tail += 1;
 
 	return ErrorVal.Success;
+  }
+
+  void swap(int indexA, int indexB) {
+	heapNode!(payloadType) temp = theHeap[indexA];
+	theHeap[indexA] = theHeap[indexB];
+	theHeap[indexB] = temp;
   }
 
   heapNode!(payloadType) peek() {
@@ -100,57 +103,55 @@ template arrayHeap(payloadType, int maxSize) {
   }
 
   int getSize() {
-	return tail;
+	return tail - 1;
   }
 
   heapNode!(payloadType) pop() {
 	// The return value of the function
 	heapNode!(payloadType) returnValue = theHeap[1];
-	// Where in the array the current "hole" exists at
-	int holeIndex = 1;
-	int newHoleIndex = 1;
-
-	int leftChildIndex;
-	int rightChildIndex;
-
-	// While there exists a hole in our array
-	while(holeIndex < tail) {
-	  
-	  // To make things cleaner
-	  leftChildIndex = (2 * holeIndex);
-	  rightChildIndex = (2 * holeIndex) + 1;
-
-	  // If the new hole is out of our bounds...
-	  if(leftChildIndex >= tail) {
-		kprintfln!("Breaking because leftChild = {} is > tail = {}")(leftChildIndex, tail);
-		break;	// We don't need to be in here, its out of our hands man! Its out of our hands!!!!!
-	  }
-
-	  
-	  if(rightChildIndex >= tail) {
-		// Move the last element to the hole
-		theHeap[holeIndex] = theHeap[leftChildIndex];
-		// Now make sure to set the new hole location
-		holeIndex = leftChildIndex;
-	  } else { // Lets do some swapin'
-		if(theHeap[leftChildIndex].priority > theHeap[rightChildIndex].priority) {
-		  newHoleIndex = leftChildIndex;
-		} else {
-		  newHoleIndex = rightChildIndex;
-		}
-		
-		// Now make the move
-		kprintfln!("theHeap[{}] = theHeap[{}]")(holeIndex, newHoleIndex);
-		theHeap[holeIndex] = theHeap[newHoleIndex];
-		holeIndex = newHoleIndex;
-	  }
-	}
-	// Decrement the tail length 
-	tail -= 1;
 	
+	// Set the new root to be last node
+	theHeap[1] = theHeap[tail  - 1];
+	tail -= 1;
+
+	int currentIndex = 1;
+
+	int leftChildIndex = 2 * currentIndex;
+	int rightChildIndex = 2 * currentIndex + 1;
+	
+	// Ensure that there is at least a left child
+	while(leftChildIndex < tail) {
+	  // If there is also a right child
+	  if(rightChildIndex < tail) {
+		// If the left side is greater than the right side
+		if(theHeap[leftChildIndex].priority > theHeap[rightChildIndex].priority) {
+		  // Swap the left child and the current node
+		  swap(currentIndex, leftChildIndex);
+		  // Update our current index
+		  currentIndex = leftChildIndex;
+		} else {
+		  // If the right side is greater swap it for our current node
+		  swap(currentIndex, rightChildIndex);
+		  // Update the current index
+		  currentIndex = rightChildIndex;
+		}
+
+		// If there wasn't a right index then we need to just swap the left
+	  } else {
+		swap(currentIndex, leftChildIndex);
+		// Update the current index
+		currentIndex = leftChildIndex;
+	  }
+	  
+	  // Update both the left and right child variables
+	  leftChildIndex = 2 * currentIndex;
+	  rightChildIndex = 2 * currentIndex + 1;
+	}
+
+	// Return the root node
 	return returnValue;
   }
-  
+
   void debugHeap() {
 	kprintfln!("debugging heap! tail: {}")(tail);
 	for(int q = 1; q < tail; q++) {
