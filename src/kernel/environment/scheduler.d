@@ -7,6 +7,8 @@ import kernel.core.multiboot;			// GRUB multiboot
 import kernel.core.elf;					// ELF code
 import kernel.core.modules;				// GRUB modules
 
+import util.arrayHeap;
+
 // architecture dependent
 import kernel.arch.interrupts;
 import kernel.arch.timer;
@@ -19,6 +21,9 @@ import kernel.environment.table;		// for environment table
 
 import kernel.core.error;				// for return values
 
+
+const int MAX_ENVIRONMENTS = 1024;  // Fuck you D compiler
+
 struct Scheduler
 {
 
@@ -27,17 +32,22 @@ static:
 	// the quantum length in picoseconds
 	const ulong quantumInterval = 50000000000;
 
+  	// Create the scheduler heap
+  	alias arrayHeap!(Environment*, MAX_ENVIRONMENTS) theHeap;
+  
 	// TODO: probably need one per CPU...
 	Environment* curEnvironment;
-
+  	heapNode!(Environment *) tempNode;
+  
 	ErrorVal init()
 	{
+	  	theHeap.init();
 	  	// set up environment table
 		if (EnvironmentTable.init() == ErrorVal.Fail)
 		{
 			return ErrorVal.Fail;
 		}
-
+		
 		// add a new environment
 		// Get all grub modules and load them in to the environment table
 		for(int i = 0; i < GRUBModules.length; i++) 
@@ -46,6 +56,8 @@ static:
 			kprintfln!("Scheduler: Creating new environment.")();
 
 			EnvironmentTable.newEnvironment(environ);
+			theHeap.insert(environ, 1);
+			theHeap.debugHeap();
 
 			// load an executable from the multiboot header
 			kprintfln!("Scheduler: Loading from GRUB module.")();
@@ -62,7 +74,8 @@ static:
 	void quantumFire(InterruptStack* stack)
 	{
 		// schedule!
-
+	  	tempNode = theHeap.pop();
+		theHeap.insert(tempNode.payload, 1);
 		schedule();
 
 		//Timer.resetTimer(0, quantumInterval);
@@ -87,11 +100,8 @@ static:
 		
 		// ... //
 	//	curEnvironment = EnvironmentTable.getEnvironment(0);
-	  if(curEnvironment.id == 0) {
-	    curEnvironment = EnvironmentTable.getEnvironment(1);
-	  } else {
-	    curEnvironment = EnvironmentTable.getEnvironment(0);
-	  }
+		tempNode = theHeap.peek();
+		curEnvironment = tempNode.payload;
 
 	  	kprintfln!("schedule(): New Environment Selected.  eid: {}")(curEnvironment.id);
 	
@@ -108,27 +118,26 @@ static:
 		//mixin(contextStackRestore!("curEnvironment.stackPtr"));
 		curEnvironment.preamble();
 		curEnvironment.execute();				
-
+		
 		// return
 	}
 
 	void yield()
 	{
 		kprintfln!("Yield from eid: {}")(curEnvironment.id);
-//		curEnvironment.postamble();
-		
-	  //curEnvironment = EnvironmentTable.getEnvironment(0);
-	  schedule();
 
-//	curEnvironment.preamble();
-//	  curEnvironment.execute();
+		tempNode = theHeap.pop();
+		theHeap.insert(tempNode.payload, 1);
+		schedule();
+
+
 
 	}
 
 	void exit()
 	{
 		EnvironmentTable.removeEnvironment(curEnvironment.id);
-
+		theHeap.pop();
 		curEnvironment = null;
 
 		if (EnvironmentTable.count == 0) 
@@ -139,14 +148,16 @@ static:
 			for(;;) {}
 		}
 
-		//schedule();
+		schedule();
 	}
 
 	// called at the first run
 	void run()
 	{
+	  kprintfln!("hit here")();
 		//schedule();
-		curEnvironment = EnvironmentTable.getEnvironment(0);
+	  	tempNode = theHeap.peek();
+		curEnvironment = tempNode.payload;
 
 		kprintfln!("Scheduler: About to jump to user at {x}")(curEnvironment.entry);
 

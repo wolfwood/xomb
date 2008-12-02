@@ -165,7 +165,9 @@ static:
 	Environment** addr;	// address of the environment table
 	int count;	// number of environments in the table
 
-	const int MAX_ENVIRONMENTS = 1024;
+  	// Max environments for the table
+  	const int MAX_ENVIRONMENTS = 1024;
+  
 
 	ErrorVal init()
 	{

@@ -29,10 +29,12 @@ template arrayHeap(payloadType, int maxSize) {
 
 
   // Tail of the heap so we know where to append to
+  // The value isn't actually being set here for some reason so we
+  // set it again later anyway...  :(  compiler bug?
   int tail = 1;
 
   // Init our arrayHeap
-  void init(payloadType rootPayload, int priority) {
+  void init() {
 	// Figure out how many pages we need to allocate
 	//kprintfln!("Value of maxZ = {}")((((heapNode.sizeof * maxSize) + (vMem.PAGE_SIZE % (heapNode.sizeof * maxSize))) / vMem.PAGE_SIZE));
 	//	for(int z = 0; z <= (((heapNode.sizeof * maxSize) +  (vMem.PAGE_SIZE % (heapNode.sizeof * maxSize))) / vMem.PAGE_SIZE); z++) {
@@ -49,21 +51,9 @@ template arrayHeap(payloadType, int maxSize) {
 		theHeap = (cast(heapNode!(payloadType)*)pageAddress) - 1;
 		//kprintfln!("pageAddress: {x} theHeap: {x}")(pageAddress, theHeap);
 	  }   
-	}
+	}    
 
-	// Initialize it
-	//	theHeap.init;
-    theHeap[1].payload = cast(payloadType)rootPayload;
-	theHeap[1].priority = priority;
-
-	//kprintfln!("theHeap payload: {}, priority: {}")(theHeap[1].payload, theHeap[1].priority);
-
-	// Increase the lastNode count
-	//kprintfln!("tail: {}")(tail);
-
-	tail = 2;
-
-	//kprintfln!("tail: {}")(tail);
+	tail = 1;
 
   }
   
@@ -72,7 +62,7 @@ template arrayHeap(payloadType, int maxSize) {
 	  return ErrorVal.Fail;
 	}
 	// Add the node to the array
-	theHeap[tail].payload = cast(payloadType)payload;
+	theHeap[tail].payload = payload;
 	theHeap[tail].priority = priority;
 	
 	// Now we need to recalculate the positions of the elements

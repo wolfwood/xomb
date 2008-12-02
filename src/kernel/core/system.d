@@ -12,7 +12,7 @@ This function copies data from a source piece of memory to a destination piece o
 		count = The number of bytes to copy form src to dest.
 	Returns: A void pointer to the start of the destination data (dest).
 */
-void* memcpy(void* dest, void* src, size_t count)
+extern(C) void* memcpy(void* dest, void* src, size_t count)
 {
 	ubyte* d = cast(ubyte*)dest;
 	ubyte* s = cast(ubyte*)src;
@@ -27,7 +27,16 @@ void* memcpy(void* dest, void* src, size_t count)
 Memcpy and memmove only really have differences at the user level, where they have slightly
 different semantics.  Here, they're pretty much the same.
 */
-alias memcpy memmove;
+extern(C) void* memmove(void* dest, void* src, size_t count)
+{
+	ubyte* d = cast(ubyte*)dest;
+	ubyte* s = cast(ubyte*)src;
+
+	for(size_t i = count; count; count--, d++, s++)
+	  *d = *s;
+
+	return dest;
+}
 
 /**
 Compare two blocks of memory.
