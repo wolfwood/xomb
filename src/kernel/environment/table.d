@@ -68,9 +68,9 @@ struct Environment
 
 		// map in context space (1:1 mapping)
 		// map(physaddr, length)
-		pageTable.map(cast(ubyte*)GRUBModules.getStart(modNumber), GRUBModules.getLength(modNumber));
+		pageTable.map(cast(ubyte*)GRUBModules.getStart(modNumber), GRUBModules.getLength(modNumber), cast(void*)0x400000);
 
-		entry = GRUBModules.getEntry(modNumber);		
+	entry = 0x400000 + GRUBModules.getEntry(modNumber);		
 	}
 
 	// code executed as this environment gets set to run

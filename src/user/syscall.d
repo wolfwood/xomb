@@ -10,6 +10,7 @@ enum SyscallID : ulong
 	Exit,
 	FreePage,
 	Yield,
+	Echo,
 }
 
 enum SyscallError : ulong
@@ -24,7 +25,8 @@ alias Tuple!
 	"allocPage", // AllocPage
 	"exit", // Exit
 	"freePage", // FreePage
-	"yield" // Yield
+	"yield", // Yield
+	"echo" //echo
 ) SyscallNames;
 
 alias Tuple!
@@ -33,7 +35,8 @@ alias Tuple!
 	ulong, // AllocPage
 	void, // Exit
 	void, // FreePage
-	void // Yield
+	void, // Yield
+	void	//echo
 ) SyscallRetTypes;
 
 struct AddArgs
@@ -58,6 +61,11 @@ struct FreePageArgs
 
 struct YieldArgs
 {
+}
+
+struct EchoArgs
+{
+	char [] str;
 }
 
 // This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason

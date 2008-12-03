@@ -1,7 +1,5 @@
 # Makefile for XOmB
 
-svn propset svn:keywords "Revision" kernel/kmain.d
-
 MY_ARCH := $(shell uname)
 
 # default compile options
@@ -44,6 +42,7 @@ DFILES = kernel/core/elf.d kernel/core/syscall.d kernel/arch/x86_64/syscall.d ke
 RTFILES := $(shell ls std/typeinfo/*.d) object.d kernel/core/invariant.d kernel/core/dstubs.d std/c/stdarg.d kernel/core/system.d user/syscall.d kernel/core/util.d kernel/arch/x86_64/usersyscall.d
 APP := application/application.d
 APP2 := application/application2.d
+XSH := application/xsh.d
 OBJS = $(ASM:.S=.o) $(DFILES:.d=.o) $(RTFILES:.d=.o)
 
 RUNTIMEOBJS = $(RTFILES:.d=.o)
@@ -76,10 +75,11 @@ all: setup $(KERNEL_IMG)
 	$(DC) $(DFLAGS) -c $< -o $@
 
 # kernel link
-$(KERNEL_IMG): $(OBJS) application/application.o application/application2.o
+$(KERNEL_IMG): $(OBJS) application/application.o application/application2.o application/xsh.o
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
 	$(LD) $(APP_LDFLAGS) -o application/application application/application.o -dN $(RUNTIMEOBJS)
 	$(LD) $(APP_LDFLAGS) -o application/application2 application/application2.o -dN $(RUNTIMEOBJS)
+	$(LD) $(APP_LDFLAGS) -o application/xsh application/xsh.o -dN $(RUNTIMEOBJS)
 
 # creates the GRUB iso image
 iso: all
@@ -89,6 +89,7 @@ iso: all
 	cp $(KERNEL_IMG) $(ISO_PATH)$(BOOT_PATH)
 	cp ./application/application $(ISO_PATH)$(BOOT_PATH)
 	cp ./application/application2 $(ISO_PATH)$(BOOT_PATH)
+	cp ./application/xsh $(ISO_PATH)$(BOOT_PATH)
 	mkisofs -R -b $(GRUB_PATH)$(GRUB_IMG) -no-emul-boot -boot-load-size 4 -boot-info-table -o $(ISO_NAME) $(ISO_PATH)
 	@echo
 	@echo "ISO successfully made!"
@@ -97,7 +98,7 @@ iso: all
 
 # removes .o and the kernel executable
 clean:
-	rm -f $(OBJS) $(KERNEL_IMG) application/application.o
+	rm -f $(OBJS) $(KERNEL_IMG) application/application.o application/xsh.o
 
 # along with the above, removes the files from the iso
 # and removes the application executable
@@ -105,6 +106,7 @@ veryclean: clean
 	rm -rf $(ISO_PATH)
 	rm -f $(ISO_NAME)
 	rm -f ./application/application
+	rm -f ./application/xsh
 
 # run this after checking out a clean tree
 setup: bochsrc config.d

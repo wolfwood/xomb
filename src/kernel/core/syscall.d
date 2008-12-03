@@ -57,6 +57,10 @@ public:
 		
 		return SyscallError.OK;
       	}
-	
+
+	SyscallError echo(EchoArgs* params) {
+		Console.printString(params.str, "");
+		return SyscallError.OK;
+	}
 }
 			

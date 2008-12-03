@@ -209,7 +209,7 @@ align(1) struct PageTable
 	
 	// This function will take a physical range (a BIOS region, perhaps) and
 	// map it after the end of the physical address range
-	ErrorVal map(ubyte* physicalRangeStart, ulong physicalRangeLength)
+	ErrorVal map(ubyte* physicalRangeStart, ulong physicalRangeLength, void* virtualStart)
 	{
 
 		// the physical range needs to be aligned by the page
@@ -240,7 +240,7 @@ align(1) struct PageTable
 		// now that we have a valid range, we can map to the kernel
 
 		// set the virtual address
-		void* virtualRangeStart = physicalRangeStart;
+		void* virtualRangeStart = virtualStart; //physicalRangeStart;
 
 		//kdebugfln!(DEBUG_PAGING, "start: {} {} {}")(virtualRangeStart, global_mem_regions.kernel_mapped.virtual_start, pMem.mem_size);
 		// get the initial page tables to alter
