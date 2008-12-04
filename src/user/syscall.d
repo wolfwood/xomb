@@ -11,6 +11,8 @@ enum SyscallID : ulong
 	FreePage,
 	Yield,
 	Echo,
+	Grabch,
+	Depositch
 }
 
 enum SyscallError : ulong
@@ -21,22 +23,26 @@ enum SyscallError : ulong
 
 alias Tuple!
 (
-	"add", // Add
-	"allocPage", // AllocPage
-	"exit", // Exit
-	"freePage", // FreePage
-	"yield", // Yield
-	"echo" //echo
+	"add", 			// Add
+	"allocPage", 	// AllocPage
+	"exit", 		// Exit
+	"freePage", 	// FreePage
+	"yield", 		// Yield
+	"echo", 		//echo
+	"grabch",		//grabch
+	"depositch"	//depositch
 ) SyscallNames;
 
 alias Tuple!
 (
-	long, // Add
-	ulong, // AllocPage
-	void, // Exit
-	void, // FreePage
-	void, // Yield
-	void	//echo
+	long, 	// Add
+	ulong, 	// AllocPage
+	void, 	// Exit
+	void, 	// FreePage
+	void, 	// Yield
+	void,	//echo
+	char,	//grabch
+	void	//depositch
 ) SyscallRetTypes;
 
 struct AddArgs
@@ -66,6 +72,16 @@ struct YieldArgs
 struct EchoArgs
 {
 	char [] str;
+}
+
+struct GrabchArgs
+{
+	
+}
+
+struct DepositchArgs
+{
+	char ch;
 }
 
 // This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason

@@ -162,6 +162,8 @@ extern(C) void kmain(uint magic, uint addr)
 		printLogFail();
 	}
 
+	//Keyboard.init();
+
 	// Turn general interrupts on, so the computer can deal with errors and faults.
 	Cpu.enableInterrupts();
 

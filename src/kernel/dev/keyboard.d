@@ -10,9 +10,40 @@ import kernel.dev.vga;
 
 import config;
 
+const int BUFF_SIZE = 1024;
+
 struct Keyboard {
 
 static:
+
+char [BUFF_SIZE] buff;
+int ipos;
+int gpos;
+
+char grabch() {
+
+	if(ipos != gpos && (gpos < (BUFF_SIZE - 1))) {
+		return buff[gpos++];
+	} else if(gpos == (BUFF_SIZE - 1)) {
+		gpos = 0;
+		return buff[BUFF_SIZE - 1];
+	}
+
+	return '\0';
+}
+
+void depositch(char c) {
+	if((ipos < (BUFF_SIZE -1)) && ((ipos + 1) != gpos)) {
+		buff[ipos] = c;
+		ipos++;
+	} else if(gpos != 0) {
+		buff[ipos] = c;
+		ipos = 0;
+	} else {
+		//igonore!
+	}
+
+}
 
 void function(ubyte code) downFunc;
 void function(ubyte code) upFunc;
@@ -205,7 +236,9 @@ private void common()
 		{
 			// printable character
 			// kprintf!("{}{}", false)(cast(char)translated, charFunc);
-			if (charFunc) { charFunc(cast(char)translated); }
+			//if (charFunc) { charFunc(cast(char)translated); }
+			depositch(translated);
+
 		}
 		if (upState) {
 			//kprintf!("{} = {}")(data, 0);

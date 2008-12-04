@@ -11,6 +11,8 @@ import kernel.arch.vmem;
 
 import kernel.environment.scheduler;
 
+import kernel.dev.keyboard;
+
 struct SyscallImplementations
 {
 
@@ -62,5 +64,16 @@ public:
 		Console.printString(params.str, "");
 		return SyscallError.OK;
 	}
+
+	SyscallError grabch(out char ret, GrabchArgs* params) {
+		ret = Keyboard.grabch();	
+		return SyscallError.OK;
+	}
+
+	SyscallError depositch(DepositchArgs* params) {
+		Keyboard.depositch(params.ch);
+		return SyscallError.OK;
+	}
+
 }
 			
