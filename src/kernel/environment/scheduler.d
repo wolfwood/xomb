@@ -7,7 +7,7 @@ import kernel.core.multiboot;			// GRUB multiboot
 import kernel.core.elf;					// ELF code
 import kernel.core.modules;				// GRUB modules
 
-import util.arrayHeap;
+import kernel.util.queue;
 
 // architecture dependent
 import kernel.arch.interrupts;
@@ -32,32 +32,36 @@ static:
 	// the quantum length in picoseconds
 	const ulong quantumInterval = 50000000000;
 
-  	// Create the scheduler heap
-  	alias arrayHeap!(Environment*, MAX_ENVIRONMENTS) theHeap;
+  	// Create the scheduler queue
+  	alias circleQueue!(Environment*, MAX_ENVIRONMENTS) theQueue;
   
 	// TODO: probably need one per CPU...
 	Environment* curEnvironment;
-  	heapNode!(Environment *) tempNode;
   
 	ErrorVal init()
 	{
-	  	theHeap.init();
 	  	// set up environment table
 		if (EnvironmentTable.init() == ErrorVal.Fail)
 		{
 			return ErrorVal.Fail;
 		}
 		
+		// Init the queue
+		theQueue.init();
+		kprintfln!("beat it!")();
 		// add a new environment
 		// Get all grub modules and load them in to the environment table
 		for(int i = 0; i < GRUBModules.length; i++) 
 		{
+
 			Environment* environ;
 			kprintfln!("Scheduler: Creating new environment.")();
 
 			EnvironmentTable.newEnvironment(environ);
-			theHeap.insert(environ, 1);
-			theHeap.debugHeap();
+
+			// Add the environment to the scheduler's queue
+			theQueue.push(environ);
+
 
 			// load an executable from the multiboot header
 			kprintfln!("Scheduler: Loading from GRUB module.")();
@@ -74,8 +78,8 @@ static:
 	void quantumFire(InterruptStack* stack)
 	{
 		// schedule!
-	  	tempNode = theHeap.pop();
-		theHeap.insert(tempNode.payload, 1);
+	  	Environment* temp = theQueue.pop();
+		theQueue.push(temp);
 		schedule();
 
 		//Timer.resetTimer(0, quantumInterval);
@@ -98,10 +102,10 @@ static:
 
 		kprintfln!("schedule(): Scheduling new environment.  Current eid: {}")(curEnvironment.id);
 		
-		// ... //
-	//	curEnvironment = EnvironmentTable.getEnvironment(0);
-		tempNode = theHeap.peek();
-		curEnvironment = tempNode.payload;
+
+
+		Environment* temp = theQueue.peek();
+		curEnvironment = temp;
 
 	  	kprintfln!("schedule(): New Environment Selected.  eid: {}")(curEnvironment.id);
 	
@@ -126,8 +130,8 @@ static:
 	{
 		kprintfln!("Yield from eid: {}")(curEnvironment.id);
 
-		tempNode = theHeap.pop();
-		theHeap.insert(tempNode.payload, 1);
+		Environment* temp = theQueue.pop();
+		theQueue.push(temp);
 		schedule();
 
 
@@ -137,7 +141,7 @@ static:
 	void exit()
 	{
 		EnvironmentTable.removeEnvironment(curEnvironment.id);
-		theHeap.pop();
+		theQueue.pop();
 		curEnvironment = null;
 
 		if (EnvironmentTable.count == 0) 
@@ -156,8 +160,8 @@ static:
 	{
 	  kprintfln!("hit here")();
 		//schedule();
-	  	tempNode = theHeap.peek();
-		curEnvironment = tempNode.payload;
+	  	Environment* temp = theQueue.peek();
+		curEnvironment = temp;
 
 		kprintfln!("Scheduler: About to jump to user at {x}")(curEnvironment.entry);
 
