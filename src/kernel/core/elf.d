@@ -556,7 +556,7 @@ void* getEntry(void* address)
 
 	// declare a void function which can be called to jump to the memory position of
 	// __start().
-	return ((address + text.sh_offset) - vMem.VM_BASE_ADDR);
+	return cast(void*)text.sh_offset;
 }
 
 }

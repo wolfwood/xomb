@@ -40,6 +40,7 @@ import kernel.arch.timer;
 import kernel.arch.cpu;
 
 import kernel.environment.scheduler;
+import kernel.environment.cputable;
 
 /**
 This is the main function of PGOS. It is executed once GRUB loads
@@ -107,6 +108,8 @@ extern(C) void kmain(uint magic, uint addr)
 		printLogFail();
 	}
 
+	CpuTable.init();
+
 	//pMem.test();
 
 	// boot and initialize the primary CPU
@@ -150,7 +153,7 @@ extern(C) void kmain(uint magic, uint addr)
 		MP.initAPIC();
 	}
 	
-	printLogLine("Initializing HPET");
+/*	printLogLine("Initializing HPET");
 	if (Timer.init() == ErrorVal.Success)
 	{
 		printLogSuccess();
@@ -158,7 +161,11 @@ extern(C) void kmain(uint magic, uint addr)
 	else
 	{
 		printLogFail();
-	}
+	}*/
+
+	Keyboard.init();
+
+	//kprintfln!("Keyboards Inited!!!")();
 
 	// Turn general interrupts on, so the computer can deal with errors and faults.
 	Cpu.enableInterrupts();

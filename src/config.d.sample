@@ -24,3 +24,4 @@ const auto DEBUG_LAPIC = false;
 const auto DEBUG_IOAPIC = false;
 const auto DEBUG_APENTRY = false;
 const auto DEBUG_KBD = false;
+const auto DEBUG_SCHEDULER = false;

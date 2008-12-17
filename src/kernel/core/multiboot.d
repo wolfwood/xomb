@@ -203,7 +203,7 @@ ErrorVal test_mb_header(uint magic, multiboot_info_t *multi_boot_struct)
 	if(CHECK_FLAG(multi_boot_struct.flags, 3))
 	{
 		// print out the number of modules loaded by GRUB, and the physical memory address of the first module in memory.
-		kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)multi_boot_struct.mods_count, cast(int)multi_boot_struct.mods_addr);
+		//kprintfln!("mods_count = {}, mods_addr = 0x{x}")(cast(int)multi_boot_struct.mods_count, cast(int)multi_boot_struct.mods_addr);
 
 		module_t* mod;
 		int i;

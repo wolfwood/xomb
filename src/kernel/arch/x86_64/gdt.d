@@ -31,18 +31,18 @@ we still need one for some lame ass reason.  THANKS AMD.
 align(1) struct TSSstructure
 {
 	uint reserved0;				// Reserved space
-	ulong rsp0;					// Three longs for RSP address
+	ulong rsp0 = vMem.REGISTER_STACK;					// Three longs for RSP address
 	ulong rsp1;					// w00t
 	ulong rsp2;					// pew pew
 
 	ulong reserved1;			// More reserved space
-	ulong ist1 = vMem.REGISTER_STACK;					// IST space (space for seven)
+	ulong ist1;// = vMem.REGISTER_STACK;					// IST space (space for seven)
 	ulong ist2;
 	ulong ist3;
 	ulong ist4;
 	ulong ist5;
 	ulong ist6;
-	ulong ist7;
+	ulong ist7 = vMem.REGISTER_STACK;
 	
 	ulong reserved2;			// More reserved space again
 	

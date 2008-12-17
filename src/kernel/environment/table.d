@@ -13,6 +13,44 @@ import kernel.core.util;
 
 import kernel.dev.vga;
 
+// XXX: frame pointer hack
+	void nullFunc()
+	{
+		asm { naked; "retq"; }
+	}
+
+// Environment Entry
+//
+// id			- index into table, unique for environment
+// size			- size of data
+// state		- the current state of execution
+// entry		- entry point into the environment
+//				- maybe, it could have multiple entry points
+// cpuCount		- number of cpus this environment needs
+// content		- the data portion (lower half of memory)
+//
+// (per cpu sections)
+//
+// pageTables	- pointer to a list of pagetables
+
+// REGISTER_STACK Layout
+//
+// x86
+//
+// has a fairly complicated set up
+//
+//  -0 - ptr to bottom (is at register stack)
+//  -8 - SS (INT)
+// -16 - RSP (INT)
+// -24 - RFLAGS (INT)
+// -32 - CS (INT)
+// -40 - RIP (INT)
+// -48 - ERROR CODE (INT)
+// -56 - INT NUMBER (INT)
+// -64 - GENERAL REGISTERS (contextSwitchSave!())
+//
+
+
 struct Environment
 {
 
@@ -23,138 +61,132 @@ struct Environment
 		Blocked,
 	}
 
-	vMem.PageTable pageTable;	// The page table
-
+	uint cpuCount;				// number of cpus this environment needs
 	uint id;					// environment id
+	void* content;				// environment data, code
+	ulong size;					// environment size
+	State state;				// current state of execution
 
-	void* stack;				// stack
-	void* stackPtr;				// current stack pointer
+	void* entry;				// entry into the execution space
 
-	void* registers;			// register stack
-								// where the registers are saved (and other context information)
-								// has a fairly complicated set up
-			
-								//  -0 - ptr to bottom (is at register stack)
-								//  -8 - SS (INT)
-								// -16 - RSP (INT)
-								// -24 - RFLAGS (INT)
-								// -32 - CS (INT)
-								// -40 - RIP (INT)
-								// -48 - ERROR CODE (INT)
-								// -56 - INT NUMBER (INT)
-								// -64 - GENERAL REGISTERS (contextSwitchSave!())
+	// per cpu
+
+	// should be physical addresses (eventually)
+
+	vMem.PageTable pageTable;	// environment page table
 
 	//void* heap;				// heap (probably want information about the individual pages)
-
-	void* contextSpace;			// Where the code lives
-	ulong contextSize;			// Size of the context space
-
-	void* entry;				// Entry point, the address of the first instruction (in terms of the environment address space
-	
-	State state;				// state
-
-	// will load the environment (using a loader)
-	void load()
-	{
-		// TODO: load an executable file
-		contextSpace = null;
-	}
-
-	// will load the environment (using grub module)
-	void loadGRUBModule(uint modNumber)
-	{
-		// code lives at where GRUB tells us it lives
-		// contextSpace...
-
-		// map in context space (1:1 mapping)
-		// map(physaddr, length)
-		pageTable.map(cast(ubyte*)GRUBModules.getStart(modNumber), GRUBModules.getLength(modNumber));
-
-		entry = GRUBModules.getEntry(modNumber);		
-	}
-
-	// code executed as this environment gets set to run
-	ErrorVal preamble()
-	{
-		// use page table
-		pageTable.use();
-
-		// switch stack
-		//mixin(contextSwitchStack!());
-		if (state == State.Blocked) {
-			state = State.Running;
-		}
-
-		return ErrorVal.Success;
-	}
-
-	// Code for execute
-  	ErrorVal execute()
-  	{
-		// first execution?
-		if (state == State.Ready)
-		{
-
-			//kprintfln!("state is ready {x}")(entry);
-			// has not been executed yet
-			state = State.Running;
-
-			// create a mock stack
-			mixin(contextSwitchPrepare!("entry"));
-
-			//mixin(Syscall.jumpToUser!("stackPtr", "entry"));
-
-			return ErrorVal.Success;
-		}
-		
-		// Call the preamble code first, then execute.
-
-		return ErrorVal.Success;
-  	}
-
-	// code executed as this environment gets switched
-	ErrorVal postamble()
-	{
-		state = State.Blocked;
-
-		return ErrorVal.Success;
-	}
-
-	ErrorVal initPageTable()
-	{
-		pageTable.init();
-		
-		return ErrorVal.Success;		
-	}
-
-	ErrorVal initStack()
-	{
-		// allocate 8K environment stack
-		pageTable.mapStack(stackPtr);
-		stack = stackPtr - (vMem.ENVIRONMENT_STACK_PAGES * vMem.PAGE_SIZE);
-
-		// allocate 4K register stack
-		pageTable.mapRegisterStack(registers);	
-
-		// now, context save (for sanity of scheduling)
-		//mixin(contextSwitchSave!());	
-		return ErrorVal.Success;
-	}
-
-	// deconstruct the environment
-	void uninit()
-	{
-		kprintfln!("uninit page")();
-		// free the pages we used
-		pageTable.uninit();
-
-		kprintfln!("uninit stack")();
-		// free stack
-		vMem.freePage(stack);
-		vMem.freePage(stack + vMem.PAGE_SIZE);
-	}
 }
 
+// will load the environment (using a loader)
+void load(Environment* environ)
+{
+	// TODO: load an executable file of our design (multiple cpus and entry points?)
+	environ.content = null;
+	environ.size = 0;
+}
+
+// will load the environment (using grub module)
+void loadGRUBModule(Environment* environ, uint modNumber)
+{
+	// code lives at where GRUB tells us it lives
+	// contextSpace...
+
+	// map in context space (1:1 mapping)
+	// map(physaddr, length)
+
+	// cpus are set to 1
+	environ.cpuCount = 1;
+
+	environ.pageTable.map(cast(ubyte*)GRUBModules.getStart(modNumber), GRUBModules.getLength(modNumber), cast(void*)0x400000);
+
+	environ.entry = 0x400000 + GRUBModules.getEntry(modNumber);		
+}
+
+// code executed as this environment gets set to run
+ErrorVal preamble(Environment* environ)
+{
+	// use page table
+	environ.pageTable.use();
+
+	// switch stack
+	if (environ.state == Environment.State.Blocked) {
+		environ.state = Environment.State.Running;
+	}
+
+	return ErrorVal.Success;
+}
+
+// Code for execute
+ErrorVal execute(Environment* environ)
+{
+	// first execution?
+	if (environ.state == Environment.State.Ready)
+	{
+		// has not been executed yet
+		environ.state = Environment.State.Running;
+
+		// create a mock stack
+		//mixin(contextSwitchPrepare!("environ.entry"));
+		prepare(environ.entry);
+
+		return ErrorVal.Success;
+	}
+		
+	// Call the preamble code first, then execute.
+	return ErrorVal.Success;
+}
+
+void prepare(void* entry)
+{
+	mixin(contextSwitchPrepare!("environ.entry"));
+}
+
+// code executed as this environment gets switched
+ErrorVal postamble(Environment* environ)
+{
+	nullFunc();
+
+	environ.state = Environment.State.Blocked;
+
+	return ErrorVal.Success;
+}
+
+ErrorVal initPageTable(Environment* environ)
+{
+	environ.pageTable.init();
+		
+	return ErrorVal.Success;		
+}
+
+ErrorVal initStack(Environment* environ)
+{
+	// allocate 8K environment stack
+	void* stack;
+	void* registers;
+	environ.pageTable.mapStack(stack);
+	stack = stack - (vMem.ENVIRONMENT_STACK_PAGES * vMem.PAGE_SIZE);
+
+	// allocate 4K register stack
+	environ.pageTable.mapRegisterStack(registers);	
+
+	// now, context save (for sanity of scheduling)
+	//mixin(contextSwitchSave!());	
+	return ErrorVal.Success;
+}
+
+// deconstruct the environment
+void uninit(Environment* environ)
+{
+	//kprintfln!("uninit page")();
+	// free the pages we used
+	environ.pageTable.uninit();
+
+	//kprintfln!("uninit stack")();
+	// XXX: free stack
+	//vMem.freePage(stack);
+	//vMem.freePage(stack + vMem.PAGE_SIZE);
+}
 
 
 struct EnvironmentTable
@@ -238,15 +270,15 @@ static:
 		environment.state = Environment.State.Ready;
 
 		// now we can set up common stuff
-		environment.initPageTable();	// create a user page table	
+		initPageTable(environment);	// create a user page table	
 
-		kprintfln!("init stack")();
-		environment.initStack();
+		//kprintfln!("init stack")();
+		initStack(environment);
 
 		// up the length
 		count++;
 
-		kprintfln!("count: {}")(count);
+		//kprintfln!("count: {}")(count);
 
 		return ErrorVal.Success;
 	}
@@ -258,6 +290,8 @@ static:
 		{
 			return addr[environmentIndex];
 		}
+
+		nullFunc();
 
 		return null;
 	}
@@ -273,10 +307,10 @@ static:
 		// decrement length
 		count--;
 
-		kprintfln!("count: {}")(count);
+		//kprintfln!("count: {}")(count);
 
 		// uninitialize internals of environment
-		addr[environmentIndex].uninit();
+		uninit(addr[environmentIndex]);
 
 		kprintfln!("Scheduler: removeEnvironment(): Environment Uninitialized")();
 		// free page used by environment descriptor

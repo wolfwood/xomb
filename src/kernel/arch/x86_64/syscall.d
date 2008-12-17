@@ -94,37 +94,18 @@ void setHandler(void* h)
 
 //pragma(msg, "" ~ Itoa!(cast(long)vMem.REGISTER_STACK));
 
-template jumpToUser(char[] stackPtr, char[] address)
+template jumpToUser()
 {
-/*    const char[] jumpToUser = `
-
-    asm{
-		naked;
-
-		// place the address into rcx from rdi (the 1st argument)
-		"movq %0, %%rcx" :: "m" ` ~ address ~ ` : "rcx";
-		"movq %0, %%rsp" :: "m" ` ~ stackPtr ~ `;
-		
-		// enable IF flag and allow all ports with the IOPL
-		// http://en.wikipedia.org/wiki/FLAGS_register_(computing)
-		"movq $((1 << 9) | (3 << 12)), %%r11" ::: "r11";
-
-		// perform the SYSRET
-		"sysretq";		
-	}
-
-    `;
- /*/
 	const char[] jumpToUser = `
 
 	asm {
 
 		naked;
 
-		"movq $` ~ Itoa!(vMem.REGISTER_STACK-8) ~ `, %%rsp";
+		"movq ` ~ Itoa!(vMem.REGISTER_STACK_POS) ~ `, %%rax";
 
 		// go to bottom of register stack
-		"popq %%rsp";
+		"movq %%rax, %%rsp";
 
 	}
 
@@ -148,7 +129,6 @@ template jumpToUser(char[] stackPtr, char[] address)
 
 
 	`;
-	// */
 }
 
 
@@ -166,7 +146,7 @@ void syscallHandler()
 		// preserve current rsp, somehow
 		
 		"movq %%rsp, %%rax";
-		"movq $" ~ Itoh!(vMem.REGISTER_STACK - 8) ~ ", %%rsp";
+		"movq $" ~ Itoh!(vMem.REGISTER_STACK) ~ ", %%rsp";
 
 		// emulate interrupt stack
 		"pushq $((8 << 3) | 3)";	// USER_DS (SS)
@@ -185,7 +165,7 @@ void syscallHandler()
 	asm 
 	{
 		// save top of register stack
-		"movq %%rsp, %%rax; movq %%rax, " ~ Itoa!(vMem.REGISTER_STACK-8) ::: "rax"; 
+		"movq %%rsp, %%rax; movq %%rax, " ~ Itoa!(vMem.REGISTER_STACK_POS) ::: "rax"; 
 
 		// switch to KERNEL STACK
 		"movq $" ~ Itoa!(vMem.KERNEL_STACK) ~ ", %%rsp";
@@ -195,8 +175,8 @@ void syscallHandler()
 
 		// go to bottom of register stack
 		// the stack pointer is the first entry on the register stack
-		"movq $" ~ Itoa!(vMem.REGISTER_STACK-8) ~ ", %%rsp";
-		"popq %%rsp";
+		"movq " ~ Itoa!(vMem.REGISTER_STACK_POS) ~ ", %%rax" ::: "rax";
+		"movq %%rax, %%rsp";
 	}
 		
 	mixin(contextSwitchRestore!());
@@ -213,9 +193,9 @@ void syscallHandler()
 		"popq %%rcx";
 		"addq $8, %%rsp";
 		"popq %%r11";
-		"popq %%rax";
+		"popq %%rsp";
 
-		"movq %%rax, %%rsp";
+	//	"movq %%rax, %%rsp";
 
 		"sysretq";
 	}

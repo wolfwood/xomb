@@ -12,6 +12,8 @@ import kernel.arch.x86_64.context;
 
 import kernel.arch.x86_64.vmem;
 
+extern (D) void schedule();
+
 alias IntGateDesc64 IDTEntry;
 
 public align(1) struct IDTPtr
@@ -65,9 +67,11 @@ private:
 // vector of interrupt handling routines
 InterruptHandler[256] InterruptHandlers;
 
+void function() scheduleFunction;
+
 public enum StackType : uint
 {
-	RegisterStack = 1,
+	RegisterStack = 0,
 	StackFault,
 	DoubleFault,
 	NMI,
@@ -109,8 +113,10 @@ void setSysGate(uint num, void* funcPtr, uint ist = StackType.RegisterStack)
 	setGate(num, SysSegType64.IntGate, cast(ulong)funcPtr, 3, ist);
 }
 
-public void install()
+public void install(void function() scheduleFunc)
 {
+	scheduleFunction = scheduleFunc;
+
 	idtp.limit = (IDTEntry.sizeof * Entries.length) - 1;
 	idtp.base = cast(ulong)Entries.ptr;
 
@@ -412,6 +418,17 @@ extern(C) void isr_common()
 	// ERROR CODE
 	// INTERRUPT VECTOR #
 
+	asm 
+	{
+		naked;
+
+		// SS, RSP, FLAGS, CS, RIP, ERROR CODE, INT VECTOR
+		// so the stack is at 8 bytes per 7 entries
+		//"cmpl $" ~ Itoa!((vMem.REGISTER_STACK-(8*7)) & 0xFFFFFFFF) ~ ", %%esp";
+		"cmpq $0x38, -0x20(%%rsp)";
+		"jne isr_kernel";
+	}
+
 	mixin(contextSwitchSave!());
 	
 	asm
@@ -422,7 +439,7 @@ extern(C) void isr_common()
 		// to the fault handler
 		"movq %%rsp, %%rdi";
 		"movq %%rsp, %%rax";
-		"movq %%rax, " ~ Itoa!(vMem.REGISTER_STACK-8) ::: "rax";
+		"movq %%rax, " ~ Itoa!(vMem.REGISTER_STACK_POS) ::: "rax";
 
 		// switch to KERNEL_STACK
 		"movq $" ~ Itoa!(vMem.KERNEL_STACK) ~ ", %%rsp";
@@ -430,11 +447,14 @@ extern(C) void isr_common()
 		// transfer control to the fault handler
 		"call fault_handler";
 
+		// schedule
+		"call *%0" :: "m" Interrupts.scheduleFunction;
+
 		// switch back to REGISTER_STACK
-		"movq $" ~ Itoa!(vMem.REGISTER_STACK-8) ~ ", %%rsp";
+		"movq " ~ Itoa!(vMem.REGISTER_STACK_POS) ~ ", %%rax" ::: "rax";
 
 		// go to top of REGISTER_STACK
-		"popq %%rsp";
+		"movq %%rax, %%rsp";
 	}
 	
 	mixin(contextSwitchRestore!());
@@ -451,8 +471,34 @@ extern(C) void isr_common()
 
 		// Cleans up the pushed error code and pushed ISR num
 		"add $16, %%rsp";
-
 		"iretq";         /* pops 5 things in order: rIP, CS, rFLAGS, rSP, and SS */
+
+		
+
+
+
+
+
+
+		// KERNEL ISR COMMON
+		
+		"isr_kernel:";
+	}
+
+	mixin(contextSwitchSave!());
+
+	asm 
+	{
+		"movq %%rsp, %%rdi";
+		"call fault_handler";
+	}
+	
+	mixin(contextSwitchRestore!());
+
+	asm
+	{
+		"add $16, %%rsp";
+		"iretq";
 	}
 }
 

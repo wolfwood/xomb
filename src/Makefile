@@ -28,7 +28,7 @@ endif
 CFLAGS = -nostdlib -nodefaultlibs -g -DUSE_ASSERT -mcmodel=kernel
 
 # flags for gdc
-DFLAGS = -nostdlib -nodefaultlibs -g -mcmodel=kernel -fdebug -I .
+DFLAGS = -nostdlib -nodefaultlibs -g -mcmodel=kernel -fdebug -fno-omit-frame-pointer -I .
 
 # flags for ld
 LDFLAGS = -nostdlib -nodefaultlibs -b elf64-x86-64 -T linker.ld
@@ -38,13 +38,16 @@ APP_LDFLAGS = -nostdlib -nodefaultlibs -b elf64-x86-64
 
 # file list
 ASM = kernel/arch/x86_64/boot/boot.S kernel/arch/x86_64/boot/load.S kernel/arch/x86_64/boot/trampoline.S
-DFILES = kernel/core/elf.d kernel/core/syscall.d kernel/arch/x86_64/syscall.d kernel/arch/x86_64/globals.d kernel/arch/x86_64/cpu.d kernel/core/log.d kernel/arch/x86_64/gdt.d kernel/arch/x86_64/lapic.d kernel/arch/x86_64/ioapic.d kernel/kmain.d kernel/dev/vga.d kernel/core/multiboot.d kernel/arch/x86_64/idt.d gdb/kgdb_support.d gdb/kgdb_stub.d kernel/arch/x86_64/vmem.d kernel/core/regions.d kernel/mem/pmem.d config.d kernel/core/error.d kernel/arch/x86_64/hpet.d kernel/arch/locks.d kernel/arch/x86_64/locks.d kernel/arch/x86_64/mp.d kernel/dev/keyboard.d kernel/arch/x86_64/pic.d kernel/arch/x86_64/acpi.d kernel/environment/scheduler.d kernel/core/modules.d kernel/environment/table.d kernel/arch/x86_64/timer.d kernel/arch/x86_64/descriptors.d kernel/arch/x86_64/pagefault.d
 
+ARCHFILES = kernel/arch/x86_64/syscall.d kernel/arch/x86_64/globals.d kernel/arch/x86_64/cpu.d kernel/arch/x86_64/gdt.d kernel/arch/x86_64/lapic.d kernel/arch/x86_64/ioapic.d kernel/arch/x86_64/idt.d kernel/arch/x86_64/vmem.d kernel/arch/x86_64/hpet.d kernel/arch/x86_64/locks.d kernel/arch/x86_64/mp.d kernel/arch/x86_64/pic.d kernel/arch/x86_64/acpi.d kernel/arch/x86_64/timer.d kernel/arch/x86_64/descriptors.d kernel/arch/x86_64/pagefault.d
+
+COREFILES = kernel/core/elf.d kernel/core/syscall.d kernel/core/log.d kernel/kmain.d kernel/dev/vga.d kernel/core/multiboot.d gdb/kgdb_support.d gdb/kgdb_stub.d kernel/core/regions.d kernel/mem/pmem.d config.d kernel/core/error.d kernel/arch/locks.d kernel/dev/keyboard.d kernel/environment/scheduler.d kernel/core/modules.d kernel/environment/table.d kernel/environment/cputable.d
 
 RTFILES := $(shell ls std/typeinfo/*.d) object.d kernel/core/invariant.d kernel/core/dstubs.d std/c/stdarg.d kernel/core/system.d user/syscall.d kernel/core/util.d kernel/arch/x86_64/usersyscall.d
-APP := application/application.d
-APP2 := application/application2.d
-OBJS = $(ASM:.S=.o) $(DFILES:.d=.o) $(RTFILES:.d=.o)
+
+APP := application/application.d application/application2.d application/xsh.d
+APP_OBJS = $(APP:.d=.o)
+OBJS = $(ASM:.S=.o) $(COREFILES:.d=.o) $(RTFILES:.d=.o) $(ARCHFILES:.d=.o)
 
 RUNTIMEOBJS = $(RTFILES:.d=.o)
 
@@ -63,6 +66,7 @@ all: setup $(KERNEL_IMG)
 	rm -f xomb.dump && x86_64-pc-elf-objdump -d -S -r xomb > xomb.dump
 	rm -f application.dump && x86_64-pc-elf-objdump -d -S -r application/application > application/application.dump
 	rm -f application2.dump && x86_64-pc-elf-objdump -d -S -r application/application2 > application/application2.dump
+	rm -f xsh.dump && x86_64-pc-elf-objdump -d -S -r application/xsh > application/xsh.dump
 	@echo ""
 	@echo "OS successfully compiled, to make a bootable CD ISO, run:"
 	@echo "        make iso"
@@ -76,10 +80,11 @@ all: setup $(KERNEL_IMG)
 	$(DC) $(DFLAGS) -c $< -o $@
 
 # kernel link
-$(KERNEL_IMG): $(OBJS) application/application.o application/application2.o
+$(KERNEL_IMG): $(OBJS) $(APP_OBJS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
 	$(LD) $(APP_LDFLAGS) -o application/application application/application.o -dN $(RUNTIMEOBJS)
 	$(LD) $(APP_LDFLAGS) -o application/application2 application/application2.o -dN $(RUNTIMEOBJS)
+	$(LD) $(APP_LDFLAGS) -o application/xsh application/xsh.o -dN $(RUNTIMEOBJS)
 
 # creates the GRUB iso image
 iso: all
@@ -89,6 +94,7 @@ iso: all
 	cp $(KERNEL_IMG) $(ISO_PATH)$(BOOT_PATH)
 	cp ./application/application $(ISO_PATH)$(BOOT_PATH)
 	cp ./application/application2 $(ISO_PATH)$(BOOT_PATH)
+	cp ./application/xsh $(ISO_PATH)$(BOOT_PATH)
 	mkisofs -R -b $(GRUB_PATH)$(GRUB_IMG) -no-emul-boot -boot-load-size 4 -boot-info-table -o $(ISO_NAME) $(ISO_PATH)
 	@echo
 	@echo "ISO successfully made!"

@@ -36,6 +36,9 @@ import kernel.arch.x86_64.cpu;
 // For support utils and printing
 import kernel.core.util;
 
+// For reporting the cpu to the scheduler
+import kernel.environment.scheduler;
+
 // For debug config values
 import config;
 
@@ -421,7 +424,7 @@ extern (C) void apEntry()
 
 	kdebugfln!(DEBUG_APENTRY, "AP - Boot of CPU Complete")();
 
-	volatile void* apStack;
+/*	volatile void* apStack;
 	volatile void* apStackSupplementary;
 
 	if (vMem.getKernelPage(apStack) == ErrorVal.Success)
@@ -451,8 +454,13 @@ extern (C) void apEntry()
 		
 		"movq %0, %%rsp" :: "o" apStack;
 	
-	}
+	}*/
 
+	// set the new stack
+	asm {
+		"movq $" ~ Itoa!(vMem.KERNEL_STACK) ~ ", %%rsp";
+	}
+	
 	apExec();
 }
 
@@ -465,5 +473,7 @@ void apExec()
 
 	LocalAPIC.apLock.unlock();
 
-	for(;;) {}
+	Scheduler.cpuReady(Cpu.info.ID);
+
+	for (;;) {}
 }

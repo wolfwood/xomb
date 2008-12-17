@@ -6,13 +6,51 @@ import kernel.arch.x86_64.pic;
 import kernel.arch.x86_64.idt;
 import kernel.arch.x86_64.lapic;
 
+import kernel.environment.scheduler;
+
 import kernel.dev.vga;
 
 import config;
 
+const int BUFF_SIZE = 1024;
+
 struct Keyboard {
 
 static:
+
+char [BUFF_SIZE] buff;
+int ipos;
+int gpos;
+
+char grabch() {
+
+//	return 'a';
+
+	if(ipos != gpos && (gpos < (BUFF_SIZE - 1))) {
+		return buff[gpos++];
+	} else if(gpos == (BUFF_SIZE - 1)) {
+		gpos = 0;
+		return buff[BUFF_SIZE - 1];
+	}
+
+	return '\0';
+}
+
+void depositch(char c) {
+
+//	return;
+
+	if((ipos < (BUFF_SIZE -1)) && ((ipos + 1) != gpos)) {
+		buff[ipos] = c;
+		ipos++;
+	} else if(gpos != 0) {
+		buff[ipos] = c;
+		ipos = 0;
+	} else {
+		//igonore!
+	}
+
+}
 
 void function(ubyte code) downFunc;
 void function(ubyte code) upFunc;
@@ -154,7 +192,9 @@ bool upState = false;
 // an interrupt driven approach
 void interruptDriver(InterruptStack* s)
 {
+	//kprintfln!("keyboard interrupt", false)();
 	common();
+	//Cpu.ioIn!(byte, "60h")();
 
 	PIC.EOI(1);
 	LocalAPIC.EOI();		
@@ -205,8 +245,10 @@ private void common()
 		{
 			// printable character
 			// kprintf!("{}{}", false)(cast(char)translated, charFunc);
-			if (charFunc) { charFunc(cast(char)translated); }
+			//if (charFunc) { charFunc(cast(char)translated); } //else { kprintf!("{}", false)(translated); }
+			depositch(translated);
 		}
+			
 		if (upState) {
 			//kprintf!("{} = {}")(data, 0);
 			if (upFunc) { upFunc(data); }

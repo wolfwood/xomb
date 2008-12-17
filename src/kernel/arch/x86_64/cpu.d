@@ -8,6 +8,12 @@ import kernel.arch.x86_64.syscall;
 import kernel.arch.x86_64.vmem;
 import kernel.arch.x86_64.pagefault;
 import kernel.arch.x86_64.pic;
+import kernel.arch.x86_64.lapic;
+
+import kernel.mem.pmem;
+
+// reporting BSP readiness to scheduler
+import kernel.environment.scheduler;
 
 import multiboot = kernel.core.multiboot;
 
@@ -16,6 +22,21 @@ import kernel.dev.vga;
 struct Cpu
 {
 static:
+
+	uint numInitedCpus;		// contains the number of CPUs successfully installed.  
+							// differs from the MP number of cpus, as some may be defective
+
+	// this structure provides information about the cpu
+	CpuInfo* info = cast(CpuInfo*)vMem.CPU_INFO_ADDR;
+
+	// For the CPU page, which describes the cpu at a common virtual location
+	struct CpuInfo
+	{
+		uint ID;			// the logical id of the cpu (to XOmB)
+		uint hardwareID;	// the physical id of the cpu (to hardware, localAPIC)
+		
+		vMem.pml4* pageTable;	// cpu page table, contains per cpu mappings
+	}
 
 	/**
 	Gets the value of the CPUID function for a given item.  See some sort of documentation on
@@ -147,7 +168,7 @@ static:
 		printLogSuccess();
 
 		printLogLine("Installing IDT");
-		Interrupts.install();
+		Interrupts.install(&Scheduler.schedule);
 		printLogSuccess();
 
 		printLogLine("Installing Paging Mechanism");
@@ -161,13 +182,15 @@ static:
 		vMem.install();
 		printLogSuccess();
 
-		vMem.installStack();
+		//vMem.installStack();
 
 		// use the page tables, gdt, etc
 		boot();
 		
 		// Now that page tables are implemented,
 		// Map in the BIOS regions.
+
+		Scheduler.cpuReady(0);
 
 		multiboot.mapRegions();
 	}
@@ -176,14 +199,44 @@ static:
 	// - This function is common to all processors
 	void boot()
 	{
+		//kprintfln!("Setting up CPU specific pages")();
+
+		// set the cpu's page table
+		vMem.pml4* pageTable;
+		// this function will set pageTable to the virtual address
+		// of the page table
+		vMem.installCpuPageTable(pageTable);
+
+		//kprintfln!("CPU specific page table in use")();
+
+		// we have a stack per cpu located at KERNEL_STACK
+		// and we have a cpu info page located at CPU_INFO_ADDR
+
+		// the Cpu.info structure automatically points here
+
+		// set stuff about this specific cpu here: 
+		// (mapped at CPU_INFO_ADDR)
+		info.ID = numInitedCpus;
+		info.pageTable = pageTable;
+
+		numInitedCpus++;
+
+		//kprintfln!("Set up info page for CPU {}")(numInitedCpus-1);
+
 		// assign gdt
 		GDT.setGDT();
+
+		//kprintfln!("Installed GDT")();
 
 		// assign idt
 		Interrupts.setIDT();
 
+		//kprintfln!("Installed IDT")();
+
 		// assign syscall handler
 		Syscall.setHandler(&Syscall.syscallHandler);
+
+		//kprintfln!("Installed SYSCALL")();
 	}
 
 	void ioOut(T, char[] port)(int data)

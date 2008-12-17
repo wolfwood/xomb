@@ -8,14 +8,20 @@ import user.syscall;
 void main()
 {
 
+	// 1st parameter is the CPU id from 0 to numCpus - 1
+
+	int cpuID;
+
+	asm {
+
+		"movq %%rsi, %0" :: "m" cpuID : "rax";
+
+	}
+
  for (;;)
  {
-// exit(0);
-//  yield();
-	int i=1;
-	i--;
-	int p=3;
-	p = 3 / i; 
+	//grabch();
+	yield();
  }
 
  return;

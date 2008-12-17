@@ -7,6 +7,8 @@ import kernel.core.multiboot;			// GRUB multiboot
 import kernel.core.elf;					// ELF code
 import kernel.core.modules;				// GRUB modules
 
+import kernel.util.queue;				// For environment queue
+
 // architecture dependent
 import kernel.arch.interrupts;
 import kernel.arch.timer;
@@ -16,8 +18,14 @@ import kernel.arch.context;
 import kernel.dev.vga;
 
 import kernel.environment.table;		// for environment table
+import kernel.environment.cputable;		// for cpu table
 
 import kernel.core.error;				// for return values
+
+import config;							// for debug
+
+// XXX: placed here because of weird D bug
+const int MAX_ENVIRONMENTS = 1024;
 
 struct Scheduler
 {
@@ -26,6 +34,8 @@ static:
 	
 	// the quantum length in picoseconds
 	const ulong quantumInterval = 50000000000;
+
+	alias circleQueue!(Environment*, MAX_ENVIRONMENTS) theQueue;
 
 	// TODO: probably need one per CPU...
 	Environment* curEnvironment;
@@ -39,19 +49,22 @@ static:
 			return ErrorVal.Fail;
 		}
 
+		theQueue.init();
+
 		// add a new environment
 		// Get all grub modules and load them in to the environment table
 		for(int i = 0; i < GRUBModules.length; i++) 
 		{
 			Environment* environ;
-			kprintfln!("Scheduler: Creating new environment.")();
+			kdebugfln!(DEBUG_SCHEDULER, "Scheduler: Creating new environment.")();
 
 			EnvironmentTable.newEnvironment(environ);
+			theQueue.push(environ);
 
 			// load an executable from the multiboot header
-			kprintfln!("Scheduler: Loading from GRUB module.")();
+			kdebugfln!(DEBUG_SCHEDULER, "Scheduler: Loading from GRUB module.")();
 
-		  environ.loadGRUBModule(i);
+		  loadGRUBModule(environ, i);
 		}
 
 		Interrupts.setCustomHandler(Interrupts.Type.DivByZero, &quantumFire);
@@ -63,9 +76,7 @@ static:
 	void quantumFire(InterruptStack* stack)
 	{
 		// schedule!
-
-		schedule();
-
+		//if (shouldSchedule) { schedule(); }
 		//Timer.resetTimer(0, quantumInterval);
 	}
 
@@ -79,23 +90,25 @@ static:
 			// isr_common()
 			// syscall_dispatcher()
 
-			curEnvironment.postamble();
+			postamble(curEnvironment);
 		}
 
 		// find candidate for execution
 
-		kprintfln!("schedule(): Scheduling new environment.  Current eid: {}")(curEnvironment.id);
+		kdebugfln!(DEBUG_SCHEDULER, "schedule(): Scheduling new environment.  Current eid: {}")(curEnvironment.id);
 		
 		// ... //
 	//	curEnvironment = EnvironmentTable.getEnvironment(0);
-	  if(curEnvironment.id == 0) {
-	    curEnvironment = EnvironmentTable.getEnvironment(1);
-	  } else {
-	    curEnvironment = EnvironmentTable.getEnvironment(0);
-	  }
+	  //if(curEnvironment.id == 0) {
+	    //curEnvironment = EnvironmentTable.getEnvironment(1);
+	  //} else {
+	    //curEnvironment = EnvironmentTable.getEnvironment(0);
+	  //}
 
-	  	kprintfln!("schedule(): New Environment Selected.  eid: {}")(curEnvironment.id);
+	  	kdebugfln!(DEBUG_SCHEDULER, "schedule(): New Environment Selected.  eid: {}")(curEnvironment.id);
 	
+		Environment* temp = theQueue.peek();
+		curEnvironment = temp;
 	
 		// curEnvironment should be set to the next
 		// environment to be executed
@@ -106,19 +119,20 @@ static:
 		// the resulting return should get to the context
 		// switch restore code for the architecture
 
-		//mixin(contextStackRestore!("curEnvironment.stackPtr"));
-		curEnvironment.preamble();
-		curEnvironment.execute();				
+		preamble(curEnvironment);
+		execute(curEnvironment);				
 
 		// return
 	}
 
 	void yield()
 	{
-		kprintfln!("Yield from eid: {}")(curEnvironment.id);
+		kdebugfln!(DEBUG_SCHEDULER, "Yield from eid: {}")(curEnvironment.id);
 //		curEnvironment.postamble();
 		
 	  //curEnvironment = EnvironmentTable.getEnvironment(0);
+	  Environment* temp = theQueue.pop();
+	  theQueue.push(temp);
 	  schedule();
 
 //	curEnvironment.preamble();
@@ -129,6 +143,7 @@ static:
 	void exit()
 	{
 		EnvironmentTable.removeEnvironment(curEnvironment.id);
+		theQueue.pop();
 
 		curEnvironment = null;
 
@@ -136,33 +151,42 @@ static:
 		{
 			// cripes, no more environments
 			// shut down!
-			kprintfln!("Scheduler: No more environments.")();
+			kdebugfln!(DEBUG_SCHEDULER, "Scheduler: No more environments.")();
 			for(;;) {}
 		}
 
-		//schedule();
+		schedule();
 	}
 
 	// called at the first run
 	void run()
 	{
 		//schedule();
-		curEnvironment = EnvironmentTable.getEnvironment(0);
+		//curEnvironment = EnvironmentTable.getEnvironment(0);
+		curEnvironment = theQueue.peek();
 
-		kprintfln!("Scheduler: About to jump to user at {x}")(curEnvironment.entry);
+		kdebugfln!(DEBUG_SCHEDULER, "Scheduler: About to jump to user at {x}")(curEnvironment.entry);
 
 
 		// set up interrupt handler
 		//Timer.initTimer(quantumInterval, &quantumFire);
 
-		kprintfln!("environ stack: {x}")(curEnvironment.stackPtr);
 
 		//Timer.initTimer(quantumInterval, &quantumFire);
 
 
-		curEnvironment.preamble();
-		curEnvironment.execute();
+		preamble(curEnvironment);
+		execute(curEnvironment);
 	
-		mixin(Syscall.jumpToUser!("curEnvironment.stackPtr", "curEnvironment.entry"));
+		mixin(Syscall.jumpToUser!());
+	}
+
+	void cpuReady(uint cpuID)
+	{
+		// this cpu is ready to be scheduled
+
+		kdebugfln!(DEBUG_SCHEDULER, "Scheduler: cpu {} is awaiting orders.")(cpuID);
+
+		CpuTable.provide(cpuID);
 	}
 }

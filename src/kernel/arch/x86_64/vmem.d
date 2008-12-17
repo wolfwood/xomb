@@ -1,7 +1,4 @@
-/* vmem.d - virtual memory stuffs
- *
- * So far just the page fault handler
- */
+/* vmem.d - virtual memory stuffs */
 
 
 module kernel.arch.x86_64.vmem;
@@ -19,6 +16,34 @@ import kernel.core.multiboot;
 import kernel.mem.pmem;
 import kernel.core.regions; 
 
+// Memory Layout
+//
+// x86, 4 level page tables
+// 
+// PL4[511] - Shared Kernel Memory
+//			PL3[511] - Kernel Mapping, kHeap
+//			PL3[510] - RAM Mapping, Device Mapping, Region Mapping
+//			  ...
+//			PL3[0]
+// PL4[510] - Local To CPU Memory (one per cpu)
+//			PL3[511]
+//				PL2[511]
+//					PL1[511] - KERNEL_STACK
+//					  ...
+//					PL1[510]
+//					PL1[509] - CPU_INFO
+// PL4[509] - Local to Environment Memory (one per environment, per cpu)
+//			PL3[511]
+//				PL2[511]
+//					PL1[511] - ENVIRONMENT_STACK
+//					  ...
+//					PL1[510]
+//					PL1[509] - REGISTER_STACK
+
+// Kernel Page Table: vMem.pageLevel4
+// CPU Page Table: Cpu.pageLevel4[]
+// Enviroment Page Table: Environment.pageTables[] of type pml1, represents pl4[509].pl3[511].pl2[511] and 
+//								Environment.content of type pml3, represents pl4[0]
 
 struct vMem
 {
@@ -51,17 +76,26 @@ const ulong ENVIRONMENT_STACK_PAGES = 2;
 // size of the register stack (context switch storage)
 const ulong REGISTER_STACK_PAGES = 1;
 
+// size of the cpu info page
+const ulong CPU_INFO_PAGES = 1;
+
 // register stack
-const ulong REGISTER_STACK = (FormVirtualAddress!(510,511,511,512 - KERNEL_STACK_PAGES - REGISTER_STACK_PAGES)) + (REGISTER_STACK_PAGES * PAGE_SIZE);
+const ulong REGISTER_STACK = (FormVirtualAddress!(509,511,511,512 - ENVIRONMENT_STACK_PAGES - REGISTER_STACK_PAGES)) + (REGISTER_STACK_PAGES * PAGE_SIZE);
+
+// address of bottom of register stack
+const ulong REGISTER_STACK_POS = REGISTER_STACK - (PAGE_SIZE * REGISTER_STACK_PAGES);
 
 // user stack
-const ulong ENVIRONMENT_STACK = (FormVirtualAddress!(510,511,511,512 - KERNEL_STACK_PAGES - REGISTER_STACK_PAGES - ENVIRONMENT_STACK_PAGES)) + (ENVIRONMENT_STACK_PAGES * PAGE_SIZE);
+const ulong ENVIRONMENT_STACK = (FormVirtualAddress!(509,511,511,512 - ENVIRONMENT_STACK_PAGES)) + (ENVIRONMENT_STACK_PAGES * PAGE_SIZE);
 
 // kernel stack
-const ulong KERNEL_STACK = (FormVirtualAddress!(511,510,511,512 - KERNEL_STACK_PAGES)) + (KERNEL_STACK_PAGES * PAGE_SIZE);
+const ulong KERNEL_STACK = (FormVirtualAddress!(510,511,511,512 - KERNEL_STACK_PAGES)) + (KERNEL_STACK_PAGES * PAGE_SIZE);
 
+// cpu info
+const ulong CPU_INFO_ADDR = (FormVirtualAddress!(510,511,511,512 - KERNEL_STACK_PAGES - CPU_INFO_PAGES));
 
-
+// cpu page table
+const ulong CPU_PAGETABLE_ADDR = (FormVirtualAddress!(510,511,511,512-KERNEL_STACK_PAGES - CPU_INFO_PAGES - 1));
 
 // RAM mapping
 const ulong VM_BASE_INDEX = 0;	// This index is where on the pageLevel3[] the physical memory should start to be mapped in
@@ -82,7 +116,7 @@ align(1) struct PageTable
 		// get a free page
 		void* nextAddr;
 		nextAddr = pMem.requestPage();
-		kprintfln!("pl4: {x}")(nextAddr);
+		//kprintfln!("pl4: {x}")(nextAddr);
 		nextAddr += VM_BASE_ADDR;
 
 		entries = cast(pml4*)nextAddr;
@@ -91,8 +125,8 @@ align(1) struct PageTable
 		entries[0..511] = pml4.init;
 
 		// map in the kernel
-		//entries[510].pml4e = pageLevel4[510].pml4e;
-		entries[511].pml4e = pageLevel4[511].pml4e;
+		entries[511].pml4e = (cast(pml4*)CPU_PAGETABLE_ADDR)[511].pml4e;
+		entries[510].pml4e = (cast(pml4*)CPU_PAGETABLE_ADDR)[510].pml4e;
 	}	
 
 	void uninit()
@@ -159,7 +193,7 @@ align(1) struct PageTable
 			
 			allocateUserPageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1, entries);
 
-			kprintfln!("estack: {x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
+			//kprintfln!("estack: {x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
 
 			// we set the entry to point to the newly allocated page
 			pl1[pml_index1].pml1e = (cast(ulong)stack) | 0x87; // present!
@@ -193,7 +227,7 @@ align(1) struct PageTable
 			
 			allocateKernelPageEntries(virtualAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1, entries);
 
-			kprintfln!("rstack: {x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
+			//kprintfln!("rstack: {x} {} {} {} {}")(virtualAddress, pml_index4, pml_index3, pml_index2, pml_index1);
 
 			// we set the entry to point to the newly allocated page
 			pl1[pml_index1].pml1e = (cast(ulong)registerStack) | 0x87; // present!
@@ -206,10 +240,10 @@ align(1) struct PageTable
 
 		return ErrorVal.Success;
 	}
-	
+		
 	// This function will take a physical range (a BIOS region, perhaps) and
 	// map it after the end of the physical address range
-	ErrorVal map(ubyte* physicalRangeStart, ulong physicalRangeLength)
+	ErrorVal map(ubyte* physicalRangeStart, ulong physicalRangeLength, void* virtualStart)
 	{
 
 		// the physical range needs to be aligned by the page
@@ -240,7 +274,7 @@ align(1) struct PageTable
 		// now that we have a valid range, we can map to the kernel
 
 		// set the virtual address
-		void* virtualRangeStart = physicalRangeStart;
+		void* virtualRangeStart = virtualStart; //physicalRangeStart;
 
 		//kdebugfln!(DEBUG_PAGING, "start: {} {} {}")(virtualRangeStart, global_mem_regions.kernel_mapped.virtual_start, pMem.mem_size);
 		// get the initial page tables to alter
@@ -362,7 +396,7 @@ align(1) struct PageTable
 			}
 		}
 		
-		kdebugfln!(true|DEBUG_PAGING, "virtual Start: {x} for length: {}")(virtualRangeStart, physicalRangeLength);
+		kdebugfln!(DEBUG_PAGING, "virtual Start: {x} for length: {}")(virtualRangeStart, physicalRangeLength);
 
 		return ErrorVal.Success;
 	}
@@ -456,6 +490,7 @@ pml3[] kernel_mapping;
 		// is easier to work with (has structs, etc that we can play with)
 
 		// 3rd level page table
+
 		pml3[] pageLevel3 = (cast(pml3*)pMem.requestPage())[0 .. 512];
 		
 		
@@ -1132,5 +1167,81 @@ pml3[] kernel_mapping;
 		}
 		ulong addr = pl2[pml_index2].pml2e;
 		return cast(pml1*)((addr + VM_BASE_ADDR) & ~0x7);
+	}
+
+
+
+	private void mapExplicit(bool usermode)(void* virtual, void* physical, pml4* table)
+	{
+		pml1* pl1;
+		pml2* pl2;
+		pml3* pl3;
+
+		long pml_index4, pml_index3, pml_index2, pml_index1;
+
+		allocatePageEntries!(usermode)(virtual, pl3,pl2,pl1,pml_index4, pml_index3, pml_index2, pml_index1, table);
+
+		//kprintfln!("mapExplicit: {x} {} {} {} {}")(virtual, pml_index4, pml_index3, pml_index2, pml_index1);
+
+		pl1[pml_index1].pml1e = cast(ulong)physical | 0x87;
+		static if (usermode)
+		{
+			pl1[pml_index1].us = 1;
+		}
+	}
+
+	alias mapExplicit!(false) mapKernelExplicit;
+	alias mapExplicit!(true) mapUserExplicit;
+
+
+	// This function will set up and install the cpu page table from
+	// the kernel common page table that is currently in use.
+	ErrorVal installCpuPageTable(pml4* pageTable)
+	{
+		void* pageTablePhys = pMem.requestPage();
+		pageTable = cast(pml4*)(pageTablePhys + VM_BASE_ADDR);
+
+		// map in kernel specific mappings (level 511)
+		pageTable[511] = pageLevel4[511];
+
+		// now map in new cpu specific mappings (level 510)
+		
+		// CPU_INFO_ADDR
+
+		// ensure there is only one page, because this code does not
+		// account for more than one page... if needed, refer to stack
+		// allocation for examples of how to do this
+		static assert(CPU_INFO_PAGES == 1);
+
+		// get a page, and map it into the correct address
+		void* cpuInfoPage = pMem.requestPage();
+		mapKernelExplicit(cast(void*)CPU_INFO_ADDR, cpuInfoPage, pageTable);
+
+		// CPU_PAGETABLE_ADDR
+
+		// map in the cpu's page table (pml4) structure
+		mapKernelExplicit(cast(void*)CPU_PAGETABLE_ADDR, pageTablePhys, pageTable);
+
+		// KERNEL_STACK
+		void* virtualAddress = cast(void*)(KERNEL_STACK - (KERNEL_STACK_PAGES * PAGE_SIZE));
+
+		void* stack;
+
+		while (virtualAddress != cast(void*)KERNEL_STACK)
+		{
+			stack = pMem.requestPage();
+
+			mapKernelExplicit(virtualAddress, stack, pageTable);
+
+			virtualAddress += PAGE_SIZE;
+		}
+
+		// use the page table
+		asm {
+			"movq %0, %%rax" :: "o" pageTablePhys;
+			"movq %%rax, %%cr3";
+		}
+
+		return ErrorVal.Success;
 	}
 }

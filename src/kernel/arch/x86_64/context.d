@@ -102,14 +102,15 @@ template contextSwitchPrepare(char[] address)
 	const char[] contextSwitchPrepare = `
 
 		asm {
+			naked;
 
 			"movq %%rsp, %%rcx";
 
-			"movq %0, %%rbx" :: "m" ` ~ address ~ ` : "rbx";
+			// "movq %0, %%rbx" :: "m" ` ~ address ~ ` : "rbx";
 
 			// switch to stack
 
-			"movq $` ~ Itoa!(vMem.REGISTER_STACK-8) ~ `, %%rsp";
+			"movq $` ~ Itoa!(vMem.REGISTER_STACK) ~ `, %%rsp";
 
 			// stack stuff
 
@@ -127,7 +128,8 @@ template contextSwitchPrepare(char[] address)
 			"pushq $((9 << 3) | 3)";
 
 			// RIP
-			"pushq %%rbx";
+			//"pushq %%rbx";
+			"pushq %%rdi";
 
 			// EMULATE ERROR CODE, INTERRUPT VECTOR NUMBER
 			"pushq $0";
@@ -139,35 +141,13 @@ template contextSwitchPrepare(char[] address)
 
 		asm {
 
-			"movq %%rsp, %%rax; movq %%rax, ` ~ Itoa!(vMem.REGISTER_STACK-8) ~ `";
+			"movq %%rsp, %%rax; movq %%rax, ` ~ Itoa!(vMem.REGISTER_STACK_POS) ~ `";
 
 			"movq %%rcx, %%rsp";
 
+			"ret";
+
 		}
 
-	`;
-}
-
-template contextStackRestore(char[] stackPtr)
-{
-	const char[] contextStackRestore = `
-	asm 
-	{
-		"popq %%rcx" ::: "rcx";
-		"movq %0, %%rax" :: "o" ` ~ stackPtr ~ ` : "rax";
-		"movq %%rax, %%rsp" ::: "rax";
-		"pushq %%rcx" ::: "rcx";
-	}
-	`;
-}
-
-template contextStackSave(char[] stackPtr)
-{
-	const char[] contextStackSave = `
-	asm
-	{
-		"movq %%rsp, %%rax" ::: "rax";
-		"movq %%rax, %0" :: "o" ` ~ stackPtr ~ ` : "rax";
-	}
 	`;
 }

@@ -3,6 +3,14 @@ module user.syscall;
 import kernel.core.util;
 import kernel.arch.usersyscall;
 
+// Errors
+enum SyscallError : ulong
+{
+	OK = 0,
+	Failcopter
+}
+
+// IDs of the system calls
 enum SyscallID : ulong
 {
 	Add = 0,
@@ -10,32 +18,39 @@ enum SyscallID : ulong
 	Exit,
 	FreePage,
 	Yield,
+	Echo,
+	Grabch,
+	Depositch
 }
 
-enum SyscallError : ulong
-{
-	OK = 0,
-	Failcopter
-}
-
+// Names of system calls
 alias Tuple!
 (
-	"add", // Add
-	"allocPage", // AllocPage
-	"exit", // Exit
-	"freePage", // FreePage
-	"yield" // Yield
+	"add",			// add()
+	"allocPage",	// allocPage()
+	"exit",			// exit()
+	"freePage",		// freePage()
+	"yield",		// yield()
+	"echo",			// echo()
+	"grabch",		// grabch()
+	"depositch"		// depositch()
 ) SyscallNames;
 
+
+// Return types for each system call
 alias Tuple!
 (
-	long, // Add
-	ulong, // AllocPage
-	void, // Exit
-	void, // FreePage
-	void // Yield
+	long,		// add
+	ulong,		// allocPage
+	void,		// exit
+	void,		// freePage
+	void,		// yield
+	void,		// echo
+	char,		// grabch
+	void		// depositch
 ) SyscallRetTypes;
 
+// Parameters to system call
 struct AddArgs
 {
 	long a, b;
@@ -60,7 +75,28 @@ struct YieldArgs
 {
 }
 
-// This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason
+struct EchoArgs
+{
+	char [] str;
+}
+
+struct GrabchArgs
+{
+}
+
+struct DepositchArgs
+{
+	char ch;
+}
+
+
+
+
+
+
+
+
+// XXX: This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason
 template SyscallName(uint ID)
 {
 	const char[] SyscallName = SyscallNames[ID];

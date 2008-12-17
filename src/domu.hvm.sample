@@ -1,0 +1,26 @@
+kernel	= '/usr/lib/xen/boot/hvmloader'
+builder	= 'hvm'
+
+shadow_memory = 8
+
+memory	= '512'
+
+# CHANGE THIS TO REFLECT YOUR USERNAME (ie. "XOmB-wilkie")
+name = "XOmB-username"
+
+# disk
+
+root	= '/dev/hda1 ro'
+#disk	= [ 'file:/home/xomb/xomb/xomb/src/xomb.iso,hdc:cdrom,r' ]
+#disk	= [ 'file:/home/xomb/xomb/xomb/src/iso/boot/,hda1,w' ]
+
+# CHANGE /loop# to the loop back you have been assigned! (ie. /loop30)
+disk	= [ 'phy:/dev/loop#,hdc:cdrom,r' ]
+vcpus   = '3'
+pae	= 1
+apic	= 1
+hpet	= 1
+
+boot	= 'd'
+
+sdl	= 1
