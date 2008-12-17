@@ -247,7 +247,7 @@ extern(C) void syscallDispatcher(ulong ID, void* ret, void* params)
 	//	"movq %%rsp, %%rax" ::: "rax";
 	//	"movq %%rax, %0" :: "o" stackPtr : "rax";
 	//}//
-	//kprintfln!("Syscall: ID = 0x{x}, ret = 0x{x}, params = 0x{x}, rsp = 0x{x}")(ID, ret, params, stackPtr);
+	//kprintfln!("Syscall: ID = 0x{x}, ret = 0x{x}, params = 0x{x}")(ID, ret, params);
 	mixin(MakeSyscallDispatchList!());
 }
 
