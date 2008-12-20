@@ -100,7 +100,25 @@ void loadGRUBModule(Environment* environ, uint modNumber)
 
 	environ.pageTable.map(cast(ubyte*)GRUBModules.getStart(modNumber), GRUBModules.getLength(modNumber), cast(void*)0x400000);
 
-	environ.entry = 0x400000 + GRUBModules.getEntry(modNumber);		
+	environ.entry = 0x400000 + GRUBModules.getEntry(modNumber);
+
+	// look at BSS
+	void* bss;
+	uint bssLength;
+
+	if (GRUBModules.fillBSSInfo(modNumber, bss, bssLength))
+	{
+		//kprintfln!("Module {} bss: {x} for {} bytes")(modNumber, bss, bssLength);
+
+		// zero the section out
+		ubyte* bssSection = cast(ubyte*)bss;
+
+		bssSection[0 .. bssLength] = 0;
+	}
+	else
+	{
+		//kprintfln!("Module {} no BSS!")(modNumber);
+	}
 }
 
 // code executed as this environment gets set to run
@@ -132,7 +150,7 @@ ErrorVal execute(Environment* environ)
 
 		return ErrorVal.Success;
 	}
-		
+
 	// Call the preamble code first, then execute.
 	return ErrorVal.Success;
 }
@@ -155,8 +173,8 @@ ErrorVal postamble(Environment* environ)
 ErrorVal initPageTable(Environment* environ)
 {
 	environ.pageTable.init();
-		
-	return ErrorVal.Success;		
+
+	return ErrorVal.Success;
 }
 
 ErrorVal initStack(Environment* environ)
@@ -168,10 +186,10 @@ ErrorVal initStack(Environment* environ)
 	stack = stack - (vMem.ENVIRONMENT_STACK_PAGES * vMem.PAGE_SIZE);
 
 	// allocate 4K register stack
-	environ.pageTable.mapRegisterStack(registers);	
+	environ.pageTable.mapRegisterStack(registers);
 
 	// now, context save (for sanity of scheduling)
-	//mixin(contextSwitchSave!());	
+	//mixin(contextSwitchSave!());
 	return ErrorVal.Success;
 }
 
@@ -192,7 +210,7 @@ void uninit(Environment* environ)
 struct EnvironmentTable
 {
 
-static: 
+static:
 
 	Environment** addr;	// address of the environment table
 	int count;	// number of environments in the table
@@ -210,19 +228,19 @@ static:
 		{
 			return ErrorVal.Fail;
 		}
-		
+
 		// retain the address
 		addr = cast(Environment**)pageAddr;
 
 		// double the size (allow 1024 entries)
-	
+
 		if (vMem.getKernelPage(pageAddr) == ErrorVal.Fail)
 		{
 			return ErrorVal.Fail;
 		}
 
 		return ErrorVal.Success;
-	}	
+	}
 
 	ErrorVal newEnvironment(out Environment* environment)
 	{
@@ -230,7 +248,7 @@ static:
 		{
 			return ErrorVal.Fail;
 		}
-		
+
 		// find empty table entry
 		int i;
 		for (i=0; i<MAX_ENVIRONMENTS; i++)
@@ -248,7 +266,7 @@ static:
 			kprintfln!("BUG: EnvironmentTable.newEnvironment")();
 			return ErrorVal.Fail;
 		}
-	
+
 		void* envEntry;
 		if (vMem.getKernelPage(envEntry) == ErrorVal.Fail)
 		{
@@ -261,7 +279,7 @@ static:
 		environment = addr[i];
 
 		// should zero out the initial sections
-		//*environment = Environment.init;	
+		//*environment = Environment.init;
 
 		// set id
 		environment.id = i;
@@ -270,7 +288,7 @@ static:
 		environment.state = Environment.State.Ready;
 
 		// now we can set up common stuff
-		initPageTable(environment);	// create a user page table	
+		initPageTable(environment);	// create a user page table
 
 		//kprintfln!("init stack")();
 		initStack(environment);
@@ -321,7 +339,7 @@ static:
 		addr[environmentIndex] = null;
 	}
 
- 
+
 
 }
 

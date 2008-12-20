@@ -24,9 +24,9 @@ static:
 	void* getStart(uint modNumber)
 	{
 		if (modNumber >= length) { return null; }
-		
+
 		module_t* mod = mods + modNumber;
-		
+
 		return cast(void*)mod.mod_start;
 	}
 
@@ -35,8 +35,24 @@ static:
 		if (modNumber >= length) { return 0; }
 
 		module_t* mod = mods + modNumber;
-		
+
 		return (mod.mod_end - mod.mod_start);
+	}
+
+	bool fillBSSInfo(uint modNumber, out void* bssAddress, out uint len)
+	{
+		if (modNumber >= length) { return 0; }
+
+		module_t* mod = mods + modNumber;
+
+		void* moduleAddress = cast(void*)mod.mod_start;
+		moduleAddress += vMem.VM_BASE_ADDR;
+
+		bool ret = ELF.fillBSSInfo(moduleAddress, bssAddress, len);
+
+		bssAddress = moduleAddress + cast(ulong)(bssAddress);
+
+		return ret;
 	}
 
 	void* getEntry(uint modNumber)
@@ -50,7 +66,7 @@ static:
 
 		void* moduleAddress = cast(void*)mod.mod_start;
 		moduleAddress += vMem.VM_BASE_ADDR;
-		
+
 		return ELF.getEntry(moduleAddress);
 	}
 }

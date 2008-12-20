@@ -41,7 +41,7 @@ const ET_HIPROC = 0xffff;
 
 /** These values declare types of architectures, used in the e_machine field of the ELF header (see below).
 These valeus represent common types of architectures, including i386 (3), Sun's SPARC (2), and MIPS (8).
- */ 
+ */
 const EM_NONE = 0;
 const EM_M32 = 1;
 const EM_SPARC = 2;
@@ -55,8 +55,8 @@ const EV_NONE = 0;
 const EV_CURRENT = 1;
 
 /** These constant values declare the index location of the items in the
-e_ident[] array (declared in the Elf64_EHhdr structure, shown below). 
-They correspond to basic information about the file. For example, E_MAG0, 
+e_ident[] array (declared in the Elf64_EHhdr structure, shown below).
+They correspond to basic information about the file. For example, E_MAG0,
 or the first magic number, is located at byte 0 of the e_ident[] array,
 and declares a number to identify the binary file when loaded.
 */
@@ -88,7 +88,7 @@ const ELFMAG3 = 'F';
 
 /** These constant variables declare possible values for the EI_CLASS
 member of the e_ident[] array. They identify the object file as
-being compiled on a 32-bit machine (ELFCLASS32), a 64-bit machine 
+being compiled on a 32-bit machine (ELFCLASS32), a 64-bit machine
 (ELFCLASS64), or being invalid (ELFCLASSNONE).
 */
 const ELFCLASSNONE = 0;
@@ -135,7 +135,7 @@ const SHT_X86_64_UNWIND = 0x70000001;
 	SHF_ALLOC: indicates that a specific section must be allocated memory during execution. Some sections
 		do not reside in memory during execution. In these examples, this flag would not be set.
 
-	SHF_EXECINSTR: indicates that a specific section contains information that can be directly executed by a 
+	SHF_EXECINSTR: indicates that a specific section contains information that can be directly executed by a
 		processor (e.g. it contains machine instructions).
 */
 const SHF_WRITE = 0x1;
@@ -234,11 +234,11 @@ located at the beginning of a loaded binary file, and declares
 basic information about the file.
 The ElfHeader structure contains the followind fields:
 	e_ident: e_ident[] is an array (usually of size 16) which contains basic information
-		about the binary file and the system for which it was compiled. The e_ident[] array 
+		about the binary file and the system for which it was compiled. The e_ident[] array
 		contains the following fields:
-		EI_MAG0, EI_MAG1, EI_MAG2, EI_MAG3: Magic numbers identifying the 
+		EI_MAG0, EI_MAG1, EI_MAG2, EI_MAG3: Magic numbers identifying the
 			object file. A proper file should contain the values "x7f", "E",
-			"L", and "F" in the EI_MAG0, EI_MAG1, EI_MAG2, and EI_MAG3 
+			"L", and "F" in the EI_MAG0, EI_MAG1, EI_MAG2, and EI_MAG3
 			fields respectively.
 		EI_CLASS: This field contains a number identifying the class of the
 			object file. The class declares the machine for which the
@@ -246,15 +246,15 @@ The ElfHeader structure contains the followind fields:
 			are EICLASSNONE, EICLASS32, and EICLASS64 (see above).
 		EI_DATA: This field contains a descriptor of the file encoding,
 			thus allowing the system to properly read and manage the
-			object file for execution. Possible values are 
+			object file for execution. Possible values are
 			ELFDATA2LSB and ELFDATA2MSB (see above).
-		EI_VERSION: This field contains the application or object file's 
+		EI_VERSION: This field contains the application or object file's
 			version information.
 		EI_OSABI: This field contains a basic descriptor of the type of
 			the operating system the object file was compiled for.
 			Proper values include "ELFOSABI_SYSV, ELFOSABI_HPUX, and
 			ELFOSABI_STANDALONE (see above).
-		EI_ABIVERSION:	
+		EI_ABIVERSION:
 		EI_PAD:
 	e_type: This field contains information on the object file's type, thus giving the computer
 		information on how to handle and execute it. Possible values for e_type are:
@@ -267,9 +267,9 @@ The ElfHeader structure contains the followind fields:
 			0xFEFF: Environment-specific use
 			0xFF00: Processor-specific use
 			0xFFFF: Processor-specific use
-	e_machine: This field contains information about the system's architecture for which the 
+	e_machine: This field contains information about the system's architecture for which the
 		object file was compiled. For more information on the values e_machine may take,
-		see the documentation provided by your computer's processor manufacturer (e.g. AMD's 64-bit 
+		see the documentation provided by your computer's processor manufacturer (e.g. AMD's 64-bit
 		programmer's guide.)
 	e_version: This field contains information about the object file's version.
 	e_entry: This field contains the address in a system's VIRTUAL memory the object's file _start position
@@ -291,19 +291,19 @@ The ElfHeader structure contains the followind fields:
 */
 struct Elf64_Ehdr {
 	ubyte e_ident[EI_NIDENT];
-	Elf64_Half e_type;	
-	Elf64_Half e_machine;	
-	Elf64_Word e_version;	
-	Elf64_Addr e_entry;	
-	Elf64_Off e_phoff;	
-	Elf64_Off e_shoff;	
-	Elf64_Word e_flags;	
-	Elf64_Half e_ehsize;	
-	Elf64_Half e_phentsize;	
-	Elf64_Half e_phnum;	
-	Elf64_Half e_shentsize;	
-	Elf64_Half e_shnum;	
-	Elf64_Half e_shstrndx;	
+	Elf64_Half e_type;
+	Elf64_Half e_machine;
+	Elf64_Word e_version;
+	Elf64_Addr e_entry;
+	Elf64_Off e_phoff;
+	Elf64_Off e_shoff;
+	Elf64_Word e_flags;
+	Elf64_Half e_ehsize;
+	Elf64_Half e_phentsize;
+	Elf64_Half e_phnum;
+	Elf64_Half e_shentsize;
+	Elf64_Half e_shnum;
+	Elf64_Half e_shstrndx;
 }
 
 /** This structure declares the types for a compiled file's program header. The program header is
@@ -320,7 +320,7 @@ This structure is composed of the following members:
 	p_flags: this member contains flags, or pieces of information declaring the program header
 		entry. The program header entry is, simply, a set of flags, used by a program executor
 		when executing a compiled file.
-	
+
 	p_offset: this member contains the number of bytes from the beginning of the executable file
 		the computer should jump in order to begin reading a specific element in the program header.
 
@@ -331,7 +331,7 @@ This structure is composed of the following members:
 	p_paddr: this member contains the physical address in computer memory where a specific
 		entry in a program header begins. The system can simply jump to this memory location
 		in order to begin reading program header files.
-	
+
 	p_filesz: this member contains the number of bytes in a specific segment's physically-written, file
 		equivalent. Each section is contained at some point in the compiled file itself. This member
 		contains the number of bytes a specific header takes within the compiled file. For some files,
@@ -341,21 +341,21 @@ This structure is composed of the following members:
 		When loaded, each segment in a program header is loaded into physical memory, preparing for execution.
 		This member contains the number of bytes a segment takes up in physical memory.
 
-	p_align: this member declares an alignment operator which allows the system to reconcile p_offset and p_vaddr. 
+	p_align: this member declares an alignment operator which allows the system to reconcile p_offset and p_vaddr.
 		That is, it declares how the system translates physical memory addresses to virtual memory addresses.
 		This value can either be 0, which indicates there is a 1-1 ratio between physical memory and virtual memory,
 		or a positive, power of 2. If the value is non-zero and positive, it should satisfy the condition that
-		p_vaddr = p_offset (modulo) p_align.			
+		p_vaddr = p_offset (modulo) p_align.
 */
 struct Elf64_Phdr {
-	Elf64_Word p_type; 	
-	Elf64_Word p_flags; 	
-	Elf64_Off p_offset; 	
-	Elf64_Addr p_vaddr; 	
-	Elf64_Addr p_paddr; 	
-	Elf64_Xword p_filesz;	
-	Elf64_Xword p_memsz; 	
-	Elf64_Xword p_align; 	
+	Elf64_Word p_type;
+	Elf64_Word p_flags;
+	Elf64_Off p_offset;
+	Elf64_Addr p_vaddr;
+	Elf64_Addr p_paddr;
+	Elf64_Xword p_filesz;
+	Elf64_Xword p_memsz;
+	Elf64_Xword p_align;
 }
 
 /** A compiled file is divided into multiple sections. In order to traverse the file, a program loader must be able to locate
@@ -363,19 +363,19 @@ and iterate through all the program sections. The program header table, describe
 for declaring sections within the file. Using this, a program loader can traverse the file logically.
 
 This structure contains the following members:
-	
+
 	sh_name: declares the name of a specific section within the file.
 
 	sh_type: declares a type for the section. This value can be an integer, or can be declared using the constants
 		with the prefix SHT_ (see above).
 
-	sh_flags: declares flags used by the program to further declare a section. These flags or attributes are 
+	sh_flags: declares flags used by the program to further declare a section. These flags or attributes are
 		one bit in size. They are declared using the constants with the prefix SHF_ (see above).
 
 	sh_addr: this declares the virtual address in a virtual memory scheme for the beginning of a specific file section.
 		For systems with enabled virtual memory schemes, the system can jump to this location in order to begin reading
 		a section of the compiled file.
-	
+
 	sh_offset: this declares the number of bytes dividing the beginning of the section and the beginning of the ELF file.
 		A program loader can jump sh_offset number of bytes from the beginning of the ELF file to begin reading a specific
 		program section.
@@ -388,7 +388,7 @@ This structure contains the following members:
 	sh_info: this declares a generic holder for information about the specific program section. The information contents and form
 		are dependent on the sh_type value.
 
-	sh_addralign: this declares an alignment scheme for transferring between virtual and physical memory. This value can be 0, 
+	sh_addralign: this declares an alignment scheme for transferring between virtual and physical memory. This value can be 0,
 		indicating a 1-1 virtual to physical memory scheme, or a positive power of 2.
 
 	sh_entsizde: some sections require additional information, held in a table. Samples include some sections which hold multiple symbols.
@@ -409,13 +409,13 @@ struct Elf64_Shdr {
 
 /** This structure declares information about a standard ELF symbol table. The symboltable contains
 information about representations within an executable file. Each symbol within a file must have a definition
-so that it can be successfully interpreted. 
+so that it can be successfully interpreted.
 
 This structure contains the following members:
 
 	st_name: the name of any particular symbol in the symbol table
-	
-	st_info: contains the data type of a symbol and some attribute describing the symbol. See 
+
+	st_info: contains the data type of a symbol and some attribute describing the symbol. See
 		detailed ELF64 specification for more details.
 
 	st_other: Unnused entry.
@@ -428,7 +428,7 @@ This structure contains the following members:
 	st_value: contains the interpreted value of the symbol.
 
 	st_size: declares the size of a particular symbol of the symbol table.
-*/ 
+*/
 struct Elf64_Sym {
 	Elf64_Word st_name;
 	ubyte st_info;
@@ -487,7 +487,7 @@ This hash value is then returned.
 	Params:
 		name = A pointer to the value you wish to hash.
 	Returns: The hashed value (ulong value)
-*/ 
+*/
 ulong elf64_hash(char *name)
 {
 	ulong h = 0;
@@ -509,12 +509,12 @@ ulong elf64_hash(char *name)
 This function takes in a pointer to the beginning of an ELF file
 in memory and checks its magic number. If the magic number does not match
 an expected value, the ELF file was compiled or loaded improperly.
-This method returns a 1 if the magic number is acceptable, or 0 if there is 
+This method returns a 1 if the magic number is acceptable, or 0 if there is
 problem.
 	Params:
 		elf_start = A pointer to the beginning of the elf header.
 	Returns: int (0 or 1), depending on whether the magic number matches or not.
-*/	
+*/
 int elf64_check_magic(char *elf_start)
 {
 	if (elf_start[0] == ELFMAG0 &&
@@ -530,8 +530,51 @@ int elf64_check_magic(char *elf_start)
 	}
 }
 
+// will return the offset to the bss section or null.  It will fill the variables.  It will return true on success.
+bool fillBSSInfo(void* address, out void* bssAddress, out uint length)
+{
+	bssAddress = null;
+	length = 0;
+
+	Elf64_Ehdr* header = cast(Elf64_Ehdr*)address;
+
+	// the string table must be defined
+	if (header.e_shstrndx == SHN_UNDEF) { return false; }
+
+	// we need to get the section containing the 'bss'
+
+	Elf64_Shdr[] sections = (cast(Elf64_Shdr*)(address + header.e_shoff))[0 .. header.e_shnum];
+	Elf64_Shdr* strTable = &sections[header.e_shstrndx];
+
+	// look at all of the sections until (and if) we find the .bss section
+
+	// get the address of the string table data
+	ubyte* strTableAddr = cast(ubyte*)(address + strTable.sh_offset);
+
+	foreach(section; sections)
+	{
+		// hopefully counter security concerns
+		if (section.sh_name > strTable.sh_size)
+		{
+			continue;
+		}
+
+		ubyte* sectText = strTableAddr + section.sh_name;
+
+		if (sectText[0] == '.' && sectText[1] == 'b' && sectText[2] == 's' && sectText[3] == 's')
+		{
+			// found it
+			bssAddress = cast(void*)section.sh_offset;
+			length = section.sh_size;
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /**
-This method allows the kernel to execute a module loaded using GRUB multiboot. It accepts 
+This method allows the kernel to execute a module loaded using GRUB multiboot. It accepts
 a pointer to the GRUB Multiboot header as well as an integer, indicating the number of the module being loaded.
 It then goes through the ELF header of the loaded module, finds the location of the _start section, and
 jumps to it, thus beginning execution.
@@ -546,7 +589,7 @@ Params:
 void* getEntry(void* address)
 {
 	Elf64_Ehdr* header = cast(Elf64_Ehdr*)address;
-	
+
 	// find all the sections in the module's ELF Section header.
 	Elf64_Shdr[] sections = (cast(Elf64_Shdr*)(address + header.e_shoff))[0 .. header.e_shnum];
 	Elf64_Shdr* strTable = &sections[header.e_shstrndx];
