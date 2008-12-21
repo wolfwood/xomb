@@ -1,4 +1,4 @@
-// scheduler.d 
+// scheduler.d
 //
 
 module kernel.environment.scheduler;
@@ -31,7 +31,7 @@ struct Scheduler
 {
 
 static:
-	
+
 	// the quantum length in picoseconds
 	const ulong quantumInterval = 50000000000;
 
@@ -53,7 +53,7 @@ static:
 
 		// add a new environment
 		// Get all grub modules and load them in to the environment table
-		for(int i = 0; i < GRUBModules.length; i++) 
+		for(int i = 0; i < GRUBModules.length; i++)
 		{
 			Environment* environ;
 			kdebugfln!(DEBUG_SCHEDULER, "Scheduler: Creating new environment.")();
@@ -96,7 +96,7 @@ static:
 		// find candidate for execution
 
 		kdebugfln!(DEBUG_SCHEDULER, "schedule(): Scheduling new environment.  Current eid: {}")(curEnvironment.id);
-		
+
 		// ... //
 	//	curEnvironment = EnvironmentTable.getEnvironment(0);
 	  //if(curEnvironment.id == 0) {
@@ -106,21 +106,21 @@ static:
 	  //}
 
 	  	kdebugfln!(DEBUG_SCHEDULER, "schedule(): New Environment Selected.  eid: {}")(curEnvironment.id);
-	
+
 		Environment* temp = theQueue.peek();
 		curEnvironment = temp;
-	
+
 		// curEnvironment should be set to the next
 		// environment to be executed
 
-		// restore the stack, this should already have the 
+		// restore the stack, this should already have the
 		// RIP to return from calling schedule()
 
 		// the resulting return should get to the context
 		// switch restore code for the architecture
 
 		preamble(curEnvironment);
-		execute(curEnvironment);				
+		execute(curEnvironment);
 
 		// return
 	}
@@ -129,7 +129,7 @@ static:
 	{
 		kdebugfln!(DEBUG_SCHEDULER, "Yield from eid: {}")(curEnvironment.id);
 //		curEnvironment.postamble();
-		
+
 	  //curEnvironment = EnvironmentTable.getEnvironment(0);
 	  Environment* temp = theQueue.pop();
 	  theQueue.push(temp);
@@ -147,7 +147,7 @@ static:
 
 		curEnvironment = null;
 
-		if (EnvironmentTable.count == 0) 
+		if (EnvironmentTable.count == 0)
 		{
 			// cripes, no more environments
 			// shut down!
@@ -177,8 +177,14 @@ static:
 
 		preamble(curEnvironment);
 		execute(curEnvironment);
-	
+
 		mixin(Syscall.jumpToUser!());
+	}
+
+    // will get the current environment for the current cpu
+	Environment* getCurrentEnvironment()
+	{
+		return curEnvironment;
 	}
 
 	void cpuReady(uint cpuID)

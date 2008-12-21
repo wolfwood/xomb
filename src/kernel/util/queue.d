@@ -19,11 +19,11 @@ template circleQueue(cellType, int maxLength) {
   int length = 0;
 
   ErrorVal init() {
-	
-	kprintfln!("celltype.sizeof = {}, mod = {}")(cellType.sizeof, (((cellType.sizeof * maxLength) +  (vMem.PAGE_SIZE % (cellType.sizeof * maxLength))) / vMem.PAGE_SIZE));
+
+	//kprintfln!("celltype.sizeof = {}, mod = {}")(cellType.sizeof, (((cellType.sizeof * maxLength) +  (vMem.PAGE_SIZE % (cellType.sizeof * maxLength))) / vMem.PAGE_SIZE));
 	void* pageAddress;
-	
-	
+
+
 	// Figure out how many pages we need to allocate
 	for(int z = 0; z < (((cellType.sizeof * maxLength) +  (vMem.PAGE_SIZE % (cellType.sizeof * maxLength))) / vMem.PAGE_SIZE); z++) {
 	  // Assume we're going to get contiguous space here
@@ -32,20 +32,20 @@ template circleQueue(cellType, int maxLength) {
 	  }
 	  // If we're on the first iteration point start of queue to there
 	  if(z == 0) {
-		kprintfln!("shit guys, fire our shit")();
+		//kprintfln!("shit guys, fire our shit")();
 		theQueue = cast(cellType*) pageAddress;
 	  }
-	}    
+	}
 	return ErrorVal.Success;
   }
-  
+
   // Take the next in line
   cellType pop() {
 	// Make sure the array ins't empty
 	if(length == 0) {
 	  return null;
 	}
-	
+
 	int temp = head;
 	// If head will be max length then wrap around
 	if(head + 1 == maxLength) {
@@ -55,7 +55,7 @@ template circleQueue(cellType, int maxLength) {
 	}
 	// Decrease the length by 1
 	length -= 1;
-	
+
 	return theQueue[temp];
   }
 
@@ -68,16 +68,16 @@ template circleQueue(cellType, int maxLength) {
 
 	return theQueue[head];
   }
-  
+
   ErrorVal push(cellType newEntry) {
 	// Make sure we're not at capacity
 	if(length == maxLength) {
 	  return ErrorVal.Fail;
 	}
-	
+
 	// Add the new entry and move the tail
 	theQueue[tail] = newEntry;
-	
+
 	// Increase the length
 	length += 1;
 
@@ -87,7 +87,7 @@ template circleQueue(cellType, int maxLength) {
 	} else {
 	  tail += 1;
 	}
-   
+
 	return ErrorVal.Success;
   }
 
