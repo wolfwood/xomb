@@ -41,7 +41,7 @@ alias Tuple!
 alias Tuple!
 (
 	long,		// add
-	ulong,		// allocPage
+	void*,		// allocPage
 	void,		// exit
 	void,		// freePage
 	void,		// yield
@@ -58,7 +58,6 @@ struct AddArgs
 
 struct AllocPageArgs
 {
-	void* va;
 }
 
 struct ExitArgs
@@ -68,7 +67,6 @@ struct ExitArgs
 
 struct FreePageArgs
 {
-	void* ptr;
 }
 
 struct YieldArgs
