@@ -2,8 +2,8 @@ module kernel.core.dstubs;
 
 import kernel.core.system;
 static import gcc.builtins;
-
-import kernel.dev.vga;
+import user.syscall;
+//import kernel.dev.vga;
 
 extern(C)
 {
@@ -32,12 +32,12 @@ private
 		aaA*[] b;
 		size_t nodes;
 	}
-	
+
 	struct AA
 	{
 		BB* a;
 	}
-	
+
 	alias long ArrayRet_t;
 	extern(D) typedef int delegate(void *) aa_dg_t;
 	extern(D) typedef int delegate(void *, void *) aa_dg2_t;
@@ -51,7 +51,7 @@ private
 		NO_MOVE  = 0b0000_0100,
 		ALL_BITS = 0b1111_1111
 	}
-	
+
 	template Stub(char[] signature)
 	{
 		const char[] Stub = signature ~ " { assert(false, \"Undefined runtime stub executed: " ~ signature ~ "\"); }";
@@ -62,7 +62,10 @@ private
  Random stubs (they'll go somewhere eventually)
 **************************************************/
 
-mixin(Stub!("void abort()"));
+//mixin(Stub!("void abort()"));
+void abort() {
+  exit(0);
+}
 mixin(Stub!("bool rt_isHalting()"));
 mixin(Stub!("bool runModuleUnitTests()"));
 mixin(Stub!("void _d_monitordelete(Object h, bool det = true)"));
@@ -433,6 +436,7 @@ void _d_switch_error( char[] file, uint line )
 
 private void onAssertError(char[] file, size_t line)
 {
+  echo("assert failed:"); echo(file);
 	//kprintfln!("Error in {}, line {}: assertion failed.")(file, line);
 	asm { l: hlt; jmp l; }
 }
@@ -440,19 +444,22 @@ private void onAssertError(char[] file, size_t line)
 private void onAssertErrorMsg(char[] file, size_t line, char[] msg)
 {
 	//kprintfln!("Error in {}, line {}: assertion failed: \"{}\"")(file, line, msg);
+  echo("assert failed:"); echo(file);
 	asm { l: hlt; jmp l; }
 }
 
 private void onArrayBoundsError(char[] file, size_t line)
 {
 	//kprintfln!("Error in {}, line {}: array index out of bounds.")(file, line);
+  echo("array index out of bounds:");
 	asm { l: hlt; jmp l; }
 }
 
 private void onSwitchError(char[] file, size_t line)
 {
 	//kprintfln!("Error in {}, line {}: switch has no case or default to handle the switched-upon value.")(file, line);
-	asm { l: hlt; jmp l; }
+  echo("switch error:"); echo(file);
+  asm { l: hlt; jmp l; }
 }
 
 mixin(Stub!("void onFinalizeError( ClassInfo info, Exception ex )"));
@@ -680,7 +687,7 @@ Array _adReverseWchar(wchar[] a)
 		}
 	}
 
-	Array aaa = *cast(Array*)(&a);	
+	Array aaa = *cast(Array*)(&a);
 	return aaa;
 }
 
@@ -690,106 +697,106 @@ int _adCmpChar(Array a1, Array a2)
 	{
 		asm
 		{	naked					;
-	
+
 			push	EDI 			;
 			push	ESI 			;
-	
+
 			mov    ESI,a1+4[4+ESP]	;
 			mov    EDI,a2+4[4+ESP]	;
-	
+
 			mov    ECX,a1[4+ESP]	;
 			mov    EDX,a2[4+ESP]	;
-	
+
 			cmp 	ECX,EDX 		;
 			jb		GotLength		;
-	
+
 			mov 	ECX,EDX 		;
-	
+
 	GotLength:
 			cmp    ECX,4			;
 			jb	  DoBytes			;
-	
+
 			// Do alignment if neither is dword aligned
 			test	ESI,3			;
 			jz	  Aligned			;
-	
+
 			test	EDI,3			;
 			jz	  Aligned			;
 	DoAlign:
 			mov    AL,[ESI] 		; //align ESI to dword bounds
 			mov    DL,[EDI] 		;
-	
+
 			cmp    AL,DL			;
 			jnz    Unequal			;
-	
+
 			inc    ESI				;
 			inc    EDI				;
-	
+
 			test	ESI,3			;
-	
+
 			lea    ECX,[ECX-1]		;
 			jnz    DoAlign			;
 	Aligned:
 			mov    EAX,ECX			;
-	
+
 			// do multiple of 4 bytes at a time
 
 			shr    ECX,2			;
 			jz	  TryOdd			;
-	
+
 			repe					;
 			cmpsd					;
-	
+
 			jnz    UnequalQuad		;
-	
+
 	TryOdd:
 			mov    ECX,EAX			;
 	DoBytes:
 			// if still equal and not end of string, do up to 3 bytes slightly
 			// slower.
-	
+
 			and    ECX,3			;
 			jz	  Equal 			;
-	
+
 			repe					;
 			cmpsb					;
-	
+
 			jnz    Unequal			;
 	Equal:
 			mov    EAX,a1[4+ESP]	;
 			mov    EDX,a2[4+ESP]	;
-	
+
 			sub    EAX,EDX			;
 			pop    ESI				;
-	
+
 			pop    EDI				;
 			ret 					;
-	
+
 	UnequalQuad:
 			mov    EDX,[EDI-4]		;
 			mov    EAX,[ESI-4]		;
-	
+
 			cmp    AL,DL			;
 			jnz    Unequal			;
-	
+
 			cmp    AH,DH			;
 			jnz    Unequal			;
-	
+
 			shr    EAX,16			;
-	
+
 			shr    EDX,16			;
 
 			cmp    AL,DL			;
 			jnz    Unequal			;
-	
+
 			cmp    AH,DH			;
 	Unequal:
 			sbb    EAX,EAX			;
 			pop    ESI				;
-	
+
 			or	   EAX,1			;
 			pop    EDI				;
-	
+
 			ret 					;
 		}
 	}
