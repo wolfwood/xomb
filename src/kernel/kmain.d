@@ -129,17 +129,17 @@ extern(C) void kmain(uint magic, uint addr)
 		printLogFail();
 	}
 
-	if (ACPI.init() == ErrorVal.Success)
+	//if (ACPI.init() == ErrorVal.Success)
 	{
 		// use ACPI Tables
 
 		// initialize IO APICs
-		ACPI.initIOAPIC();
+		//ACPI.initIOAPIC();
 
 		// initialize Local APICs
-		ACPI.initAPIC();
+		//ACPI.initAPIC();
 	}
-	else
+	//else
 	{
 		// fall back on the MP tables
 

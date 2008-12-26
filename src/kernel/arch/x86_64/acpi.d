@@ -278,7 +278,7 @@ static:
 		printLogLine("Reading the ACPI tables");
 
 		// read out the tables
-		//printStruct(*ptrRSDP);
+		printStruct(*ptrRSDP);
 
 		if (ptrRSDP.revision < 1)
 		{

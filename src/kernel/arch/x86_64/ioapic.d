@@ -344,13 +344,12 @@ struct IOAPIC
 		// So, set the first interrupts to a 1-1 mapping
 		for(int i=0; i<16; i++)
 		{
-			kprintfln!("step one")();
 			ubyte curIOAPICID = ACPI.getIOAPICIDFromGSI(i);
 			ubyte curIOAPICPin = ACPI.getIOAPICPinFromGSI(i);
-			kprintfln!("step two")();
+
 			irqToPin[i] = curIOAPICPin;
 			irqToIOAPIC[i] = curIOAPICID;
-			kprintfln!("step three")();
+
 			setRedirectionTableEntry(curIOAPICID, i,
 				// destination
 				0xFF,
