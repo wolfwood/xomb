@@ -23,7 +23,7 @@ struct Cpu
 {
 static:
 
-	uint numInitedCpus;		// contains the number of CPUs successfully installed.  
+	uint numInitedCpus;		// contains the number of CPUs successfully installed.
 							// differs from the MP number of cpus, as some may be defective
 
 	// this structure provides information about the cpu
@@ -34,7 +34,7 @@ static:
 	{
 		uint ID;			// the logical id of the cpu (to XOmB)
 		uint hardwareID;	// the physical id of the cpu (to hardware, localAPIC)
-		
+
 		vMem.pml4* pageTable;	// cpu page table, contains per cpu mappings
 	}
 
@@ -105,7 +105,7 @@ static:
 			"movl %0, %%ecx" :: "o" MSR;
 			// read the MSR
 			"rdmsr";
-			
+
 			// HI : $EDX, LO : $EAX
 			"movl %%edx, %0; movl %%eax, %1;" :: "o" hi, "o" lo;
 		}
@@ -114,7 +114,7 @@ static:
 		ret <<= 32;
 		ret |= lo;
 
-		//kprintfln!("readMSR: 0x{x}")(ret);		
+		//kprintfln!("readMSR: 0x{x}")(ret);
 
 		return ret;
 	}
@@ -186,7 +186,7 @@ static:
 
 		// use the page tables, gdt, etc
 		boot();
-		
+
 		// Now that page tables are implemented,
 		// Map in the BIOS regions.
 
@@ -207,6 +207,8 @@ static:
 		// of the page table
 		vMem.installCpuPageTable(pageTable);
 
+		//kprintfln!("install cpu page table")();
+
 		//kprintfln!("CPU specific page table in use")();
 
 		// we have a stack per cpu located at KERNEL_STACK
@@ -214,12 +216,16 @@ static:
 
 		// the Cpu.info structure automatically points here
 
-		// set stuff about this specific cpu here: 
+		// set stuff about this specific cpu here:
 		// (mapped at CPU_INFO_ADDR)
 		info.ID = numInitedCpus;
 		info.pageTable = pageTable;
 
+		//kprintfln!("info set")();
+
 		numInitedCpus++;
+
+		//kprintfln!("cpus incremented")();
 
 		//kprintfln!("Set up info page for CPU {}")(numInitedCpus-1);
 
@@ -242,9 +248,9 @@ static:
 	void ioOut(T, char[] port)(int data)
 	{
 		static assert (port[$-1] == 'h', "Cannot reduce port number.  Give port as a hex string.  Ex: \"64h\"");
-			
+
 		static if (is(T == ubyte) || is(T == byte))
-		{		
+		{
 			asm {
 				"movb %0, %%al" :: "o" data;
 				"outb %%al, $0x" ~ port[0..$-1];
@@ -273,10 +279,10 @@ static:
 	T ioIn(T, char[] port)()
 	{
 		static assert (port[$-1] == 'h', "Cannot reduce port number.  Give port as a hex string.  Ex: \"64h\"");
-		
-		T ret;	
+
+		T ret;
 		static if (is(T == ubyte) || is(T == byte))
-		{		
+		{
 			asm {
 				"inb $0x" ~ port[0..$-1] ~ ", %%al; movb %%al, %0" :: "o" ret;
 			}
@@ -307,7 +313,7 @@ static:
 	}
 
 	void validate()
-	{	
+	{
 		printLogLine("Validating CPU Functionality");
 
 		// check for SYSCALL

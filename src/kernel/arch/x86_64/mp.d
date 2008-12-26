@@ -268,7 +268,7 @@ private ErrorVal initConfigurationTable()
 	}
 	// We must map in the APIC register space into a separate kernel region
 
-	// Obtain other entry information	
+	// Obtain other entry information
 	ubyte* curAddr = cast(ubyte*)mpInformation.configTable;
 	curAddr += mpConfigurationTable.sizeof;
 
@@ -277,7 +277,7 @@ private ErrorVal initConfigurationTable()
 	kdebugfln!(DEBUG_MPTABLE, "MP TABLE: # entries: {}")(mpInformation.configTable.entryCount);
 
 	for (uint i=0; i< mpInformation.configTable.entryCount; i++)
-	{		
+	{
 		if (lastState > cast(int)(*curAddr))
 		{
 			// this is a problem
@@ -329,9 +329,9 @@ private ErrorVal initConfigurationTable()
 				if (mpInformation.localInterrupt_count != maxLocalInterruptEntries)
 				{
 					mpInformation.localInterrupts[mpInformation.localInterrupt_count] = cast(localInterruptEntry*)curAddr;
-					printStruct(*mpInformation.localInterrupts[mpInformation.localInterrupt_count]);
+					//printStruct(*mpInformation.localInterrupts[mpInformation.localInterrupt_count]);
 					mpInformation.localInterrupt_count++;
-					kdebugfln!(true | DEBUG_MPTABLE, "local int: {}")(mpInformation.localInterrupt_count);
+					kdebugfln!(DEBUG_MPTABLE, "local int: {}")(mpInformation.localInterrupt_count);
 				}
 				curAddr += localInterruptEntry.sizeof;
 				break;
@@ -400,7 +400,10 @@ public void initIOAPIC()
 	hasIMCR = ((mpInformation.pointerTable.mpFeatures2 & 0x80) != 0);
 
 	IOAPIC.initFromMP(mpInformation.ioApics[0..mpInformation.ioAPIC_count], hasIMCR);
+
+	printLogLine("Initializing IOAPIC Redirection");
 	IOAPIC.setRedirectionTableEntriesFromMP(mpInformation.ioInterrupts[0..mpInformation.ioInterrupt_count]);
+	printLogSuccess();
 }
 
 public void initAPIC()

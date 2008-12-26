@@ -115,27 +115,27 @@ struct LocalAPIC
 	static:
 
 	private apicRegisterSpace* apicRegisters;
-	
+
 	void init(void* localAPICAddr)
 	{
 		printLogLine("Initializing Local APIC");
 		initLocalApic(localAPICAddr);
 		printLogSuccess();
-	
+
 		printLogLine("Enabling Local APIC");
 		enableLocalApic();
 		printLogSuccess();
-	
+
 		//Interrupts.setCustomHandler(35, &timerProc);
-		
+
 		//startAPs();
 
 		//initTimer();
-			
+
 		// THIS WILL SEND AN INTERRUPT AND FIRE THE ISR
 		//sendIPI(35, DeliveryMode.Fixed, 0, 0, getLocalAPICId());
-	}	
-	
+	}
+
 	void initLocalApic(void* localAPICAddr)
 	{
 		// map the address space of the APIC
@@ -145,7 +145,7 @@ struct LocalAPIC
 		ulong MSRValue = Cpu.readMSR(0x1B);
 		MSRValue |= (1 << 11);
 		Cpu.writeMSR(0x1B, MSRValue);
-		
+
 		// this function will set apicRange to the virtual address of the bios region
 		if (vMem.mapRange(
 			cast(ubyte*)localAPICAddr,
@@ -155,9 +155,9 @@ struct LocalAPIC
 			//kprintfln!("error mapping apic register space! {x} ... {x}")(mpInformation.configTable.addressOfLocalAPIC, mpInformation.configTable.addressOfLocalAPIC + apicRegisterSpace.sizeof);
 			return;
 		}
-	
+
 		ubyte* firstSpace;
-	
+
 		// map first megabyte
 		if (vMem.mapRange(
 			cast(ubyte*)0,
@@ -167,26 +167,26 @@ struct LocalAPIC
 			//kprintfln!("error mapping initial megabyte of space")();
 			return;
 		}
-	
+
 		//kprintfln!("Trampoline Code: {x} - {x}")(trampolineStart, trampolineEnd);
-	
+
 		// copy trampoline code to first megabyte
-	
+
 		ubyte* trampolinePointer = Globals.trampolineStart;
 		ubyte* trampolineDestination = firstSpace;
 		for ( ; trampolinePointer < Globals.trampolineEnd ; trampolinePointer++, trampolineDestination++)
 		{
 			(*trampolineDestination) = (*trampolinePointer);
-		}	
-	
+		}
+
 		// get the apic address space, and add it to the base information
 		apicRegisters = cast(apicRegisterSpace*)(apicRange);
 		//kprintfln!("local APIC address: {x}")(apicRegisters);
 
-		kdebugfln!(DEBUG_LAPIC, "local APIC version: 0x{x}")(apicRegisters.localApicIdVersion & 0xFF);	
+		kdebugfln!(DEBUG_LAPIC, "local APIC version: 0x{x}")(apicRegisters.localApicIdVersion & 0xFF);
 		kdebugfln!(DEBUG_LAPIC, "number of LVT Entries: {}")((apicRegisters.localApicIdVersion >> 16) + 1);
 	}
-	
+
 	void enableLocalApic()
 	{
 		// switch from PIC to APIC
@@ -196,8 +196,8 @@ struct LocalAPIC
 
 		// set the Logical Destination Register (LDR)
 		apicRegisters.logicalDestination = (1 << getLocalAPICId()) << 24;
-	
-		// set the Destination Format Register (DFR)	
+
+		// set the Destination Format Register (DFR)
 		// enable the Flat Model for addressing Logical APIC IDs
 		// set bits 28-31 to 1, all other bits are reserved and should be 1
 		apicRegisters.destinationFormat = 0xFFFFFFFF;
@@ -207,14 +207,14 @@ struct LocalAPIC
 		//apicRegisters.lint1LocalVectorTable = 0x00400; //NMI
 
 		// set task priority register (to not block any interrupts)
-		apicRegisters.taskPriority = 0x0;		
+		apicRegisters.taskPriority = 0x0;
 
 		// enable the APIC (just in case it is not enabled)
 		apicRegisters.spuriousIntVector |= 0x10F;
 		//kprintfln!("{}")(apicRegisters.spuriousIntVector);
-	
+
 		// enable extINT, NMI interrupts (by setting to unmasked, bit 16 = 1)
-	
+
 		// LINT0 : ExtINT, Edge Triggered (0x008700 for Level)
 		apicRegisters.lint0LocalVectorTable = 0x00722; //extINT
 
@@ -245,7 +245,7 @@ struct LocalAPIC
 		// vector
 		timerValue |= 35;
 		apicRegisters.tmrDivideConfiguration |= 0b1011;
-		
+
 		apicRegisters.tmrLocalVectorTable = timerValue;
 		apicRegisters.tmrInitialCount = 1000;
 	}
@@ -264,14 +264,14 @@ struct LocalAPIC
 		kprintfln!("Timer!!!", false)();
 
 		apicRegisters.EOI = 0;
-	
+
 	}
 
 	uint getLocalAPICId()
 	{
 		return apicRegisters.localApicId >> 24;
 	}
-	
+
 	void startAPsFromMP(processorEntry*[] processors)
 	{
 		uint myLocalId = getLocalAPICId();
@@ -279,6 +279,7 @@ struct LocalAPIC
 		// go through the list of AP APIC IDs
 		foreach (processor; processors)
 		{
+			//kprintfln!("cpu...startAP {}")(processor.localAPICID);
 			// This next line will prevent the CPU from initializing itself in the middle
 			// of running.  This will prevent us from totally failing while booting :P
 			if(processor.localAPICID == myLocalId)
@@ -286,12 +287,14 @@ struct LocalAPIC
 
 			startAP(processor.localAPICID);
 		}
+
+		//kprintfln!("startAPs done")();
 	}
 
 	void startAPsFromACPI(entryLocalAPIC*[] processors)
 	{
 		uint myLocalId = getLocalAPICId();
-		
+
 		foreach (processor; processors)
 		{
 			// Again, do not allow the BSP to restart
@@ -305,56 +308,60 @@ struct LocalAPIC
 			startAP(processor.APICID);
 		}
 	}
-	
+
 	void startAP(ubyte apicID)
 	{
 		apLock.lock();
 
 		// success is printed by the AP in apExec()
 		printLogLine("Initializing CPU");
-	
+
 		// Universal Algorithm
-	
+
 		ulong p;
 		for (ulong o=0; o < 10000; o++)
 		{
-			p = o << 5 + 10;			
+			p = o << 5 + 10;
 		}
 		kdebugfln!(DEBUG_LAPIC, "cpu: send INIT")();
-	
-		sendINIT(apicID);
-	
-		for (ulong o=0; o < 10000; o++)
-		{
-			p = o << 5 + 10;			
-		}
-	
-		kdebugfln!(DEBUG_LAPIC, "cpu: send Startup")();
-	
-		sendStartup(apicID);	
-		
-		for (ulong o=0; o < 10000; o++)
-		{
-			p = o << 5 + 10;			
-		}
-	
-		kdebugfln!(DEBUG_LAPIC, "cpu: send Startup... again")();	
 
-		sendStartup(apicID);			
-			
+		sendINIT(apicID);
+
 		for (ulong o=0; o < 10000; o++)
 		{
-			p = o << 5 + 10;			
+			p = o << 5 + 10;
 		}
+
+		kdebugfln!(DEBUG_LAPIC, "cpu: send Startup")();
+
+		sendStartup(apicID);
+
+		for (ulong o=0; o < 10000; o++)
+		{
+			p = o << 5 + 10;
+		}
+
+		kdebugfln!(DEBUG_LAPIC, "cpu: send Startup... again")();
+
+		sendStartup(apicID);
+
+		for (ulong o=0; o < 10000; o++)
+		{
+			p = o << 5 + 10;
+		}
+
+		kdebugfln!(DEBUG_LAPIC, "cpu: waiting for ap")();
 
 		apLock.lock();
 		apLock.unlock();
 
-	}	
-	
-	
-	
-	
+		kdebugfln!(DEBUG_LAPIC, "cpu: wait over")();
+
+	}
+
+
+
+
 	enum DeliveryMode
 	{
 		Fixed,
@@ -370,32 +377,32 @@ struct LocalAPIC
 	{
 		sendIPI(0, DeliveryMode.INIT, 0, 0, ApicID);
 	}
-	
+
 	void sendStartup(ubyte ApicID)
 	{
 		sendIPI(0, DeliveryMode.Startup, 0, 0, ApicID);
 	}
-	
+
 	// the destinationField is the apic ID of the processor to send the interrupt
 	void sendIPI(ubyte vectorNumber, DeliveryMode dmode, bool destinationMode, ubyte destinationShorthand, ubyte destinationField)
 	{
 		// form the higher part first
 		uint hiword = cast(uint)destinationField << 24;
-	
+
 		// set the high part
 		apicRegisters.interruptCommandHi = hiword;
-	
+
 		// form the lower part now
 		uint loword = cast(uint)vectorNumber;
 		loword |= cast(uint)dmode << 8;
-	
+
 		if (destinationMode)
 		{
 			loword |= (1 << 11);
 		}
-		
+
 		loword |= cast(uint)destinationShorthand << 18;
-	
+
 		// when this is set, the interrupt should be sent
 		apicRegisters.interruptCommandLo = loword;
 	}
@@ -405,11 +412,11 @@ struct LocalAPIC
 extern (C) void apEntry()
 {
 	kdebugfln!(DEBUG_APENTRY, "AP - Entry")();
-	
+
 	// set paging
 
 	void* pl4 = (cast(void*)vMem.pageLevel4.ptr) - vMem.VM_BASE_ADDR;
-	
+
 	asm {
 		"movq %0, %%rax" :: "o" pl4;
 		"movq %%rax, %%cr3";
@@ -417,8 +424,8 @@ extern (C) void apEntry()
 
 	// run common boot
 	// this sets up GDT, IDT and SYSCALL
-	Cpu.boot();	
-	
+	Cpu.boot();
+
 	// enable local apic
 	LocalAPIC.enableLocalApic();
 
@@ -440,7 +447,7 @@ extern (C) void apEntry()
 				kdebugfln!(DEBUG_APENTRY, "Error - Cannot Allocate Stack")();
 			}
 		}
-	}			
+	}
 	else
 	{
 		kprintfln!("Error - Cannot Allocate Stack")();
@@ -451,16 +458,16 @@ extern (C) void apEntry()
 	// Set Stack
 
 	asm {
-		
+
 		"movq %0, %%rsp" :: "o" apStack;
-	
+
 	}*/
 
 	// set the new stack
 	asm {
 		"movq $" ~ Itoa!(vMem.KERNEL_STACK) ~ ", %%rsp";
 	}
-	
+
 	apExec();
 }
 
@@ -468,7 +475,7 @@ void apExec()
 {
 	//kprintfln!("EXEC")();
 	//LocalAPIC.sendIPI(35, LocalAPIC.DeliveryMode.LowestPriority, true, 0, 0x1);
-	
+
 	printLogSuccess();
 
 	LocalAPIC.apLock.unlock();

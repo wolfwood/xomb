@@ -13,7 +13,7 @@ The 32 bit bootstrap code that serves these functions:
   - after code in load.S runs, the lower half map should not be needed
 
 - transitions into long mode:
-  - enables PAE (physical-address-extensions) 
+  - enables PAE (physical-address-extensions)
   - setting PML4 (page-map-level-4)
   - setting EFER flags for LMA (long-mode-active) and SYSCALL-SYSRET
   - enables paging by setting the PG bit in CR0 (Control Register 0)
@@ -27,7 +27,7 @@ The 32 bit bootstrap code that serves these functions:
 */
 
 /* Copyright (C) 1999, 2001  Free Software Foundation, Inc.
-  
+
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation; either version 2 of the License, or
@@ -110,6 +110,8 @@ multiboot_entry:
 _start32:
 start32:
 
+		cli
+
 		test $0x1, %eax
 		jne start32_ap
 
@@ -130,7 +132,7 @@ start32:
 		rdmsr
 		bts $8, %eax
 		bts $0, %eax
-		wrmsr 
+		wrmsr
 
 		/* Load the 32 bit GDT */
 		lgdt	(pGDT32)
@@ -169,7 +171,7 @@ GDT_TABLE:
 	.quad	0x0000000000000000	/* NULL descriptor */
 	.quad	0x00cf9a000000ffff	/* __KERNEL32_CS */
 	.quad	0x00af9a000000ffff	/* __KERNEL_CS */
-	.quad	0x0000000000000000	/* upper half of CS */	
+	.quad	0x0000000000000000	/* upper half of CS */
 	.quad	0x00af93000000ffff	/* __KERNEL_DS */
 	.quad	0x0000000000000000	/* upper half of DS */
 	.quad	0x00affa000000ffff	/* __USER_CS */

@@ -54,7 +54,7 @@ and "addr," the address of the multiboot variable, passed by the GRUB bootloader
 
 
 extern(C) void kmain(uint magic, uint addr)
-{	
+{
 	auto mbi = cast(multiboot_info_t*)addr;
 	int mb_flag = 0;
 
@@ -114,9 +114,9 @@ extern(C) void kmain(uint magic, uint addr)
 
 	// boot and initialize the primary CPU
 	Cpu.install();
-	
+
 	//kprintfln!("Setting lstar, star and SF_MASK...")();
-	
+
 	// TESTING MUTEXES
 	printLogLine("Testing Kernel Locks");
 	int failcode = test_kmutex();
@@ -126,7 +126,7 @@ extern(C) void kmain(uint magic, uint addr)
 	}
 	else
 	{
-		printLogFail();	
+		printLogFail();
 	}
 
 	if (ACPI.init() == ErrorVal.Success)
@@ -142,17 +142,17 @@ extern(C) void kmain(uint magic, uint addr)
 	else
 	{
 		// fall back on the MP tables
-	
+
 		// initialize multiprocessor information
 		MP.init();
 
 		// initialize IO APICs
 		MP.initIOAPIC();
-	
+
 		// initialize Local APICs
 		MP.initAPIC();
 	}
-	
+
 /*	printLogLine("Initializing HPET");
 	if (Timer.init() == ErrorVal.Success)
 	{
@@ -168,7 +168,9 @@ extern(C) void kmain(uint magic, uint addr)
 	//kprintfln!("Keyboards Inited!!!")();
 
 	// Turn general interrupts on, so the computer can deal with errors and faults.
+	printLogLine("Initializing Interrupts");
 	Cpu.enableInterrupts();
+	printLogSuccess();
 
 	printLogLine("Initializing Scheduler");
 	if (Scheduler.init() == ErrorVal.Success)
@@ -218,13 +220,13 @@ extern(C) void testUser()
 
 	Keyboard.mapFunctions(&downProc, &upProc, &charProc);
 	Keyboard.init();
-// 
+//
 // 	auto ptr = cast(long*)0x1000;
-// 
+//
 // 	if(cast(SyscallError)user.syscall.allocPage(ptr) == SyscallError.OK)
 // 	{
 // 		kprintfln!("!!Page allocation succeeded!!  Testing..")();
-// 
+//
 // 		ptr[0] = 5;
 // 		kprintfln!("ptr[0] = {}")(ptr[0]);
 // 	}

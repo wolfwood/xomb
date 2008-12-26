@@ -26,7 +26,7 @@ public extern(C) IDTPtr idtp;
 
 /* This defines what the stack looks like after an ISR was running */
 align(1) struct InterruptStack
-{	
+{
 	// registers we pushed
 	long r15, r14, r13,	r12, r11, r10, r9, r8, rbp, rdi, rsi, rdx, rcx, rbx, rax;
 
@@ -198,7 +198,7 @@ public ErrorVal installStack()
 //	}
 
 //	kprintfln!("stack ist: {x}")(tss_struct.ist1);
-	
+
 	return ErrorVal.Success;
 }
 
@@ -244,7 +244,7 @@ template ISR(int num, bool needDummyError = true)
 // simply ignore the interrupt
 extern(C) void isrIgnore()
 {
-	asm 
+	asm
 	{
 		naked;
 		"iretq";
@@ -369,7 +369,7 @@ public void setCustomHandler(size_t i, InterruptHandler h, int ist = -1)
 	assert(i < InterruptHandlers.length, "Invalid handler index");
 
 	InterruptHandlers[i] = h;
-	
+
 	if(ist >= 0)
 		Entries[i].ist = ist;
 }
@@ -405,7 +405,7 @@ extern(C) void fault_handler(InterruptStack* r)
 
 extern(C) void isr_common()
 {
-	// TSS should have switched to REGISTER_STACK-8 
+	// TSS should have switched to REGISTER_STACK-8
 	// (2nd entry, 1st is for saving top of stack)
 	// Hardware / ISRn() would have pushed the general
 	// stack information to the REGISTER_STACK
@@ -418,7 +418,7 @@ extern(C) void isr_common()
 	// ERROR CODE
 	// INTERRUPT VECTOR #
 
-	asm 
+	asm
 	{
 		naked;
 
@@ -430,7 +430,7 @@ extern(C) void isr_common()
 	}
 
 	mixin(contextSwitchSave!());
-	
+
 	asm
 	{
 		naked;
@@ -456,9 +456,9 @@ extern(C) void isr_common()
 		// go to top of REGISTER_STACK
 		"movq %%rax, %%rsp";
 	}
-	
+
 	mixin(contextSwitchRestore!());
-		
+
 	asm
 	{
 		naked;
@@ -473,7 +473,7 @@ extern(C) void isr_common()
 		"add $16, %%rsp";
 		"iretq";         /* pops 5 things in order: rIP, CS, rFLAGS, rSP, and SS */
 
-		
+
 
 
 
@@ -481,18 +481,18 @@ extern(C) void isr_common()
 
 
 		// KERNEL ISR COMMON
-		
+
 		"isr_kernel:";
 	}
 
 	mixin(contextSwitchSave!());
 
-	asm 
+	asm
 	{
 		"movq %%rsp, %%rdi";
 		"call fault_handler";
 	}
-	
+
 	mixin(contextSwitchRestore!());
 
 	asm

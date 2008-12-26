@@ -76,7 +76,7 @@ struct IOAPIC
 	// we assume we set up io apics in order!
 	// the first io apic to get called gets pin 0 .. pin maxRedirEnt (inclusive)
 	void init(ubyte ioAPICID, void* ioAPICAddress, bool hasIMCR)
-	{	
+	{
 		printLogLine("Initializing IO APIC");
 
 		PIC.disable();
@@ -86,7 +86,7 @@ struct IOAPIC
 
 		// check MP table for bit 7 of feature byte 2
 		// this determines presence of IMCR
-		if (hasIMCR) 
+		if (hasIMCR)
 		{
 			// write 0x70 to port 0x22
 			// write 0x01 to port 0x23
@@ -122,7 +122,7 @@ struct IOAPIC
 		}
 		numPins += maxRedirectionEntry;
 
-		setIOApicID(ioAPICID, 15);
+		//setIOApicID(ioAPICID, 15);
 
 		ubyte apicID;
 		getIOApicID(ioAPICID, apicID);
@@ -138,12 +138,12 @@ struct IOAPIC
 		{
 			readRegister(ioAPICID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0HI + (i*2)), valuehi);
 			readRegister(ioAPICID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (i*2)), valuelo);
-		
+
 			// get delivery mode
 			valuelo >>= 8;
 			int dmode = valuelo & 0x07;
 			valuelo >>= 7;
-			int type = valuelo & 0x01;	
+			int type = valuelo & 0x01;
 
 			kprintfln!("PIN: {} DMODE: {x} TYPE: {x}")(i, dmode, type);
 		}*/
@@ -171,16 +171,16 @@ struct IOAPIC
 	// you will need to unmask the pin again
 	ErrorVal setPin(uint pin, uint vector, bool levelTriggered, bool highActive)
 	{
-		if (pin >= numPins) 
+		if (pin >= numPins)
 		{
 			// error: no pin available
-			return ErrorVal.Fail;	
-		}	
+			return ErrorVal.Fail;
+		}
 
 		uint IOAPICID = pinToIOAPIC[pin];
 		uint IOAPICPin = pin - ioApicStartingPin[IOAPICID];
 
-		setRedirectionTableEntry(IOAPICID, IOAPICPin, 
+		setRedirectionTableEntry(IOAPICID, IOAPICPin,
 			// give the destination field
 			LocalAPIC.getLocalAPICId(),
 			// interrupt type
@@ -208,7 +208,7 @@ struct IOAPIC
 			return ErrorVal.Fail;
 		}
 
-		uint IOAPICID = pinToIOAPIC[pin]; 
+		uint IOAPICID = pinToIOAPIC[pin];
 		uint IOAPICPin = pin - ioApicStartingPin[IOAPICID];
 
 		maskRedirectionTableEntry(IOAPICID, IOAPICPin);
@@ -224,7 +224,7 @@ struct IOAPIC
 			return ErrorVal.Fail;
 		}
 
-		uint IOAPICID = pinToIOAPIC[pin]; 
+		uint IOAPICID = pinToIOAPIC[pin];
 		uint IOAPICPin = pin - ioApicStartingPin[IOAPICID];
 
 		unmaskRedirectionTableEntry(IOAPICID, IOAPICPin);
@@ -239,9 +239,16 @@ struct IOAPIC
 		IOAPICInputPinPolarity intPolarity;
 		IOAPICDeliveryMode intType;
 
+		//kprintfln!("numPins: {}")(numPins);
+
 		foreach(ioentry; ioEntries)
 		{
-			//kprintf!("IRQ {} to INT {} in IOAPIC Pin {} .. ")(ioentry.sourceBusIRQ, 33 + ioentry.destinationIOAPICIntin, ioentry.destinationIOAPICIntin);
+			//kprintfln!("IOAPIC ID FROM PIN: {}")(pinToIOAPIC[ioentry.destinationIOAPICIntin]);
+			//kprintfln!("IRQ {} to INT {} in IOAPIC Pin {} .. ")(ioentry.sourceBusIRQ, 33 + ioentry.destinationIOAPICIntin, ioentry.destinationIOAPICIntin);
+			if ((ioentry.destinationIOAPICIntin >= numPins) || (ioentry.sourceBusIRQ == 7) || (ioentry.sourceBusIRQ >= 16))
+			{
+				continue;
+			}
 
 			irqToPin[ioentry.sourceBusIRQ] = ioentry.destinationIOAPICIntin;
 			irqToIOAPIC[ioentry.sourceBusIRQ] = ioentry.destinationIOAPICID;
@@ -251,7 +258,7 @@ struct IOAPIC
 			{
 				// depends on the bus type (this is stupid, but ok)
 				trigMode = IOAPICTriggerMode.EdgeTriggered;
-			}			
+			}
 			else if (ioentry.el == 1)
 			{
 				// edge triggered
@@ -284,7 +291,7 @@ struct IOAPIC
 				// active low
 				intPolarity = IOAPICInputPinPolarity.LowActive;
 			}
-			else 
+			else
 			{
 				// invalid, undefined
 				intPolarity = IOAPICInputPinPolarity.HighActive;
@@ -310,7 +317,7 @@ struct IOAPIC
 
 			// XXX: set to hardcoded values... uncomment to match
 			// TODO: have values for 'bus conformity' ... I'd say just steal the linux values for this
-			setRedirectionTableEntry(ioentry.destinationIOAPICID, ioentry.destinationIOAPICIntin, 
+			setRedirectionTableEntry(ioentry.destinationIOAPICID, ioentry.destinationIOAPICIntin,
 				// destination
 				0xFF,
 				// interrupt type
@@ -337,13 +344,14 @@ struct IOAPIC
 		// So, set the first interrupts to a 1-1 mapping
 		for(int i=0; i<16; i++)
 		{
+			kprintfln!("step one")();
 			ubyte curIOAPICID = ACPI.getIOAPICIDFromGSI(i);
 			ubyte curIOAPICPin = ACPI.getIOAPICPinFromGSI(i);
-
+			kprintfln!("step two")();
 			irqToPin[i] = curIOAPICPin;
 			irqToIOAPIC[i] = curIOAPICID;
-
-			setRedirectionTableEntry(curIOAPICID, i, 
+			kprintfln!("step three")();
+			setRedirectionTableEntry(curIOAPICID, i,
 				// destination
 				0xFF,
 				// interrupt type
@@ -375,50 +383,50 @@ struct IOAPIC
 			if (ioentry.el == 0) {
 				// depends on the bus type (this is stupid, but ok)
 				trigMode = IOAPICTriggerMode.EdgeTriggered;
-			}			
+			}
 			else if (ioentry.el == 1) {
 				// edge triggered
 				trigMode = IOAPICTriggerMode.EdgeTriggered;
 			}
-			else if (ioentry.el == 3) {			
+			else if (ioentry.el == 3) {
 				// level triggered
 				trigMode = IOAPICTriggerMode.LevelTriggered;
 			}
-			else {			
+			else {
 				// invalid, undefined
 				trigMode = IOAPICTriggerMode.EdgeTriggered;
 			}
 
 			//get polarity
-			if (ioentry.po == 0) {			
+			if (ioentry.po == 0) {
 				// depends on bus type
 				intPolarity = IOAPICInputPinPolarity.HighActive;
 			}
-			else if (ioentry.po == 1) {			
+			else if (ioentry.po == 1) {
 				// active high
 				intPolarity = IOAPICInputPinPolarity.HighActive;
 			}
-			else if (ioentry.po == 3) {			
+			else if (ioentry.po == 3) {
 				// active low
 				intPolarity = IOAPICInputPinPolarity.LowActive;
 			}
-			else {			
+			else {
 				// invalid, undefined
 				intPolarity = IOAPICInputPinPolarity.HighActive;
 			}
 
-			// interpret type			
+			// interpret type
 			intType = IOAPICDeliveryMode.ExtINT;
 
 			ubyte destIOAPICID = ACPI.getIOAPICIDFromGSI(ioentry.globalSystemInterrupt);
 			ubyte destIOAPICPin = ACPI.getIOAPICPinFromGSI(ioentry.globalSystemInterrupt);
-		
+
 			irqToPin[ioentry.source] = destIOAPICPin;
 			irqToIOAPIC[ioentry.source] = destIOAPICID;
 
 			// XXX: set to hardcoded values... uncomment to match
 			// TODO: have values for 'bus conformity' ... I'd say just steal the linux values for this
-			setRedirectionTableEntry(destIOAPICID, destIOAPICPin, 
+			setRedirectionTableEntry(destIOAPICID, destIOAPICPin,
 				// destination
 				0xFF,
 				// interrupt type
@@ -443,46 +451,46 @@ struct IOAPIC
 			if (ioentry.el == 0) {
 				// depends on the bus type (this is stupid, but ok)
 				trigMode = IOAPICTriggerMode.EdgeTriggered;
-			}			
+			}
 			else if (ioentry.el == 1) {
 				// edge triggered
 				trigMode = IOAPICTriggerMode.EdgeTriggered;
 			}
-			else if (ioentry.el == 3) {			
+			else if (ioentry.el == 3) {
 				// level triggered
 				trigMode = IOAPICTriggerMode.LevelTriggered;
 			}
-			else {			
+			else {
 				// invalid, undefined
 				trigMode = IOAPICTriggerMode.EdgeTriggered;
 			}
 
 			//get polarity
-			if (ioentry.po == 0) {			
+			if (ioentry.po == 0) {
 				// depends on bus type
 				intPolarity = IOAPICInputPinPolarity.HighActive;
 			}
-			else if (ioentry.po == 1) {			
+			else if (ioentry.po == 1) {
 				// active high
 				intPolarity = IOAPICInputPinPolarity.HighActive;
 			}
-			else if (ioentry.po == 3) {			
+			else if (ioentry.po == 3) {
 				// active low
 				intPolarity = IOAPICInputPinPolarity.LowActive;
 			}
-			else {			
+			else {
 				// invalid, undefined
 				intPolarity = IOAPICInputPinPolarity.HighActive;
 			}
 
-			// interpret type			
+			// interpret type
 			intType = IOAPICDeliveryMode.NonMaskedInterrupt;
 
 			ubyte destIOAPICID = ACPI.getIOAPICIDFromGSI(ioentry.globalSystemInterrupt);
-			
+
 			// XXX: set to hardcoded values... uncomment to match
 			// TODO: have values for 'bus conformity' ... I'd say just steal the linux values for this
-			setRedirectionTableEntry(destIOAPICID, ioentry.globalSystemInterrupt, 
+			setRedirectionTableEntry(destIOAPICID, ioentry.globalSystemInterrupt,
 				// destination
 				0xFF,
 				// interrupt type
@@ -549,7 +557,7 @@ struct IOAPIC
 	{
 		int valuehi = destinationField;
 		valuehi <<= 24;
-		
+
 		int valuelo = intType;
 		valuelo <<= 1;
 		valuelo |= triggerMode;
@@ -561,7 +569,7 @@ struct IOAPIC
 		valuelo |= deliveryMode;
 		valuelo <<= 8;
 		valuelo |= interruptVector;
-		
+
 		writeRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0HI + (registerIndex*2)), valuehi);
 		writeRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), valuelo);
 	}
@@ -569,7 +577,7 @@ struct IOAPIC
 	private void unmaskRedirectionTableEntry(uint ioApicID, uint registerIndex)
 	{
 		uint lo;
-		
+
 		// read former entry values
 		readRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), lo);
 
@@ -587,7 +595,7 @@ struct IOAPIC
 
 		// read former entry values
 		readRegister(ioApicID, cast(IOAPICRegister)(IOAPICRegister.IOREDTBL0LO + (registerIndex*2)), lo);
-	
+
 		// set the value necessary
 		// reset bit 0 of the hi word
 		lo |= (1 << 16);
@@ -597,7 +605,7 @@ struct IOAPIC
 	}
 
 	//Prints the information in the redirect table entries
-	private void printTableEntry(uint ioApicID, uint tableEntry) 
+	private void printTableEntry(uint ioApicID, uint tableEntry)
 	{
 		// Values that will be filled by readRegister
 		uint hi, lo;
@@ -637,7 +645,7 @@ struct IOAPIC
 	{
 		// no good... no irqs above 15
 		if (irq > 15) { return ErrorVal.Fail; }
-	
+
 		unmaskRedirectionTableEntry(irqToIOAPIC[irq], irqToPin[irq]);
 		return ErrorVal.Success;
 	}
@@ -650,5 +658,5 @@ struct IOAPIC
 		maskRedirectionTableEntry(irqToIOAPIC[irq], irqToPin[irq]);
 		return ErrorVal.Success;
 	}
-  
+
 }

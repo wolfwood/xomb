@@ -43,7 +43,7 @@ ARCHFILES = kernel/arch/x86_64/syscall.d kernel/arch/x86_64/globals.d kernel/arc
 
 COREFILES = kernel/core/elf.d kernel/core/syscall.d kernel/core/log.d kernel/kmain.d kernel/dev/vga.d kernel/core/multiboot.d gdb/kgdb_support.d gdb/kgdb_stub.d kernel/core/regions.d kernel/mem/pmem.d config.d kernel/core/error.d kernel/arch/locks.d kernel/dev/keyboard.d kernel/environment/scheduler.d kernel/core/modules.d kernel/environment/table.d kernel/environment/cputable.d
 
-RTFILES := $(shell ls std/typeinfo/*.d) object.d kernel/core/invariant.d user/libd.d std/c/stdarg.d kernel/core/system.d user/syscall.d kernel/core/util.d kernel/arch/x86_64/usersyscall.d user/malloc.d user/basicio.d
+RTFILES := $(shell ls std/typeinfo/*.d) object.d kernel/core/invariant.d user/libd.d std/c/stdarg.d kernel/core/system.d user/syscall.d kernel/core/util.d kernel/arch/x86_64/usersyscall.d user/malloc.d user/basicio.d std/stdarg.d
 
 APP := application/application.d application/application2.d application/xsh.d
 APP_OBJS = $(APP:.d=.o)

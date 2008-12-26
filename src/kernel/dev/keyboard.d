@@ -66,9 +66,9 @@ void mapFunctions(void function(ubyte) downProc, void function(ubyte) upProc, vo
 void init() {
 
 	//PIC.enableIRQ(1);
-	
-	//IOAPIC.setRedirectionTableEntry(1,1, 0xFF, IOAPICInterruptType.Unmasked, 
-	//								IOAPICTriggerMode.EdgeTriggered, 
+
+	//IOAPIC.setRedirectionTableEntry(1,1, 0xFF, IOAPICInterruptType.Unmasked,
+	//								IOAPICTriggerMode.EdgeTriggered,
 	//								IOAPICInputPinPolarity.HighActive,
 	//								IOAPICDestinationMode.Physical,
 	//								IOAPICDeliveryMode.ExtINT,
@@ -77,49 +77,60 @@ void init() {
 	// already done, IO APIC has this irq mapped...
 	// simply unmask when ready
 
+	kdebugfln!(DEBUG_KBD, "Keyboard: Initialization")();
+
 	ubyte ack;
 
-	// tell the controller we are going to set the command byte	
+	// tell the controller we are going to set the command byte
 	Cpu.ioOut!(byte, "64h")(0x60);
 
 	// get ack?
 	ack = 0;
-	while (ack != 0xFA)
+	//while (ack != 0xFA)
 	{
-		ack = Cpu.ioIn!(ubyte, "60h")();   
+	//	ack = Cpu.ioIn!(ubyte, "60h")();
+	//	kdebugfln!(DEBUG_KBD, "Keyboard: {}")(ack);
 	}
+
+	kdebugfln!(DEBUG_KBD, "Keyboard: Enable Command Byte")();
 
 	// write the command byte to enable keyboard interrupts
 	Cpu.ioOut!(byte, "60h")(0x01);
 
 	// get ack?
 	ack = 0;
-	while(ack != 0xFA)
-	{
-		ack = Cpu.ioIn!(ubyte, "60h")();
-	}
+	//while(ack != 0xFA)
+	//{
+	//	ack = Cpu.ioIn!(ubyte, "60h")();
+	//}
+
+	//kdebugfln!(DEBUG_KBD, "Keyboard: Enabled Interrupts")();
 
 	// enable the keyboard (extra precaution?)
-	Cpu.ioOut!(byte, "64h")(0xAE);
+	//Cpu.ioOut!(byte, "64h")(0xAE);
 
-	ack = 0;
-	while(ack != 0xFA)
-	{
-		ack = Cpu.ioIn!(ubyte, "60h")();
-	}
+	//ack = 0;
+	//while(ack != 0xFA)
+	//{
+	//	ack = Cpu.ioIn!(ubyte, "60h")();
+	//}//
+
+	//kdebugfln!(DEBUG_KBD, "Keyboard: Enable Keyboard (Redundant)")();
 
 	//ubyte status = Cpu.ioIn!(ubyte, "64h")();
-	
+
 	//kdebugfln!(DEBUG_KBD, "Keyboard - Current Status: {}")(status);
 
 	// enable the keyboard (alternate???)
-	Cpu.ioOut!(byte, "60h")(0xF4);
-	
-	ack = 0;
-	while (ack != 0xFA)
-	{
-		ack = Cpu.ioIn!(ubyte, "60h")();
-	}
+	//Cpu.ioOut!(byte, "60h")(0xF4);
+
+	//ack = 0;
+	//while (ack != 0xFA)
+	//{
+	//	ack = Cpu.ioIn!(ubyte, "60h")();
+	//}
+
+	//kdebugfln!(DEBUG_KBD, "Keyboard: Enable the keyboard (again")();
 
 	//status = Cpu.ioIn!(ubyte, "64h")();
 
@@ -143,7 +154,7 @@ void init() {
 
 	// schematics of P1
 	// ----------------------
-	// bit 0 - Keyboard Data In 
+	// bit 0 - Keyboard Data In
 	// bit 1 - Mouse Data In
 	// bit 2 - Keyboard Power (0: normal, 1: no power)
 	// bit 3 - Unused
@@ -151,7 +162,7 @@ void init() {
 	// bit 5 - Manufacturing Jumper (0: installed, 1: not installed) ... With jumper BIOS runs an infinite diagnostic loop.
 	// bit 6 - Display (0: CGA, 1: MDA)
 	// bit 7 - Keyboard Lock (0: locked, 1: unlocked)
-	
+
 	// schematics of P2
 	// ----------------------
 	// bit 0 - Reset (0: reset CPU, 1: do not reset CPU)
@@ -163,10 +174,14 @@ void init() {
 	// bit 6 - Keyboard Clock
 	// bit 7 - Keyboard Data
 
+	kdebugfln!(DEBUG_KBD, "Keyboard: About to unmask the IRQ")();
+
 	// unmask!
 	PIC.EOI(1);
 	Interrupts.setCustomHandler(34, &interruptDriver);
 	IOAPIC.unmaskIRQ(1);
+
+	kdebugfln!(DEBUG_KBD, "Keyboard: IRQ umasked")();
 
 	// write to P2
 	// NOTE: a write with bit 0 set to 0 WILL RESET THE CPU!!
@@ -197,7 +212,7 @@ void interruptDriver(InterruptStack* s)
 	//Cpu.ioIn!(byte, "60h")();
 
 	PIC.EOI(1);
-	LocalAPIC.EOI();		
+	LocalAPIC.EOI();
 }
 
 // a polling keyboard driver
@@ -219,10 +234,10 @@ void pollingDriver()
 
 		status = Cpu.ioIn!(ubyte, "64h")();
 
-		if (status  & 0x1) { 
+		if (status  & 0x1) {
 			common();
 		}
-	
+
 	}
 }
 
@@ -240,7 +255,7 @@ private void common()
 	{
 		keyState[data] = !upState;
 		ubyte translated = translateScancode(data);
-	
+
 		if (translated != 0 && !upState)
 		{
 			// printable character
@@ -248,19 +263,19 @@ private void common()
 			//if (charFunc) { charFunc(cast(char)translated); } //else { kprintf!("{}", false)(translated); }
 			depositch(translated);
 		}
-			
+
 		if (upState) {
 			//kprintf!("{} = {}")(data, 0);
 			if (upFunc) { upFunc(data); }
 		} else {
 			//kprintf!("{} = {}")(data, 1);
 			if (downFunc) { downFunc(data); }
-		}	
+		}
 		upState = false;
 	}
 }
 
-ubyte translate[256] = 
+ubyte translate[256] =
 [0,0,0,0,0,0,0,0,0,0,0,0,0,9,96,0,0,0,0,0,0,113,49,0,0,0,122,115,97,119,50,0,0,99
 ,120,100,101,52,51,0,0,32,118,102,116,114,53,0,0,110,98,104,103,121,54,0,0,0,109
 ,106,117,55,56,0,0,44,107,105,111,48,57,0,0,46,47,108,59,112,45,0,0,0,39,0,91,61
@@ -290,7 +305,7 @@ ubyte translateScancode(ubyte scanCode)
 		return translateShift[scanCode];
 	}
 
-	return translate[scanCode];	
+	return translate[scanCode];
 }
 
 }

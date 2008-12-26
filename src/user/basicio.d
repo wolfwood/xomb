@@ -8,25 +8,54 @@ module user.basicio;
 //                -Lao-tzu, _The Way of Lao-tzu_
 
 import user.syscall;
+import std.stdarg;
 
-void print(char [] fmt, ...) {
-  for (int i = 0; i < _arguments.length; i++){
-    if (_arguments[i] == typeid(int))
-    {
-      int j = *cast(int *)_argptr;
-      char[6] buff;
-      echo(inttochar(buff, 'd', cast(ulong)j));
-    }
-    if (_arguments[i] == typeid(long))
-    {
-      echo("long");
-      long j = *cast(long *)_argptr;
-      echo("lol");
-      char[1000] buff;
-      echo(inttochar(buff, 'd', j));
-    }
+void print(...) {
+	if (_arguments.length == 0)
+	{
+		return;
+	}
 
-  }
+	char[20] buff;
+
+	foreach(arg; _arguments)
+	{
+		if (arg == typeid(char[]))
+		{
+			echo(va_arg!(char[])(_argptr));
+		}
+		else if (arg == typeid(long))
+		{
+			long val;
+			val = va_arg!(long)(_argptr);
+
+			echo(inttochar(buff, 'd', val));
+		}
+		else if (arg == typeid(ulong))
+		{
+			ulong val;
+			val = va_arg!(ulong)(_argptr);
+
+			echo(inttochar(buff, 'u', val));
+		}
+		else if (arg == typeid(int))
+		{
+			int val;
+			val = va_arg!(int)(_argptr);
+
+			echo(inttochar(buff, 'd', val));
+		}
+		else if (arg == typeid(uint))
+		{
+			uint val;
+			val = va_arg!(int)(_argptr);
+
+			echo(inttochar(buff, 'u', val));
+		}
+		else if (arg == typeid(void*))
+		{
+		}
+	}
 }
 char[] inttochar(char[] buf, char base, long d)
 {
