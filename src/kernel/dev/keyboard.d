@@ -6,11 +6,17 @@ import kernel.arch.x86_64.pic;
 import kernel.arch.x86_64.idt;
 import kernel.arch.x86_64.lapic;
 
+import kernel.arch.locks;
+
 import kernel.environment.scheduler;
 
 import kernel.dev.vga;
 
+import kernel.core.error;
+
 import config;
+
+import user.keycodes;
 
 const int BUFF_SIZE = 1024;
 
@@ -18,39 +24,35 @@ struct Keyboard {
 
 static:
 
-char [BUFF_SIZE] buff;
+
+	// soon to be destroyed:
+//short [BUFF_SIZE] buff;
 int ipos;
 int gpos;
+	// -----
 
-char grabch() {
+int bufferLen;
+short* buffer;
 
-//	return 'a';
+int* readPointer;
+int* writePointer;
 
-	if(ipos != gpos && (gpos < (BUFF_SIZE - 1))) {
-		return buff[gpos++];
-	} else if(gpos == (BUFF_SIZE - 1)) {
-		gpos = 0;
-		return buff[BUFF_SIZE - 1];
-	}
+kmutex bufferLock;
 
-	return '\0';
-}
-
-void depositch(char c) {
-
-//	return;
-
-	if((ipos < (BUFF_SIZE -1)) && ((ipos + 1) != gpos)) {
-		buff[ipos] = c;
-		ipos++;
-	} else if(gpos != 0) {
-		buff[ipos] = c;
-		ipos = 0;
+void depositKey(short c) {
+	bufferLock.lock();
+	if(((*writePointer) < (bufferLen - 1)) && (((*writePointer) + 1) != (*readPointer))) {
+		buffer[(*writePointer)] = c;
+		(*writePointer)++;
+	} else if((*readPointer) != 0) {
+		buffer[(*writePointer)] = c;
+		(*writePointer) = 0;
 	} else {
 		//igonore!
 	}
-
+	bufferLock.unlock();
 }
+
 
 void function(ubyte code) downFunc;
 void function(ubyte code) upFunc;
@@ -61,6 +63,26 @@ void mapFunctions(void function(ubyte) downProc, void function(ubyte) upProc, vo
 	downFunc = downProc;
 	upFunc = upProc;
 	charFunc = charProc;
+}
+
+ErrorVal setBuffer(short* buff, int* readPtr, int* writePtr, int buffLen)
+{
+	readPointer = readPtr;
+	writePointer = writePtr;
+	buffer = buff;
+
+	// do this last
+	bufferLen = buffLen;
+
+	return ErrorVal.Success;
+}
+
+void unsetBuffer()
+{
+	// this will stop the usage of the keyboard buffer
+	bufferLock.lock();
+	bufferLen = 0;
+	bufferLock.unlock();
 }
 
 void init() {
@@ -79,6 +101,47 @@ void init() {
 
 	kdebugfln!(DEBUG_KBD, "Keyboard: Initialization")();
 
+	ubyte mode;
+
+	// clear output buffer
+	ubyte status;
+
+	status = Cpu.ioIn!(ubyte, "64h")();
+
+	while((status & 0x1) == 1)
+	{
+		Cpu.ioIn!(ubyte, "60h")();
+		status = Cpu.ioIn!(ubyte, "64h")();
+	}
+
+	//Cpu.ioOut!(ubyte, "64h")(0xf0);
+
+	//status = Cpu.ioIn!(ubyte, "64h")();
+	//while((status & 0x1) == 0)
+	//{
+	//	status = Cpu.ioIn!(ubyte,"64h")();
+	//}
+	//mode = Cpu.ioIn!(ubyte, "60h")();
+
+	//Cpu.ioOut!(ubyte, "60h")(0x00);
+
+	//status = Cpu.ioIn!(ubyte, "64h")();
+	//while((status & 0x1) == 0)
+	//{
+	//	status = Cpu.ioIn!(ubyte,"64h")();
+	//}
+	//mode = Cpu.ioIn!(ubyte, "60h")();
+
+	//status = Cpu.ioIn!(ubyte, "64h")();
+	//while ((status &0x1) == 0)
+//	{
+//		status = Cpu.ioIn!(ubyte, "64h")();
+	//}
+	//mode = Cpu.ioIn!(ubyte, "60h")();
+
+
+
+
 	ubyte ack;
 
 	// tell the controller we are going to set the command byte
@@ -94,7 +157,7 @@ void init() {
 
 	kdebugfln!(DEBUG_KBD, "Keyboard: Enable Command Byte")();
 
-	// write the command byte to enable keyboard interrupts
+	// write the command byte to enable keyboard interrupts without translation
 	Cpu.ioOut!(byte, "60h")(0x01);
 
 	// get ack?
@@ -174,6 +237,31 @@ void init() {
 	// bit 6 - Keyboard Clock
 	// bit 7 - Keyboard Data
 
+	// attempt to find the scancode in use
+
+
+	//mode = 0xFA;
+	//while(mode == 0xFA) {
+	//	mode = Cpu.ioIn!(ubyte, "60h")();
+	//}
+
+	// query scancode mode
+		//mode = 0xFA;
+	//while(mode == 0xFA) {
+		//mode = Cpu.ioIn!(ubyte, "60h")();
+	//}
+
+	kdebugfln!(DEBUG_KBD, "Keyboard: Scancode mode: {}")(mode);
+
+	kdebugfln!(DEBUG_KBD, "Keyboard: About to set scancode")();
+
+	// set scan code set (set 2)
+	//Cpu.ioOut!(ubyte, "64h")(0xF0);
+	//status = Cpu.ioIn!(ubyte, "60h")();
+	//Cpu.ioOut!(ubyte, "60h")(0x01);
+	//status = Cpu.ioIn!(ubyte, "60h")();
+
+
 	kdebugfln!(DEBUG_KBD, "Keyboard: About to unmask the IRQ")();
 
 	// unmask!
@@ -182,6 +270,9 @@ void init() {
 	IOAPIC.unmaskIRQ(1);
 
 	kdebugfln!(DEBUG_KBD, "Keyboard: IRQ umasked")();
+	//Cpu.ioOut!(ubyte, "64h")(0xF0);
+	//Cpu.ioOut!(ubyte, "60h")(0x0);
+
 
 	// write to P2
 	// NOTE: a write with bit 0 set to 0 WILL RESET THE CPU!!
@@ -198,18 +289,28 @@ void init() {
 
 	// we still need to flush the buffer though
 	//common()
+
+	upState = false;
+	makeState = 0;
+	ipos = 0;
+	gpos = 0;
+
+	readPointer = &gpos;
+	writePointer = &ipos;
+
+	bufferLen = 0;
+	buffer = null; //&buff[0];
 }
 
 static bool keyState[256];
 
 bool upState = false;
+int makeState = 0;
 
 // an interrupt driven approach
 void interruptDriver(InterruptStack* s)
 {
-	//kprintfln!("keyboard interrupt", false)();
 	common();
-	//Cpu.ioIn!(byte, "60h")();
 
 	PIC.EOI(1);
 	LocalAPIC.EOI();
@@ -224,13 +325,7 @@ void pollingDriver()
 
 	ubyte status;
 
-	// set scan code set (set 3)
-	Cpu.ioOut!(ubyte, "64h")(0xF0);
-	status = Cpu.ioIn!(ubyte, "60h")();
-	Cpu.ioOut!(ubyte, "60h")(0x03);
-	status = Cpu.ioIn!(ubyte, "60h")();
-
-	for(;;) {
+		for(;;) {
 
 		status = Cpu.ioIn!(ubyte, "64h")();
 
@@ -246,34 +341,59 @@ private void common()
 	// output buffer full
 	ubyte data = Cpu.ioIn!(ubyte, "60h")();
 
-	if (data == 0xf0)
+	short key = 0;
+
+	if (data == 0xe0)
 	{
-		// it is an up code
+		// it is a make code from the extended set
+		makeState = 1;
+	}
+	else if (data == 0xf0)
+	{
+		// it is a break code
 		upState = true;
 	}
 	else
 	{
-		keyState[data] = !upState;
-		ubyte translated = translateScancode(data);
-
-		if (translated != 0 && !upState)
+		if (makeState == 0)
 		{
+			key = set2translate[data];
+		}
+		else if (makeState == 1)
+		{
+			key = set2translateExtra[data];
+		}
+
+		if (upState)
+		{
+			key = -key;
+		}
+
+		depositKey(key);
+		//keyState[data] = !upState;
+		//ubyte translated = translateScancode(data);
+
+		//if (translated != 0 && !upState)
+		//{
 			// printable character
 			// kprintf!("{}{}", false)(cast(char)translated, charFunc);
 			//if (charFunc) { charFunc(cast(char)translated); } //else { kprintf!("{}", false)(translated); }
-			depositch(translated);
-		}
+			//deposit(translated);
+		//}
 
-		if (upState) {
+		//if (upState) {
 			//kprintf!("{} = {}")(data, 0);
-			if (upFunc) { upFunc(data); }
-		} else {
+		//	if (upFunc) { upFunc(data); }
+		//} else {
 			//kprintf!("{} = {}")(data, 1);
-			if (downFunc) { downFunc(data); }
-		}
+		//	if (downFunc) { downFunc(data); }
+		//}
+		makeState = 0;
 		upState = false;
 	}
 }
+
+// should be set up for scan code set 2
 
 ubyte translate[256] =
 [0,0,0,0,0,0,0,0,0,0,0,0,0,9,96,0,0,0,0,0,0,113,49,0,0,0,122,115,97,119,50,0,0,99
@@ -294,6 +414,135 @@ ubyte translateShift[256] =
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0];
+
+short set2translate[256] =
+[
+	0x1c: Key.A,
+	0x32: Key.B,
+	0x21: Key.C,
+	0x23: Key.D,
+	0x24: Key.E,
+	0x2B: Key.F,
+	0x34: Key.G,
+	0x33: Key.H,
+	0x43: Key.I,
+	0x3B: Key.J,
+	0x42: Key.K,
+	0x4B: Key.L,
+	0x3A: Key.M,
+	0x31: Key.N,
+	0x44: Key.O,
+	0x4D: Key.P,
+	0x15: Key.Q,
+	0x2D: Key.R,
+	0x1B: Key.S,
+	0x2C: Key.T,
+	0x3C: Key.U,
+	0x2A: Key.V,
+	0x1D: Key.W,
+	0x22: Key.X,
+	0x35: Key.Y,
+	0x1A: Key.Z,
+	0x45: Key.Num0,
+	0x16: Key.Num1,
+	0x1E: Key.Num2,
+	0x26: Key.Num3,
+	0x25: Key.Num4,
+	0x2E: Key.Num5,
+	0x36: Key.Num6,
+	0x3D: Key.Num7,
+	0x3E: Key.Num8,
+	0x46: Key.Num9,
+	0x0E: Key.Quote,
+	0x4E: Key.Minus,
+	0x55: Key.Equals,
+	0x5D: Key.Slash,
+	0x66: Key.Backspace,
+	0x29: Key.Space,
+	0x0D: Key.Tab,
+	0x58: Key.Capslock,
+	0x12: Key.LeftShift,
+	0x14: Key.LeftControl,
+	0x11: Key.LeftAlt,
+	0x59: Key.RightShift,
+	0x5A: Key.Return,
+	0x76: Key.Escape,
+	0x05: Key.F1,
+	0x06: Key.F2,
+	0x04: Key.F3,
+	0x0C: Key.F4,
+	0x03: Key.F5,
+	0x0B: Key.F6,
+	0x83: Key.F7,
+	0x0A: Key.F8,
+	0x01: Key.F9,
+	0x09: Key.F10,
+	0x78: Key.F11,
+	0x07: Key.F12,
+	0x7E: Key.ScrollLock,
+	0x54: Key.LeftBracket,
+	0x77: Key.NumLock,
+	0x7C: Key.KeypadAsterisk,
+	0x7B: Key.KeypadMinus,
+	0x79: Key.KeypadPlus,
+	0x71: Key.KeypadPeriod,
+	0x70: Key.Keypad0,
+	0x69: Key.Keypad1,
+	0x72: Key.Keypad2,
+	0x7A: Key.Keypad3,
+	0x6B: Key.Keypad4,
+	0x73: Key.Keypad5,
+	0x74: Key.Keypad6,
+	0x6C: Key.Keypad7,
+	0x75: Key.Keypad8,
+	0x7D: Key.Keypad9,
+	0x5B: Key.RightBracket,
+	0x4c: Key.Semicolon,
+	0x52: Key.Apostrophe,
+	0x41: Key.Comma,
+	0x49: Key.Period,
+	0x4A: Key.Backslash
+];
+
+short set2translateExtra[256] =
+[
+	0x1f: Key.LeftMeta,
+	0x14: Key.RightControl,
+	0x27: Key.RightMeta,
+	0x11: Key.RightAlt,
+	0x2f: Key.Application,
+	0x70: Key.Insert,
+	0x6c: Key.Home,
+	0x7d: Key.PageUp,
+	0x71: Key.Delete,
+	0x69: Key.End,
+	0x7a: Key.PageDown,
+	0x75: Key.Up,
+	0x6b: Key.Left,
+	0x72: Key.Down,
+	0x74: Key.Right,
+	0x4a: Key.KeypadBackslash,
+	0x5a: Key.KeypadReturn,
+
+	0x4d: Key.Next,
+	0x15: Key.Previous,
+	0x3b: Key.Stop,
+	0x34: Key.Play,
+	0x23: Key.Mute,
+	0x32: Key.VolumeUp,
+	0x21: Key.VolumeDown,
+	0x50: Key.Media,
+	0x48: Key.EMail,
+	0x2b: Key.Calculator,
+	0x40: Key.Computer,
+	0x10: Key.WebSearch,
+	0x3a: Key.WebHome,
+	0x38: Key.WebBack,
+	0x30: Key.WebForward,
+	0x28: Key.WebStop,
+	0x20: Key.WebRefresh,
+	0x18: Key.WebFavorites
+];
 
 ubyte translateScancode(ubyte scanCode)
 {

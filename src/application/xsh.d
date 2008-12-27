@@ -3,24 +3,30 @@ module application.xsh;
 import user.syscall;
 import user.malloc;
 import user.basicio;
+import user.keycodes;
 
+import libos.keyboard;
 
 int main() {
 
 	//when will I ever grow up?
 	char meleon;
 	char [1] izard;
-  char [256] line_buff;
-  int buff_pos;
-  void *x;
+	char [256] line_buff;
+	int buff_pos;
+	void *x;
+
+	// init the keyboard libOS
+	Keyboard.init();
 
 	echo("xsh: XOmB shell\n\n$>");
 
 
 	//d doesn't like my beautiful lne of code. Asshole.
 	//while(mander = grabch()) {
-	meleon = grabch();
 	while(true) {
+		meleon = Keyboard.grabChar();
+
 		if(meleon != '\0' ){
       buff_pos++;
       line_buff[buff_pos] = meleon;
@@ -41,12 +47,11 @@ int main() {
         echo("$>");
       }
 		}
-		// you cannot quit the shell! bwa ha ha ha ha
-		meleon = grabch();
 	}
 	exit(0);
 
 	//d is awesome
 	return 0;
 }
+
 

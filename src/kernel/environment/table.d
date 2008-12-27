@@ -11,6 +11,7 @@ import kernel.core.error;
 import kernel.core.modules;
 import kernel.core.util;
 
+import kernel.dev.keyboard;
 import kernel.dev.vga;
 
 // XXX: frame pointer hack
@@ -50,7 +51,6 @@ import kernel.dev.vga;
 // -64 - GENERAL REGISTERS (contextSwitchSave!())
 //
 
-
 struct Environment
 {
 
@@ -61,11 +61,24 @@ struct Environment
 		Blocked,
 	}
 
+	enum Devices
+	{
+		Keyboard = 1
+	}
+
+
 	uint cpuCount;				// number of cpus this environment needs
 	uint id;					// environment id
 	void* content;				// environment data, code
 	ulong size;					// environment size
 	State state;				// current state of execution
+
+	// the Devices enum are the flags for the following variable
+	// if the bit is set, the environment controls the resource
+	// if the process is unloaded, the device heaps will be
+	// destroyed, therefore, the environment needs to alert
+	// the resource as well.
+	long deviceUsage;
 
 	void* entry;				// entry into the execution space
 
@@ -125,7 +138,7 @@ void loadGRUBModule(Environment* environ, uint modNumber)
 ErrorVal preamble(Environment* environ)
 {
 	// use page table
-	environ.pageTable.use();
+	environ.pageTable.use(0);
 
 	// switch stack
 	if (environ.state == Environment.State.Blocked) {
@@ -172,7 +185,7 @@ ErrorVal postamble(Environment* environ)
 
 ErrorVal initPageTable(Environment* environ)
 {
-	environ.pageTable.init();
+	environ.pageTable.init(environ.cpuCount);
 
 	return ErrorVal.Success;
 }
@@ -196,6 +209,13 @@ ErrorVal initStack(Environment* environ)
 // deconstruct the environment
 void uninit(Environment* environ)
 {
+	if (environ.deviceUsage & Environment.Devices.Keyboard)
+	{
+		// keyboard has been inited here
+		// uninit the keyboard
+		Keyboard.unsetBuffer();
+	}
+
 	//kprintfln!("uninit page")();
 	// free the pages we used
 	environ.pageTable.uninit();
@@ -283,6 +303,7 @@ static:
 
 		// set id
 		environment.id = i;
+		environment.deviceUsage = 0;
 
 		// set it to ready (not running)
 		environment.state = Environment.State.Ready;

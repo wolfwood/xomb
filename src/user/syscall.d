@@ -10,6 +10,16 @@ enum SyscallError : ulong
 	Failcopter
 }
 
+// Return structures
+struct KeyboardInfo
+{
+	short* buffer;
+	uint bufferLength;
+
+	int* writePointer;
+	int* readPointer;
+}
+
 // IDs of the system calls
 enum SyscallID : ulong
 {
@@ -19,8 +29,8 @@ enum SyscallID : ulong
 	FreePage,
 	Yield,
 	Echo,
-	Grabch,
-	Depositch
+	DepositKey,
+	InitKeyboard
 }
 
 // Names of system calls
@@ -32,22 +42,22 @@ alias Tuple!
 	"freePage",		// freePage()
 	"yield",		// yield()
 	"echo",			// echo()
-	"grabch",		// grabch()
-	"depositch"		// depositch()
+	"depositKey",	// depositKey()
+	"initKeyboard"	// initKeyboard()
 ) SyscallNames;
 
 
 // Return types for each system call
 alias Tuple!
 (
-	long,		// add
-	void*,		// allocPage
-	void,		// exit
-	void,		// freePage
-	void,		// yield
-	void,		// echo
-	char,		// grabch
-	void		// depositch
+	long,			// add
+	void*,			// allocPage
+	void,			// exit
+	void,			// freePage
+	void,			// yield
+	void,			// echo
+	void,			// depositKey
+	KeyboardInfo	// initKeyboard
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -78,16 +88,14 @@ struct EchoArgs
 	char [] str;
 }
 
-struct GrabchArgs
+struct DepositKeyArgs
 {
+	short ch;
 }
 
-struct DepositchArgs
+struct InitKeyboardArgs
 {
-	char ch;
 }
-
-
 
 
 

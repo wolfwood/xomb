@@ -125,7 +125,7 @@ hiddenmenu
 
 title		PAGAN OS
 kernel		/boot/xomb
-module		/boot/application
+#module		/boot/application
 #module		/boot/application2
 module		/boot/xsh
 ### END PITTGEEKS AUTOMAGIC KERNELS LIST

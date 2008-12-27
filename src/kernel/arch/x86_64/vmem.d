@@ -39,6 +39,10 @@ import kernel.core.regions;
 //					  ...
 //					PL1[510]
 //					PL1[509] - REGISTER_STACK
+//					  ...
+//					PL1[0] - DEVICE HEAP
+// PL4[0] - Environment space
+//			PL3[0] - Environment shared among all cpus + heap
 
 // Kernel Page Table: vMem.pageLevel4
 // CPU Page Table: Cpu.pageLevel4[]
@@ -97,6 +101,9 @@ const ulong CPU_INFO_ADDR = (FormVirtualAddress!(510,511,511,512 - KERNEL_STACK_
 // cpu page table
 const ulong CPU_PAGETABLE_ADDR = (FormVirtualAddress!(510,511,511,512-KERNEL_STACK_PAGES - CPU_INFO_PAGES - 1));
 
+// environment device page start
+const ulong ENVIRONMENT_DEVICE_HEAP_START = (FormVirtualAddress!(509,511,511,0));
+
 // RAM mapping
 const ulong VM_BASE_INDEX = 0;	// This index is where on the pageLevel3[] the physical memory should start to be mapped in
 	                            // Changing this value WILL IMPACT THE VALUE BELOW IT!!!!!!!!!
@@ -115,9 +122,10 @@ align(1) struct PageTable
 
     long codePages;
 	long heapPages;
+	long devicePages;
 
 	// initialize a user page table
-	void init()
+	void init(uint numCpus)
 	{
 		// get a free page
 		void* nextAddr;
@@ -132,7 +140,6 @@ align(1) struct PageTable
 
 		// map in the kernel
 		entries[511].pml4e = (cast(pml4*)CPU_PAGETABLE_ADDR)[511].pml4e;
-		entries[510].pml4e = (cast(pml4*)CPU_PAGETABLE_ADDR)[510].pml4e;
 	}
 
 	void uninit()
@@ -492,11 +499,86 @@ align(1) struct PageTable
 		}
 	}
 
+	// TODO: lock these pages down!!!
+	void* allocDevicePage(bool allowWrite)
+	{
+		void* ret = cast(void*)ENVIRONMENT_DEVICE_HEAP_START;
+		ret += vMem.PAGE_SIZE * devicePages;
+
+		void* physPage = pMem.requestPage();
+
+		pml3* pl3;
+		pml2* pl2;
+		pml1* pl1;
+
+		long pml_index4;
+		long pml_index3;
+		long pml_index2;
+		long pml_index1;
+
+		allocateUserPageEntries(ret, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1, entries);
+
+		if (pl1[pml_index1].present)
+		{
+			// no good
+			//kprintfln!("allocPages() : bad!")();
+			return null;
+		}
+
+		//kprintfln!("allocating : {x} to {x}")(virtEnd, physPage);
+
+		//kprintfln!("{x} : {} {} {} {}")(virtEnd, pml_index4, pml_index3, pml_index2, pml_index1);
+
+		//kprintfln!("prev entry: {x}")(pl1[pml_index1-1].address << 12);
+
+		//kprintfln!("entries: {x}")(entries);
+
+		pl1[pml_index1].pml1e = cast(ulong)physPage;
+		pl1[pml_index1].pml1e |= 0x87;
+		pl1[pml_index1].rw = allowWrite;
+		pl1[pml_index1].us = 1; // userspace flag
+
+		devicePages++;
+
+		return ret;
+	}
+
+	void freeDevicePages()
+	{
+		void* devicePageStart = cast(void*)ENVIRONMENT_DEVICE_HEAP_START;
+
+		for ( ; devicePages>0 ; devicePages-- )
+		{
+			pml3* pl3;
+			pml2* pl2;
+			pml1* pl1;
+
+			long pml_index4;
+			long pml_index3;
+			long pml_index2;
+			long pml_index1;
+
+			retrievePageEntries(devicePageStart, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1, entries);
+
+			ulong physAddr = pl1[pml_index1].address;
+			physAddr <<= 12;
+
+			pl1[pml_index1].pml1e = 0;
+
+			pMem.freePage(cast(void*)physAddr);
+
+			devicePageStart += vMem.PAGE_SIZE;
+		}
+	}
+
 	// sets this page table as the currently in use table
-	void use()
+	void use(uint cpuNum)
 	{
 		ulong addr = cast(ulong)entries;
 		addr -= VM_BASE_ADDR;
+
+		// map in the CPU page entries
+		entries[510].pml4e = (cast(pml4*)CPU_PAGETABLE_ADDR)[510].pml4e;
 
 		//kprintfln!("entries: {x}, addr: {x}")(&entries, addr);
 		asm {

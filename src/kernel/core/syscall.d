@@ -75,13 +75,33 @@ public:
 		return SyscallError.OK;
 	}
 
-	SyscallError grabch(out char ret, GrabchArgs* params) {
-		ret = Keyboard.grabch();
+	SyscallError depositKey(DepositKeyArgs* params) {
+		Keyboard.depositKey(params.ch);
 		return SyscallError.OK;
 	}
 
-	SyscallError depositch(DepositchArgs* params) {
-		Keyboard.depositch(params.ch);
+	SyscallError initKeyboard(out KeyboardInfo ret, InitKeyboardArgs* params) {
+		Environment* curEnvironment = Scheduler.getCurrentEnvironment();
+
+		ubyte* readable;
+		ubyte* writeable;
+
+		readable = cast(ubyte*)curEnvironment.pageTable.allocDevicePage(false);
+		writeable = cast(ubyte*)curEnvironment.pageTable.allocDevicePage(true);
+
+		curEnvironment.deviceUsage |= Environment.Devices.Keyboard;
+
+		// set values
+		ret.writePointer = cast(int*)&readable[0];
+		ret.buffer = cast(short*)&readable[long.sizeof];
+		ret.bufferLength = vMem.PAGE_SIZE - (long.sizeof);
+
+		ret.readPointer = cast(int*)(&writeable[0]);
+
+		Keyboard.setBuffer(ret.buffer, ret.readPointer, ret.writePointer, ret.bufferLength);
+
+//		Keyboard.setBuffer
+
 		return SyscallError.OK;
 	}
 }
