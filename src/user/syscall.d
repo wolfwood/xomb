@@ -20,6 +20,18 @@ struct KeyboardInfo
 	int* readPointer;
 }
 
+struct ConsoleInfo
+{
+	int xMax;
+	int yMax;
+
+	int xPos;
+	int yPos;
+
+	ubyte color;
+	ubyte* buffer;
+}
+
 // IDs of the system calls
 enum SyscallID : ulong
 {
@@ -28,9 +40,10 @@ enum SyscallID : ulong
 	Exit,
 	FreePage,
 	Yield,
-	Echo,
+	Error,
 	DepositKey,
-	InitKeyboard
+	InitKeyboard,
+	InitConsole,
 }
 
 // Names of system calls
@@ -41,9 +54,10 @@ alias Tuple!
 	"exit",			// exit()
 	"freePage",		// freePage()
 	"yield",		// yield()
-	"echo",			// echo()
+	"error",		// error()
 	"depositKey",	// depositKey()
-	"initKeyboard"	// initKeyboard()
+	"initKeyboard",	// initKeyboard()
+	"initConsole"	// initConsole()
 ) SyscallNames;
 
 
@@ -55,9 +69,10 @@ alias Tuple!
 	void,			// exit
 	void,			// freePage
 	void,			// yield
-	void,			// echo
+	void,			// error
 	void,			// depositKey
-	KeyboardInfo	// initKeyboard
+	KeyboardInfo,	// initKeyboard
+	ConsoleInfo		// initConsole
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -83,7 +98,7 @@ struct YieldArgs
 {
 }
 
-struct EchoArgs
+struct ErrorArgs
 {
 	char [] str;
 }
@@ -97,6 +112,9 @@ struct InitKeyboardArgs
 {
 }
 
+struct InitConsoleArgs
+{
+}
 
 
 

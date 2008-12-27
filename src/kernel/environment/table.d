@@ -63,7 +63,8 @@ struct Environment
 
 	enum Devices
 	{
-		Keyboard = 1
+		Keyboard = 1,		// Keyboard buffer
+		Console = 2,		// Console frame buffer
 	}
 
 

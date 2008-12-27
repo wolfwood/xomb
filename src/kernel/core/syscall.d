@@ -5,7 +5,6 @@ module kernel.core.syscall;
 import user.syscall;
 
 import kernel.core.error;
-import kernel.dev.vga;
 
 import kernel.arch.vmem;
 
@@ -13,6 +12,7 @@ import kernel.environment.scheduler;
 import kernel.environment.table;
 
 import kernel.dev.keyboard;
+import kernel.dev.vga;
 
 struct SyscallImplementations
 {
@@ -70,7 +70,7 @@ public:
 		return SyscallError.OK;
 	}
 
-	SyscallError echo(EchoArgs* params) {
+	SyscallError error(ErrorArgs* params) {
 		Console.printString(params.str, "");
 		return SyscallError.OK;
 	}
@@ -83,11 +83,16 @@ public:
 	SyscallError initKeyboard(out KeyboardInfo ret, InitKeyboardArgs* params) {
 		Environment* curEnvironment = Scheduler.getCurrentEnvironment();
 
+		// these are linked to the environment
 		ubyte* readable;
 		ubyte* writeable;
 
-		readable = cast(ubyte*)curEnvironment.pageTable.allocDevicePage(false);
-		writeable = cast(ubyte*)curEnvironment.pageTable.allocDevicePage(true);
+		// these are linked to RAM directly
+		void* virtRead;
+		void* virtWrite;
+
+		readable = cast(ubyte*)curEnvironment.pageTable.allocDevicePage(virtRead, false);
+		writeable = cast(ubyte*)curEnvironment.pageTable.allocDevicePage(virtWrite, true);
 
 		curEnvironment.deviceUsage |= Environment.Devices.Keyboard;
 
@@ -98,9 +103,43 @@ public:
 
 		ret.readPointer = cast(int*)(&writeable[0]);
 
-		Keyboard.setBuffer(ret.buffer, ret.readPointer, ret.writePointer, ret.bufferLength);
+		KeyboardInfo kInfo;
+		readable = cast(ubyte*)virtRead;
+		writeable = cast(ubyte*)virtWrite;
 
-//		Keyboard.setBuffer
+		kInfo.writePointer = cast(int*)&readable[0];
+		kInfo.buffer = cast(short*)&readable[long.sizeof];
+		kInfo.readPointer = cast(int*)(&writeable[0]);
+
+		if (Keyboard.setBuffer(kInfo.buffer, kInfo.readPointer, kInfo.writePointer, ret.bufferLength)
+				== ErrorVal.Fail)
+		{
+			// this means the buffer belongs to somebody else already
+			return SyscallError.Failcopter;
+		}
+
+		return SyscallError.OK;
+	}
+
+	SyscallError initConsole(out ConsoleInfo ret, InitConsoleArgs* params)
+	{
+		// tell the console that we are giving control away
+		if (Console.setBuffer() == ErrorVal.Fail)
+		{
+			return SyscallError.Failcopter;
+		}
+
+		Environment* curEnvironment = Scheduler.getCurrentEnvironment();
+
+		void* virtBuffer; // this IS Console.VideoMem
+
+		// use the second argument to map a page instead of allocate a new page
+		ret.buffer = cast(ubyte*)curEnvironment.pageTable.allocDevicePage(virtBuffer, true, vMem.translateAddress(Console.VideoMem));
+
+		ret.xMax = Console.Columns;
+		ret.yMax = Console.Lines;
+
+		Console.getPosition(ret.xPos, ret.yPos);
 
 		return SyscallError.OK;
 	}

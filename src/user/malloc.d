@@ -22,7 +22,7 @@ void *malloc(size_t size) {
 
   //first we see if there's some free-d memory we can re-use
   while(c !is null) {
-    echo("in while");
+    print("in while");
     if(size < c.size) { //if the size we want is less than the size of the chunk
 
       return cast(void *)1337;
@@ -32,13 +32,13 @@ void *malloc(size_t size) {
   //void *h = allocPage(); //not till we have it
   //set the used list to start at the beginning of the page
   used_list = cast(chunk *)allocate(size + chunk.sizeof);
-  if(!used_list) { echo("failure"); return null; }
+  if(!used_list) { print("failure"); return null; }
   //set up the struct
   print("%d", 15);
   //used_list.size = size;
   //used_list.next = null;
   //used_list.prev = null;
-  echo("done with malloc");
+  print("done with malloc");
   return cast(void *)(used_list + chunk.sizeof);
 }
 
@@ -46,11 +46,11 @@ ubyte[9000] buffer; //fake pages 'nat
 int buff_pos = 0;
 
 void *allocate(size_t size) {
-  echo("in allocate");
+  print("in allocate");
   return cast(void*)(buffer.ptr + buff_pos);
 }
 
 //see malloc's comment
 void free(void *) {
-  echo("in free");
+  print("in free");
 }

@@ -10,6 +10,8 @@ module user.basicio;
 import user.syscall;
 import std.stdarg;
 
+import libos.console;
+
 void print(...) {
 	if (_arguments.length == 0)
 	{
@@ -22,35 +24,35 @@ void print(...) {
 	{
 		if (arg == typeid(char[]))
 		{
-			echo(va_arg!(char[])(_argptr));
+			Console.printString(va_arg!(char[])(_argptr));
 		}
 		else if (arg == typeid(long))
 		{
 			long val;
 			val = va_arg!(long)(_argptr);
 
-			echo(inttochar(buff, 'd', val));
+			Console.printString(inttochar(buff, 'd', val));
 		}
 		else if (arg == typeid(ulong))
 		{
 			ulong val;
 			val = va_arg!(ulong)(_argptr);
 
-			echo(inttochar(buff, 'u', val));
+			Console.printString(inttochar(buff, 'u', val));
 		}
 		else if (arg == typeid(int))
 		{
 			int val;
 			val = va_arg!(int)(_argptr);
 
-			echo(inttochar(buff, 'd', val));
+			Console.printString(inttochar(buff, 'd', val));
 		}
 		else if (arg == typeid(uint))
 		{
 			uint val;
 			val = va_arg!(int)(_argptr);
 
-			echo(inttochar(buff, 'u', val));
+			Console.printString(inttochar(buff, 'u', val));
 		}
 		else if (arg == typeid(void*))
 		{

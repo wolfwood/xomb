@@ -500,12 +500,23 @@ align(1) struct PageTable
 	}
 
 	// TODO: lock these pages down!!!
-	void* allocDevicePage(bool allowWrite)
+	void* allocDevicePage(out void* virtAddr, bool allowWrite, void* physPage = null)
 	{
 		void* ret = cast(void*)ENVIRONMENT_DEVICE_HEAP_START;
 		ret += vMem.PAGE_SIZE * devicePages;
 
-		void* physPage = pMem.requestPage();
+		// true: will set a bit in the page table entry
+		// that says this page's physical page should
+		// not be freed
+		bool noPhysAlloc = true;
+
+		if (physPage is null)
+		{
+			noPhysAlloc = false;
+			physPage = pMem.requestPage();
+		}
+
+		virtAddr = cast(void*)(cast(ulong)physPage + vMem.VM_BASE_ADDR);
 
 		pml3* pl3;
 		pml2* pl2;
@@ -536,6 +547,7 @@ align(1) struct PageTable
 		pl1[pml_index1].pml1e = cast(ulong)physPage;
 		pl1[pml_index1].pml1e |= 0x87;
 		pl1[pml_index1].rw = allowWrite;
+		pl1[pml_index1].noPhysAlloc = noPhysAlloc;
 		pl1[pml_index1].us = 1; // userspace flag
 
 		devicePages++;
@@ -563,9 +575,13 @@ align(1) struct PageTable
 			ulong physAddr = pl1[pml_index1].address;
 			physAddr <<= 12;
 
+			bool noPhysAlloc = cast(bool)pl1[pml_index1].noPhysAlloc;
+
 			pl1[pml_index1].pml1e = 0;
 
-			pMem.freePage(cast(void*)physAddr);
+			if (!noPhysAlloc) {
+				pMem.freePage(cast(void*)physAddr);
+			}
 
 			devicePageStart += vMem.PAGE_SIZE;
 		}
@@ -616,7 +632,12 @@ align(1) struct pml1
 {
 	ulong pml1e;
 	mixin(Bitfield!(pml1e, "present", 1, "rw", 1, "us", 1, "pwt", 1, "pcd", 1, "a", 1,
-	"d", 1, "pat", 1, "g", 1, "avl", 3, "address", 41, "available", 10, "nx", 1));
+	"d", 1, "pat", 1, "g", 1, "avl", 3, "address", 41,
+	// Available Bits:
+	"noPhysAlloc", 1,	// when set: do NOT free the physical page
+	"available", 9,
+	// ---------------
+	"nx", 1));
 }
 
 //alias pml4* PageTable;
@@ -750,6 +771,29 @@ pml3[] kernel_mapping;
 		pageLevel3 = getPml3(pageLevel4.ptr, 511)[0..511];
 
 		kdebugfln!(DEBUG_PAGING, "Done Mapping ... {}")(pageLevel3[0].present);
+	}
+
+	// this will return the phyiscal address linked to the virtual address
+	void* translateAddress(void* virtAddress)
+	{
+		pml3* pl3;
+		pml2* pl2;
+		pml1* pl1;
+
+		long pml_index4;
+		long pml_index3;
+		long pml_index2;
+		long pml_index1;
+
+		retrievePageEntries(virtAddress, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1);
+
+		if (pl1 !is null)
+		{
+			ulong physAddr = pl1[pml_index1].address;
+			physAddr <<= 12;
+
+			return cast(void*)physAddr;
+		}
 	}
 
 	// install kernel stack at KERNEL_STACK - PAGE_SIZE

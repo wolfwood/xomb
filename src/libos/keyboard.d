@@ -50,29 +50,42 @@ static:
 		return key;
 	}
 
+	char translateCode(short code)
+	{
+		if (code <= 0) { return '\0'; }
+
+		// these translations only work on positive values
+		// therefore, all up states must be ignored
+
+		char ret;
+		if (shiftState)
+		{
+			ret = translateShift[code];
+		}
+		else
+		{
+			ret = translate[code];
+		}
+
+		if (ret != '\xFF')
+		{
+			return ret;
+		}
+
+		return '\0';
+	}
+
 	// block until a printable character is detected
 	char grabChar()
 	{
 		short key;
+		char ret;
 
 		for(;;)
 		{
 			key = grabKey();
 
-			if (key <= 0) { continue; }
-
-			// these comparisons only work on positive values
-			// therefore, all up states are ignored
-
-			char ret;
-			if (shiftState)
-			{
-				ret = translateShift[key];
-			}
-			else
-			{
-				ret = translate[key];
-			}
+			ret = translateCode(key);
 
 			if (ret != '\xFF')
 			{

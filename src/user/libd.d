@@ -436,7 +436,7 @@ void _d_switch_error( char[] file, uint line )
 
 private void onAssertError(char[] file, size_t line)
 {
-  echo("assert failed:"); echo(file);
+	error("assert failed:"); error(file);
 	//kprintfln!("Error in {}, line {}: assertion failed.")(file, line);
 	asm { l: hlt; jmp l; }
 }
@@ -444,21 +444,22 @@ private void onAssertError(char[] file, size_t line)
 private void onAssertErrorMsg(char[] file, size_t line, char[] msg)
 {
 	//kprintfln!("Error in {}, line {}: assertion failed: \"{}\"")(file, line, msg);
-  echo("assert failed:"); echo(file);
+
+	error("assert failed:"); error(file);
 	asm { l: hlt; jmp l; }
 }
 
 private void onArrayBoundsError(char[] file, size_t line)
 {
 	//kprintfln!("Error in {}, line {}: array index out of bounds.")(file, line);
-  echo("array index out of bounds:");
+	error("array index out of bounds:");
 	asm { l: hlt; jmp l; }
 }
 
 private void onSwitchError(char[] file, size_t line)
 {
 	//kprintfln!("Error in {}, line {}: switch has no case or default to handle the switched-upon value.")(file, line);
-  echo("switch error:"); echo(file);
+	error("switch error:"); error(file);
   asm { l: hlt; jmp l; }
 }
 

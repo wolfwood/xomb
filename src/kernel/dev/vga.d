@@ -7,6 +7,8 @@ module kernel.dev.vga;
 
 import config;
 
+import kernel.core.error;
+
 import kernel.arch.locks;
 
 import kernel.core.system;
@@ -14,7 +16,6 @@ import kernel.core.util;
 
 import std.c.stdarg;
 import gcc.builtins;
-
 
 /** This structure contains hexadecimal values equivalent to various types
 of colors for printing to the screen, allowing the kernel to switch colors easily
@@ -40,131 +41,6 @@ enum Color : ubyte
 	White        = 0x0F
 }
 
-private
-{
-	template ExtractString(char[] format)
-	{
-		static if(format.length == 0)
-		{
-			const size_t ExtractString = 0;
-		}
-		else static if(format[0] is '{')
-		{
-			static if(format.length > 1 && format[1] is '{')
-				const size_t ExtractString = 2 + ExtractString!(format[2 .. $]);
-			else
-				const size_t ExtractString = 0;
-		}
-		else
-			const size_t ExtractString = 1 + ExtractString!(format[1 .. $]);
-	}
-	
-	template ExtractFormatStringImpl(char[] format)
-	{
-		static assert(format.length !is 0, "Unterminated format specifier");
-	
-		static if(format[0] is '}')
-			const ExtractFormatStringImpl = 0;
-		else
-			const ExtractFormatStringImpl = 1 + ExtractFormatStringImpl!(format[1 .. $]);
-	}
-	
-	template CheckFormatAgainstType(char[] rawFormat, size_t idx, T)
-	{
-		const char[] format = rawFormat[1 .. idx];
-		
-		static if(isIntType!(T))
-		{
-			static assert(format == "" || format == "x" || format == "X" || format == "u" || format == "U",
-				"Invalid integer format specifier '" ~ format ~ "'");
-		}
-	
-		const size_t res = idx;
-	}
-	
-	template ExtractFormatString(char[] format, T)
-	{
-		const ExtractFormatString = CheckFormatAgainstType!(format, ExtractFormatStringImpl!(format), T).res;
-	}
-	
-	template StripDoubleLeftBrace(char[] s)
-	{
-		static if(s.length is 0)
-			const char[] StripDoubleLeftBrace = "";
-		else static if(s.length is 1)
-			const char[] StripDoubleLeftBrace = s;
-		else
-		{
-			static if(s[0 .. 2] == "{{")
-				const char[] StripDoubleLeftBrace = "{" ~ StripDoubleLeftBrace!(s[2 .. $]);
-			else
-				const char[] StripDoubleLeftBrace = s[0] ~ StripDoubleLeftBrace!(s[1 .. $]);
-		}
-	}
-	
-	template MakePrintString(char[] s)
-	{
-		const char[] MakePrintString = "printString(\"" ~ StripDoubleLeftBrace!(s) ~ "\", \"\");\n";
-	}
-	
-	template MakePrintOther(T, char[] fmt, size_t idx)
-	{
-		static if(isIntType!(T))
-			const char[] MakePrintOther = "printInt(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
-		else static if(isCharType!(T))
-			const char[] MakePrintOther = "printChar(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
-		else static if(isStringType!(T))
-			const char[] MakePrintOther = "printString(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
-		else static if(isFloatType!(T))
-			const char[] MakePrintOther = "printFloat(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
-		else static if(isPointerType!(T))
-			const char[] MakePrintOther = "printPointer(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
-		else static if(isArrayType!(T))
-			const char[] MakePrintOther = "printArray(args[" ~ idx.stringof ~ "], true, false);\n";
-		else
-			static assert(false, "I don't know how to handle argument " ~ idx.stringof ~ " of type '" ~ T.stringof ~ "'.");
-	}
-	
-	template ConvertFormatImpl(char[] format, size_t argIdx, Types...)
-	{
-		static if(format.length == 0)
-		{
-			static assert(argIdx == Types	.length, "More parameters than format specifiers");
-			const char[] res = "";
-		}
-		else
-		{
-			static if(format[0] is '{')
-			{
-				static if(format.length > 1 && format[1] is '{')
-				{
-					const idx = ExtractString!(format);
-					const char[] res = MakePrintString!(format[0 .. idx]) ~
-						ConvertFormatImpl!(format[idx .. $], argIdx, Types).res;
-				}
-				else
-				{
-					static assert(argIdx < Types.length, "More format specifiers than parameters");
-					const idx = ExtractFormatString!(format, Types[argIdx]);
-					const char[] res = MakePrintOther!(Types[argIdx], format[1 .. idx], argIdx) ~
-						ConvertFormatImpl!(format[idx + 1 .. $], argIdx + 1, Types).res;
-				}
-			}
-			else
-			{
-				const idx = ExtractString!(format);
-				const char[] res = MakePrintString!(format[0 .. idx]) ~
-					ConvertFormatImpl!(format[idx .. $], argIdx, Types).res;
-			}
-		}
-	}
-	
-	template ConvertFormat(char[] format, Types...)
-	{
-		const char[] ConvertFormat = ConvertFormatImpl!(format, 0, Types).res;
-	}
-}
-
 /** This structure contains information aobut the console, including
 the number of columns and lines a standard screen should contain.
 Also, it contains information about the standard and default colors, as well as the
@@ -174,18 +50,22 @@ struct Console
 {
 static:
 
+	// this is true when an environment has control over the console
+	private bool environmentControlled = false;
+
 	// The number of "reserved" header lines
 	const uint ReservedLines = 2;
 
 	/// The number of columns a standard screen is wide.
 	const uint Columns = 80;
-	
+
 	/// The number of lines contained in a standard screen.
 	const uint Lines = 24;
 	/// The default color for the text the kernel will use when first printing out.
 	const ubyte DefaultColors = Color.LightGray;
 	/// A pointer to the beginning of video memory, so the kernel can begin writing to the screen.
-	private ubyte* VideoMem = cast(ubyte*)0xffffffff800B8000;
+	ubyte* VideoMem = cast(ubyte*)0xffffffff800B8000;
+
 	/// The initial x-position of the cursor.
 	private int xpos = 0;
 	/// The initial y-position of the cursor.
@@ -198,11 +78,24 @@ static:
 	kmutex printLock;
 	kmutex coordLock;
 
+	ErrorVal setBuffer()
+	{
+		if (environmentControlled)
+		{
+			return ErrorVal.Fail;
+		}
+		else
+		{
+			environmentControlled = true;
+			return ErrorVal.Success;
+		}
+	}
+
 	/**
 	This method clears the screen and returns the cursor to its default position.
 	*/
 	void cls(bool all = false)
-	{	
+	{
 		printLock.lock();
 		/// Set all pieces of video memory to nothing.
 		int i;
@@ -290,10 +183,10 @@ static:
 		if(xpos >= Columns)
 			goto newline;
 	}
-	
+
 	/**
 	Put some raw, unformatted string data to the screen.
-	
+
 	Params:
 		s = The string to output.
 	*/
@@ -302,7 +195,7 @@ static:
 		foreach(c; s)
 			putchar(c);
 	}
-	
+
 	/**
 	This function sets the console colors back to their defaults.
 	*/
@@ -355,7 +248,7 @@ static:
 		/// The function received no lines. Do nothing.
 		if(numlines <= 0)
 			return;
-	
+
 		/// If you cannot increase that far, clear the screen, instead of using the processor
 		/// power to go through each line.
 		if(numlines >= Lines)
@@ -391,19 +284,19 @@ static:
 
 			offset1 += Columns;
 	    }
-	
+
 		coordLock.lock();
 		ypos -= numlines;
-	
+
 		if(ypos < 0)
 			ypos = 0;
 		coordLock.unlock();
 	}
 
 	private void printInt(long i, char[] fmt)
-	{		
+	{
 		char[20] buf;
-		
+
 		if(fmt.length is 0)
 			putstr(itoa(buf, 'd', i));
 		else if(fmt[0] is 'd' || fmt[0] is 'D')
@@ -411,14 +304,14 @@ static:
 		else if(fmt[0] is 'u' || fmt[0] is 'U')
 			putstr(itoa(buf, 'u', i));
 		else if(fmt[0] is 'x' || fmt[0] is 'X')
-			putstr(itoa(buf, 'x', i));	
+			putstr(itoa(buf, 'x', i));
 	}
-	
+
 	private void printFloat(real f, char[] fmt)
 	{
 		putstr("?float?");
 	}
-	
+
 	private void printChar(dchar c, char[] fmt)
 	{
 		putchar(c);
@@ -483,7 +376,7 @@ static:
 		}
 	}
 
-	 
+
 	void printStruct(T)(ref T s, bool recursive = false, ulong indent = 0, bool lock = true)
 	{
 		if (lock)
@@ -492,7 +385,7 @@ static:
 		}
 
 		static assert(is(T == struct), "printStruct - Type must be a struct");
-		
+
 		void tabs()
 		{
 			for(ulong i = 0; i < indent; i++)
@@ -500,7 +393,7 @@ static:
 		}
 
 		alias FieldNames!(T) fieldNames;
-		
+
 		tabs();
 		indent++;
 
@@ -566,7 +459,7 @@ static:
 			printLock.unlock();
 		}
 	}
-	 
+
 	void printArray(T)(T[] s, bool recursive = false, bool lock = true)
 	{
 		if (lock)
@@ -583,7 +476,7 @@ static:
 			static if (isArrayType!(typeof(item)))
 			{
 				printArray(item, true, false);
-			}	
+			}
 			else static if (isCharType!(T))
 			{
 				putchar(item);
@@ -600,13 +493,13 @@ static:
 			{
 				printInt(item, "u");
 			}
-			else 
+			else
 			{
 				kprintf!("{}", false)(cast(void*)item);
 			}
-			
+
 			if (count!=(s.length-1))
-			{				
+			{
 				putstr(", ");
 			}
 			else
@@ -619,7 +512,7 @@ static:
 		{
 			putstr("\n");
 		}
-		
+
 		if (lock)
 		{
 			printLock.unlock();
@@ -638,4 +531,132 @@ extern(C) void kprintString(char* s)
 {
 	kprintfln!("{}")(toString(s));
 }
+
+
+private
+{
+	template ExtractString(char[] format)
+	{
+		static if(format.length == 0)
+		{
+			const size_t ExtractString = 0;
+		}
+		else static if(format[0] is '{')
+		{
+			static if(format.length > 1 && format[1] is '{')
+				const size_t ExtractString = 2 + ExtractString!(format[2 .. $]);
+			else
+				const size_t ExtractString = 0;
+		}
+		else
+			const size_t ExtractString = 1 + ExtractString!(format[1 .. $]);
+	}
+
+	template ExtractFormatStringImpl(char[] format)
+	{
+		static assert(format.length !is 0, "Unterminated format specifier");
+
+		static if(format[0] is '}')
+			const ExtractFormatStringImpl = 0;
+		else
+			const ExtractFormatStringImpl = 1 + ExtractFormatStringImpl!(format[1 .. $]);
+	}
+
+	template CheckFormatAgainstType(char[] rawFormat, size_t idx, T)
+	{
+		const char[] format = rawFormat[1 .. idx];
+
+		static if(isIntType!(T))
+		{
+			static assert(format == "" || format == "x" || format == "X" || format == "u" || format == "U",
+				"Invalid integer format specifier '" ~ format ~ "'");
+		}
+
+		const size_t res = idx;
+	}
+
+	template ExtractFormatString(char[] format, T)
+	{
+		const ExtractFormatString = CheckFormatAgainstType!(format, ExtractFormatStringImpl!(format), T).res;
+	}
+
+	template StripDoubleLeftBrace(char[] s)
+	{
+		static if(s.length is 0)
+			const char[] StripDoubleLeftBrace = "";
+		else static if(s.length is 1)
+			const char[] StripDoubleLeftBrace = s;
+		else
+		{
+			static if(s[0 .. 2] == "{{")
+				const char[] StripDoubleLeftBrace = "{" ~ StripDoubleLeftBrace!(s[2 .. $]);
+			else
+				const char[] StripDoubleLeftBrace = s[0] ~ StripDoubleLeftBrace!(s[1 .. $]);
+		}
+	}
+
+	template MakePrintString(char[] s)
+	{
+		const char[] MakePrintString = "printString(\"" ~ StripDoubleLeftBrace!(s) ~ "\", \"\");\n";
+	}
+
+	template MakePrintOther(T, char[] fmt, size_t idx)
+	{
+		static if(isIntType!(T))
+			const char[] MakePrintOther = "printInt(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
+		else static if(isCharType!(T))
+			const char[] MakePrintOther = "printChar(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
+		else static if(isStringType!(T))
+			const char[] MakePrintOther = "printString(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
+		else static if(isFloatType!(T))
+			const char[] MakePrintOther = "printFloat(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
+		else static if(isPointerType!(T))
+			const char[] MakePrintOther = "printPointer(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
+		else static if(isArrayType!(T))
+			const char[] MakePrintOther = "printArray(args[" ~ idx.stringof ~ "], true, false);\n";
+		else
+			static assert(false, "I don't know how to handle argument " ~ idx.stringof ~ " of type '" ~ T.stringof ~ "'.");
+	}
+
+	template ConvertFormatImpl(char[] format, size_t argIdx, Types...)
+	{
+		static if(format.length == 0)
+		{
+			static assert(argIdx == Types	.length, "More parameters than format specifiers");
+			const char[] res = "";
+		}
+		else
+		{
+			static if(format[0] is '{')
+			{
+				static if(format.length > 1 && format[1] is '{')
+				{
+					const idx = ExtractString!(format);
+					const char[] res = MakePrintString!(format[0 .. idx]) ~
+						ConvertFormatImpl!(format[idx .. $], argIdx, Types).res;
+				}
+				else
+				{
+					static assert(argIdx < Types.length, "More format specifiers than parameters");
+					const idx = ExtractFormatString!(format, Types[argIdx]);
+					const char[] res = MakePrintOther!(Types[argIdx], format[1 .. idx], argIdx) ~
+						ConvertFormatImpl!(format[idx + 1 .. $], argIdx + 1, Types).res;
+				}
+			}
+			else
+			{
+				const idx = ExtractString!(format);
+				const char[] res = MakePrintString!(format[0 .. idx]) ~
+					ConvertFormatImpl!(format[idx .. $], argIdx, Types).res;
+			}
+		}
+	}
+
+	template ConvertFormat(char[] format, Types...)
+	{
+		const char[] ConvertFormat = ConvertFormatImpl!(format, 0, Types).res;
+	}
+}
+
+
 

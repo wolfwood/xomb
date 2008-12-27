@@ -178,6 +178,10 @@ static:
 		preamble(curEnvironment);
 		execute(curEnvironment);
 
+		// anytime the kernel prints, it will be an error
+		// so make it bright red
+		Console.setColors(Color.HighRed, Color.Black);
+
 		mixin(Syscall.jumpToUser!());
 	}
 
