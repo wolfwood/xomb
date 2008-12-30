@@ -32,175 +32,168 @@ struct Scheduler
 
 static:
 
-	// the quantum length in picoseconds
-	const ulong quantumInterval = 50000000000;
+  // the quantum length in picoseconds
+  const ulong quantumInterval = 50000000000;
 
-	alias circleQueue!(Environment*, MAX_ENVIRONMENTS) theQueue;
+  alias circleQueue!(Environment*, MAX_ENVIRONMENTS) theQueue;
 
-	// TODO: probably need one per CPU...
-	Environment* curEnvironment;
+  // TODO: probably need one per CPU...
+  Environment* curEnvironment;
 
-	ErrorVal init()
-	{
-		// set up environment table
+  ErrorVal init()
+  {
+    // set up environment table
 
-		if (EnvironmentTable.init() == ErrorVal.Fail)
-		{
-			return ErrorVal.Fail;
-		}
+    if (EnvironmentTable.init() == ErrorVal.Fail)
+    {
+      return ErrorVal.Fail;
+    }
 
-		theQueue.init();
+    theQueue.init();
 
-		// add a new environment
-		// Get all grub modules and load them in to the environment table
-		//for(int i = 0; i < GRUBModules.length; i++)
-		//{
+    makeEnvironmentFromGRUBModule(0);
 
-    //we did loop through all of them, but we really only need xsh, or any
-    //other vital environment. since we don't have disk yet, we can use
-    //the other grub modules for applications
-			Environment* environ;
-			kdebugfln!(DEBUG_SCHEDULER, "Scheduler: Creating new environment.")();
+    Interrupts.setCustomHandler(Interrupts.Type.DivByZero, &quantumFire);
 
-			EnvironmentTable.newEnvironment(environ);
-			theQueue.push(environ);
+    return ErrorVal.Success;
+  }
 
-			// load an executable from the multiboot header
-			kdebugfln!(DEBUG_SCHEDULER, "Scheduler: Loading from GRUB module.")();
+  // called when the quantum fire
+  void quantumFire(InterruptStack* stack)
+  {
+    // schedule!
+    //if (shouldSchedule) { schedule(); }
+    //Timer.resetTimer(0, quantumInterval);
+  }
 
-		  loadGRUBModule(environ, 0); //was i, 0 is xsh
-		//}
+  // called to schedule a new process
+  void schedule()
+  {
+    if (curEnvironment !is null) {
+      // assume that the context switching code has been
+      // done in these two places:
 
-		Interrupts.setCustomHandler(Interrupts.Type.DivByZero, &quantumFire);
+      // isr_common()
+      // syscall_dispatcher()
 
-		return ErrorVal.Success;
-	}
+      postamble(curEnvironment);
+    }
 
-	// called when the quantum fire
-	void quantumFire(InterruptStack* stack)
-	{
-		// schedule!
-		//if (shouldSchedule) { schedule(); }
-		//Timer.resetTimer(0, quantumInterval);
-	}
+    // find candidate for execution
 
-	// called to schedule a new process
-	void schedule()
-	{
-		if (curEnvironment !is null) {
-			// assume that the context switching code has been
-			// done in these two places:
+    kdebugfln!(DEBUG_SCHEDULER, "schedule(): Scheduling new environment.  Current eid: {}")(curEnvironment.id);
 
-			// isr_common()
-			// syscall_dispatcher()
+    // ... //
+    //	curEnvironment = EnvironmentTable.getEnvironment(0);
+    //if(curEnvironment.id == 0) {
+    //curEnvironment = EnvironmentTable.getEnvironment(1);
+    //} else {
+    //curEnvironment = EnvironmentTable.getEnvironment(0);
+    //}
 
-			postamble(curEnvironment);
-		}
+    kdebugfln!(DEBUG_SCHEDULER, "schedule(): New Environment Selected.  eid: {}")(curEnvironment.id);
 
-		// find candidate for execution
+    Environment* temp = theQueue.peek();
+    curEnvironment = temp;
 
-		kdebugfln!(DEBUG_SCHEDULER, "schedule(): Scheduling new environment.  Current eid: {}")(curEnvironment.id);
+    // curEnvironment should be set to the next
+    // environment to be executed
 
-		// ... //
-	//	curEnvironment = EnvironmentTable.getEnvironment(0);
-	  //if(curEnvironment.id == 0) {
-	    //curEnvironment = EnvironmentTable.getEnvironment(1);
-	  //} else {
-	    //curEnvironment = EnvironmentTable.getEnvironment(0);
-	  //}
+    // restore the stack, this should already have the
+    // RIP to return from calling schedule()
 
-	  	kdebugfln!(DEBUG_SCHEDULER, "schedule(): New Environment Selected.  eid: {}")(curEnvironment.id);
+    // the resulting return should get to the context
+    // switch restore code for the architecture
 
-		Environment* temp = theQueue.peek();
-		curEnvironment = temp;
+    preamble(curEnvironment);
+    execute(curEnvironment);
 
-		// curEnvironment should be set to the next
-		// environment to be executed
+    // return
+  }
 
-		// restore the stack, this should already have the
-		// RIP to return from calling schedule()
+  void yield()
+  {
+    kdebugfln!(DEBUG_SCHEDULER, "Yield from eid: {}")(curEnvironment.id);
+    //		curEnvironment.postamble();
 
-		// the resulting return should get to the context
-		// switch restore code for the architecture
+    //curEnvironment = EnvironmentTable.getEnvironment(0);
+    Environment* temp = theQueue.pop();
+    theQueue.push(temp);
+    schedule();
 
-		preamble(curEnvironment);
-		execute(curEnvironment);
+    //	curEnvironment.preamble();
+    //	  curEnvironment.execute();
 
-		// return
-	}
+  }
 
-	void yield()
-	{
-		kdebugfln!(DEBUG_SCHEDULER, "Yield from eid: {}")(curEnvironment.id);
-//		curEnvironment.postamble();
+  void makeEnvironmentFromGRUBModule(int id) {
+    Environment* environ;
+    kdebugfln!(DEBUG_SCHEDULER, "Scheduler: Creating new environment.")();
 
-	  //curEnvironment = EnvironmentTable.getEnvironment(0);
-	  Environment* temp = theQueue.pop();
-	  theQueue.push(temp);
-	  schedule();
+    EnvironmentTable.newEnvironment(environ);
+    theQueue.push(environ);
+    kdebugfln!(DEBUG_SCHEDULER, "Scheduler: Loading from GRUB module.")();
 
-//	curEnvironment.preamble();
-//	  curEnvironment.execute();
+    loadGRUBModule(environ, id); //was i, 0 is xsh
+  }
 
-	}
+  void exit()
+  {
+    EnvironmentTable.removeEnvironment(curEnvironment.id);
+    theQueue.pop();
 
-	void exit()
-	{
-		EnvironmentTable.removeEnvironment(curEnvironment.id);
-		theQueue.pop();
+    curEnvironment = null;
 
-		curEnvironment = null;
+    if (EnvironmentTable.count == 0)
+    {
+      // cripes, no more environments
+      // shut down!
+      kdebugfln!(DEBUG_SCHEDULER, "Scheduler: No more environments.")();
+      for(;;) {}
+    }
 
-		if (EnvironmentTable.count == 0)
-		{
-			// cripes, no more environments
-			// shut down!
-			kdebugfln!(DEBUG_SCHEDULER, "Scheduler: No more environments.")();
-			for(;;) {}
-		}
+    schedule();
+  }
 
-		schedule();
-	}
+  // called at the first run
+  void run()
+  {
+    //schedule();
+    //curEnvironment = EnvironmentTable.getEnvironment(0);
+    curEnvironment = theQueue.peek();
 
-	// called at the first run
-	void run()
-	{
-		//schedule();
-		//curEnvironment = EnvironmentTable.getEnvironment(0);
-		curEnvironment = theQueue.peek();
-
-		kdebugfln!(DEBUG_SCHEDULER, "Scheduler: About to jump to user at {x}")(curEnvironment.entry);
+    kdebugfln!(DEBUG_SCHEDULER, "Scheduler: About to jump to user at {x}")(curEnvironment.entry);
 
 
-		// set up interrupt handler
-		//Timer.initTimer(quantumInterval, &quantumFire);
+    // set up interrupt handler
+    //Timer.initTimer(quantumInterval, &quantumFire);
 
 
-		//Timer.initTimer(quantumInterval, &quantumFire);
+    //Timer.initTimer(quantumInterval, &quantumFire);
 
 
-		preamble(curEnvironment);
-		execute(curEnvironment);
+    preamble(curEnvironment);
+    execute(curEnvironment);
 
-		// anytime the kernel prints, it will be an error
-		// so make it bright red
-		Console.setColors(Color.HighRed, Color.Black);
+    // anytime the kernel prints, it will be an error
+    // so make it bright red
+    Console.setColors(Color.HighRed, Color.Black);
 
-		mixin(Syscall.jumpToUser!());
-	}
+    mixin(Syscall.jumpToUser!());
+  }
 
-    // will get the current environment for the current cpu
-	Environment* getCurrentEnvironment()
-	{
-		return curEnvironment;
-	}
+  // will get the current environment for the current cpu
+  Environment* getCurrentEnvironment()
+  {
+    return curEnvironment;
+  }
 
-	void cpuReady(uint cpuID)
-	{
-		// this cpu is ready to be scheduled
+  void cpuReady(uint cpuID)
+  {
+    // this cpu is ready to be scheduled
 
-		kdebugfln!(DEBUG_SCHEDULER, "Scheduler: cpu {} is awaiting orders.")(cpuID);
+    kdebugfln!(DEBUG_SCHEDULER, "Scheduler: cpu {} is awaiting orders.")(cpuID);
 
-		CpuTable.provide(cpuID);
-	}
+    CpuTable.provide(cpuID);
+  }
 }

@@ -44,6 +44,7 @@ enum SyscallID : ulong
 	DepositKey,
 	InitKeyboard,
 	InitConsole,
+  MakeEnvironment,
 }
 
 // Names of system calls
@@ -57,7 +58,8 @@ alias Tuple!
 	"error",		// error()
 	"depositKey",	// depositKey()
 	"initKeyboard",	// initKeyboard()
-	"initConsole"	// initConsole()
+	"initConsole",	// initConsole()
+  "makeEnvironment" //makeEnvironment()
 ) SyscallNames;
 
 
@@ -72,7 +74,8 @@ alias Tuple!
 	void,			// error
 	void,			// depositKey
 	KeyboardInfo,	// initKeyboard
-	ConsoleInfo		// initConsole
+	ConsoleInfo,		// initConsole
+  void //makeEnvironment
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -112,11 +115,15 @@ struct InitKeyboardArgs
 {
 }
 
+
 struct InitConsoleArgs
 {
 }
 
-
+struct MakeEnvironmentArgs
+{
+  int id;
+}
 
 
 
