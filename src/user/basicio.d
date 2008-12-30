@@ -31,35 +31,35 @@ void print(...) {
 			long val;
 			val = va_arg!(long)(_argptr);
 
-			Console.printString(inttochar(buff, 'd', val));
+			Console.printString(itoa(buff, 'd', val));
 		}
 		else if (arg == typeid(ulong))
 		{
 			ulong val;
 			val = va_arg!(ulong)(_argptr);
 
-			Console.printString(inttochar(buff, 'u', val));
+			Console.printString(itoa(buff, 'u', val));
 		}
 		else if (arg == typeid(int))
 		{
 			int val;
 			val = va_arg!(int)(_argptr);
 
-			Console.printString(inttochar(buff, 'd', val));
+			Console.printString(itoa(buff, 'd', val));
 		}
 		else if (arg == typeid(uint))
 		{
 			uint val;
 			val = va_arg!(int)(_argptr);
 
-			Console.printString(inttochar(buff, 'u', val));
+			Console.printString(itoa(buff, 'u', val));
 		}
 		else if (arg == typeid(void*))
 		{
 		}
 	}
 }
-char[] inttochar(char[] buf, char base, long d)
+char[] itoa(char[] buf, char base, long d)
 {
   size_t p = buf.length - 1;
   size_t startIdx = 0;

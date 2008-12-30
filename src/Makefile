@@ -1,7 +1,5 @@
 # Makefile for XOmB
 
-svn propset svn:keywords "Revision" kernel/kmain.d
-
 MY_ARCH := $(shell uname)
 
 # default compile options
@@ -13,13 +11,13 @@ LD = ld
 # platform specific options
 # NOTE: do we need this? not now, but we may
 ifeq (${MY_ARCH},Darwin)
-        CC = x86_64-pc-elf-gcc
-        LD = x86_64-pc-elf-ld
+	CC = x86_64-pc-elf-gcc
+	LD = x86_64-pc-elf-ld
 	DC = x86_64-pc-elf-gdc
 	CPFLAGS = -i
 else
 	CC = x86_64-pc-elf-gcc
-        LD = x86_64-pc-elf-ld
+	LD = x86_64-pc-elf-ld
 	DC = x86_64-pc-elf-gdc
 	CPFLAGS = --backup=numbered -u
 endif
@@ -70,7 +68,7 @@ all: setup $(KERNEL_IMG)
 	rm -f intfic.dump && x86_64-pc-elf-objdump -d -S -r application/intfic > application/intfic.dump
 	@echo ""
 	@echo "OS successfully compiled, to make a bootable CD ISO, run:"
-	@echo "        make iso"
+	@echo " make iso"
 
 # assembly compile
 .S.o:
@@ -101,12 +99,13 @@ iso: all
 	mkisofs -R -b $(GRUB_PATH)$(GRUB_IMG) -no-emul-boot -boot-load-size 8 -input-charset utf-8 -boot-info-table -o $(ISO_NAME) $(ISO_PATH)
 	@echo
 	@echo "ISO successfully made!"
-	@echo "        qemu-system-x86_64 -cdrom xomb.iso -boot d"
-	@echo "     or bochs -q"
+	@echo "       start: sudo xm create ~/domu.hvm"
+	@echo "       stop : sudo xm destroy XOmB-<username>"
 
 # removes .o and the kernel executable
 clean:
-	rm -f $(OBJS) $(KERNEL_IMG) application/application.o
+	rm -f $(OBJS) $(KERNEL_IMG)
+	rm -f appplication/*.o
 
 # along with the above, removes the files from the iso
 # and removes the application executable
@@ -114,6 +113,9 @@ veryclean: clean
 	rm -rf $(ISO_PATH)
 	rm -f $(ISO_NAME)
 	rm -f ./application/application
+	rm -f ./application/application2
+	rm -f ./application/xsh
+	rm -f ./application/intfic
 
 # run this after checking out a clean tree
 setup: bochsrc config.d
