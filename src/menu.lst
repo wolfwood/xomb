@@ -16,7 +16,7 @@ default		0
 ## timeout sec
 # Set a timeout, in SEC seconds, before automatically booting the default entry
 # (normally the first entry defined).
-timeout		3
+timeout	0
 
 ## hiddenmenu
 # Hides the menu by default (press ESC to see the menu)
@@ -123,9 +123,10 @@ hiddenmenu
 
 ## ## End Default Options ##
 
-title		PAGAN OS
+title		XOmB
 kernel		/boot/xomb
+module		/boot/xsh
+module    /boot/intfic
 #module		/boot/application
 #module		/boot/application2
-module		/boot/xsh
 ### END PITTGEEKS AUTOMAGIC KERNELS LIST

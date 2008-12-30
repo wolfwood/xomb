@@ -53,8 +53,12 @@ static:
 
 		// add a new environment
 		// Get all grub modules and load them in to the environment table
-		for(int i = 0; i < GRUBModules.length; i++)
-		{
+		//for(int i = 0; i < GRUBModules.length; i++)
+		//{
+
+    //we did loop through all of them, but we really only need xsh, or any
+    //other vital environment. since we don't have disk yet, we can use
+    //the other grub modules for applications
 			Environment* environ;
 			kdebugfln!(DEBUG_SCHEDULER, "Scheduler: Creating new environment.")();
 
@@ -64,8 +68,8 @@ static:
 			// load an executable from the multiboot header
 			kdebugfln!(DEBUG_SCHEDULER, "Scheduler: Loading from GRUB module.")();
 
-		  loadGRUBModule(environ, i);
-		}
+		  loadGRUBModule(environ, 0); //was i, 0 is xsh
+		//}
 
 		Interrupts.setCustomHandler(Interrupts.Type.DivByZero, &quantumFire);
 

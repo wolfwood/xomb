@@ -45,7 +45,7 @@ COREFILES = kernel/core/elf.d kernel/core/syscall.d kernel/core/log.d kernel/kma
 
 RTFILES := $(shell ls std/typeinfo/*.d) object.d kernel/core/invariant.d user/libd.d std/c/stdarg.d kernel/core/system.d user/syscall.d kernel/core/util.d kernel/arch/x86_64/usersyscall.d user/malloc.d user/basicio.d std/stdarg.d libos/keyboard.d libos/console.d
 
-APP := application/application.d application/application2.d application/xsh.d
+APP := application/application.d application/application2.d application/xsh.d application/intfic.d
 APP_OBJS = $(APP:.d=.o)
 OBJS = $(ASM:.S=.o) $(COREFILES:.d=.o) $(RTFILES:.d=.o) $(ARCHFILES:.d=.o)
 
@@ -67,6 +67,7 @@ all: setup $(KERNEL_IMG)
 	rm -f application.dump && x86_64-pc-elf-objdump -d -S -r application/application > application/application.dump
 	rm -f application2.dump && x86_64-pc-elf-objdump -d -S -r application/application2 > application/application2.dump
 	rm -f xsh.dump && x86_64-pc-elf-objdump -d -S -r application/xsh > application/xsh.dump
+	rm -f intfic.dump && x86_64-pc-elf-objdump -d -S -r application/intfic > application/intfic.dump
 	@echo ""
 	@echo "OS successfully compiled, to make a bootable CD ISO, run:"
 	@echo "        make iso"
@@ -85,6 +86,7 @@ $(KERNEL_IMG): $(OBJS) $(APP_OBJS)
 	$(LD) $(APP_LDFLAGS) -o application/application application/application.o -dN $(RUNTIMEOBJS)
 	$(LD) $(APP_LDFLAGS) -o application/application2 application/application2.o -dN $(RUNTIMEOBJS)
 	$(LD) $(APP_LDFLAGS) -o application/xsh application/xsh.o -dN $(RUNTIMEOBJS)
+	$(LD) $(APP_LDFLAGS) -o application/intfic application/intfic.o -dN $(RUNTIMEOBJS)
 
 # creates the GRUB iso image
 iso: all
@@ -95,7 +97,8 @@ iso: all
 	cp ./application/application $(ISO_PATH)$(BOOT_PATH)
 	cp ./application/application2 $(ISO_PATH)$(BOOT_PATH)
 	cp ./application/xsh $(ISO_PATH)$(BOOT_PATH)
-	mkisofs -R -b $(GRUB_PATH)$(GRUB_IMG) -no-emul-boot -boot-load-size 4 -boot-info-table -o $(ISO_NAME) $(ISO_PATH)
+	cp ./application/intfic $(ISO_PATH)$(BOOT_PATH)
+	mkisofs -R -b $(GRUB_PATH)$(GRUB_IMG) -no-emul-boot -boot-load-size 8 -input-charset utf-8 -boot-info-table -o $(ISO_NAME) $(ISO_PATH)
 	@echo
 	@echo "ISO successfully made!"
 	@echo "        qemu-system-x86_64 -cdrom xomb.iso -boot d"
