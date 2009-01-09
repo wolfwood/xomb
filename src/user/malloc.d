@@ -1,56 +1,164 @@
-//malloc - memory stuff
+// malloc - dynamic memory allocation
 
-//It is hard enough to remember my opinions, without also remembering my reasons for them!
+// It is hard enough to remember my opinions, without also remembering my reasons for them!
 //        -Friedrich Nietzsche
 
 import user.syscall;
 import user.basicio;
+import user.constants;
 
-struct chunk {
-  size_t size;                //size of chunk
-  chunk *next; //next in the list
-  chunk *prev; //prev in the list
-};
+struct header
+{
+  header *next;
+  header *prev;
+  header *nextFree; // only used by items in the freelist
+  header *prevFree; // only used by items in the freelist
+  long chunkSize;
+}
 
-chunk *used_list = null;  //the list of allocated chunks
-chunk *free_list = null;  //the list of freed chunks
+header *allocHead = null;
+header *allocTail = null;
+header *freeHead  = null;
+header *freeTail  = null;
 
-//if you don't know what malloc does
-//then you shouldn't be in my source code
-void *malloc(size_t size) {
-  chunk *c = free_list;
+// allocates requested memory
+void *malloc(long size)
+{
+  header *cur = freeHead;
 
-  //first we see if there's some free-d memory we can re-use
-  while(c !is null) {
-    print("in while");
-    if(size < c.size) { //if the size we want is less than the size of the chunk
+  // check the free list for available chunks
+  while(cur !is null)
+  {
+    if(cur.chunkSize >= size)
+    {
+      // use entire chunk
+      if(cur.chunkSize - size > header.sizeof)
+      {
+        if (cur is freeHead)
+          freeHead = cur.next;
+        if (cur is freeTail)
+          freeTail = cur.prev;
 
-      return cast(void *)1337;
+        // remove from free list
+        if (cur.prevFree !is null)
+          cur.prevFree.nextFree = cur.nextFree;
+        if (cur.nextFree !is null)
+          cur.nextFree.prevFree = cur.prevFree;
+
+        return (&cur + 1);  // return pointer to where chunk begins after header
+      }
+      else
+      {
+        // create new chunk
+        header *newHeader = (cur) + 1 + size;
+
+        // setup the header
+        newHeader.chunkSize = cur.chunkSize - size - header.sizeof;
+        newHeader.prev = cur;
+        newHeader.next = cur.next;
+
+        // add into list
+        cur.next.prev = newHeader;
+        cur.next = newHeader;
+
+        // resize chunk
+        cur.chunkSize = size;
+
+        // add new chunk to free list
+        newHeader.nextFree = cur.nextFree;
+        newHeader.prevFree = cur.prevFree;
+
+        if(cur is freeHead)
+          freeHead = newHeader;
+        if(cur is freeTail)
+          freeTail = newHeader;
+
+        // remove current chunk from free list
+        if (cur.prevFree !is null)
+          cur.prevFree.nextFree = newHeader;
+        if (cur.nextFree !is null)
+          cur.prevFree.nextFree = newHeader;
+
+        // return the chunk
+        return (&cur + 1);
+      }
     }
+
+    cur = cur.next;
   }
-  //since c is null, we need to get a new page
-  //void *h = allocPage(); //not till we have it
-  //set the used list to start at the beginning of the page
-  used_list = cast(chunk *)allocate(size + chunk.sizeof);
-  if(!used_list) { print("failure"); return null; }
-  //set up the struct
-  print("%d", 15);
-  //used_list.size = size;
-  //used_list.next = null;
-  //used_list.prev = null;
-  print("done with malloc");
-  return cast(void *)(used_list + chunk.sizeof);
+
+  ulong unusedSpace = 0;
+
+  // allocate a page
+  header* newHeader = cast(header*)allocPage();
+  unusedSpace += Kernel.PAGE_SIZE;
+
+  if(newHeader is null)
+    return null;      // failure to allocate a page
+
+  while(unusedSpace < header.sizeof + size)
+  {
+    if(allocPage() == null)
+      return null;
+
+    unusedSpace += Kernel.PAGE_SIZE;
+  }
+
+  // setup the page
+  newHeader.prev = allocTail;
+  allocTail = newHeader;
+
+  if(allocHead is null)
+    allocHead = newHeader;
+
+  return (&newHeader + 1);
+
+
 }
 
-ubyte[9000] buffer; //fake pages 'nat
-int buff_pos = 0;
+// frees that was allocated
+void free(void *pointer)
+{
+  header *freeHeader = (cast(header*)pointer) - 1;
+  freeHeader.chunkSize = -freeHeader.chunkSize;
 
-void *allocate(size_t size) {
-  print("in allocate");
-  return cast(void*)(buffer.ptr + buff_pos);
-}
+  // add to freelist
+  if(freeHead is null)
+  {
+    freeHeader.nextFree = null;
+  }
+  else
+  {
+    freeHead.nextFree = freeHeader;
+    freeHeader.nextFree = null;
+  }
 
-//see malloc's comment
-void free(void *) {
-  print("in free");
+  freeHead = freeHeader;
+
+  // merge blocks
+  if(freeHeader.prev !is null && freeHeader.prev.chunkSize < 0)
+  {
+    freeHeader.prev.chunkSize = freeHeader.chunkSize + header.sizeof;
+    freeHeader.prev.next = freeHeader.next;
+
+    if(freeHeader.next !is null)
+    {
+      freeHeader.next.prev = freeHeader.prev;
+    }
+
+    freeHeader = freeHeader.prev;
+  }
+
+  if(freeHeader.next !is null && freeHeader.next.chunkSize > 0)
+  {
+    freeHeader.chunkSize = freeHeader.next.chunkSize + header.sizeof;
+
+    if(freeHeader.next.next !is null)
+    {
+      freeHeader.next.next.prev = freeHeader;
+    }
+
+    freeHeader.next = freeHeader.next.next;
+  }
+
 }
