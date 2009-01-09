@@ -25,6 +25,10 @@ int main()
 	// switch to best mode, enable double buffering
 	VESA.ModeInfo mInfo = VESA.switchMode(mode, true);
 
+	//for(;;){}
+	//mInfo.workingBuffer = mInfo.videoBuffer + 4096;
+	//mInfo.bytesPerScanline = 4096*2;
+
 	// clear screen - white
 	clearScreen(mInfo, 0xFFFFFF);
 
@@ -54,12 +58,12 @@ int main()
 
 void clearScreen(ref VESA.ModeInfo mInfo, uint clr)
 {
-	uint* workingBufferLineStart = cast(uint*)mInfo.workingBuffer;
+	ubyte* workingBufferLineStart = cast(ubyte*)mInfo.workingBuffer;
 	uint* workingBufferCurPtr;
 
 	for (uint y=0; y<mInfo.yResolution; y++)
 	{
-		workingBufferCurPtr = workingBufferLineStart;
+		workingBufferCurPtr = cast(uint*)workingBufferLineStart;
 		for (uint x=0; x<mInfo.xResolution; x++)
 		{
 			(*workingBufferCurPtr) = clr;
@@ -72,11 +76,11 @@ void clearScreen(ref VESA.ModeInfo mInfo, uint clr)
 void blitImg(ref VESA.ModeInfo mInfo, uint x, uint y, uint* imgBytes, int imgWidth, int imgHeight)
 {
 	uint* workingBufferCurPtr;
+	ubyte* workingBufferLineStart = cast(ubyte*)mInfo.workingBuffer + (mInfo.bytesPerScanline * y);
 
-	uint* workingBufferLineStart = cast(uint*)mInfo.workingBuffer + (mInfo.bytesPerScanline * y);
 	for (uint sy=0;sy<imgHeight;sy++)
 	{
-		workingBufferCurPtr = workingBufferLineStart + x;
+		workingBufferCurPtr = cast(uint*)(workingBufferLineStart) + x;
 		for (uint sx=0;sx<imgWidth;sx++)
 		{
 			(*workingBufferCurPtr) = (*imgBytes);
