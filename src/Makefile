@@ -99,7 +99,7 @@ iso: all
 	cp ./application/xsh $(ISO_PATH)$(BOOT_PATH)
 	cp ./application/intfic $(ISO_PATH)$(BOOT_PATH)
 	cp ./application/vesademo $(ISO_PATH)$(BOOT_PATH)
-	mkisofs -R -b $(GRUB_PATH)$(GRUB_IMG) -no-emul-boot -boot-load-size 8 -boot-info-table -o $(ISO_NAME) $(ISO_PATH)
+	mkisofs -R -b $(GRUB_PATH)$(GRUB_IMG) -no-emul-boot -boot-load-size 16 -boot-info-table -o $(ISO_NAME) $(ISO_PATH)
 	@echo
 	@echo "ISO successfully made!"
 	@echo "        qemu-system-x86_64 -cdrom xomb.iso -boot d"

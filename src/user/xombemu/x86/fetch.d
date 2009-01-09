@@ -12,7 +12,7 @@ import std.stdio;
 uint idx = 0;
 
 bool popCode(ref ubyte opcode)
-{	
+{
 	opcode = Memory.readRip8();
 	return true;
 }
@@ -73,8 +73,8 @@ bool popModRM(ref ModRM modrm)
 
 struct ModRM {
 	ubyte i8;
-	
-	mixin(Bitfield!(i8, 
+
+	mixin(Bitfield!(i8,
 		"rm", 3,
 		"reg", 3,
 		"mod", 2
@@ -84,7 +84,7 @@ struct ModRM {
 enum Prefix:ushort
 {
 	None,
-	
+
 	// force segment selection
 	SegES = 1,
 	SegCS = 2,
@@ -92,18 +92,18 @@ enum Prefix:ushort
 	SegDS = 8,
 	SegFS = 16,
 	SegGS = 32,
-	
+
 	Lock = 64,
-	
+
 	OperandSize = 128,
 	AddressSize = 256,
-	
+
 	Rep = 512,
 	Repe = 1024,
 	Repne = 2048,
-	
+
 	// REX Prefixes ( when >= REX0000, mask for the value )
-	
+
 	REX0000 = 4096,
 	REX0001,
 	REX0010,
@@ -112,7 +112,7 @@ enum Prefix:ushort
 	REX0101,
 	REX0110,
 	REX0111,
-	
+
 	REX1000,
 	REX1001,
 	REX1010,
@@ -150,58 +150,58 @@ const Register baseReg[] = [Register.AL, Register.AX, Register.EAX];
 enum FieldType:ushort
 {
 	None = Register.max,		// none
-	
+
 	// IMMEDIATE
-	
+
 	Imm,						// effective immediate
 	Immz,						// conditional immediate
 	Imm8,						// 8 bit immediate
 	Imm16,						// 16 bit immediate
 	Imm32,						// 32 bit immediate
 	Imm64,						// 64 bit immediate
-	
+
 	// REQUIRE MODRM:
-	
+
 	Reg,						// reg field used
 	Regz,
 	Reg8,
 	Reg16,
 	Reg32,
-	
-	Rm,							// rm field used	
+
+	Rm,							// rm field used
 	Rmz,
-	Rm8,	
-	Rm16,	
+	Rm8,
+	Rm16,
 	Rm32,
-	
+
 	// MEMORY OPERAND FROM MODRM
-	
+
 	Mem,
 	Mem8,
 	Mem16,
 	Mem32,
 	Mem64,
-	
+
 	// CONDITIONALLY DO MEM, IF MOD=3, TAKE RM REGISTER
-	
+
 	MemRm,
 	Mem8Rm,
 	Mem16Rm,
 	Mem32Rm,
 	Mem64Rm,
-	
+
 	// SEGMENT REGISTERS
-	
+
 	Segment,
-	
+
 	// FAR POINTER
-	
+
 	FarPtr,
-	
+
 	// VALUES
-	
+
 	One,
-	
+
 }
 
 // 2-byte opcodes
@@ -209,37 +209,37 @@ template Fetch2nd1632(ubyte opcode)
 {
 	const char[] Fetch2nd1632 = `
 		case ` ~ Itoh!(opcode) ~ `:
-				
+
 			if(!popCode(opcode)) { return false; }
-			
+
 			switch(opcode) { ` ~
-			
+
 				// 2nd level opcode fetch
 				Fetch!(0x80, FieldType.None, FieldType.Immz, Opcode.Jo) ~
 				Fetch!(0x81, FieldType.None, FieldType.Immz, Opcode.Jno) ~
 				Fetch!(0x82, FieldType.None, FieldType.Immz, Opcode.Jb) ~
-				Fetch!(0x83, FieldType.None, FieldType.Immz, Opcode.Jnb) ~ 
+				Fetch!(0x83, FieldType.None, FieldType.Immz, Opcode.Jnb) ~
 				Fetch!(0x84, FieldType.None, FieldType.Immz, Opcode.Jz) ~
 				Fetch!(0x85, FieldType.None, FieldType.Immz, Opcode.Jnz) ~
 				Fetch!(0x86, FieldType.None, FieldType.Immz, Opcode.Jbe) ~
 				Fetch!(0x87, FieldType.None, FieldType.Immz, Opcode.Jnbe) ~
-				
+
 				Fetch!(0xa0, FieldType.None, Register.FS, Opcode.Push) ~
 				Fetch!(0xa1, Register.FS, FieldType.None, Opcode.Pop) ~
 				Fetch!(0xa2, FieldType.None, FieldType.None, Opcode.Cpuid) ~
 				Fetch!(0xa3, FieldType.Rm, FieldType.Reg, Opcode.Bt) ~
-			
+
 			`
 				default:
-					
+
 					op = Opcode.Null;
 					accSrc = Access.Null;
 					accDst = Access.Null;
 					accThree = Access.Null;
 					break;
-			
+
 			}
-			
+
 			break;
 	`;
 }
@@ -248,11 +248,11 @@ template Fetch2nd1632(ubyte opcode)
 template Fetch1632()
 {
 	const char[] Fetch1632 = `
-	
+
 		switch(opcode) {
-	
+
 	` ~
-	
+
 		Fetch!(0x00, FieldType.Rm8, FieldType.Reg8, Opcode.Add) ~
 		Fetch!(0x01, FieldType.Rm, FieldType.Reg, Opcode.Add) ~
 		Fetch!(0x02, FieldType.Reg8, FieldType.Rm8, Opcode.Add) ~
@@ -270,7 +270,7 @@ template Fetch1632()
 		Fetch!(0x0d, Register.RAX, FieldType.Immz, Opcode.Or) ~
 		Fetch!(0x0e, FieldType.None, Register.CS, Opcode.Push) ~
 		Fetch2nd1632!(0x0f) ~ // -- 2 byte opcodes -- //
-		// --------------------------------------------------- //		
+		// --------------------------------------------------- //
 		Fetch!(0x10, FieldType.Rm8, FieldType.Reg8, Opcode.Adc) ~
 		Fetch!(0x11, FieldType.Rm, FieldType.Reg, Opcode.Adc) ~
 		Fetch!(0x12, FieldType.Reg8, FieldType.Rm8, Opcode.Adc) ~
@@ -288,7 +288,7 @@ template Fetch1632()
 		Fetch!(0x1d, Register.RAX, FieldType.Immz, Opcode.Sbb) ~
 		Fetch!(0x1e, FieldType.None, Register.DS, Opcode.Push) ~
 		Fetch!(0x1f, Register.DS, FieldType.None, Opcode.Pop) ~
-		// --------------------------------------------------- //	
+		// --------------------------------------------------- //
 		Fetch!(0x20, FieldType.Rm8, FieldType.Reg8, Opcode.And) ~
 		Fetch!(0x21, FieldType.Rm, FieldType.Reg, Opcode.And) ~
 		Fetch!(0x22, FieldType.Reg8, FieldType.Rm8, Opcode.And) ~
@@ -306,7 +306,7 @@ template Fetch1632()
 		Fetch!(0x2d, Register.RAX, FieldType.Immz, Opcode.Sub) ~
 		PreFix!(0x2e, Prefix.SegCS) ~
 		Fetch!(0x2f, FieldType.None, FieldType.None, Opcode.Das) ~
-		// --------------------------------------------------- //	
+		// --------------------------------------------------- //
 		Fetch!(0x30, FieldType.Rm8, FieldType.Reg8, Opcode.Xor) ~
 		Fetch!(0x31, FieldType.Rm, FieldType.Reg, Opcode.Xor) ~
 		Fetch!(0x32, FieldType.Reg8, FieldType.Rm8, Opcode.Xor) ~
@@ -324,7 +324,7 @@ template Fetch1632()
 		Fetch!(0x3d, Register.RAX, FieldType.Immz, Opcode.Cmp) ~
 		PreFix!(0x3e, Prefix.SegDS) ~
 		Fetch!(0x3f, FieldType.None, FieldType.None, Opcode.Aas) ~
-		// --------------------------------------------------- //	
+		// --------------------------------------------------- //
 		Fetch!(0x40, Register.EAX, FieldType.None, Opcode.Inc) ~
 		Fetch!(0x41, Register.ECX, FieldType.None, Opcode.Inc) ~
 		Fetch!(0x42, Register.EDX, FieldType.None, Opcode.Inc) ~
@@ -350,7 +350,7 @@ template Fetch1632()
 		Fetch!(0x54, FieldType.None, Register.RSP, Opcode.Push) ~
 		Fetch!(0x55, FieldType.None, Register.RBP, Opcode.Push) ~
 		Fetch!(0x56, FieldType.None, Register.RSI, Opcode.Push) ~
-		Fetch!(0x57, FieldType.None, Register.RDI, Opcode.Push) ~	
+		Fetch!(0x57, FieldType.None, Register.RDI, Opcode.Push) ~
 		// --------------------------------------------------- //
 		Fetch!(0x58, Register.RAX, FieldType.None, Opcode.Pop) ~
 		Fetch!(0x59, Register.RCX, FieldType.None, Opcode.Pop) ~
@@ -359,7 +359,7 @@ template Fetch1632()
 		Fetch!(0x5c, Register.RSP, FieldType.None, Opcode.Pop) ~
 		Fetch!(0x5d, Register.RBP, FieldType.None, Opcode.Pop) ~
 		Fetch!(0x5e, Register.RSI, FieldType.None, Opcode.Pop) ~
-		Fetch!(0x5f, Register.RDI, FieldType.None, Opcode.Pop) ~	
+		Fetch!(0x5f, Register.RDI, FieldType.None, Opcode.Pop) ~
 		// --------------------------------------------------- //
 		Fetch!(0x60, FieldType.None, FieldType.None, Opcode.PushA) ~
 		Fetch!(0x61, FieldType.None, FieldType.None, Opcode.PopA) ~
@@ -496,9 +496,9 @@ template Fetch1632()
 		Fetch!(0xd6, FieldType.None, FieldType.None, Opcode.Salc) ~
 		Fetch!(0xd7, FieldType.None, FieldType.None, Opcode.Xlat) ~
 		// --------------------------------------------------- //
-		
+
 		// x87 codes //
-		
+
 		// --------------------------------------------------- //
 		Fetch!(0xe0, FieldType.None, FieldType.Imm8, Opcode.Loopne) ~
 		Fetch!(0xe1, FieldType.None, FieldType.Imm8, Opcode.Loope) ~
@@ -524,11 +524,25 @@ template Fetch1632()
 		PreFix!(0xf3, Prefix.Rep) ~ // XXX: Repe???
 		Fetch!(0xf4, FieldType.None, FieldType.None, Opcode.Hlt) ~
 		Fetch!(0xf5, FieldType.None, FieldType.None, Opcode.Cmc) ~
-		// Fetch Special : the first two opcodes selected by modrm.reg get the source 
+		// Fetch Special : the first two opcodes selected by modrm.reg get the source
 		// 		in this case: Imm8 or Immz
 		//		the rest get FieldType.None (do not grab an immediate value)
-		FetchSpecial!(0xf6, FieldType.Rm8, FieldType.Imm8, Opcode.Test, Opcode.Test, Opcode.Not, Opcode.Neg, Opcode.Mul, Opcode.Imul, Opcode.Div, Opcode.Idiv) ~
-		FetchSpecial!(0xf7, FieldType.Rm, FieldType.Immz, Opcode.Test, Opcode.Test, Opcode.Not, Opcode.Neg, Opcode.Mul, Opcode.Imul, Opcode.Div, Opcode.Idiv) ~
+		FetchMod!(0xf6, FieldType.Rm8, FieldType.Imm8, Opcode.Test,
+						FieldType.Rm8, FieldType.Imm8, Opcode.Test,
+						FieldType.Rm8, FieldType.None, Opcode.Not,
+						FieldType.Rm8, FieldType.None, Opcode.Neg,
+						FieldType.Rm8, Register.AL, Opcode.Mul,
+						FieldType.Rm8, FieldType.None, Opcode.Imul,
+						Register.AL, FieldType.Rm8, Opcode.Div,		// destination: specifies quotient result register
+						FieldType.Rm8, FieldType.None, Opcode.Idiv) ~
+		FetchMod!(0xf7, FieldType.Rm, FieldType.Immz, Opcode.Test,
+						FieldType.Rm, FieldType.Immz, Opcode.Test,
+						FieldType.Rm, FieldType.None, Opcode.Not,
+						FieldType.Rm, FieldType.None, Opcode.Neg,
+						FieldType.Rm, Register.RAX, Opcode.Mul,
+						FieldType.Rm, FieldType.None, Opcode.Imul,	// Far Jmp
+						Register.RAX, FieldType.Rm, Opcode.Div,
+						FieldType.Rm, FieldType.None, Opcode.Idiv) ~
 		// --------------------------------------------------- //
 		Fetch!(0xf8, FieldType.None, FieldType.None, Opcode.Clc) ~
 		Fetch!(0xf9, FieldType.None, FieldType.None, Opcode.Stc) ~
@@ -537,7 +551,7 @@ template Fetch1632()
 		Fetch!(0xfc, FieldType.None, FieldType.None, Opcode.Cld) ~
 		Fetch!(0xfd, FieldType.None, FieldType.None, Opcode.Std) ~
 		Fetch!(0xfe, FieldType.Rm8, FieldType.None, Opcode.Inc, Opcode.Dec, Opcode.Null,Opcode.Null,Opcode.Null,Opcode.Null,Opcode.Null,Opcode.Null) ~
-		FetchMod!(0xff, FieldType.Rm, FieldType.None, Opcode.Inc, 
+		FetchMod!(0xff, FieldType.Rm, FieldType.None, Opcode.Inc,
 							FieldType.Rm, FieldType.None, Opcode.Dec,
 							FieldType.None, FieldType.Rm, Opcode.Call,
 							FieldType.Mem, FieldType.None, Opcode.Call,
@@ -545,52 +559,52 @@ template Fetch1632()
 							FieldType.Mem, FieldType.None, Opcode.Jmp,	// Far Jmp
 							FieldType.None, FieldType.Rm, Opcode.Push,
 							FieldType.None, FieldType.None, Opcode.Null) ~
-		
-		
-		
-		
-		
+
+
+
+
+
 	`
-	
+
 	default:
 		op = Opcode.Null;
 		accSrc = Access.Null;
 		accDst = Access.Null;
 		accThree = Access.Null;
-	
+
 	}`;
 }
 
 template PreFix(ubyte opcode, Prefix pfix)
 {
 	const char[] PreFix = `
-	
+
 		case ` ~ Itoh!(opcode) ~ `: prefix |= cast(Prefix)` ~ Itoa!(pfix) ~ `;` ~
-		
+
 		`
 			goto _decodestart;
-	
+
 	`;
 }
 
 template Fetch(ubyte opcode, ushort dst, ushort src, Ops...)
 {
 	const char[] Fetch = `
-	
+
 		case ` ~ Itoh!(opcode) ~ `:` ~
-		
+
 		grabModRM!(src,dst,Ops) ~
 		grabOp!(Ops) ~
 		getDisp!(src,dst) ~
 		getDestination!(dst) ~
-		getSource!(src) ~	
+		getSource!(src) ~
 		getThree!(FieldType.None) ~
-		
+
 		 `
-		
-		
+
+
 			break;
-			
+
 	`;
 }
 
@@ -604,128 +618,128 @@ template FetchMod(ubyte opcode, ushort dst0, ushort src0, ushort op0,
 								ushort dst7, ushort src7, ushort op7)
 {
 	const char[] FetchMod = `
-	
+
 		case ` ~ Itoh!(opcode) ~ `:` ~
-		
+
 			grabModRM!(dst0, src0, op0, op1, op2, op3, op4, op5, op6, op7) ~
 			grabOp!(op0, op1, op2, op3, op4, op5, op6, op7) ~
 			`
 			switch(modrm.reg)
 			{
-				case 0: ` ~ 
-				
+				case 0: ` ~
+
 					getDisp!(src0, dst0) ~
 					getDestination!(dst0) ~
 					getSource!(src0) ~
 					getThree!(FieldType.None) ~
-				
-				` break; 
-				case 1: ` ~ 
-				
+
+				` break;
+				case 1: ` ~
+
 					getDisp!(src1, dst1) ~
 					getDestination!(dst1) ~
 					getSource!(src1) ~
 					getThree!(FieldType.None) ~
-				
-				` break; 
-				case 2: ` ~ 
-				
+
+				` break;
+				case 2: ` ~
+
 					getDisp!(src2, dst2) ~
 					getDestination!(dst2) ~
 					getSource!(src2) ~
 					getThree!(FieldType.None) ~
-				
-				` break; 
-				case 3: ` ~ 
-				
+
+				` break;
+				case 3: ` ~
+
 					getDisp!(src3, dst3) ~
 					getDestination!(dst3) ~
 					getSource!(src3) ~
 					getThree!(FieldType.None) ~
-				
-				` break; 
-				case 4: ` ~ 
-				
+
+				` break;
+				case 4: ` ~
+
 					getDisp!(src4, dst4) ~
 					getDestination!(dst4) ~
 					getSource!(src4) ~
 					getThree!(FieldType.None) ~
-				
-				` break; 
-				case 5: ` ~ 
-				
+
+				` break;
+				case 5: ` ~
+
 					getDisp!(src5, dst5) ~
 					getDestination!(dst5) ~
 					getSource!(src5) ~
 					getThree!(FieldType.None) ~
-				
-				` break; 
-				case 6: ` ~ 
-				
+
+				` break;
+				case 6: ` ~
+
 					getDisp!(src6, dst6) ~
 					getDestination!(dst6) ~
 					getSource!(src6) ~
 					getThree!(FieldType.None) ~
-				
-				` break; 
-				case 7: ` ~ 
-				
+
+				` break;
+				case 7: ` ~
+
 					getDisp!(src7, dst7) ~
 					getDestination!(dst7) ~
 					getSource!(src7) ~
 					getThree!(FieldType.None) ~
-				
-				` break; 
+
+				` break;
 			}
-		
+
 			break;
-	
+
 	`;
 }
 
 template FetchSpecial(ubyte opcode, ushort dst, ushort src, Ops...)
 {
 	const char[] FetchSpecial = `
-	
+
 		case ` ~ Itoh!(opcode) ~ `:` ~
-		
-		grabModRM!(src,dst,Ops) ~ 
+
+		grabModRM!(src,dst,Ops) ~
 		grabOp!(Ops) ~
 		getDisp!(src,dst) ~
 		getDestination!(dst) ~
 		` if (modrm.reg < 2) { ` ~
-			getSource!(src) ~				
+			getSource!(src) ~
 		` } else { ` ~
 			getSource!(FieldType.None) ~
 		` } ` ~
 		getThree!(FieldType.None) ~
-		
+
 		 `
-		
-		
+
+
 			break;
-			
+
 	`;
 }
 
 template Fetch3(ubyte opcode, ushort dst, ushort src, ushort imm, Ops...)
 {
 	const char[] Fetch3 = `
-	
+
 		case ` ~ Itoh!(opcode) ~ `:` ~
-		
+
 		grabModRM!(src,dst,Ops) ~
 		grabOp!(Ops) ~
 		getDisp!(src,dst) ~
 		getDestination!(dst) ~
-		getSource!(src) ~	
+		getSource!(src) ~
 		getThree!(imm) ~
-		
+
 		 `
-		
-		
+
+
 			break;
-			
+
 	`;
 }
 
@@ -768,7 +782,7 @@ template grabOp(Ops...)
 			`case 5: op = ` ~ Itoh!(Ops[5]) ~ `; break;` ~
 			`case 6: op = ` ~ Itoh!(Ops[6]) ~ `; break;` ~
 			`case 7: op = ` ~ Itoh!(Ops[7]) ~ `; break;` ~
-			
+
 			` } `;
 	}
 	else
@@ -784,8 +798,8 @@ template grabOpField(Ops...)
 // will, if necessary, get the ModRM byte
 template grabModRM(ushort src, ushort dst, Ops...)
 {
-	static if (src == FieldType.Reg || src == FieldType.Rm || src == FieldType.Mem || 
-				dst == FieldType.Reg || dst == FieldType.Rm || dst == FieldType.Mem || 
+	static if (src == FieldType.Reg || src == FieldType.Rm || src == FieldType.Mem ||
+				dst == FieldType.Reg || dst == FieldType.Rm || dst == FieldType.Mem ||
 				src == FieldType.Rm8 || src == FieldType.Rm16 || src == FieldType.Rm32 ||
 				dst == FieldType.Rm8 || dst == FieldType.Rm16 || dst == FieldType.Rm32 ||
 				src == FieldType.Segment || dst == FieldType.Segment ||
@@ -809,7 +823,7 @@ template getDestination(ushort dst)
 	{
 		const char[] getDestination = `
 			if (mode == Mode.Real)
-			{			
+			{
 				regDst = cast(ulong)(baseReg[1] + modrm.reg);
 			}
 			else if (mode == Mode.Protected)
@@ -825,12 +839,12 @@ template getDestination(ushort dst)
 	}
 	else static if (dst == FieldType.Rm)
 	{
-		const char[] getDestination = `		
+		const char[] getDestination = `
 			//writefln("RM : ", modrm.rm);
 			if (modrm.mod == 3)
 			{
 				if (mode == Mode.Real)
-				{			
+				{
 					regDst = cast(ulong)(baseReg[1] + modrm.rm);
 				}
 				else if (mode == Mode.Protected)
@@ -842,13 +856,13 @@ template getDestination(ushort dst)
 					// look at prefix
 					assert(false, "long mode Reg not implemented");
 				}
-				
+
 				accDst = Access.Reg;
 			}
 			else
 			{
 				if (mode == Mode.Real)
-				{			
+				{
 					if (modrm.rm == 0) { regDst = cast(ulong)(Register.BX); accDst = Access.OffsetSI; }
 					else if (modrm.rm == 1) { regDst = cast(ulong)(Register.BX); accDst = Access.OffsetDI; }
 					else if (modrm.rm == 2) { regDst = cast(ulong)(Register.BP); accDst = Access.OffsetSI; }
@@ -858,7 +872,7 @@ template getDestination(ushort dst)
 					else if (modrm.rm == 6 && modrm.mod != 0) { regDst = cast(ulong)(Register.BP); accDst = Access.Offset; }
 					else if (modrm.rm == 6) { /* ... disp16 ... */ accDst = Access.Offset0; }
 					else { regDst = cast(ulong)(Register.BX); accDst = Access.Offset; }
-					
+
 					if (modrm.mod == 0 && modrm.rm != 6)
 					{
 						accDst = Access.Addr;
@@ -880,7 +894,7 @@ template getDestination(ushort dst)
 	{
 		const char[] getDestination = `
 			if (mode == Mode.Real)
-			{			
+			{
 				regDst = cast(ulong)(baseReg[1] + modrm.reg);
 			}
 			else
@@ -892,12 +906,12 @@ template getDestination(ushort dst)
 	}
 	else static if (dst == FieldType.Rm8 || dst == FieldType.Rm16 || dst == FieldType.Rm32)
 	{
-		const char[] getDestination = `		
+		const char[] getDestination = `
 			//writefln("RM : ", modrm.rm);
 			if (modrm.mod == 3)
 			{
 				if (mode == Mode.Real)
-				{			
+				{
 					regDst = cast(ulong)(baseReg[` ~ Itoa!(dst - FieldType.Rm8) ~ `] + modrm.rm);
 				}
 				else if (mode == Mode.Protected)
@@ -909,13 +923,14 @@ template getDestination(ushort dst)
 					// look at prefix
 					assert(false, "long mode Reg not implemented");
 				}
-				
+
 				accDst = Access.Reg;
 			}
 			else
 			{
+
 				if (mode == Mode.Real)
-				{			
+				{
 					if (modrm.rm == 0) { regDst = cast(ulong)(Register.BX); accDst = Access.OffsetSI; }
 					else if (modrm.rm == 1) { regDst = cast(ulong)(Register.BX); accDst = Access.OffsetDI; }
 					else if (modrm.rm == 2) { regDst = cast(ulong)(Register.BP); accDst = Access.OffsetSI; }
@@ -925,7 +940,7 @@ template getDestination(ushort dst)
 					else if (modrm.rm == 6 && modrm.mod != 0) { regDst = cast(ulong)(Register.BP); accDst = Access.Offset; }
 					else if (modrm.rm == 6) { /* ... disp16 ... */ accDst = Access.Offset0; }
 					else { regDst = cast(ulong)(Register.BX); accDst = Access.Offset; }
-					
+
 					if (modrm.mod == 0 && modrm.rm != 6)
 					{
 						accDst = Access.Addr;
@@ -965,7 +980,7 @@ template getDestination(ushort dst)
 			{
 				// rm is register
 				if (mode == Mode.Real)
-				{			
+				{
 					regDst = cast(ulong)(baseReg[1] + modrm.rm);
 				}
 				else if (mode == Mode.Protected)
@@ -975,7 +990,7 @@ template getDestination(ushort dst)
 				else
 				{
 					assert(false, "long mode Reg not implemented");
-				}			
+				}
 				accDst = Access.Reg;
 			}
 			else
@@ -989,7 +1004,7 @@ template getDestination(ushort dst)
 				{
 					if (!popImm16(regDst)) { return false; }
 				}
-				else 
+				else
 				{
 					// long
 					if (!popImm32(regDst)) { return false; }
@@ -998,32 +1013,32 @@ template getDestination(ushort dst)
 			}
 		`;
 	}
-	else static if (dst == FieldType.Mem)		
+	else static if (dst == FieldType.Mem)
 	{
 		const char[] getDestination = ``;
 	}
-	else static if (dst == FieldType.Mem8)		
+	else static if (dst == FieldType.Mem8)
 	{
 		const char[] getDestination = `
 			if (!popImm8(regDst)) { return false; }
 			accDst = Access.Mem;
 		`;
 	}
-	else static if (dst == FieldType.Mem16)		
+	else static if (dst == FieldType.Mem16)
 	{
 		const char[] getDestination = `
 			if (!popImm16(regDst)) { return false; }
 			accDst = Access.Mem;
 		`;
 	}
-	else static if (dst == FieldType.Mem32)		
+	else static if (dst == FieldType.Mem32)
 	{
 		const char[] getDestination = `
 			if (!popImm32(regDst)) { return false; }
 			accDst = Access.Mem;
 		`;
 	}
-	else static if (dst == FieldType.Mem64)		
+	else static if (dst == FieldType.Mem64)
 	{
 		const char[] getDestination = `
 			if (!popImm64(regDst)) { return false; }
@@ -1072,7 +1087,7 @@ template getSource(ushort src)
 	{
 		const char[] getSource = `
 			if (mode == Mode.Real)
-			{			
+			{
 				regSrc = cast(ulong)(baseReg[1] + modrm.reg);
 			}
 			else if (mode == Mode.Protected)
@@ -1092,7 +1107,7 @@ template getSource(ushort src)
 			if (modrm.mod == 3)
 			{
 				if (mode == Mode.Real)
-				{			
+				{
 					regSrc = cast(ulong)(baseReg[1] + modrm.rm);
 				}
 				else if (mode == Mode.Protected)
@@ -1102,13 +1117,13 @@ template getSource(ushort src)
 				else
 				{
 					assert(false, "long mode Reg not implemented");
-				}			
+				}
 				accSrc = Access.Reg;
 			}
 			else
 			{
 				if (mode == Mode.Real)
-				{			
+				{
 					if (modrm.rm == 0) { regSrc = cast(ulong)(Register.BX); accSrc = Access.OffsetSI; }
 					else if (modrm.rm == 1) { regSrc = cast(ulong)(Register.BX); accSrc = Access.OffsetDI; }
 					else if (modrm.rm == 2) { regSrc = cast(ulong)(Register.BP); accSrc = Access.OffsetSI; }
@@ -1118,7 +1133,7 @@ template getSource(ushort src)
 					else if (modrm.rm == 6 && modrm.mod != 0) { regSrc = cast(ulong)(Register.BP); accSrc = Access.Offset; }
 					else if (modrm.rm == 6) { /* ... disp16 ... */ accSrc = Access.Offset0; }
 					else { regSrc = cast(ulong)(Register.BX); accSrc = Access.Offset; }
-					
+
 					if (modrm.mod == 0 && modrm.rm != 6)
 					{
 						accSrc = Access.Addr;
@@ -1134,14 +1149,14 @@ template getSource(ushort src)
 					assert(false, "long mode Reg not implemented");
 				}
 			}
-			
+
 			`;
 	}
 	else static if (src == FieldType.Regz)
 	{
 		const char[] getSource = `
 			if (mode == Mode.Real)
-			{			
+			{
 				regSrc = cast(ulong)(baseReg[1] + modrm.reg);
 			}
 			else
@@ -1158,7 +1173,7 @@ template getSource(ushort src)
 			if (modrm.mod == 3)
 			{
 				if (mode == Mode.Real)
-				{			
+				{
 					regSrc = cast(ulong)(baseReg[1] + modrm.rm);
 				}
 				else
@@ -1170,7 +1185,7 @@ template getSource(ushort src)
 			else
 			{
 				if (mode == Mode.Real)
-				{			
+				{
 					if (modrm.rm == 0) { regSrc = cast(ulong)(Register.BX); accSrc = Access.OffsetSI; }
 					else if (modrm.rm == 1) { regSrc = cast(ulong)(Register.BX); accSrc = Access.OffsetDI; }
 					else if (modrm.rm == 2) { regSrc = cast(ulong)(Register.BP); accSrc = Access.OffsetSI; }
@@ -1180,7 +1195,7 @@ template getSource(ushort src)
 					else if (modrm.rm == 6 && modrm.mod != 0) { regSrc = cast(ulong)(Register.BP); accSrc = Access.Offset; }
 					else if (modrm.rm == 6) { /* ... disp16 ... */ accSrc = Access.Offset0; }
 					else { regSrc = cast(ulong)(Register.BX); accSrc = Access.Offset; }
-					
+
 					if (modrm.mod == 0 && modrm.rm != 6)
 					{
 						accSrc = Access.Addr;
@@ -1196,22 +1211,23 @@ template getSource(ushort src)
 					assert(false, "long mode Reg not implemented");
 				}
 			}
-			
+
 			`;
 	}
 	else static if (src == FieldType.Rm8 || src == FieldType.Rm16 || src == FieldType.Rm32)
 	{
 		const char[] getSource = `
 			//writefln("RM-- : ", modrm.rm, " MOD: ", modrm.mod, " REG: ", modrm.reg);
+			//operandSize = ` ~ Itoa!((src - FieldType.Rm8) * 8) ~ `;
 			if (modrm.mod == 3)
 			{
-				regSrc = cast(ulong)(baseReg[` ~ Itoa!(src - FieldType.Rm8) ~ `] + modrm.rm);	
+				regSrc = cast(ulong)(baseReg[` ~ Itoa!(src - FieldType.Rm8) ~ `] + modrm.rm);
 				accSrc = Access.Reg;
 			}
 			else
 			{
 				if (mode == Mode.Real)
-				{			
+				{
 					if (modrm.rm == 0) { regSrc = cast(ulong)(Register.BX); accSrc = Access.OffsetSI; }
 					else if (modrm.rm == 1) { regSrc = cast(ulong)(Register.BX); accSrc = Access.OffsetDI; }
 					else if (modrm.rm == 2) { regSrc = cast(ulong)(Register.BP); accSrc = Access.OffsetSI; }
@@ -1221,7 +1237,7 @@ template getSource(ushort src)
 					else if (modrm.rm == 6 && modrm.mod != 0) { regSrc = cast(ulong)(Register.BP); accSrc = Access.Offset; }
 					else if (modrm.rm == 6) { /* ... disp16 ... */ accSrc = Access.Offset0; }
 					else { regSrc = cast(ulong)(Register.BX); accSrc = Access.Offset; }
-					
+
 					if (modrm.mod == 0 && modrm.rm != 6)
 					{
 						accSrc = Access.Addr;
@@ -1237,7 +1253,7 @@ template getSource(ushort src)
 					assert(false, "long mode Reg not implemented");
 				}
 			}
-			
+
 		`;
 	}
 	else static if (src == FieldType.Segment)
@@ -1255,11 +1271,11 @@ template getSource(ushort src)
 			accSrc = Access.Reg;
 		`;
 	}
-	else static if (src == FieldType.Imm)		
+	else static if (src == FieldType.Imm)
 	{
 		const char[] getSource = `
 			if (mode == Mode.Real)
-			{			
+			{
 				if (!popImm16(regSrc)) { return false; }
 				accSrc = Access.Imm16;
 			}
@@ -1275,11 +1291,11 @@ template getSource(ushort src)
 			}
 		`;
 	}
-	else static if (src == FieldType.Immz)		
+	else static if (src == FieldType.Immz)
 	{
 		const char[] getSource = `
 			if (mode == Mode.Real)
-			{			
+			{
 				if (!popImm16(regSrc)) { return false; }
 				accSrc = Access.Imm16;
 			}
@@ -1290,28 +1306,28 @@ template getSource(ushort src)
 			}
 		`;
 	}
-	else static if (src == FieldType.Imm8)		
+	else static if (src == FieldType.Imm8)
 	{
 		const char[] getSource = `
 			if (!popImm8(regSrc)) { return false; }
 			accSrc = Access.Imm8;
 		`;
 	}
-	else static if (src == FieldType.Imm16)		
+	else static if (src == FieldType.Imm16)
 	{
 		const char[] getSource = `
 			if (!popImm16(regSrc)) { return false; }
 			accSrc = Access.Imm16;
 		`;
 	}
-	else static if (src == FieldType.Imm32)		
+	else static if (src == FieldType.Imm32)
 	{
 		const char[] getSource = `
 			if (!popImm32(regSrc)) { return false; }
 			accSrc = Access.Imm32;
 		`;
 	}
-	else static if (src == FieldType.Imm64)		
+	else static if (src == FieldType.Imm64)
 	{
 		const char[] getSource = `
 			if (!popImm64(regSrc)) { return false; }
@@ -1325,7 +1341,7 @@ template getSource(ushort src)
 			{
 				// rm is register
 				if (mode == Mode.Real)
-				{			
+				{
 					regSrc = cast(ulong)(baseReg[1] + modrm.rm);
 				}
 				else if (mode == Mode.Protected)
@@ -1335,7 +1351,7 @@ template getSource(ushort src)
 				else
 				{
 					assert(false, "long mode Reg not implemented");
-				}			
+				}
 				accSrc = Access.Reg;
 			}
 			else
@@ -1349,7 +1365,7 @@ template getSource(ushort src)
 				{
 					if (!popImm16(regSrc)) { return false; }
 				}
-				else 
+				else
 				{
 					// long
 					if (!popImm32(regSrc)) { return false; }
@@ -1358,20 +1374,20 @@ template getSource(ushort src)
 			}
 		`;
 	}
-	else static if (src == FieldType.Mem)	
+	else static if (src == FieldType.Mem)
 	{
 		const char[] getSource = `
 			//writefln("RM-- : ", modrm.rm, " MOD: ", modrm.mod, " REG: ", modrm.reg);
 			if (modrm.mod == 3)
 			{
 				// Invalid?
-				op = Opcode.Null;				
+				op = Opcode.Null;
 				accDst = Access.Null;
 			}
 			else
 			{
 				if (mode == Mode.Real)
-				{			
+				{
 					if (modrm.rm == 0) { regSrc = cast(ulong)(Register.BX); accSrc = Access.OffsetSI; }
 					else if (modrm.rm == 1) { regSrc = cast(ulong)(Register.BX); accSrc = Access.OffsetDI; }
 					else if (modrm.rm == 2) { regSrc = cast(ulong)(Register.BP); accSrc = Access.OffsetSI; }
@@ -1381,7 +1397,7 @@ template getSource(ushort src)
 					else if (modrm.rm == 6 && modrm.mod != 0) { regSrc = cast(ulong)(Register.BP); accSrc = Access.Offset; }
 					else if (modrm.rm == 6) { /* ... disp16 ... */ accSrc = Access.Offset0; }
 					else { regSrc = cast(ulong)(Register.BX); accSrc = Access.Offset; }
-					
+
 					if (modrm.mod == 0 && modrm.rm != 6)
 					{
 						accSrc = Access.Addr;
@@ -1399,28 +1415,28 @@ template getSource(ushort src)
 			}
 		`;
 	}
-	else static if (src == FieldType.Mem8)		
+	else static if (src == FieldType.Mem8)
 	{
 		const char[] getSource = `
 			if (!popImm8(regSrc)) { return false; }
 			accSrc = Access.Mem;
 		`;
 	}
-	else static if (src == FieldType.Mem16)		
+	else static if (src == FieldType.Mem16)
 	{
 		const char[] getSource = `
 			if (!popImm16(regSrc)) { return false; }
 			accSrc = Access.Mem;
 		`;
 	}
-	else static if (src == FieldType.Mem32)		
+	else static if (src == FieldType.Mem32)
 	{
 		const char[] getSource = `
 			if (!popImm32(regSrc)) { return false; }
 			accSrc = Access.Mem;
 		`;
 	}
-	else static if (src == FieldType.Mem64)		
+	else static if (src == FieldType.Mem64)
 	{
 		const char[] getSource = `
 			if (!popImm64(regSrc)) { return false; }
@@ -1477,7 +1493,7 @@ template getThree(ushort src)
 	{
 		const char[] getThree = `
 			regThree = cast(ulong)(baseReg[` ~ Itoa!(src - FieldType.Rm8) ~ `] + modrm.rm);
-			
+
 			// access is defined by the mod field
 			switch(modrm.mod)
 			{
@@ -1503,61 +1519,61 @@ template getThree(ushort src)
 			accThree = Access.Reg;
 		`;
 	}
-	else static if (src == FieldType.Imm8)		
+	else static if (src == FieldType.Imm8)
 	{
 		const char[] getThree = `
 			if (!popImm8(regThree)) { return false; }
 			accThree = Access.Imm8;
 		`;
 	}
-	else static if (src == FieldType.Imm16)		
+	else static if (src == FieldType.Imm16)
 	{
 		const char[] getThree = `
 			if (!popImm16(regThree)) { return false; }
 			accThree = Access.Imm16;
 		`;
 	}
-	else static if (src == FieldType.Imm32)		
+	else static if (src == FieldType.Imm32)
 	{
 		const char[] getThree = `
 			if (!popImm32(regThree)) { return false; }
 			accThree = Access.Imm32;
 		`;
 	}
-	else static if (src == FieldType.Imm64)		
+	else static if (src == FieldType.Imm64)
 	{
 		const char[] getThree = `
 			if (!popImm64(regThree)) { return false; }
 			accThree = Access.Imm64;
 		`;
 	}
-	else static if (src == FieldType.Mem)	
+	else static if (src == FieldType.Mem)
 	{
 		const char[] getThree = `
 		`;
 	}
-	else static if (src == FieldType.Mem8)		
+	else static if (src == FieldType.Mem8)
 	{
 		const char[] getThree = `
 			if (!popImm8(regThree)) { return false; }
 			accThree = Access.Mem;
 		`;
 	}
-	else static if (src == FieldType.Mem16)		
+	else static if (src == FieldType.Mem16)
 	{
 		const char[] getThree = `
 			if (!popImm16(regThree)) { return false; }
 			accThree = Access.Mem;
 		`;
 	}
-	else static if (src == FieldType.Mem32)		
+	else static if (src == FieldType.Mem32)
 	{
 		const char[] getThree = `
 			if (!popImm32(regThree)) { return false; }
 			accThree = Access.Mem;
 		`;
 	}
-	else static if (src == FieldType.Mem64)		
+	else static if (src == FieldType.Mem64)
 	{
 		const char[] getThree = `
 			if (!popImm64(regThree)) { return false; }
@@ -1571,7 +1587,7 @@ template getThree(ushort src)
 			regThree = 1;
 		`;
 	}
-	else 
+	else
 	{
 		const char[] getThree = `
 			accThree = Access.Null;
@@ -1586,18 +1602,18 @@ enum Mode:ushort
 	Long,
 }
 
-bool decode1632(ref ushort op, ref Mode mode, ref Access accSrc, ref ulong regSrc, ref Access accDst, ref ulong regDst, ref Access accThree, ref ulong regThree, ref Prefix prefix, ref long disp)
+bool decode1632(ref ushort op, ref Mode mode, ref Access accSrc, ref ulong regSrc, ref Access accDst, ref ulong regDst, ref Access accThree, ref ulong regThree, ref Prefix prefix, ref long disp) //, ref ulong operandSize)
 {
 	ubyte opcode;
 	ModRM modrm;
 	prefix = Prefix.None;
-	
+//	operandSize = (cast(ushort)mode+1) * 8;
 
 _decodestart:
-		
+
 	if(!popCode(opcode)) { return false; }
-	
+
 	mixin(Fetch1632!());
-		
+
 	return true;
 }
