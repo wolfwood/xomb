@@ -32,6 +32,13 @@ struct ConsoleInfo
 	ubyte* buffer;
 }
 
+struct VESAInfo
+{
+	ulong int10Addr;
+	ubyte* biosRegion;
+	ulong biosRegionLength;
+}
+
 // IDs of the system calls
 enum SyscallID : ulong
 {
@@ -44,7 +51,9 @@ enum SyscallID : ulong
 	DepositKey,
 	InitKeyboard,
 	InitConsole,
-  MakeEnvironment,
+	InitVESA,
+	MapDevice,
+	MakeEnvironment
 }
 
 // Names of system calls
@@ -59,7 +68,9 @@ alias Tuple!
 	"depositKey",	// depositKey()
 	"initKeyboard",	// initKeyboard()
 	"initConsole",	// initConsole()
-  "makeEnvironment" //makeEnvironment()
+	"initVESA",		// initVESA()
+	"mapDevice",	// mapDevice()
+	"makeEnvironment" // makeEnvironment()
 ) SyscallNames;
 
 
@@ -74,8 +85,10 @@ alias Tuple!
 	void,			// error
 	void,			// depositKey
 	KeyboardInfo,	// initKeyboard
-	ConsoleInfo,		// initConsole
-  void //makeEnvironment
+	ConsoleInfo,	// initConsole
+	VESAInfo,		// initVESA
+	void*,			// mapDevice
+	void			// makeEnvironment
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -115,14 +128,23 @@ struct InitKeyboardArgs
 {
 }
 
-
 struct InitConsoleArgs
 {
 }
 
+struct InitVESAArgs
+{
+}
+
+struct MapDeviceArgs
+{
+	void* physicalAddress;
+	ulong physicalLength;
+}
+
 struct MakeEnvironmentArgs
 {
-  int id;
+	int id;
 }
 
 

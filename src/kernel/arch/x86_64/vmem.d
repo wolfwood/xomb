@@ -40,7 +40,7 @@ import kernel.core.regions;
 //					PL1[510]
 //					PL1[509] - REGISTER_STACK
 //					  ...
-//					PL1[0] - DEVICE HEAP
+//			PL3[0] - DEVICE HEAP
 // PL4[0] - Environment space
 //			PL3[0] - Environment shared among all cpus + heap
 
@@ -75,7 +75,7 @@ const ulong PAGE_SIZE = 4096;			// 4k pages for us right now
 const ulong KERNEL_STACK_PAGES = 1;
 
 // size of the user stack
-const ulong ENVIRONMENT_STACK_PAGES = 2;
+const ulong ENVIRONMENT_STACK_PAGES = 6;
 
 // size of the register stack (context switch storage)
 const ulong REGISTER_STACK_PAGES = 1;
@@ -102,7 +102,7 @@ const ulong CPU_INFO_ADDR = (FormVirtualAddress!(510,511,511,512 - KERNEL_STACK_
 const ulong CPU_PAGETABLE_ADDR = (FormVirtualAddress!(510,511,511,512-KERNEL_STACK_PAGES - CPU_INFO_PAGES - 1));
 
 // environment device page start
-const ulong ENVIRONMENT_DEVICE_HEAP_START = (FormVirtualAddress!(509,511,511,0));
+const ulong ENVIRONMENT_DEVICE_HEAP_START = (FormVirtualAddress!(509,0,0,0));
 
 // RAM mapping
 const ulong VM_BASE_INDEX = 0;	// This index is where on the pageLevel3[] the physical memory should start to be mapped in
@@ -421,7 +421,7 @@ align(1) struct PageTable
 	}
 
 	// TODO: lock these pages down!!!
-	void* allocPages(int amt)
+	void* allocPages(int amt, bool zero = false)
 	{
 		//kprintfln!("allocation")();
 		void* ret = virtEnd;
@@ -430,6 +430,14 @@ align(1) struct PageTable
 		{
 			//kprintfln!("inner loop")();
 			void* physPage = pMem.requestPage();
+
+			if (zero)
+			{
+				ubyte* physSection = cast(ubyte*)physPage;
+				physSection += vMem.VM_BASE_ADDR;
+
+				physSection[0..vMem.PAGE_SIZE] = 0;
+			}
 
 			pml3* pl3;
 			pml2* pl2;
@@ -506,7 +514,7 @@ align(1) struct PageTable
 	}
 
 	// TODO: lock these pages down!!!
-	void* allocDevicePage(out void* virtAddr, bool allowWrite, void* physPage = null)
+	void* allocDevicePage(out void* virtAddr, bool allowWrite, void* physPage = cast(void*)0xffffffffffffffff)
 	{
 		void* ret = cast(void*)ENVIRONMENT_DEVICE_HEAP_START;
 		ret += vMem.PAGE_SIZE * devicePages;
@@ -516,7 +524,7 @@ align(1) struct PageTable
 		// not be freed
 		bool noPhysAlloc = true;
 
-		if (physPage is null)
+		if (physPage == cast(void*)0xffffffffffffffff)
 		{
 			noPhysAlloc = false;
 			physPage = pMem.requestPage();

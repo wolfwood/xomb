@@ -39,11 +39,11 @@ ASM = kernel/arch/x86_64/boot/boot.S kernel/arch/x86_64/boot/load.S kernel/arch/
 
 ARCHFILES = kernel/arch/x86_64/syscall.d kernel/arch/x86_64/globals.d kernel/arch/x86_64/cpu.d kernel/arch/x86_64/gdt.d kernel/arch/x86_64/lapic.d kernel/arch/x86_64/ioapic.d kernel/arch/x86_64/idt.d kernel/arch/x86_64/vmem.d kernel/arch/x86_64/hpet.d kernel/arch/x86_64/locks.d kernel/arch/x86_64/mp.d kernel/arch/x86_64/pic.d kernel/arch/x86_64/acpi.d kernel/arch/x86_64/timer.d kernel/arch/x86_64/descriptors.d kernel/arch/x86_64/pagefault.d
 
-COREFILES = kernel/core/elf.d kernel/core/syscall.d kernel/core/log.d kernel/kmain.d kernel/dev/vga.d kernel/core/multiboot.d gdb/kgdb_support.d gdb/kgdb_stub.d kernel/core/regions.d kernel/mem/pmem.d config.d kernel/core/error.d kernel/arch/locks.d kernel/dev/keyboard.d kernel/environment/scheduler.d kernel/core/modules.d kernel/environment/table.d kernel/environment/cputable.d
+COREFILES = kernel/core/elf.d kernel/core/syscall.d kernel/core/log.d kernel/kmain.d kernel/dev/vga.d kernel/core/multiboot.d gdb/kgdb_support.d gdb/kgdb_stub.d kernel/core/regions.d kernel/mem/pmem.d config.d kernel/core/error.d kernel/arch/locks.d kernel/dev/keyboard.d kernel/environment/scheduler.d kernel/core/modules.d kernel/environment/table.d kernel/environment/cputable.d kernel/dev/vesa.d
 
-RTFILES := $(shell ls std/typeinfo/*.d) object.d kernel/core/invariant.d user/libd.d std/c/stdarg.d kernel/core/system.d user/syscall.d kernel/core/util.d kernel/arch/x86_64/usersyscall.d user/malloc.d user/basicio.d std/stdarg.d libos/keyboard.d libos/console.d
+RTFILES := $(shell ls std/typeinfo/*.d) object.d kernel/core/invariant.d user/libd.d std/c/stdarg.d kernel/core/system.d user/syscall.d kernel/core/util.d kernel/arch/x86_64/usersyscall.d user/malloc.d user/basicio.d std/stdarg.d libos/keyboard.d libos/console.d user/xombemu/x86emu.d user/xombemu/x86/memory.d user/xombemu/x86/stack.d user/xombemu/x86/opcodes.d user/xombemu/x86/fetch.d user/xombemu/x86/registers.d user/xombemu/x86/exception.d user/xombemu/x86/interrupt.d libos/vesa.d user/xomblogo.d user/xombtextlogo.d
 
-APP := application/application.d application/application2.d application/xsh.d application/intfic.d
+APP := application/application.d application/application2.d application/xsh.d application/intfic.d application/vesademo.d
 APP_OBJS = $(APP:.d=.o)
 OBJS = $(ASM:.S=.o) $(COREFILES:.d=.o) $(RTFILES:.d=.o) $(ARCHFILES:.d=.o)
 
@@ -66,9 +66,10 @@ all: setup $(KERNEL_IMG)
 	rm -f application2.dump && x86_64-pc-elf-objdump -d -S -r application/application2 > application/application2.dump
 	rm -f xsh.dump && x86_64-pc-elf-objdump -d -S -r application/xsh > application/xsh.dump
 	rm -f intfic.dump && x86_64-pc-elf-objdump -d -S -r application/intfic > application/intfic.dump
+	rm -f vesademo.dump && x86_64-pc-elf-objdump -d -S -r application/vesademo > application/vesademo.dump
 	@echo ""
 	@echo "OS successfully compiled, to make a bootable CD ISO, run:"
-	@echo " make iso"
+	@echo "        make iso"
 
 # assembly compile
 .S.o:
@@ -85,6 +86,7 @@ $(KERNEL_IMG): $(OBJS) $(APP_OBJS)
 	$(LD) $(APP_LDFLAGS) -o application/application2 application/application2.o -dN $(RUNTIMEOBJS)
 	$(LD) $(APP_LDFLAGS) -o application/xsh application/xsh.o -dN $(RUNTIMEOBJS)
 	$(LD) $(APP_LDFLAGS) -o application/intfic application/intfic.o -dN $(RUNTIMEOBJS)
+	$(LD) $(APP_LDFLAGS) -o application/vesademo application/vesademo.o -dN $(RUNTIMEOBJS)
 
 # creates the GRUB iso image
 iso: all
@@ -96,16 +98,19 @@ iso: all
 	cp ./application/application2 $(ISO_PATH)$(BOOT_PATH)
 	cp ./application/xsh $(ISO_PATH)$(BOOT_PATH)
 	cp ./application/intfic $(ISO_PATH)$(BOOT_PATH)
-	mkisofs -R -b $(GRUB_PATH)$(GRUB_IMG) -no-emul-boot -boot-load-size 8 -input-charset utf-8 -boot-info-table -o $(ISO_NAME) $(ISO_PATH)
+	cp ./application/vesademo $(ISO_PATH)$(BOOT_PATH)
+	mkisofs -R -b $(GRUB_PATH)$(GRUB_IMG) -no-emul-boot -boot-load-size 8 -boot-info-table -o $(ISO_NAME) $(ISO_PATH)
 	@echo
 	@echo "ISO successfully made!"
-	@echo "       start: sudo xm create ~/domu.hvm"
-	@echo "       stop : sudo xm destroy XOmB-<username>"
+	@echo "        qemu-system-x86_64 -cdrom xomb.iso -boot d"
+	@echo "     or bochs -q"
 
 # removes .o and the kernel executable
 clean:
 	rm -f $(OBJS) $(KERNEL_IMG)
-	rm -f appplication/*.o
+	rm -f application/*.o
+	rm -f application/*.dump
+	rm -f xomb.dump
 
 # along with the above, removes the files from the iso
 # and removes the application executable
@@ -116,6 +121,7 @@ veryclean: clean
 	rm -f ./application/application2
 	rm -f ./application/xsh
 	rm -f ./application/intfic
+	rm -f ./application/vesadump
 
 # run this after checking out a clean tree
 setup: bochsrc config.d
