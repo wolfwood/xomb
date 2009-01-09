@@ -16,7 +16,7 @@ import kernel.mem.pmem;
 import kernel.core.multiboot;
 
 import kernel.dev.vga;
-
+import kernel.dev.vesa;
 import kernel.dev.keyboard;
 
 //imports
@@ -76,6 +76,7 @@ extern(C) void kmain(uint magic, uint addr)
 	kprintf!("--------------------------------------------------------------------------------")();
 	Console.resetColors();
 
+
 	// get the globals from the linker definitions
 	printLogLine("Initializing Globals");
 	Globals.init();
@@ -114,6 +115,8 @@ extern(C) void kmain(uint magic, uint addr)
 
 	// boot and initialize the primary CPU
 	Cpu.install();
+
+	VESA.init();
 
 	//kprintfln!("Setting lstar, star and SF_MASK...")();
 
@@ -164,7 +167,6 @@ extern(C) void kmain(uint magic, uint addr)
 	}*/
 
 	Keyboard.init();
-
 	//kprintfln!("Keyboards Inited!!!")();
 
 	// Turn general interrupts on, so the computer can deal with errors and faults.

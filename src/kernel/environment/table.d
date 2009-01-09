@@ -103,36 +103,71 @@ void load(Environment* environ)
 // will load the environment (using grub module)
 void loadGRUBModule(Environment* environ, uint modNumber)
 {
-  // code lives at where GRUB tells us it lives
-  // contextSpace...
+	// code lives at where GRUB tells us it lives
+	// contextSpace...
 
-  // map in context space (1:1 mapping)
-  // map(physaddr, length)
+	// map in context space (1:1 mapping)
+	// map(physaddr, length)
 
-  // cpus are set to 1
-  environ.cpuCount = 1;
+	// cpus are set to 1
+	environ.cpuCount = 1;
 
-  environ.pageTable.map(cast(ubyte*)GRUBModules.getStart(modNumber), GRUBModules.getLength(modNumber), cast(void*)0x400000);
 
-  environ.entry = 0x400000 + GRUBModules.getEntry(modNumber);
+	kprintfln!("Module {} start: {} length: {}")( modNumber, GRUBModules.getStart(modNumber), GRUBModules.getLength(modNumber));
 
-  // look at BSS
-  void* bss;
-  uint bssLength;
+	environ.pageTable.map(cast(ubyte*)GRUBModules.getStart(modNumber), GRUBModules.getLength(modNumber), cast(void*)0x400000);
 
-  if (GRUBModules.fillBSSInfo(modNumber, bss, bssLength))
-  {
-    //kprintfln!("Module {} bss: {x} for {} bytes")(modNumber, bss, bssLength);
+	environ.entry = 0x400000 + GRUBModules.getEntry(modNumber);
 
-    // zero the section out
-    ubyte* bssSection = cast(ubyte*)bss;
+	// look at BSS
+	void* bss;
+	uint bssLength;
 
-    bssSection[0 .. bssLength] = 0;
-  }
-  else
-  {
-    //kprintfln!("Module {} no BSS!")(modNumber);
-  }
+	if (GRUBModules.fillBSSInfo(modNumber, bss, bssLength))
+	{
+		//kprintfln!("Module {} bss: {x} for {} bytes")(modNumber, bss, bssLength);
+
+		// process:
+		// 1. alloc section
+		// 2. zero the section out
+
+		// bssSection is a pointer to the base of the bss section
+		ubyte* bssSection = cast(ubyte*)bss;
+
+		// align bss to page (anything before the first page alignment is already mapped)
+		// everything from bssAligned to bssAligned + bssLength will be allocated
+		void* bssAligned = bssSection;
+		ulong baseLength;
+		if ((cast(ulong)bssAligned % vMem.PAGE_SIZE) != 0)
+		{
+			bssAligned += (vMem.PAGE_SIZE - (cast(ulong)bssSection % vMem.PAGE_SIZE));
+
+			baseLength = bssAligned - bssSection;
+			if (baseLength > bssLength) { baseLength = bssLength; }
+		}
+		else
+		{
+			baseLength = 0;
+		}
+
+		if (baseLength > 0)
+		{
+			bssSection[0..baseLength] = 0;
+		}
+
+void* curptr=bssAligned;
+		for(; curptr < (bssSection + bssLength); curptr += vMem.PAGE_SIZE)
+		{
+				//kprintfln!("{}")(curptr);
+			environ.pageTable.allocPages(1,true);
+		}
+
+		//bssSection[0 .. bssLength] = 0;
+	}
+	else
+	{
+		//kprintfln!("Module {} no BSS!")(modNumber);
+	}
 }
 
 // code executed as this environment gets set to run
