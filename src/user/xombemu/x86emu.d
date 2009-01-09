@@ -56,6 +56,78 @@ ulong rotateMasks64[64] = [0x0000000000000000UL, 0x8000000000000000UL, 0xC000000
 						   0xFFFFFFFFFFFFFF00UL, 0xFFFFFFFFFFFFFF80UL, 0xFFFFFFFFFFFFFFC0UL, 0xFFFFFFFFFFFFFFE0UL,
 						   0xFFFFFFFFFFFFFFF0UL, 0xFFFFFFFFFFFFFFF8UL, 0xFFFFFFFFFFFFFFFCUL, 0xFFFFFFFFFFFFFFFEUL];
 
+// masks for finding the new carry bit in a rotation
+ulong rotateCarryBit16[32] = [0x0000, 0x8000, 0x4000, 0x2000, 0x1000, 0x0800, 0x0400, 0x0200,
+							  0x0100, 0x0080, 0x0040, 0x0020, 0x0010, 0x0008, 0x0004, 0x0002,
+							  0x0001, 0x0000, 0x8000, 0x4000, 0x2000, 0x1000, 0x0800, 0x0400,
+							  0x0200, 0x0100, 0x0080, 0x0040, 0x0020, 0x0010, 0x0008, 0x0004];
+
+ulong rotateCarryBit32[32] = [0x00000000, 0x80000000, 0x40000000, 0x20000000, 0x10000000, 0x08000000, 0x04000000, 0x02000000,
+							  0x01000000, 0x00800000, 0x00400000, 0x00200000, 0x00100000, 0x00080000, 0x00040000, 0x00020000,
+							  0x00010000, 0x00008000, 0x00004000, 0x00002000, 0x00001000, 0x00000800, 0x00000400, 0x00000200,
+							  0x00000100, 0x00000080, 0x00000040, 0x00000020, 0x00000010, 0x00000008, 0x00000004, 0x00000002];
+
+ulong rotateCarryBit64[64] = [0x0000000000000000UL, 0x8000000000000000UL, 0x4000000000000000UL, 0x2000000000000000UL,
+							  0x1000000000000000UL, 0x0800000000000000UL, 0x0400000000000000UL, 0x0200000000000000UL,
+							  0x0100000000000000UL, 0x0080000000000000UL, 0x0040000000000000UL, 0x0020000000000000UL,
+							  0x0010000000000000UL, 0x0008000000000000UL, 0x0004000000000000UL, 0x0002000000000000UL,
+							  0x0001000000000000UL, 0x0000800000000000UL, 0x0000400000000000UL, 0x0000200000000000UL,
+							  0x0000100000000000UL, 0x0000080000000000UL, 0x0000040000000000UL, 0x0000020000000000UL,
+							  0x0000010000000000UL, 0x0000008000000000UL, 0x0000004000000000UL, 0x0000002000000000UL,
+							  0x0000001000000000UL, 0x0000000800000000UL, 0x0000000400000000UL, 0x0000000200000000UL,
+							  0x0000000100000000UL, 0x0000000080000000UL, 0x0000000040000000UL, 0x0000000020000000UL,
+							  0x0000000010000000UL, 0x0000000008000000UL, 0x0000000004000000UL, 0x0000000002000000UL,
+							  0x0000000001000000UL, 0x0000000000800000UL, 0x0000000000400000UL, 0x0000000000200000UL,
+							  0x0000000000100000UL, 0x0000000000080000UL, 0x0000000000040000UL, 0x0000000000020000UL,
+							  0x0000000000010000UL, 0x0000000000008000UL, 0x0000000000004000UL, 0x0000000000002000UL,
+							  0x0000000000001000UL, 0x0000000000000800UL, 0x0000000000000400UL, 0x0000000000000200UL,
+							  0x0000000000000100UL, 0x0000000000000080UL, 0x0000000000000040UL, 0x0000000000000020UL,
+							  0x0000000000000010UL, 0x0000000000000008UL, 0x0000000000000004UL, 0x0000000000000002UL];
+
+// masks for getting, for a rotation, the high bits that will be pushed to the right side (rotate carry left)
+ulong rotateCarryLeft16[32] = [0x0000, 0x0000, 0x8000, 0xC000, 0xE000, 0xF000, 0xF800, 0xFC00,
+							   0xFE00, 0xFF00, 0xFF80, 0xFFC0, 0xFFE0, 0xFFF0, 0xFFF8, 0xFFFC,
+							   0xFFFE, 0x0000, 0x0000, 0x8000, 0xC000, 0xE000, 0xF000, 0xF800,
+							   0xFC00, 0xFE00, 0xFF00, 0xFF80, 0xFFC0, 0xFFE0, 0xFFF0, 0xFFF8];
+
+							   // Left Shift Amounts to Normalize Before Or'ing Final Value
+							 // 0,		16,		15,		14,		13,		12,		11,		10,    16 - ((index+16) % 17)
+							 // 9,		8,		7,		6,		5,		4,		3,		2,
+							 // 1,		0,		16,		15,		14,		13,		12,		11,
+							 // 10,		9,		8,		7,		6,		5,		4,		3,
+
+ulong rotateCarryLeft32[32] = [0x00000000, 0x00000000, 0x80000000, 0xC0000000, 0xE0000000, 0xF0000000, 0xF8000000, 0xFC000000,
+							   0xFE000000, 0xFF000000, 0xFF800000, 0xFFC00000, 0xFFE00000, 0xFFF00000, 0xFFF80000, 0xFFFC0000,
+							   0xFFFE0000, 0xFFFF0000, 0xFFFF8000, 0xFFFFC000, 0xFFFFE000, 0xFFFFF000, 0xFFFFF800, 0xFFFFFC00,
+							   0xFFFFFE00, 0xFFFFFF00, 0xFFFFFF80, 0xFFFFFFC0, 0xFFFFFFE0, 0xFFFFFFF0, 0xFFFFFFF8, 0xFFFFFFFC];
+
+							 // formula: 32 - ((index+32) % 33)
+
+							 // 0,			32,			31,			30,			29,			28,			27,			26,
+							 // 25,			24,			23,			22,			21,			20,			19,			18,
+							 // 17,			16,			15,			14,			13,			12,			11,			10,
+							 // 9,			8,			7,			6,			5,			4,			3,			2
+
+ulong rotateCarryLeft64[64] = [0x0000000000000000UL, 0x0000000000000000UL, 0x8000000000000000UL, 0xC000000000000000UL,
+							   0xE000000000000000UL, 0xF000000000000000UL, 0xF800000000000000UL, 0xFC00000000000000UL,
+							   0xFE00000000000000UL, 0xFF00000000000000UL, 0xFF80000000000000UL, 0xFFC0000000000000UL,
+							   0xFFE0000000000000UL, 0xFFF0000000000000UL, 0xFFF8000000000000UL, 0xFFFC000000000000UL,
+							   0xFFFE000000000000UL, 0xFFFF000000000000UL, 0xFFFF800000000000UL, 0xFFFFC00000000000UL,
+							   0xFFFFE00000000000UL, 0xFFFFF00000000000UL, 0xFFFFF80000000000UL, 0xFFFFFC0000000000UL,
+							   0xFFFFFE0000000000UL, 0xFFFFFF0000000000UL, 0xFFFFFF8000000000UL, 0xFFFFFFC000000000UL,
+							   0xFFFFFFE000000000UL, 0xFFFFFFF000000000UL, 0xFFFFFFF800000000UL, 0xFFFFFFFC00000000UL,
+							   0xFFFFFFFE00000000UL, 0xFFFFFFFF00000000UL, 0xFFFFFFFF80000000UL, 0xFFFFFFFFC0000000UL,
+							   0xFFFFFFFFE0000000UL, 0xFFFFFFFFF0000000UL, 0xFFFFFFFFF8000000UL, 0xFFFFFFFFFC000000UL,
+							   0xFFFFFFFFFE000000UL, 0xFFFFFFFFFF000000UL, 0xFFFFFFFFFF800000UL, 0xFFFFFFFFFFC00000UL,
+							   0xFFFFFFFFFFE00000UL, 0xFFFFFFFFFFF00000UL, 0xFFFFFFFFFFF80000UL, 0xFFFFFFFFFFFC0000UL,
+							   0xFFFFFFFFFFFE0000UL, 0xFFFFFFFFFFFF0000UL, 0xFFFFFFFFFFFF8000UL, 0xFFFFFFFFFFFFC000UL,
+							   0xFFFFFFFFFFFFE000UL, 0xFFFFFFFFFFFFF000UL, 0xFFFFFFFFFFFFF800UL, 0xFFFFFFFFFFFFFC00UL,
+							   0xFFFFFFFFFFFFFE00UL, 0xFFFFFFFFFFFFFF00UL, 0xFFFFFFFFFFFFFF80UL, 0xFFFFFFFFFFFFFFC0UL,
+							   0xFFFFFFFFFFFFFFE0UL, 0xFFFFFFFFFFFFFFF0UL, 0xFFFFFFFFFFFFFFF8UL, 0xFFFFFFFFFFFFFFFCUL];
+
+						     // formula: 64 - ((index+64) % 65)
+
+
 // print human friendly disassembly of the last decoded instruction
 void printInstruction(ushort op, Access accSrc, ulong src, Access accDst, ulong dst, ulong disp)
 {
@@ -789,6 +861,188 @@ cont:
 
 
 
+				// Rotate Ops
+
+				// RCL
+				// Rotate Through Carry Left
+
+			case Opcode.Rcl:
+
+				// Shift the destination the amount specified by the source register
+
+				mixin(getAluSrcU!()); // count
+				mixin(getAluDstU!());
+
+				bool new_carry = false;
+				ulong carry_bits = 0;
+
+				if (mode == Mode.Real)
+				{
+					aluSrcU &= 0x1F;	// mask to only let values from 0 - 31 (lower 5 bits)
+
+					if (aluSrcU != 0)
+					{
+						// get new carry
+						new_carry = (aluDstU & rotateCarryBit16[aluSrcU]) > 0;
+
+						// get bits that will be rotated onto the right side
+						carry_bits = (aluDstU & rotateCarryLeft16[aluSrcU]);
+
+						// shift right carry_bits before we can or it
+						carry_bits >>= 16 - ((aluSrcU+16) % 17); // formula explained at definition of rotateCarryLeft16[]
+
+						// perform a shift to shift in carry
+						if (rflags.carry)
+						{
+							aluDstU <<= 1;
+							aluDstU |= 1;
+
+							// shift rest of the amount
+							aluDstU <<= aluSrcU - 1;
+						}
+						else
+						{
+							// just shift in 0's all the way
+							aluDstU <<= aluSrcU;
+						}
+
+						// or in rest of value
+						aluDstU |= carry_bits;
+					}
+					else
+					{
+						break;
+					}
+				}
+				else if (mode == Mode.Protected)
+				{
+					aluSrcU &= 0x1F;	// mask to only let values from 0 - 31 (lower 5 bits)
+
+					if (aluSrcU != 0)
+					{
+						// get new carry
+						new_carry = (aluDstU & rotateCarryBit32[aluSrcU]) > 0;
+
+						// get bits that will be rotated onto the right side
+						carry_bits = (aluDstU & rotateCarryLeft32[aluSrcU]);
+
+						// shift right carry_bits before we can or it
+						carry_bits >>= 32 - ((aluSrcU+32) % 33); // formula explained at definition of rotateCarryLeft32[]
+
+						// perform a shift to shift in carry
+						if (rflags.carry)
+						{
+							aluDstU <<= 1;
+							aluDstU |= 1;
+
+							// shift rest of the amount
+							aluDstU <<= aluSrcU - 1;
+						}
+						else
+						{
+							// just shift in 0's all the way
+							aluDstU <<= aluSrcU;
+						}
+
+						// or in rest of value
+						aluDstU |= carry_bits;
+					}
+					else
+					{
+						break;
+					}
+				}
+				else
+				{
+					aluSrcU &= 0x3F;	// mask to only let values from 0 - 63 (lower 6 bits)
+
+					if (aluSrcU != 0)
+					{
+						// get new carry
+						new_carry = (aluDstU & rotateCarryBit64[aluSrcU]) > 0;
+
+						// get bits that will be rotated onto the right side
+						carry_bits = (aluDstU & rotateCarryLeft64[aluSrcU]);
+
+						// shift right carry_bits before we can or it
+						carry_bits >>= 64 - ((aluSrcU+64) % 65); // formula explained at definition of rotateCarryLeft64[]
+
+						// perform a shift to shift in carry
+						if (rflags.carry)
+						{
+							aluDstU <<= 1;
+							aluDstU |= 1;
+
+							// shift rest of the amount
+							aluDstU <<= aluSrcU - 1;
+						}
+						else
+						{
+							// just shift in 0's all the way
+							aluDstU <<= aluSrcU;
+						}
+
+						// or in rest of value
+						aluDstU |= carry_bits;
+					}
+					else
+					{
+						break;
+					}
+				}
+
+				// set carry
+				rflags.carry = new_carry;
+
+				// set overflow, sign
+				// XOR of carry and most-significant bit
+				if (mode == Mode.Real)
+				{
+					if (aluDstU & 0x8000)
+					{
+						rflags.overflow = rflags.carry ^ 1;
+					}
+					else
+					{
+						rflags.overflow = rflags.carry ^ 0;
+					}
+				}
+				else if (mode == Mode.Protected)
+				{
+					if (aluDstU & 0x80000000)
+					{
+						rflags.overflow = rflags.carry ^ 1;
+					}
+					else
+					{
+						rflags.overflow = rflags.carry ^ 0;
+					}
+				}
+				else
+				{
+					if (aluDstU & 0x8000000000000000UL)
+					{
+						rflags.overflow = rflags.carry ^ 1;
+					}
+					else
+					{
+						rflags.overflow = rflags.carry ^ 0;
+					}
+				}
+
+				mixin(setAluDstU!());
+
+				break;
+
+
+
+
+
+
+
+
+
+
 
 				// Shift Ops
 
@@ -1149,19 +1403,33 @@ cont:
 
 
 
-
-
-
-
-
-				// Alu Ops
-
 				// CMP
 				// Compare
 			case Opcode.Cmp:
 
 				mixin(getAluSrcU!());
 				mixin(getAluDstU!());
+
+				if (mode == Mode.Real)
+				{
+					if ((aluDstU - aluSrcU) & 0x8000)
+					{
+						rflags.sign = 1;
+					}
+					else
+					{
+						rflags.sign = 0;
+					}
+				}
+				else if (mode == Mode.Protected)
+				{
+				}
+				else // long
+				{
+
+				}
+
+				rflags.parity = parityCheck[(cast(ubyte*)&aluDstU)[0]];
 
 				if (aluDstU > aluSrcU)
 				{
@@ -1179,11 +1447,48 @@ cont:
 					rflags.zero = 0;
 				}
 
+				aluDstU &= 0xf;
+				aluSrcU &= 0xf;
+
+				if (aluDstU > aluSrcU)
+				{
+					rflags.aux = 0;
+				}
+				else if (aluDstU == aluSrcU)
+				{
+					rflags.aux = 0;
+				}
+				else
+				{
+					rflags.aux = 1;
+				}
+
 				break;
 			case Opcode.CmpSigned:
 
 				mixin(getAluSrc!());
 				mixin(getAluDst!());
+
+				if (mode == Mode.Real)
+				{
+					if ((aluDst - aluSrc) & 0x8000)
+					{
+						rflags.sign = 1;
+					}
+					else
+					{
+						rflags.sign = 0;
+					}
+				}
+				else if (mode == Mode.Protected)
+				{
+				}
+				else // long
+				{
+
+				}
+
+				rflags.parity = parityCheck[(cast(ubyte*)&aluDst)[0]];
 
 				if (aluDst > aluSrc)
 				{
@@ -1192,13 +1497,29 @@ cont:
 				}
 				else if (aluDst == aluSrc)
 				{
-					rflags.carry = 0;
+					rflags.overflow = 0;
 					rflags.zero = 1;
 				}
 				else
 				{
-					rflags.carry = !rflags.sign;
+					rflags.overflow = !rflags.sign;
 					rflags.zero = 0;
+				}
+
+				aluDstU = aluDst & 0xf;
+				aluSrcU = aluSrc & 0xf;
+
+				if (aluDstU > aluSrcU)
+				{
+					rflags.aux = 0;
+				}
+				else if (aluDstU == aluSrcU)
+				{
+					rflags.aux = 0;
+				}
+				else
+				{
+					rflags.aux = 1;
 				}
 
 				break;
@@ -1531,6 +1852,161 @@ cont:
 
 				break;
 
+				// MUL
+				// Unsigned Multiply
+			case Opcode.Mul:
+
+				mixin(getAluDstU!());
+				mixin(getAluSrcU!());
+
+				// Multiply aluDstU by AL, AX, EAX, or RAX
+				// Store result in AX, DX:AX, EDX:EAX, RDX:RAX (where the left side, or AH in the case of AX, is the high bits)
+
+				if (src == Register.AL)
+				{
+					// 8 bit multiply
+					// store result in AX
+					ulong ret = aluDstU * aluSrcU;
+					setReg(Register.RAX, ret);
+
+					if (ret & 0xFF00)
+					{
+						rflags.carry = 1;
+						rflags.overflow = 1;
+					}
+					else
+					{
+						rflags.carry = 0;
+						rflags.overflow = 0;
+					}
+				}
+				else
+				{
+					if (src == Register.AX)
+					{
+						// 16 bit multiply
+						// store result in DX:AX
+						ulong ret = aluDstU * aluSrcU;
+						setReg(Register.RAX, ret & 0xFFFF);
+						ret >>= 16;
+						setReg(Register.RDX, ret & 0xFFFF);
+
+						if (rdx.i64 != 0)
+						{
+							rflags.carry = 1;
+							rflags.overflow = 1;
+						}
+						else
+						{
+							rflags.carry = 0;
+							rflags.overflow = 0;
+						}
+					}
+					else if (src == Register.EAX)
+					{
+						// 32 bit multiply
+						// store result in EDX:EAX
+						ulong ret = aluDstU * aluSrcU;
+						setReg(Register.RAX, ret & 0xFFFFFFFF);
+						ret >>= 32;
+						setReg(Register.RDX, ret & 0xFFFFFFFF);
+
+						if (rdx.i64 != 0)
+						{
+							rflags.carry = 1;
+							rflags.overflow = 1;
+						}
+						else
+						{
+							rflags.carry = 0;
+							rflags.overflow = 0;
+						}
+					}
+				}
+
+				break;
+
+				// DIV
+				// Unsigned Divide
+			case Opcode.Div:
+
+				mixin(getAluSrcU!());
+
+				// Divide AX, DX:AX, EDX:EAX, or RDX:RAX by aluSrcU (based on dst)
+				// Store Quotient in AL, AX, EAX, and RAX (dst)
+				// Store Remainder in AH, DX, EDX, RDX (based on dst)
+
+				if (dst == Register.AL)
+				{
+					// 8 bit divide
+
+					// AX / aluSrcU
+					// Quotient: AL
+					// Remainder: AH
+
+					ulong ret;
+
+					getRegU(Register.AX, ret);
+
+					ulong quot = ret / aluSrcU;
+					ulong rem = ret % aluSrcU;
+
+					setReg(Register.AL, quot);
+					setReg(Register.AH, rem);
+				}
+				else
+				{
+					if (dst == Register.AX)
+					{
+						// 16 bit divide
+
+						// DX:AX / aluSrcU
+						// Quotient: AX
+						// Remainder: DX
+
+						ulong ret;
+						ulong lo;
+
+						getRegU(Register.DX, ret);
+						getRegU(Register.AX, lo);
+
+						ret <<= 16;
+						ret |= (lo & 0xFFFF);
+
+						ulong quot = ret / aluSrcU;
+						ulong rem = ret % aluSrcU;
+
+						setReg(Register.AX, quot);
+						setReg(Register.DX, rem);
+					}
+					else if (dst == Register.EAX)
+					{
+						// 32 bit divide
+
+						// EDX:EAX / aluSrcU
+						// Quotient: EAX
+						// Remainder: EDX
+
+						ulong ret;
+						ulong lo;
+
+						getRegU(Register.EDX, ret);
+						getRegU(Register.EAX, lo);
+
+						ret <<= 32;
+						ret |= (lo & 0xFFFFFFFF);
+
+						ulong quot = ret / aluSrcU;
+						ulong rem = ret % aluSrcU;
+
+						setReg(Register.EAX, quot);
+						setReg(Register.EDX, rem);
+					}
+				}
+
+				break;
+
+
 
 
 
@@ -1609,7 +2085,7 @@ cont:
 					else
 					{
 						// word copy
-						writef("word MOVS");
+						//writef("word MOVS");
 
 						// copy from seg:RSI to ES:RDI
 
@@ -1617,8 +2093,8 @@ cont:
 						{
 							// 16 bit
 
-							ushort val = Memory.readSeg64(rsi.i64,seg);
-							Memory.writeSeg64(rdi.i64,val,Prefix.SegES);
+							ushort val = Memory.readSeg16(rsi.i64,seg);
+							Memory.writeSeg16(rdi.i64,val,Prefix.SegES);
 
 							// increment / decrement rdi, rsi
 							if (rflags.direction)
@@ -1640,8 +2116,8 @@ cont:
 						{
 							// 32 bit
 
-							uint val = Memory.readSeg64(rsi.i64,seg);
-							Memory.writeSeg64(rdi.i64,val,Prefix.SegES);
+							uint val = Memory.readSeg32(rsi.i64,seg);
+							Memory.writeSeg32(rdi.i64,val,Prefix.SegES);
 
 							// increment / decrement rdi, rsi
 							if (rflags.direction)
@@ -1701,6 +2177,163 @@ cont:
 
 				break;
 
+				// LODS
+				// Load String
+		case Opcode.Lods:
+
+				Prefix seg = Prefix.SegDS;
+
+				//writef("LODS : "); //Memory.segmentRegisters[seg&0x1f].i64
+				//writef("src: 0x%x", ds.i64, ":%x", rsi.i64, " ");
+				//writef("dst: 0x%x", es.i64, ":%x", rdi.i64, " ");
+
+				// look for prefix
+				if (pfix & 0x1F)
+				{
+					seg = cast(Prefix)(pfix & 0x1F);
+				}
+
+				do
+				{
+
+					// copy value from DS:RSI to RAX
+					if (src == Register.AL)
+					{
+						// byte copy from seg:RSI to AL
+
+						ubyte val = Memory.readSeg8(rsi.i64,seg);
+		//				writef("al = ", val, "\n");
+						setReg(Register.AL, val);
+
+						// increment / decrement rdi, rsi
+						if (rflags.direction)
+						{
+							// decrement
+							rsi.i64--;
+							//rdi.i64--;
+						}
+						else
+						{
+							// increment
+							rsi.i64++;
+							//rdi.i64++;
+						}
+
+						if (mode == Mode.Real)
+						{
+							rsi.i64&=0xffff;
+							//rdi.i64&=0xffff;
+						}
+						else if (mode == Mode.Protected)
+						{
+							rsi.i64&=0xffffffff;
+							//rdi.i64&=0xffffffff;
+						}
+						else
+						{
+						}
+					}
+					else
+					{
+						// word load
+
+						// copy from seg:RSI to AX
+
+						if (mode == Mode.Real)
+						{
+							// 16 bit
+
+							ushort val = Memory.readSeg16(rsi.i64,seg);
+//							writef("ax = ", val, "\n");
+							setReg(Register.RAX, val);
+
+							// increment / decrement rdi, rsi
+							if (rflags.direction)
+							{
+								// decrement
+								rsi.i64-=2;
+								//rdi.i64-=2;
+							}
+							else
+							{
+								// increment
+								rsi.i64+=2;
+								//rdi.i64+=2;
+							}
+							rsi.i64&=0xffff;
+							//rdi.i64&=0xffff;
+						}
+						else if (mode == Mode.Protected)
+						{
+							// 32 bit
+
+							uint val = Memory.readSeg32(rsi.i64,seg);
+							setReg(Register.RAX, val);
+
+							// increment / decrement rdi, rsi
+							if (rflags.direction)
+							{
+								// decrement
+								rsi.i64-=4;
+								//rdi.i64-=4;
+							}
+							else
+							{
+								// increment
+								rsi.i64+=4;
+								//rdi.i64+=4;
+							}
+							rsi.i64&=0xffffffff;
+							//rdi.i64&=0xffffffff;
+						}
+						else
+						{
+							// 64 bit
+
+							ulong val = Memory.readSeg64(rsi.i64,seg);
+							setReg(Register.RAX, val);
+
+							// increment / decrement rdi, rsi
+							if (rflags.direction)
+							{
+								// decrement
+								rsi.i64-=8;
+								//rdi.i64-=8;
+							}
+							else
+							{
+								// increment
+								rsi.i64+=8;
+								//rdi.i64+=8;
+							}
+						}
+					}
+
+
+					// check for the REPEAT prefixes
+					if (pfix & Prefix.Rep)
+					{
+						rcx.i64--;
+						if (mode == Mode.Real)
+						{
+							if (rcx.i16 == 0) { break; }
+						}
+						else
+						{
+							if (rcx.i32 == 0) { break; }
+						}
+					}
+					else
+					{
+						break;
+					}
+
+				} while (true);
+
+				writef("");
+
+				break;
+
 				// STOS
 				// Store String
 			case Opcode.Stos:
@@ -1748,7 +2381,7 @@ cont:
 					else
 					{
 						// word copy
-						writef("word MOVS");
+					//	writef("word MOVS");
 
 						// copy from seg:RSI to ES:RDI
 
@@ -1756,7 +2389,7 @@ cont:
 						{
 							// 16 bit
 
-							Memory.writeSeg64(rdi.i64,aluSrcU,Prefix.SegES);
+							Memory.writeSeg16(rdi.i64,aluSrcU,Prefix.SegES);
 
 							// increment / decrement rdi, rsi
 							if (rflags.direction)
@@ -1775,7 +2408,7 @@ cont:
 						{
 							// 32 bit
 
-							Memory.writeSeg64(rdi.i64,aluSrcU,Prefix.SegES);
+							Memory.writeSeg32(rdi.i64,aluSrcU,Prefix.SegES);
 
 							// increment / decrement rdi, rsi
 							if (rflags.direction)
@@ -1825,6 +2458,265 @@ cont:
 				} while (true);
 
 				//writef("");
+
+				break;
+
+				// SCAS
+				// Scan String
+			case Opcode.Scas:
+
+				//ritef("STOS : "); //Memory.segmentRegisters[seg&0x1f].i64
+				//writef("src: 0x%x", ds.i64, ":%x", rsi.i64, " ");
+				//writef("dst: 0x%x", es.i64, ":%x", rdi.i64, " ");
+
+				mixin(getAluDstU!());
+				mixin(getAluDst!());
+
+				do {
+
+					// compare value from AL to ES:RDI
+					if (dst == Register.AL)
+					{
+						ulong val = Memory.readSeg8(rdi.i64,Prefix.SegES);
+						aluSrc = cast(long)val;
+
+						if (mode == Mode.Real)
+						{
+							if ((aluDstU - val) & 0x80)
+							{
+								rflags.sign = 1;
+							}
+							else
+							{
+								rflags.sign = 0;
+							}
+						}
+						else if (mode == Mode.Protected)
+						{
+						}
+						else // long
+						{
+
+						}
+
+						if (aluDstU > val)
+						{
+							rflags.carry = 0;
+							rflags.zero = 0;
+						}
+						else if (aluDstU == val)
+						{
+							rflags.carry = 0;
+							rflags.zero = 1;
+						}
+						else
+						{
+							rflags.carry = 1;
+							rflags.zero = 0;
+						}
+
+						if (aluDst > aluSrc)
+						{
+							rflags.overflow = rflags.sign;
+						}
+						else if (aluDst == aluSrc)
+						{
+							rflags.overflow = 0;
+						}
+						else
+						{
+							rflags.overflow = !rflags.sign;
+						}
+
+						rflags.parity = parityCheck[(cast(ubyte*)&aluDstU)[0]];
+
+						aluDstU &= 0xf;
+						aluSrcU = val & 0xf;
+
+						if (aluDstU > aluSrcU)
+						{
+							rflags.aux = 0;
+						}
+						else if (aluDstU == aluSrcU)
+						{
+							rflags.aux = 0;
+						}
+						else
+						{
+							rflags.aux = 1;
+						}
+
+						// increment / decrement rdi, rsi
+						if (rflags.direction)
+						{
+							// decrement
+							rdi.i64--;
+						}
+						else
+						{
+							// increment
+							rdi.i64++;
+						}
+
+						if (mode == Mode.Real)
+						{
+							rdi.i64&=0xffff;
+						}
+						else if (mode == Mode.Protected)
+						{
+							rdi.i64&=0xffffffff;
+						}
+						else
+						{
+						}
+					}
+					else
+					{
+						// word compare
+
+						// compare from seg:RSI to ES:RDI
+
+						if (mode == Mode.Real)
+						{
+							// 16 bit
+
+							ulong val = Memory.readSeg16(rdi.i64,Prefix.SegES);
+
+							aluSrc = cast(long)val;
+
+							if (mode == Mode.Real)
+							{
+								if ((aluDstU - val) & 0x8000)
+								{
+									rflags.sign = 1;
+								}
+								else
+								{
+									rflags.sign = 0;
+								}
+							}
+							else if (mode == Mode.Protected)
+							{
+							}
+							else // long
+							{
+
+							}
+
+							if (aluDstU > val)
+							{
+								rflags.carry = 0;
+								rflags.zero = 0;
+							}
+							else if (aluDstU == val)
+							{
+								rflags.carry = 0;
+								rflags.zero = 1;
+							}
+							else
+							{
+								rflags.carry = 1;
+								rflags.zero = 0;
+							}
+
+							if (aluDst > aluSrc)
+							{
+								rflags.overflow = rflags.sign;
+							}
+							else if (aluDst == aluSrc)
+							{
+								rflags.overflow = 0;
+							}
+							else
+							{
+								rflags.overflow = !rflags.sign;
+							}
+
+							rflags.parity = parityCheck[(cast(ubyte*)&aluDstU)[0]];
+
+							aluDstU &= 0xf;
+							aluSrcU = val & 0xf;
+
+							if (aluDstU > aluSrcU)
+							{
+								rflags.aux = 0;
+							}
+							else if (aluDstU == aluSrcU)
+							{
+								rflags.aux = 0;
+							}
+							else
+							{
+								rflags.aux = 1;
+							}
+
+							// increment / decrement rdi, rsi
+							if (rflags.direction)
+							{
+								// decrement
+								rdi.i64-=2;
+							}
+							else
+							{
+								// increment
+								rdi.i64+=2;
+							}
+							rdi.i64&=0xffff;
+						}
+						else if (mode == Mode.Protected)
+						{
+							// 32 bit
+
+							ulong val = Memory.readSeg32(rdi.i64,Prefix.SegES);
+
+							// increment / decrement rdi, rsi
+							if (rflags.direction)
+							{
+								// decrement
+								rdi.i64-=4;
+							}
+							else
+							{
+								// increment
+								rdi.i64+=4;
+							}
+							rdi.i64&=0xffffffff;
+						}
+						else
+						{
+							// 64 bit
+
+							ulong val = Memory.readSeg64(rdi.i64,Prefix.SegES);
+
+							// increment / decrement rdi, rsi
+							if (rflags.direction)
+							{
+								// decrement
+								rdi.i64-=8;
+							}
+							else
+							{
+								// increment
+								rdi.i64+=8;
+							}
+						}
+					}
+
+
+					// check for the REPEAT prefixes
+					if (pfix & Prefix.Rep)
+					{
+						rcx.i64--;
+						if (rcx.i64 == 0) { break; }
+					}
+					else
+					{
+						break;
+					}
+
+				} while (true);
+
+				writef("");
 
 				break;
 
@@ -2198,6 +3090,97 @@ cont:
 					rip.i64 = Stack.popQ();
 				}
 
+				break;
+
+			case Opcode.Leave:
+				rsp.i64 = rbp.i64;
+
+				if (mode == Mode.Real)
+				{
+					rbp.i16 = Stack.popW();
+				}
+				else if (mode == Mode.Protected)
+				{
+					rbp.i32 = Stack.popD();
+				}
+				else
+				{
+					rbp.i64 = Stack.popQ();
+				}
+				break;
+
+			case Opcode.Enter:
+
+				// source : temp_ALLOC_SPACE (AMD)
+				// third  : temp_LEVEL
+
+				// aluSrc = temp_ALLOC_SPACE
+				mixin(getAluSrcU!());
+
+				// aluThree = temp_LEVEL
+				mixin(getAluThree!());
+
+				aluThree &= 0x1f;
+
+				ulong old_rbp = rbp.i64;
+
+				// Push RBP
+
+				if (mode == Mode.Real)
+				{
+					Stack.pushW(rbp.i64);
+				}
+				else if (mode == Mode.Protected)
+				{
+					Stack.pushD(rbp.i64);
+				}
+				else
+				{
+					Stack.pushQ(rbp.i64);
+				}
+
+				ulong temp_rbp = rsp.i64;
+
+				if (aluThree > 0)
+				{
+					if (mode == Mode.Real)
+					{
+						for (int i = 1; i < aluThree; i++)
+						{
+							Stack.pushW(Memory.readStack16(old_rbp - (i*2)));
+						}
+						Stack.pushW(temp_rbp);
+					}
+					else if (mode == Mode.Protected)
+					{
+						for (int i = 1; i < aluThree; i++)
+						{
+							Stack.pushD(Memory.readStack32(old_rbp - (i*4)));
+						}
+						Stack.pushD(temp_rbp);
+					}
+					else
+					{
+						for (int i = 1; i < aluThree; i++)
+						{
+							Stack.pushQ(Memory.readStack64(old_rbp - (i*8)));
+						}
+						Stack.pushQ(temp_rbp);
+					}
+				}
+				rsp.i64 -= aluSrcU;
+
+				// an actual cpu does a write check on SS:RSP
+				// just to validate that it has write privileges
+
+				rbp.i64 = temp_rbp;
+
+
+				break;
+
+			case Opcode.Int:
+				mixin(getAluSrcU!());
+				writef("Int: ", aluSrcU, "\n");
 				break;
 
 			case Opcode.Iret:
@@ -2673,6 +3656,16 @@ template getAluSrcU()
 template getAluSrc()
 {
 	const char[] getAluSrc = getAlu!("src", "");
+}
+
+template getAluThreeU()
+{
+	const char[] getAluThreeU = getAlu!("three", "U");
+}
+
+template getAluThree()
+{
+	const char[] getAluThree = getAlu!("three", "");
 }
 
 template getAluDstU()
