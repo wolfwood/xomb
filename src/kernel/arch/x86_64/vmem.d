@@ -461,6 +461,8 @@ align(1) struct PageTable
 			pl1[pml_index1].pml1e |= 0x87;
 			pl1[pml_index1].us = 1; // userspace flag
 
+      kprintfln!("addr = {}")(physPage);
+
 			virtEnd += vMem.PAGE_SIZE;
 
 			heapPages++;
@@ -488,8 +490,12 @@ align(1) struct PageTable
 
 			retrievePageEntries(virtEnd, pl3, pl2, pl1, pml_index4, pml_index3, pml_index2, pml_index1, entries);
 
+      kprintfln!("pm1: {}")(pml_index1);
+
 			ulong physAddr = pl1[pml_index1].address;
 			physAddr <<= 12;
+
+      kprintfln!("physAddr = {}")(physAddr);
 
 			pl1[pml_index1].pml1e = 0;
 

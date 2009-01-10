@@ -23,6 +23,14 @@ int main() {
   // print the initial text
   Console.printString("xsh: XOmB shell\n\n");
 
+  // malloc test
+  int* pointer = cast(int*)malloc(10*int.sizeof);
+  pointer[0] = 1337;
+  print(pointer[0], "\n");
+  free(pointer);
+  pointer[2] = 1337;
+  print(pointer[2], "\n");
+
   // print the prompt
   print(prompt);
 
