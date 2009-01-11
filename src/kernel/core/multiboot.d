@@ -8,7 +8,7 @@ import kernel.core.log;
 import kernel.core.error;
 
 import kernel.core.util;
-import system = kernel.core.system;
+import system = runtime.d.klibd.system;
 
 import kernel.core.regions;
 import kernel.core.modules;
@@ -77,7 +77,7 @@ struct aout_symbol_table_t
 	uint reserved;
 }
 
-/** This declares the structure for the ELF section header table for the compiled kernel file. 
+/** This declares the structure for the ELF section header table for the compiled kernel file.
 This value is returned to the kernel once booted within the GRUB multiboot header.
 */
 struct elf_section_header_table_t
@@ -154,7 +154,7 @@ void init(uint magic, uint addr)
 	else
 	{
 		printLogFail();
-	}	
+	}
 
 	mmap = (cast(memory_map_t*)multi_boot_struct.mmap_addr)[0 .. (multi_boot_struct.mmap_length / memory_map_t.sizeof)];
 
@@ -164,8 +164,8 @@ void init(uint magic, uint addr)
 void mapRegions()
 {
 	printLogLine("Mapping BIOS Regions");
-	mapBIOSRegions();	
-	printLogSuccess();	
+	mapBIOSRegions();
+	printLogSuccess();
 }
 
 // Tests the multiboot header, prints out relevant mem info, etc
@@ -264,8 +264,8 @@ ErrorVal test_mb_header(uint magic, multiboot_info_t *multi_boot_struct)
 		//kprintfln!("mmap_addr = 0x{x}, mmap_length = 0x{x}")(cast(uint)multi_boot_struct.mmap_addr, cast(uint)multi_boot_struct.mmap_length);
 	}
 
-	
-	
-	
+
+
+
 	return ErrorVal.Success;
 }

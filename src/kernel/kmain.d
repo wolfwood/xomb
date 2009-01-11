@@ -29,7 +29,7 @@ import kernel.arch.locks;
 
 import kernel.error;
 import kernel.core.elf;
-import kernel.core.system;
+//import kernel.core.system;
 import kernel.core.util;
 import multiboot = kernel.core.multiboot;
 

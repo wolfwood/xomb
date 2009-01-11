@@ -11,7 +11,7 @@ import kernel.core.error;
 
 import kernel.arch.locks;
 
-import kernel.core.system;
+import runtime.d.klibd.system;
 import kernel.core.util;
 
 import std.c.stdarg;

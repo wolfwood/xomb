@@ -52,7 +52,7 @@ import kernel.dev.vga;
 import config;
 
 import kernel.core.util;
-import kernel.core.system;
+import runtime.d.klibd.system;
 
 // --- Create  Debug ISRs ---
 // we want to capture exceptions 0, 1, 3, 4-10, 12, 16
@@ -102,19 +102,19 @@ void handle_exception(InterruptStack* ir_stack){
 		getpacket(inMessage);
 
 		switch(inMessage[0]){
-		case '?' : 
+		case '?' :
 			setMessage('S', hexchars[sigval >> 4], hexchars[sigval % 16]);
 			break;
-			
+
 		case 'd' : // toggle remote debugging messages
 			remote_debug = !remote_debug; // Toggle debug flag
 			break;
-			
+
 		case 'g':  // return the value of the CPU regs
 			regs2gdb(ir_stack);
 			mem2hex(outMessage, toByteArray(&tempStack));
 			break;
-			
+
 		case 'G':  // set CPU regs
 			regs2gdb(ir_stack); // populate in case gdb doesn't send all the regs
 			hex2mem(toByteArray(&tempStack), inMessage);
@@ -133,7 +133,7 @@ void handle_exception(InterruptStack* ir_stack){
 						sucess = true;
 						mem_err = false;
 						mem2hex(toByteArray(&addr, numBytes), outMessage, true);
-						
+
 						if(mem_err){
 							setMessage("E03");
 							if (remote_debug) kprintfln!("Memory Fault.")();
@@ -149,14 +149,14 @@ void handle_exception(InterruptStack* ir_stack){
 					kprintfln!("Malformed read memory command: {}")(toString(cast(char*)inMessage.ptr));
 			}
 			break;
-			
+
 			/* MAA..AA,LLLL: Write LLLL bytes at address AA.AA return OK */
 		case 'M':
 			bool sucess = false;
 			auto tempArray = inMessage[1 .. $];
 			ulong addr;
 			size_t numBytes;
-			
+
 			if(hex2long(tempArray, addr) != 0){
 				if(tempArray[0] == ','){
 					tempArray = tempArray[1 .. $];
@@ -198,7 +198,7 @@ void handle_exception(InterruptStack* ir_stack){
 			if(hex2long(tempArray, addr) != 0){
 				ir_stack.rip = addr; // set the
 			}
-			
+
 			// Call original handler?
 
 			/// return from exception
@@ -361,7 +361,7 @@ ubyte[] hex2mem(ubyte[] dest, ubyte[] src, bool may_fault = false){
 		dest[j]  = hexchar2byte(src[i++]);
 		dest[j] |= hexchar2byte(src[i++]) << 4;
 	}
-	
+
 	return dest[0 .. src.length * 2];
 }
 

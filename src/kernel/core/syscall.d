@@ -208,7 +208,7 @@ public:
 			// read\write buffer (the user wants it, therefore it is not shared, and therefore no
 			//   worries about security of writes.
 			buff = cast(ubyte*)curEnvironment.pageTable.allocDevicePage(virtBuffer, true, curAddr);
-			kprintfln!("mapDevice: {x} -> {x}")(buff, virtBuffer);
+			//kprintfln!("mapDevice: {x} -> {x}")(buff, virtBuffer);
 
 			if (i==0)
 			{
