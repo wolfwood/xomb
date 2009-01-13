@@ -16,8 +16,8 @@ ifeq (${MY_ARCH},Darwin)
 	DC = x86_64-pc-elf-gdc
 	CPFLAGS = -i
 else
-	CC = x86_64-pc-elf-gcc
-	LD = x86_64-pc-elf-ld
+	CC = x86_64-pc-xomb-gcc
+	LD = x86_64-pc-xomb-ld
 	DC = x86_64-pc-elf-gdc
 	CPFLAGS = --backup=numbered -u
 endif
