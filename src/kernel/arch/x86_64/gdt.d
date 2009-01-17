@@ -43,9 +43,9 @@ align(1) struct TSSstructure
 	ulong ist5;
 	ulong ist6;
 	ulong ist7 = vMem.REGISTER_STACK;
-	
+
 	ulong reserved2;			// More reserved space again
-	
+
 	ushort reserved3;			// More reserved space again...
 	ushort iomap;				// IO mapped base address
 }
@@ -117,7 +117,7 @@ void setDataSegment64(int num, bool present, ubyte DPL)
 		p = present;
 		dpl = DPL;
 	}
-	
+
 	*cast(DataSegDesc64*)&Entries[num] = ds;
 }
 
@@ -158,7 +158,7 @@ void setSysSegment64(int num, uint limit, ulong base, SysSegType64 segType, ubyt
 		avl = avail;
 		g = granularity;
 	}
-	
+
 	*cast(SysSegDesc64*)&Entries[num] = ss;
 }
 
@@ -205,11 +205,6 @@ public void install()
 	// XXX: Why does it restart if I do this on an AP?
 	// XXX: answer: probably another bug due to bad setting of base address in the gdt
 	//    :       : it will probably work now
-	asm
-	{
-		"movw $0x30, %%ax" ::: "ax";
-		"ltr %%ax";
-	}
 }
 
 public void setGDT()
@@ -217,6 +212,9 @@ public void setGDT()
 	asm
 	{
 		"lgdt (gp)";
+
+		"movq $0x30, %%rax" ::: "rax";
+		"ltr %%ax";
 	}
 }
 
