@@ -45,6 +45,8 @@ enum SyscallID : ulong
 	InitKeyboard,
 	InitConsole,
   MakeEnvironment,
+  Fork,
+  Exec
 }
 
 // Names of system calls
@@ -59,7 +61,9 @@ alias Tuple!
 	"depositKey",	// depositKey()
 	"initKeyboard",	// initKeyboard()
 	"initConsole",	// initConsole()
-  "makeEnvironment" //makeEnvironment()
+  "makeEnvironment", //makeEnvironment()
+  "fork", //fork()
+  "exec" //exec()
 ) SyscallNames;
 
 
@@ -75,7 +79,9 @@ alias Tuple!
 	void,			// depositKey
 	KeyboardInfo,	// initKeyboard
 	ConsoleInfo,		// initConsole
-  void //makeEnvironment
+  void, //makeEnvironment
+  int, //fork
+  int //exec
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -125,6 +131,15 @@ struct MakeEnvironmentArgs
   int id;
 }
 
+struct ForkArgs
+{
+
+}
+
+struct ExecArgs
+{
+
+}
 
 
 // XXX: This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason

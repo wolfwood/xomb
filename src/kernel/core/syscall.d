@@ -149,5 +149,12 @@ static:
       Scheduler.makeEnvironmentFromGRUBModule(params.id);
       return SyscallError.OK;
     }
+
+    SyscallError fork(out int ret, ForkArgs *params) {
+      return SyscallError.OK;
+    }
+    SyscallError exec(out int ret, ExecArgs *params) {
+      return SyscallError.OK;
+    }
 }
 

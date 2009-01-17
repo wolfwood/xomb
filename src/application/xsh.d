@@ -74,6 +74,18 @@ int main() {
                   print("You've already scheduled it!\n");
                 }
                 break;
+              case "fork":
+                int ret = fork();
+                print("ret was");
+                print(ret);
+                print("\n");
+                break;
+              case "exec":
+                int ret = exec();
+                print("ret was");
+                print(ret);
+                print("\n");
+                break;
               default:
               print("Error: Unknown Command\n");
               break;
