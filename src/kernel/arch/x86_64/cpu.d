@@ -36,7 +36,15 @@ static:
 		uint hardwareID;	// the physical id of the cpu (to hardware, localAPIC)
 
 		vMem.pml4* pageTable;	// cpu page table, contains per cpu mappings
+
+		TSS tss;			// Create an instance of the tss
+
+
+
 	}
+
+	static assert(CpuInfo.sizeof <= vMem.PAGE_SIZE, "CpuInfo is larger than a page");
+
 
 	/**
 	Gets the value of the CPUID function for a given item.  See some sort of documentation on
@@ -220,6 +228,7 @@ static:
 		// (mapped at CPU_INFO_ADDR)
 		info.ID = numInitedCpus;
 		info.pageTable = pageTable;
+		info.tss = TSS.init;
 
 		//kprintfln!("info set")();
 

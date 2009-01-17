@@ -17,18 +17,13 @@ import kernel.arch.x86_64.descriptors;
 import kernel.core.util;
 import kernel.dev.vga;
 
-
-struct GDT
-{
-
-static:
-private:
+import kernel.arch.x86_64.cpu;
 
 /**
 TSS structure.  Though we won't use the TSS for task switching,
 we still need one for some lame ass reason.  THANKS AMD.
 */
-align(1) struct TSSstructure
+align(1) struct TSS
 {
 	uint reserved0;				// Reserved space
 	ulong rsp0 = vMem.REGISTER_STACK;					// Three longs for RSP address
@@ -43,15 +38,21 @@ align(1) struct TSSstructure
 	ulong ist5;
 	ulong ist6;
 	ulong ist7 = vMem.REGISTER_STACK;
-	
+
 	ulong reserved2;			// More reserved space again
-	
+
 	ushort reserved3;			// More reserved space again...
 	ushort iomap;				// IO mapped base address
 }
 
+struct GDT
+{
 
-TSSstructure tss_struct;		// Create an instance of the tss
+static:
+private:
+
+//TSSstructure tss_struct;		// Create an instance of the tss
+
 
 /**
 This is a "pointer" structure which consists of a limit (size - 1) and base
@@ -117,7 +118,7 @@ void setDataSegment64(int num, bool present, ubyte DPL)
 		p = present;
 		dpl = DPL;
 	}
-	
+
 	*cast(DataSegDesc64*)&Entries[num] = ds;
 }
 
@@ -158,7 +159,7 @@ void setSysSegment64(int num, uint limit, ulong base, SysSegType64 segType, ubyt
 		avl = avail;
 		g = granularity;
 	}
-	
+
 	*cast(SysSegDesc64*)&Entries[num] = ss;
 }
 
@@ -187,7 +188,8 @@ public void install()
 	setCodeSegment64(2, false, 0, true);
 	setDataSegment64(3, true, 0);
 	setDataSegment64(4, true, 0);
-	setSysSegment64(6, 0x67, (cast(ulong)&tss_struct), SysSegType64.AvailTSS, 0, true, false, false);
+
+	//setSysSegment64(6, 0x67, (cast(ulong)&Cpu.info.tss), SysSegType64.AvailTSS, 0, true, false, false);
 
 	// for SYSCALL and SYSRET
 	setDataSegment64(8, true, 3);
@@ -205,20 +207,22 @@ public void install()
 	// XXX: Why does it restart if I do this on an AP?
 	// XXX: answer: probably another bug due to bad setting of base address in the gdt
 	//    :       : it will probably work now
-	asm
-	{
-		"movw $0x30, %%ax" ::: "ax";
-		"ltr %%ax";
-	}
 }
 
 public void setGDT()
 {
+	// XXX: dirty hack to allow the TSS to be set twice
+	// XXX: assumes that this function will not be reentrant
+	setSysSegment64(6, 0x67, (cast(ulong)&Cpu.info.tss), SysSegType64.AvailTSS, 0, true, false, false);
+
 	asm
 	{
 		"lgdt (gp)";
+		"movq $0x30, %%rax" ::: "rax";
+		"ltr %%ax";
 	}
 }
+
 
 }
 
