@@ -17,18 +17,13 @@ import kernel.arch.x86_64.descriptors;
 import kernel.core.util;
 import kernel.dev.vga;
 
-
-struct GDT
-{
-
-static:
-private:
+import kernel.arch.x86_64.cpu;
 
 /**
 TSS structure.  Though we won't use the TSS for task switching,
 we still need one for some lame ass reason.  THANKS AMD.
 */
-align(1) struct TSSstructure
+align(1) struct TSS
 {
 	uint reserved0;				// Reserved space
 	ulong rsp0 = vMem.REGISTER_STACK;					// Three longs for RSP address
@@ -50,8 +45,14 @@ align(1) struct TSSstructure
 	ushort iomap;				// IO mapped base address
 }
 
+struct GDT
+{
 
-TSSstructure tss_struct;		// Create an instance of the tss
+static:
+private:
+
+//TSSstructure tss_struct;		// Create an instance of the tss
+
 
 /**
 This is a "pointer" structure which consists of a limit (size - 1) and base
@@ -187,7 +188,8 @@ public void install()
 	setCodeSegment64(2, false, 0, true);
 	setDataSegment64(3, true, 0);
 	setDataSegment64(4, true, 0);
-	setSysSegment64(6, 0x67, (cast(ulong)&tss_struct), SysSegType64.AvailTSS, 0, true, false, false);
+
+	//setSysSegment64(6, 0x67, (cast(ulong)&Cpu.info.tss), SysSegType64.AvailTSS, 0, true, false, false);
 
 	// for SYSCALL and SYSRET
 	setDataSegment64(8, true, 3);
@@ -209,14 +211,18 @@ public void install()
 
 public void setGDT()
 {
+	// XXX: dirty hack to allow the TSS to be set twice
+	// XXX: assumes that this function will not be reentrant
+	setSysSegment64(6, 0x67, (cast(ulong)&Cpu.info.tss), SysSegType64.AvailTSS, 0, true, false, false);
+
 	asm
 	{
 		"lgdt (gp)";
-
 		"movq $0x30, %%rax" ::: "rax";
 		"ltr %%ax";
 	}
 }
+
 
 }
 
