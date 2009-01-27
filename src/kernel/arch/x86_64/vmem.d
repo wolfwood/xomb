@@ -120,7 +120,7 @@ align(1) struct PageTable
 	void* virtStart;
 	void* virtEnd;
 
-    long codePages;
+  long codePages;
 	long heapPages;
 	long devicePages;
 
@@ -142,6 +142,67 @@ align(1) struct PageTable
 		entries[511].pml4e = (cast(pml4*)CPU_PAGETABLE_ADDR)[511].pml4e;
 	}
 
+	void copyTo(PageTable *newTable)
+	{
+		// free the pages used
+		pml3* pl3;
+		pml2* pl2;
+		pml1* pl1;
+
+    //temp versions of the ones above
+		pml3* tl3;
+		pml2* tl2;
+		pml1* tl1;
+		long pml_index4;
+		long pml_index3;
+		long pml_index2;
+		long pml_index1;
+
+    void *newPage;
+    void *virtualAddress;
+
+		// stop short of kernel mapping (pl4[511])
+		for (int i=0; i<511; i++)
+		{ // look at level 3s
+			pl3 = getPml3(entries, i);
+
+			if (pl3 !is null)
+			{
+				for (int j=0; j<512; j++)
+				{ // look at level 2s
+					pl2 = getPml2(pl3, j);
+
+					if (pl2 !is null)
+					{
+						for (int k=0; k<512; k++)
+						{ // look at level 1s
+							pl1 = getPml1(pl2, k);
+
+							if (pl1 !is null) {
+                for(int l=0; l<512; l++) {
+                  //yay for computing addresses by hand
+                  virtualAddress = cast(void *)((((((i<<9 | j) << 9) | k ) << 9) | l) << 12);
+
+                  //allocate the new page
+	  		          newPage = pMem.requestPage();
+		  	          allocateUserPageEntries(virtualAddress, tl3, tl2, tl1, pml_index4, pml_index3, pml_index2, pml_index1, newTable.entries);
+			            tl1[pml_index1].pml1e = pl1[pml_index1].pml1e;
+			            tl1[pml_index1].address = cast(long)(newPage) >> 12;
+
+                  //copy the data from the old pages to the new pages
+                  (cast(ulong *)(cast(ulong)newPage + vMem.VM_BASE_ADDR))[0 .. (vMem.PAGE_SIZE / 8)] =
+                    ((cast(ulong *)((pl1[l].address << 12) + vMem.VM_BASE_ADDR))[0 .. (vMem.PAGE_SIZE / 8)]);
+                }
+							}
+						}
+
+					}
+				}
+
+			}
+		}
+
+	}
 	void uninit()
 	{
 		// free the pages used

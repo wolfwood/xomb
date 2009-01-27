@@ -151,7 +151,14 @@ static:
     }
 
     SyscallError fork(out int ret, ForkArgs *params) {
-      return SyscallError.OK;
+
+      if(Scheduler.cloneEnvironment() == ErrorVal.Success) {
+        ret = 0;
+        return SyscallError.OK;
+      } else {
+        return SyscallError.Failcopter;
+      }
+
     }
     SyscallError exec(out int ret, ExecArgs *params) {
       return SyscallError.OK;

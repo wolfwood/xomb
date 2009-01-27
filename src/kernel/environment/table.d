@@ -263,6 +263,62 @@ static:
     return ErrorVal.Success;
   }
 
+  ErrorVal cloneEnvironment(out Environment* environment, Environment* original)
+  {
+    if (count == MAX_ENVIRONMENTS)
+    {
+      return ErrorVal.Fail;
+    }
+
+    // find empty table entry
+    int i;
+    for (i=0; i<MAX_ENVIRONMENTS; i++)
+    {
+      if (addr[i] is null)
+      {
+        break;
+      }
+    }
+    if (i == MAX_ENVIRONMENTS)
+    {
+      // should not happen
+      // means BUG in environment code
+      // explanation: already checked if the length was at the maximum, length must be wrong
+      kprintfln!("BUG: EnvironmentTable.newEnvironment")();
+      return ErrorVal.Fail;
+    }
+
+    void* envEntry;
+    if (vMem.getKernelPage(envEntry) == ErrorVal.Fail)
+    {
+      return ErrorVal.Fail;
+    }
+
+    // set the environment descriptor address into the environment table
+    addr[i] = cast(Environment*)envEntry;
+
+    environment = addr[i];
+
+    *environment = *original;
+    original.pageTable.copyTo(&(environment.pageTable));
+    // should zero out the initial sections
+    //*environment = Environment.init;
+
+    // set id
+    environment.id = i;
+    original.deviceUsage = 0;
+
+    // set it to ready (not running)
+    environment.state = Environment.State.Blocked;
+
+    // up the length
+    count++;
+
+    //kprintfln!("count: {}")(count);
+
+    return ErrorVal.Success;
+  }
+
   ErrorVal newEnvironment(out Environment* environment)
   {
     if (count== MAX_ENVIRONMENTS)

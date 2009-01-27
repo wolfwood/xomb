@@ -137,6 +137,15 @@ static:
     loadGRUBModule(environ, id); //was i, 0 is xsh
   }
 
+  ErrorVal cloneEnvironment() {
+    Environment *e;
+    kdebugfln!(DEBUG_SCHEDULER, "Scheduler: Cloning new environment.")();
+
+    ErrorVal ret = EnvironmentTable.cloneEnvironment(e, getCurrentEnvironment());
+    if(ret != ErrorVal.Fail) { theQueue.push(e); }
+    return ret;
+  }
+
   void exit()
   {
     EnvironmentTable.removeEnvironment(curEnvironment.id);
