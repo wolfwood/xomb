@@ -144,6 +144,7 @@ align(1) struct PageTable
 
 	void copyTo(PageTable *newTable)
 	{
+		kprintfln!("copyTo: Start")();
 		// free the pages used
 		pml3* pl3;
 		pml2* pl2;
@@ -164,6 +165,7 @@ align(1) struct PageTable
 		// stop short of kernel mapping (pl4[511])
 		for (int i=0; i<511; i++)
 		{ // look at level 3s
+		//	kprintfln!("copyTo: PML4 LEVEL")();
 			pl3 = getPml3(entries, i);
 
 			if (pl3 !is null)
@@ -179,20 +181,33 @@ align(1) struct PageTable
 							pl1 = getPml1(pl2, k);
 
 							if (pl1 !is null) {
-                for(int l=0; l<512; l++) {
-                  //yay for computing addresses by hand
-                  virtualAddress = cast(void *)((((((i<<9 | j) << 9) | k ) << 9) | l) << 12);
+				                for(int l=0; l<512; l++) {
+                				  //yay for computing addresses by hand
 
-                  //allocate the new page
-	  		          newPage = pMem.requestPage();
-		  	          allocateUserPageEntries(virtualAddress, tl3, tl2, tl1, pml_index4, pml_index3, pml_index2, pml_index1, newTable.entries);
-			            tl1[pml_index1].pml1e = pl1[pml_index1].pml1e;
-			            tl1[pml_index1].address = cast(long)(newPage) >> 12;
+									if (pl1[l].present) {
 
-                  //copy the data from the old pages to the new pages
-                  (cast(ulong *)(cast(ulong)newPage + vMem.VM_BASE_ADDR))[0 .. (vMem.PAGE_SIZE / 8)] =
-                    ((cast(ulong *)((pl1[l].address << 12) + vMem.VM_BASE_ADDR))[0 .. (vMem.PAGE_SIZE / 8)]);
-                }
+				                  virtualAddress = cast(void *)((((((i<<9 | j) << 9) | k ) << 9) | l) << 12);
+
+                				  //allocate the new page
+				  		          newPage = pMem.requestPage();
+								  //kprintfln!("alloc {}")(newTable.entries);
+					  	          allocateUserPageEntries(virtualAddress, tl3, tl2, tl1, pml_index4, pml_index3, pml_index2, pml_index1, newTable.entries);
+								 // kprintfln!("tl1 {} == {}, tl1: {} pl1: {}")(l , pml_index1, tl1, pl1);
+			            			tl1[pml_index1].pml1e = pl1[pml_index1].pml1e;
+						            tl1[pml_index1].address = cast(long)(newPage) >> 12;
+
+									ubyte* castTo = cast(ubyte*)(cast(ulong)newPage + vMem.VM_BASE_ADDR);
+									ubyte* castFrom = cast(ubyte*)((pl1[l].address << 12) + vMem.VM_BASE_ADDR);
+
+								//	kprintfln!("copyTo: {} copyFrom {}")(castTo, castFrom);
+
+								//	kprintfln!("copying")();
+									//copy the data from the old pages to the new pages
+									castTo[0..vMem.PAGE_SIZE] = castFrom[0..vMem.PAGE_SIZE];
+							  	//	kprintfln!("copy done")();
+
+									}
+				                }
 							}
 						}
 

@@ -269,7 +269,7 @@ static:
     {
       return ErrorVal.Fail;
     }
-
+kprintfln!("cloneEnvironment: Looking for slot.")();
     // find empty table entry
     int i;
     for (i=0; i<MAX_ENVIRONMENTS; i++)
@@ -287,26 +287,38 @@ static:
       kprintfln!("BUG: EnvironmentTable.newEnvironment")();
       return ErrorVal.Fail;
     }
-
+kprintfln!("cloneEnvironment: Found Slot. {}")(i);
     void* envEntry;
+kprintfln!("cloneEnvironment: Allocating Environment Entry.")();
     if (vMem.getKernelPage(envEntry) == ErrorVal.Fail)
     {
       return ErrorVal.Fail;
     }
-
+kprintfln!("cloneEnvironment: Entry Allocated.")();
     // set the environment descriptor address into the environment table
     addr[i] = cast(Environment*)envEntry;
-
+kprintfln!("cloneEnvironment: A")();
     environment = addr[i];
+kprintfln!("B")();
+    *environment = Environment.init;
 
-    *environment = *original;
+	environment.cpuCount = original.cpuCount;
+	environment.pageTable.init(environment.cpuCount);
+
+	environment.size = original.size;
+kprintfln!("C")();
+
+
     original.pageTable.copyTo(&(environment.pageTable));
+kprintfln!("D")();
     // should zero out the initial sections
     //*environment = Environment.init;
 
     // set id
     environment.id = i;
     original.deviceUsage = 0;
+
+kprintfln!("cloneEnvironment: Setup Complete.")();
 
     // set it to ready (not running)
     environment.state = Environment.State.Blocked;
@@ -315,6 +327,8 @@ static:
     count++;
 
     //kprintfln!("count: {}")(count);
+
+kprintfln!("cloneEnvironment: Done.")();
 
     return ErrorVal.Success;
   }

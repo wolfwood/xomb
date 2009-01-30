@@ -91,11 +91,11 @@ static:
     //curEnvironment = EnvironmentTable.getEnvironment(0);
     //}
 
-    kdebugfln!(DEBUG_SCHEDULER, "schedule(): New Environment Selected.  eid: {}")(curEnvironment.id);
 
     Environment* temp = theQueue.peek();
     curEnvironment = temp;
 
+    kdebugfln!(DEBUG_SCHEDULER, "schedule(): New Environment Selected.  eid: {}")(curEnvironment.id);
     // curEnvironment should be set to the next
     // environment to be executed
 
@@ -142,7 +142,10 @@ static:
     kdebugfln!(DEBUG_SCHEDULER, "Scheduler: Cloning new environment.")();
 
     ErrorVal ret = EnvironmentTable.cloneEnvironment(e, getCurrentEnvironment());
+
+	kdebugfln!(DEBUG_SCHEDULER, "Scheduler: Cloned. eid: {}")(e.id);
     if(ret != ErrorVal.Fail) { theQueue.push(e); }
+
     return ret;
   }
 

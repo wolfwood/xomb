@@ -4,6 +4,8 @@ module kernel.core.syscall;
 
 import user.syscall;
 
+import config;
+
 import kernel.core.error;
 
 import kernel.arch.vmem;
@@ -154,6 +156,7 @@ static:
 
       if(Scheduler.cloneEnvironment() == ErrorVal.Success) {
         ret = 0;
+		kdebugfln!(DEBUG_SCHEDULER, "Syscall: fork(): Returning to parent.")();
         return SyscallError.OK;
       } else {
         return SyscallError.Failcopter;

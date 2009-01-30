@@ -126,7 +126,7 @@ hiddenmenu
 title		XOmB
 kernel		/boot/xomb
 module		/boot/xsh
-module    /boot/intfic
+#module    /boot/intfic
 #module		/boot/application
 #module		/boot/application2
 ### END PITTGEEKS AUTOMAGIC KERNELS LIST
