@@ -18,7 +18,7 @@ ifeq (${MY_ARCH},Darwin)
 else
 	CC = x86_64-pc-elf-gcc
 	LD = x86_64-pc-elf-ld
-	DC = x86_64-pc-elf-gdc
+	DC = ldc #x86_64-pc-elf-gdc
 	CPFLAGS = --backup=numbered -u
 endif
 
@@ -26,7 +26,8 @@ endif
 CFLAGS = -nostdlib -nodefaultlibs -g -DUSE_ASSERT -mcmodel=kernel
 
 # flags for gdc
-DFLAGS = -nostdlib -nodefaultlibs -g -mcmodel=kernel -fdebug -fno-omit-frame-pointer -I .
+DFLAGS = -nodefaultlib -g  -I. 
+#DFLAGS = -nostdlib -nodefaultlibs -g -mcmodel=kernel -fdebug -fno-omit-frame-pointer -I .
 
 # flags for ld
 LDFLAGS = -nostdlib -nodefaultlibs -b elf64-x86-64 -T linker.ld
@@ -41,7 +42,7 @@ ARCHFILES = kernel/arch/x86_64/syscall.d kernel/arch/x86_64/globals.d kernel/arc
 
 COREFILES = kernel/core/elf.d kernel/core/syscall.d kernel/core/log.d kernel/kmain.d kernel/dev/vga.d kernel/core/multiboot.d gdb/kgdb_support.d gdb/kgdb_stub.d kernel/core/regions.d kernel/mem/pmem.d config.d kernel/core/error.d kernel/arch/locks.d kernel/dev/keyboard.d kernel/environment/scheduler.d kernel/core/modules.d kernel/environment/table.d kernel/environment/cputable.d
 
-RTFILES := $(shell ls std/typeinfo/*.d) object.d kernel/core/invariant.d user/libd.d std/c/stdarg.d kernel/core/system.d user/syscall.d kernel/core/util.d kernel/arch/x86_64/usersyscall.d user/malloc.d user/basicio.d std/stdarg.d libos/keyboard.d libos/console.d
+RTFILES := $(shell ls std/typeinfo/*.d) object.d kernel/core/invariant.d user/libd.d kernel/core/system.d user/syscall.d kernel/core/util.d kernel/arch/x86_64/usersyscall.d user/malloc.d user/basicio.d std/stdarg.d libos/keyboard.d libos/console.d
 
 APP := application/application.d application/application2.d application/xsh.d application/intfic.d
 APP_OBJS = $(APP:.d=.o)
@@ -76,7 +77,7 @@ all: setup $(KERNEL_IMG)
 
 # d file compile
 %.o: %.d
-	$(DC) $(DFLAGS) -c $< -o $@
+	$(DC) $(DFLAGS) -c $< -of$@
 
 # kernel link
 $(KERNEL_IMG): $(OBJS) $(APP_OBJS)

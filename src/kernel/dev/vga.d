@@ -14,7 +14,6 @@ import kernel.arch.locks;
 import kernel.core.system;
 import kernel.core.util;
 
-import std.c.stdarg;
 import gcc.builtins;
 
 /** This structure contains hexadecimal values equivalent to various types
