@@ -674,8 +674,10 @@ align(1) struct PageTable
 
 		//kprintfln!("entries: {x}, addr: {x}")(&entries, addr);
 		asm {
-			"mov %0, %%rax" :: "o" addr;
-			"mov %%rax, %%cr3";
+			//"mov %0, %%rax" :: "o" addr;
+			//"mov %%rax, %%cr3";
+			movq RAX, addr;
+			movq CR3, RAX;
 		}
 	}
 }
@@ -834,9 +836,12 @@ pml3[] kernel_mapping;
 
 		//kdebugfln!(DEBUG_PAGING, "Page address: {x}")(tmp[0].pml1e);
 
+		pml4* pageTablePtr = pageLevel4.ptr;
 		asm {
-			"mov %0, %%rax" :: "o" pageLevel4.ptr;
-			"mov %%rax, %%cr3";
+			//"mov %0, %%rax" :: "o" pageLevel4.ptr;
+			//"mov %%rax, %%cr3";
+			movq RAX, pageTablePtr;
+			movq CR3, RAX;
 		}
 
 		// And now, for benefit of great gods in sky, we add VM_BASE_ADDR to
@@ -1534,8 +1539,10 @@ pml3[] kernel_mapping;
 
 		// use the page table
 		asm {
-			"movq %0, %%rax" :: "o" pageTablePhys;
-			"movq %%rax, %%cr3";
+			//"movq %0, %%rax" :: "o" pageTablePhys;
+			//"movq %%rax, %%cr3";
+			movq RAX, pageTablePhys;
+			movq CR3, RAX;
 		}
 
 		return ErrorVal.Success;

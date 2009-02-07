@@ -184,8 +184,10 @@ public void setIDT()
 {
 	asm {
 		naked;
-		"lidt (idtp)";
-		"retq";
+		lidt [idtp];
+		ret;
+//		"lidt (idtp)";
+//		"retq";
 	}
 }
 
@@ -234,9 +236,9 @@ template ISR(int num, bool needDummyError = true)
 		asm
 		{
 			naked; " ~
-			(needDummyError ? "`pushq $0`;" : "") ~
-			"`pushq $" ~ num.stringof ~ "`;
-			`jmp isr_common`;
+			(needDummyError ? "pushq 0;" : "") ~
+			"pushq " ~ num.stringof ~ ";
+			jmp isr_common;
 		}
 	}";
 }
@@ -247,11 +249,14 @@ extern(C) void isrIgnore()
 	asm
 	{
 		naked;
-		"iretq";
+
+		iretq;
 	}
 }
 
+pragma(msg, "hi!");
 mixin(ISR!(0));
+pragma(msg, "hi!!");
 mixin(ISR!(1));
 mixin(ISR!(2));
 mixin(ISR!(3));
@@ -303,6 +308,7 @@ mixin(ISR!(48));
 mixin(ISR!(49));
 mixin(ISR!(128));
 
+pragma(msg,"doneisr");
 enum Type
 {
 	DivByZero = 0,
@@ -400,9 +406,11 @@ extern(C) void fault_handler(InterruptStack* r)
 	}
 
 	for(;;){}
-	asm{hlt;}
+	//asm{
+	//	hlt;
+	//}
 }
-
+pragma(msg, "bleh");
 extern(C) void isr_common()
 {
 	// TSS should have switched to REGISTER_STACK-8
@@ -424,37 +432,48 @@ extern(C) void isr_common()
 
 		// SS, RSP, FLAGS, CS, RIP, ERROR CODE, INT VECTOR
 		// so the stack is at 8 bytes per 7 entries
-		//"cmpl $" ~ Itoa!((vMem.REGISTER_STACK-(8*7)) & 0xFFFFFFFF) ~ ", %%esp";
-		"cmpq $0x38, -0x20(%%rsp)";
-		"jne isr_kernel";
+
+		//"cmpq $0x38, -0x20(%%rsp)";
+		//"jne isr_kernel";
+
+		cmpq -0x20[rsp], 0x38;
+		jne isr_kernel;
 	}
 
 	mixin(contextSwitchSave!());
 
 	asm
 	{
-		naked;
+		//naked;
 		// save top of REGISTER_STACK
 		// also pass it as the first parameter (%rdi)
 		// to the fault handler
-		"movq %%rsp, %%rdi";
-		"movq %%rsp, %%rax";
-		"movq %%rax, " ~ Itoa!(vMem.REGISTER_STACK_POS) ::: "rax";
+		//"movq %%rsp, %%rdi";
+		movq rdi, rsp;
+		//"movq %%rsp, %%rax";
+		movq rax, rsp;
+		//"movq %%rax, " ~ Itoa!(vMem.REGISTER_STACK_POS) ::: "rax";
+		movq [vMem.REGISTER_STACK_POS], rax;
 
 		// switch to KERNEL_STACK
-		"movq $" ~ Itoa!(vMem.KERNEL_STACK) ~ ", %%rsp";
+		//"movq $" ~ Itoa!(vMem.KERNEL_STACK) ~ ", %%rsp";
+		movq rsp, vMem.KERNEL_STACK
+
 
 		// transfer control to the fault handler
-		"call fault_handler";
+		//"call fault_handler";
+		call fault_handler;
 
 		// schedule
-		"call *%0" :: "m" Interrupts.scheduleFunction;
+		//"call *%0" :: "m" Interrupts.scheduleFunction;
 
 		// switch back to REGISTER_STACK
-		"movq " ~ Itoa!(vMem.REGISTER_STACK_POS) ~ ", %%rax" ::: "rax";
+		//"movq " ~ Itoa!(vMem.REGISTER_STACK_POS) ~ ", %%rax" ::: "rax";
+		movq rax, [vMem.REGISTER_STACK_POS];
 
 		// go to top of REGISTER_STACK
-		"movq %%rax, %%rsp";
+		//"movq %%rax, %%rsp";
+		movq rsp, rax;
 	}
 
 	mixin(contextSwitchRestore!());
@@ -470,9 +489,10 @@ extern(C) void isr_common()
 			// This is a job for Jarrett
 
 		// Cleans up the pushed error code and pushed ISR num
-		"add $16, %%rsp";
-		"iretq";         /* pops 5 things in order: rIP, CS, rFLAGS, rSP, and SS */
-
+		//"add $16, %%rsp";
+		add rsp, 16;
+		//"iretq";         /* pops 5 things in order: rIP, CS, rFLAGS, rSP, and SS */
+		iretq;
 
 
 
@@ -482,24 +502,29 @@ extern(C) void isr_common()
 
 		// KERNEL ISR COMMON
 
-		"isr_kernel:";
+		//"isr_kernel:";
+isr_kernel:;
 	}
 
 	mixin(contextSwitchSave!());
 
 	asm
 	{
-		"movq %%rsp, %%rdi";
-		"call fault_handler";
+		//"movq %%rsp, %%rdi";
+		movq rdi, rsp;
+		//"call fault_handler";
+		call fault_handler;
 	}
 
 	mixin(contextSwitchRestore!());
 
 	asm
 	{
-		"add $16, %%rsp";
-		"iretq";
+		//"add $16, %%rsp";
+		add rsp, 16;
+		//"iretq";
+		iretq;
 	}
 }
 
-
+pragma(msg, "hey");

@@ -13,10 +13,13 @@ const int KMUTEX_LOCKED = 0;
 int kmutex_test_and_set(int* lock_val_p){
 	int check = KMUTEX_LOCKED;
 	volatile asm{
-		"xchg (%%rax), %%rbx" 
-		: "=b" check 
-		: "a" lock_val_p, "b" check 
-		: ;
+//		"xchg (%%rax), %%rbx"
+//		: "=b" check
+//		: "a" lock_val_p, "b" check
+//		: ;
+		movq RAX, lock_val_p;
+		mov EBX, check;
+		xchg EBX, [EAX];
 	}
 	return check;
 }
