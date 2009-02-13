@@ -14,6 +14,7 @@ import kernel.arch.interrupts;
 import kernel.arch.timer;
 import kernel.arch.syscall;
 import kernel.arch.context;
+import kernel.arch.cpu;
 
 import kernel.dev.vga;
 
@@ -206,6 +207,12 @@ static:
 
     kdebugfln!(DEBUG_SCHEDULER, "Scheduler: cpu {} is awaiting orders.")(cpuID);
 
+	// lock the cpu
+
+
     CpuTable.provide(cpuID);
+
+	// block on the lock
+
   }
 }

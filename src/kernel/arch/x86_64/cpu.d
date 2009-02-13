@@ -9,6 +9,7 @@ import kernel.arch.x86_64.vmem;
 import kernel.arch.x86_64.pagefault;
 import kernel.arch.x86_64.pic;
 import kernel.arch.x86_64.lapic;
+import kernel.arch.locks;
 
 import kernel.mem.pmem;
 
@@ -36,6 +37,8 @@ static:
 		uint hardwareID;	// the physical id of the cpu (to hardware, localAPIC)
 
 		vMem.pml4* pageTable;	// cpu page table, contains per cpu mappings
+
+		kmutex lock;
 	}
 
 	/**

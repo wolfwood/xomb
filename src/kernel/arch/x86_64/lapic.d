@@ -481,6 +481,4 @@ void apExec()
 	LocalAPIC.apLock.unlock();
 
 	Scheduler.cpuReady(Cpu.info.ID);
-
-	for (;;) {}
 }

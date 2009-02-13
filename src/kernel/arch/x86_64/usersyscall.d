@@ -12,18 +12,43 @@ extern(C) long nativeSyscall(ulong ID, void* ret, void* params)
 	//   so these should be there!
 
 	// I assume such in the syscall handler
-	asm
+	version(LDC)
 	{
-		naked;
-		"pushq %%rcx";
-		"pushq %%r11";
-		"pushq %%rax";
-		"syscall";
-		"popq %%rax";
-		"popq %%r11";
-		"popq %%rcx";
+		asm
+		{
+			naked;
 
-		"retq";
+			pushq RCX;
+			pushq R11;
+			pushq RAX;
+
+			syscall;
+
+			popq RAX;
+			popq R11;
+			popq RCX;
+
+			ret;
+		}
+	}
+	else
+	{
+		asm
+		{
+			naked;
+
+			"pushq rcx";
+			"pushq r11";
+			"pushq rax";
+
+			"syscall";
+
+			"popq rax";
+			"popq r11";
+			"popq rcx";
+
+			"retq";
+		}
 	}
 }
 
