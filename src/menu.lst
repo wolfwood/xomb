@@ -125,8 +125,8 @@ hiddenmenu
 
 title		XOmB
 kernel		/boot/xomb
-module		/boot/vesademo
-#module		/boot/xsh
+#module		/boot/vesademo
+module		/boot/xsh
 #module    /boot/intfic
 #module		/boot/application1
 #module		/boot/application2

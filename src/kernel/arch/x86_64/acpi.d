@@ -503,7 +503,30 @@ static:
 		//start up APs and APIC bus
 		LocalAPIC.init(cast(void*)ptrMADT.localAPICAddr);
 
-		LocalAPIC.startAPsFromACPI(acpiMPInformation.localAPICs[0..acpiMPInformation.numLocalAPICs]);
+		// tell the Local APIC of our intentions to use this table to start APs:
+		LocalAPIC.tableType = LocalAPIC.TableType.ACPI;
+
+		//LocalAPIC.startAPsFromACPI(acpiMPInformation.localAPICs[0..acpiMPInformation.numLocalAPICs]);
+	}
+
+	void startAPs()
+	{
+		uint myLocalId = LocalAPIC.getLocalAPICId();
+
+		foreach(processor; acpiMPInformation.localAPICs[0..acpiMPInformation.numLocalAPICs])
+		{
+			if (processor.APICID == myLocalId)
+			{
+				continue;
+			}
+
+			if (!(processor.flags & 0x1))
+			{
+				continue;
+			}
+
+			LocalAPIC.startAP(processor.APICID);
+		}
 	}
 
 	// will return which ioapic id this gsi is mapped to

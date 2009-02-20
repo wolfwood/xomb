@@ -116,6 +116,14 @@ struct LocalAPIC
 
 	private apicRegisterSpace* apicRegisters;
 
+	enum TableType
+	{
+		ACPI,
+		MP
+	}
+
+	TableType tableType;
+
 	void init(void* localAPICAddr)
 	{
 		printLogLine("Initializing Local APIC");
@@ -264,7 +272,6 @@ struct LocalAPIC
 		kprintfln!("Timer!!!", false)();
 
 		apicRegisters.EOI = 0;
-
 	}
 
 	uint getLocalAPICId()
@@ -272,40 +279,15 @@ struct LocalAPIC
 		return apicRegisters.localApicId >> 24;
 	}
 
-	void startAPsFromMP(processorEntry*[] processors)
+	void startAPs()
 	{
-		uint myLocalId = getLocalAPICId();
-
-		// go through the list of AP APIC IDs
-		foreach (processor; processors)
+		if (tableType == TableType.ACPI)
 		{
-			//kprintfln!("cpu...startAP {}")(processor.localAPICID);
-			// This next line will prevent the CPU from initializing itself in the middle
-			// of running.  This will prevent us from totally failing while booting :P
-			if(processor.localAPICID == myLocalId)
-				continue;
-
-			startAP(processor.localAPICID);
+			ACPI.startAPs();
 		}
-
-		//kprintfln!("startAPs done")();
-	}
-
-	void startAPsFromACPI(entryLocalAPIC*[] processors)
-	{
-		uint myLocalId = getLocalAPICId();
-
-		foreach (processor; processors)
+		else
 		{
-			// Again, do not allow the BSP to restart
-			if (processor.APICID == myLocalId)
-				continue;
-
-			// check device enabled flag
-			if (!(processor.flags & 0x1))
-				continue;
-
-			startAP(processor.APICID);
+			MP.startAPs();
 		}
 	}
 
@@ -482,5 +464,5 @@ void apExec()
 
 	Scheduler.cpuReady(Cpu.info.ID);
 
-	for (;;) {}
+	Cpu.wait();
 }

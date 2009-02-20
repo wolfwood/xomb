@@ -25,25 +25,21 @@ import kernel.arch.x86_64.globals;
 
 import gdb.kgdb_stub;
 
-import kernel.arch.locks;
-
 import kernel.error;
 import kernel.core.elf;
-//import kernel.core.system;
 import kernel.core.util;
 import multiboot = kernel.core.multiboot;
 
-import kernel.arch.x86_64.mp;
-import kernel.arch.x86_64.acpi;
-
+import kernel.arch.locks;
+import kernel.arch.multiprocessor;
 import kernel.arch.timer;
 import kernel.arch.cpu;
 
 import kernel.environment.scheduler;
 import kernel.environment.cputable;
 
-/**
-This is the main function of PGOS. It is executed once GRUB loads
+/*
+This is the main function of XOmB. It is executed once GRUB loads
 fully. It accepts "magic," the magic number of the GRUB bootloader,
 and "addr," the address of the multiboot variable, passed by the GRUB bootloader.
 	Params:
@@ -51,7 +47,6 @@ and "addr," the address of the multiboot variable, passed by the GRUB bootloader
 		addr = the address of the multiboot header, passed to the kernel to by the
 			GRUB bootloader.
 */
-
 
 extern(C) void kmain(uint magic, uint addr)
 {
@@ -75,7 +70,6 @@ extern(C) void kmain(uint magic, uint addr)
 	Console.setColors(Color.LowGreen, Color.Black);
 	kprintf!("--------------------------------------------------------------------------------")();
 	Console.resetColors();
-
 
 	// get the globals from the linker definitions
 	printLogLine("Initializing Globals");
@@ -132,29 +126,7 @@ extern(C) void kmain(uint magic, uint addr)
 		printLogFail();
 	}
 
-	//if (ACPI.init() == ErrorVal.Success)
-	{
-		// use ACPI Tables
-
-		// initialize IO APICs
-		//ACPI.initIOAPIC();
-
-		// initialize Local APICs
-		//ACPI.initAPIC();
-	}
-	//else
-	{
-		// fall back on the MP tables
-
-		// initialize multiprocessor information
-		MP.init();
-
-		// initialize IO APICs
-		MP.initIOAPIC();
-
-		// initialize Local APICs
-		MP.initAPIC();
-	}
+	Multiprocessor.initialize();
 
 /*	printLogLine("Initializing HPET");
 	if (Timer.init() == ErrorVal.Success)
@@ -184,91 +156,12 @@ extern(C) void kmain(uint magic, uint addr)
 		printLogFail();
 	}
 
+	printLogLine("Starting APs");
+	Multiprocessor.startAPs();
+	printLogSuccess();
+
 	Scheduler.run();
 
 	// should not return from this
 
-	kprintfln!("")();
-
-	//for (;;) {}
-
-	kprintfln!("Jumping to User Mode...\n")();
-
-	Console.setColors(Color.LowBlue, Color.Black);
-
-	//syscall.jumpToUser(&testUser);
-
-	kprintfln!("BACK!!!")();
-}
-
-import user.syscall;
-
-extern(C) void testUser()
-{
-	kprintfln!("In User Mode.")();
-	kprintfln!("Keyboards!")();
-
-	kprintfln!("")();
-
-	Console.setColors(Color.White, Color.Black);
-	kprintfln!("   Talk to XOmB!  ")();
-
-	kprintfln!("")();
-	Console.setColors(Color.Yellow, Color.Black);
-	kprintf!(" You")();
-	Console.setColors(Color.White, Color.Black);
-	kprintf!(" : ")();
-	Console.setColors(Color.HighBlue, Color.Black);
-
-	Keyboard.mapFunctions(&downProc, &upProc, &charProc);
-	Keyboard.init();
-//
-// 	auto ptr = cast(long*)0x1000;
-//
-// 	if(cast(SyscallError)user.syscall.allocPage(ptr) == SyscallError.OK)
-// 	{
-// 		kprintfln!("!!Page allocation succeeded!!  Testing..")();
-//
-// 		ptr[0] = 5;
-// 		kprintfln!("ptr[0] = {}")(ptr[0]);
-// 	}
-// 	else
-// 		kprintfln!("Page allocation failed..")();
-
-	//user.syscall.exit(0);
-
-	while(true)
-	{
-	}
-}
-
-void downProc(ubyte code)
-{
-}
-
-void upProc(ubyte code)
-{
-}
-
-void charProc(char chr)
-{
-	if (chr == '\n')
-	{
-		kprintfln!("\n")();
-		Console.setColors(Color.Yellow, Color.Black);
-		kprintf!("XOmB")();
-		Console.setColors(Color.White, Color.Black);
-		kprintf!(" : ")();
-		Console.setColors(Color.HighGreen, Color.Black);
-		kprintfln!("*drools*\n")();
-		Console.setColors(Color.Yellow, Color.Black);
-		kprintf!(" You")();
-		Console.setColors(Color.White, Color.Black);
-		kprintf!(" : ")();
-		Console.setColors(Color.HighBlue, Color.Black);
-	}
-	else
-	{
-		kprintf!("{}")(chr);
-	}
 }

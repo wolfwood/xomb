@@ -51,7 +51,7 @@ struct GDT
 static:
 private:
 
-//TSSstructure tss_struct;		// Create an instance of the tss
+TSS tss_struct;		// Create an instance of the tss
 
 
 /**
@@ -213,7 +213,7 @@ public void setGDT()
 {
 	// XXX: dirty hack to allow the TSS to be set twice
 	// XXX: assumes that this function will not be reentrant
-	setSysSegment64(6, 0x67, (cast(ulong)&Cpu.info.tss), SysSegType64.AvailTSS, 0, true, false, false);
+	setSysSegment64(6, 0x67, (cast(ulong)&tss_struct), SysSegType64.AvailTSS, 0, true, false, false);
 
 	asm
 	{

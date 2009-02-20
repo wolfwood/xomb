@@ -10,6 +10,8 @@ import kernel.arch.x86_64.pagefault;
 import kernel.arch.x86_64.pic;
 import kernel.arch.x86_64.lapic;
 
+import kernel.arch.locks;
+
 import kernel.mem.pmem;
 
 // reporting BSP readiness to scheduler
@@ -37,10 +39,7 @@ static:
 
 		vMem.pml4* pageTable;	// cpu page table, contains per cpu mappings
 
-		TSS tss;			// Create an instance of the tss
-
-
-
+		kmutex waitlock;	// cpu lock
 	}
 
 	static assert(CpuInfo.sizeof <= vMem.PAGE_SIZE, "CpuInfo is larger than a page");
@@ -228,7 +227,8 @@ static:
 		// (mapped at CPU_INFO_ADDR)
 		info.ID = numInitedCpus;
 		info.pageTable = pageTable;
-		info.tss = TSS.init;
+		info.waitlock.unlock();
+		//info.tss = TSS.init;
 
 		//kprintfln!("info set")();
 
@@ -252,6 +252,15 @@ static:
 		Syscall.setHandler(&Syscall.syscallHandler);
 
 		//kprintfln!("Installed SYSCALL")();
+
+		info.waitlock.lock();
+	}
+
+	void wait()
+	{
+		kprintfln!("blllaaaahhhh... waiting cpu {}")(info.ID);
+		info.waitlock.lock();
+		kprintfln!("ESCAPED! cpu {}")(info.ID);
 	}
 
 	void ioOut(T, char[] port)(int data)

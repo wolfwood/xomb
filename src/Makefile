@@ -48,7 +48,7 @@ ASM = kernel/arch/x86_64/boot/boot.S kernel/arch/x86_64/boot/load.S kernel/arch/
 SHELLAPP = $(foreach appdir, $(APPS), cd application/$(appdir) && make && cd ../.. && ) cd .
 SHELLLIB = $(foreach osdir, $(LIBOS), cd libos/$(osdir) && make && cd ../.. && ) cd .
 
-ARCHFILES = kernel/arch/x86_64/syscall.d kernel/arch/x86_64/globals.d kernel/arch/x86_64/cpu.d kernel/arch/x86_64/gdt.d kernel/arch/x86_64/lapic.d kernel/arch/x86_64/ioapic.d kernel/arch/x86_64/idt.d kernel/arch/x86_64/vmem.d kernel/arch/x86_64/hpet.d kernel/arch/x86_64/locks.d kernel/arch/x86_64/mp.d kernel/arch/x86_64/pic.d kernel/arch/x86_64/acpi.d kernel/arch/x86_64/timer.d kernel/arch/x86_64/descriptors.d kernel/arch/x86_64/pagefault.d
+ARCHFILES = kernel/arch/x86_64/syscall.d kernel/arch/x86_64/globals.d kernel/arch/x86_64/cpu.d kernel/arch/x86_64/gdt.d kernel/arch/x86_64/lapic.d kernel/arch/x86_64/ioapic.d kernel/arch/x86_64/idt.d kernel/arch/x86_64/vmem.d kernel/arch/x86_64/hpet.d kernel/arch/x86_64/locks.d kernel/arch/x86_64/mp.d kernel/arch/x86_64/pic.d kernel/arch/x86_64/acpi.d kernel/arch/x86_64/timer.d kernel/arch/x86_64/descriptors.d kernel/arch/x86_64/pagefault.d kernel/arch/x86_64/multiprocessor.d
 
 COREFILES = kernel/core/elf.d kernel/core/syscall.d kernel/core/log.d kernel/kmain.d kernel/dev/vga.d kernel/core/multiboot.d gdb/kgdb_support.d gdb/kgdb_stub.d kernel/core/regions.d kernel/mem/pmem.d config.d kernel/core/error.d kernel/arch/locks.d kernel/dev/keyboard.d kernel/environment/scheduler.d kernel/core/modules.d kernel/environment/table.d kernel/environment/cputable.d kernel/dev/vesa.d runtime/d/klibd/dstubs.d runtime/d/klibd/object.d runtime/d/klibd/invariant.d runtime/d/klibd/system.d kernel/core/util.d $(shell ls runtime/d/klibd/std/typeinfo/*.d)
 

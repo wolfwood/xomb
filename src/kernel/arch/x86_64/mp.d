@@ -411,7 +411,25 @@ public void initAPIC()
 	// start up application processors and APIC bus
 	LocalAPIC.init(cast(void*)mpInformation.configTable.addressOfLocalAPIC);
 
-	LocalAPIC.startAPsFromMP(mpInformation.processors[0..mpInformation.processor_count]);
+	// tell the local apic module our intentions
+	LocalAPIC.tableType = LocalAPIC.TableType.MP;
+
+//	LocalAPIC.startAPsFromMP(mpInformation.processors[0..mpInformation.processor_count]);
+}
+
+public void startAPs()
+{
+	uint myLocalId = LocalAPIC.getLocalAPICId();
+
+	foreach (processor; mpInformation.processors[0..mpInformation.processor_count])
+	{
+		if (processor.localAPICID == myLocalId)
+		{
+			continue;
+		}
+
+		LocalAPIC.startAP(processor.localAPICID);
+	}
 }
 
 private bool isChecksumValid(ubyte* startAddr, uint length)
