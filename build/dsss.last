@@ -1,7 +1,0 @@
-name = xomb
-[*]
-buildflags=-dc=gdc-xomb
-
-[../kernel/core/kmain.d]
-
-target = xomb.iso

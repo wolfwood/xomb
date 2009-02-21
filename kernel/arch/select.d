@@ -1,8 +1,6 @@
 module kernel.arch.select;
 
-// load the correct files for the cpu abstraction
-
-// just loading x86-64 for now
+// This module shows D's mixin capabilities to load modules for different architecture targets.
 
 const char[] architecture = "x86_64";
 

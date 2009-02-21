@@ -3,8 +3,6 @@ module kernel.core.dstubs;
 import kernel.runtime.util;
 static import gcc.builtins;
 
-import kernel.dev.vga;
-
 extern(C)
 {
 

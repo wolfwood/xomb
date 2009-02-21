@@ -6,8 +6,15 @@
 
 module kernel.core.kmain;
 
+import kernel.dev.console;
+import kernel.core.kprintf;
+
 extern(C) void kmain(int flags, void *data) {
 
-  for(;;) {}
+	Console.clearScreen();
+
+	kprintfln!("I will eat your {}! {}, {x}")("brains", 10, 3735928559);
+
+	for(;;) {}
 
 }
