@@ -63,6 +63,8 @@ long_entry:
 		pushq %rax
 		popf
 
+		addq $(KERNEL_VMA_BASE), %rsi
+
 		/* Push the pointer to the Multiboot information structure. */
 		pushq   %rsi
 		/* Push the magic value. */

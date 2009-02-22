@@ -35,7 +35,12 @@
 
 module object;
 
+// Imports necessary routines used by the runtime
 import kernel.runtime.util;
+
+version(LDC){
+	import std.moduleinfo;
+}
 
 extern(C) Object _d_newclass(ClassInfo ci);
 

@@ -46,7 +46,7 @@ _start:
 		movl %eax, %edi
 
 		/* jump to the 32 bit common start */
-		jmp (multiboot_entry)
+		jmp (start32)
 
 		/* Align 32 bits boundary. */
 		.align  4
@@ -72,30 +72,16 @@ multiboot_header:
 		/* bss_end_addr */
 		.long   (_end-KERNEL_VMA_BASE)
 		/* entry_addr */
-		.long   (multiboot_entry)
+		.long   (start)
 #endif
-
-multiboot_entry:
-
-		/* Stash values for multiboot we won't touch until 64 bit mode */
-		movl %ebx, %esi
-		movl %eax, %edi
-
-		xor %eax, %eax
-
-		jmp start32
-
-		/* trampoline code may go here */
 
 .global start32, _start32
 
 _start32:
 start32:
 
+		/* disable interrupts (CLear Interrupt flag) */
 		cli
-
-		test $0x1, %eax
-		jne start32_ap
 
 		/* enable 64-bit page-translation-table entries by
 			setting CR4.PAE=1.  Paging not enabled until after
@@ -134,9 +120,15 @@ start32:
 		ljmp $CS_KERNEL, $(start64-KERNEL_VMA_BASE)
 
 
-start32_ap:
 
-		hlt
+
+
+// The following are a series of kernel structures used by the cpu
+// These are temporary and will be replaced by permanent ones when the
+// kernel is executed proper.
+
+
+
 
 
 
@@ -280,7 +272,4 @@ level1_ident_pgt:
 
 
 
-
-	// Temporary mappings for the super early allocator in arch/x86_64/mm/init.c
-	.globl temp_boot_pmds
 
