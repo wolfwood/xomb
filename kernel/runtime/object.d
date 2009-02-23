@@ -38,6 +38,11 @@ module object;
 // Imports necessary routines used by the runtime
 import kernel.runtime.util;
 
+//version(LDC)
+//{
+	import std.moduleinit;
+//}
+
 extern(C) Object _d_newclass(ClassInfo ci);
 
 /// Standard boolean type.
@@ -310,7 +315,7 @@ class ClassInfo : Object
 }
 
 
-version(LDC){
+//version(LDC){
 
 class ModuleInfo : Object
 {
@@ -330,7 +335,7 @@ class ModuleInfo : Object
     static int opApply(int delegate(ref ModuleInfo));
 }
 
-}
+//}
 
 
 //private import std.string;

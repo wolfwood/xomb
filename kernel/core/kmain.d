@@ -29,6 +29,8 @@ extern(C) void kmain(int bootLoaderID, void *data)
 
 	kprintfln!("{!cls}{!fg:LightBlue}I will eat your {}! {}, {x}Cl{!bg:Blue}ea{!fg:White}red{!fg:LightGray!bg:Black}Cleared{!pos:10,10}{}!")("brains", 10, 3735928559, "BRAINS!!!");
 
+	kprintfln!("hello world")();
+	for(;;) {}
 
 	kprintfln!("{x} {x}")(bootLoaderID, data);
 

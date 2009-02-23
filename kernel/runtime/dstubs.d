@@ -391,6 +391,11 @@ mixin(Stub!("byte[] _d_arraycatT(TypeInfo ti, byte[] x, byte[] y)"));
 mixin(Stub!("byte[] _d_arraycatnT(TypeInfo ti, uint n, ...)"));
 mixin(Stub!("Array _adDupT(TypeInfo ti, Array a)"));
 
+//version(LDC)
+//{
+mixin(Stub!("void _d_array_init_i8(ubyte* a, size_t n, ubyte v)"));
+//}
+
 /**************************************************
  GC stubs
 **************************************************/
