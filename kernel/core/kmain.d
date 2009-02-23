@@ -14,8 +14,6 @@ import kernel.core.kprintf;
 
 
 
-
-
 // The main function for the kernel.
 // This will receive data from the boot loader.
 

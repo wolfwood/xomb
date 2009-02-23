@@ -189,7 +189,7 @@ template isPointerType(T)
 
 template isPointerType(T : T*)
 {
-	const bool isPointerType = true;	
+	const bool isPointerType = true;
 }
 
 /**
@@ -352,6 +352,8 @@ This function converts an integer to a string, depending on the base passed in.
 */
 char[] itoa(char[] buf, char base, long d)
 {
+	return "10";
+	/*
 	size_t p = buf.length - 1;
 	size_t startIdx = 0;
 	ulong ud = d;
@@ -379,5 +381,5 @@ char[] itoa(char[] buf, char base, long d)
 	if(negative)
 		buf[p--] = '-';
 
-	return buf[p + 1 .. $];
+	return buf[p + 1 .. $];*/
 }
