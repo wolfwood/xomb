@@ -436,11 +436,11 @@ extern(C) void isr_common()
 		//"cmpq $0x38, -0x20(%%rsp)";
 		//"jne isr_kernel";
 
-		cmpq -0x20[rsp], 0x38;
+		//cmp -0x20[%rsp], 0x38;
 		jne isr_kernel;
 	}
 
-	mixin(contextSwitchSave!());
+	//mixin(contextSwitchSave!());
 
 	asm
 	{
@@ -449,11 +449,11 @@ extern(C) void isr_common()
 		// also pass it as the first parameter (%rdi)
 		// to the fault handler
 		//"movq %%rsp, %%rdi";
-		movq rdi, rsp;
+		//movq RDI, RSP;
 		//"movq %%rsp, %%rax";
-		movq rax, rsp;
+		movq RAX, RSP;
 		//"movq %%rax, " ~ Itoa!(vMem.REGISTER_STACK_POS) ::: "rax";
-		movq [vMem.REGISTER_STACK_POS], rax;
+		movq [vMem.REGISTER_STACK_POS], RAX;
 
 		// switch to KERNEL_STACK
 		//"movq $" ~ Itoa!(vMem.KERNEL_STACK) ~ ", %%rsp";
@@ -511,7 +511,7 @@ isr_kernel:;
 	asm
 	{
 		//"movq %%rsp, %%rdi";
-		movq rdi, rsp;
+		//movq rdi, rsp;
 		//"call fault_handler";
 		call fault_handler;
 	}
