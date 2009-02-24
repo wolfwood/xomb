@@ -1,5 +1,8 @@
-module kernel.runtime.util;
+// This module contains helpful functions found necessary by the runtime and gcc.
 
+// contains: itoa, memcpy, memset, memmove, memcmp, strlen, isnan, toString
+
+module kernel.runtime.util;
 
 /**
 This function converts an integer to a string, depending on the base passed in.

@@ -5,22 +5,22 @@ module kernel.dev.console;
 // This contains the hexidecimal values for various colors for printing to the screen.
 enum Color : ubyte
 {
-	Black		= 0x00,
-	LowBlue		= 0x01,
-	LowGreen	= 0x02,
-	LowCyan		= 0x03,
-	LowRed       = 0x04,
-	LowMagenta   = 0x05,
-	Brown        = 0x06,
-	LightGray    = 0x07,
-	DarkGray     = 0x08,
-	HighBlue     = 0x09,
-	HighGreen    = 0x0A,
-	HighCyan     = 0x0B,
-	HighRed      = 0x0C,
-	HighMagenta  = 0x0D,
-	Yellow       = 0x0E,
-	White        = 0x0F
+	Black		  = 0x00,
+	Blue		  = 0x01,
+	Green	      = 0x02,
+	Cyan		  = 0x03,
+	Red           = 0x04,
+	Magenta       = 0x05,
+	Yellow        = 0x06,
+	LightGray     = 0x07,
+	Gray          = 0x08,
+	LightBlue     = 0x09,
+	LightGreen    = 0x0A,
+	LightCyan     = 0x0B,
+	LightRed      = 0x0C,
+	LightMagenta  = 0x0D,
+	LightYellow   = 0x0E,
+	White         = 0x0F
 }
 
 // This is the true interface to the console
@@ -130,13 +130,13 @@ public:
 	// This function will set the text foreground to a new color.
 	void setForeColor(Color newColor)
 	{
-		colorAttribute &= newColor | 0xf0;
+		colorAttribute = (colorAttribute & 0xf0) | newColor;
 	}
 
 	// This function will set the text background to a new color.
 	void setBackColor(Color newColor)
 	{
-		colorAttribute &= (newColor << 4) | 0x0f;
+		colorAttribute = (colorAttribute & 0x0f) | (newColor << 4);
 	}
 
 	// This function will set both the foreground and background colors.

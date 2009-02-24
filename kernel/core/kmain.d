@@ -2,18 +2,39 @@
  *
  * This is the bare minimum needed for an OS written in the D language.
  *
+ * Note: The kmain will be called in the higher memory region.
+ *       The next step is setting up permanent kernel structures.
+ *
  */
 
 module kernel.core.kmain;
 
-import kernel.dev.console;
+// This module contains our powerful kprintf function
 import kernel.core.kprintf;
 
-extern(C) void kmain(int flags, void *data) {
 
-	Console.clearScreen();
 
-	kprintfln!("I will eat your {}! {}, {x}")("brains", 10, 3735928559);
+
+
+// The main function for the kernel.
+// This will receive data from the boot loader.
+
+// bootLoaderID is the unique identifier for a boot loader.
+// data is a structure given by the boot loader.
+
+// For GRUB: the identifier is the magic number.
+//           data is the pointer to the multiboot structure.
+extern(C) void kmain(int bootLoaderID, void *data)
+{
+
+	kprintfln!("{!cls}Welcome to {}! (version {}.{}.{})")("XOmB Bare Bones", 1,0,0);
+
+
+	kprintfln!("{x} {x}")(bootLoaderID, data);
+
+
+	// Ok, so we don't want to just infinite loop (if you want it to do something)
+	// Replace this with your kernel logic!
 
 	for(;;) {}
 

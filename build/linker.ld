@@ -1,19 +1,21 @@
 /*
 linker.ld
 
-- This script is given as the only script to the linker
-- Will map boot.S to LMA, and then everything else
-  will be linked to the VMA and mapped at the LMA
-- _etext, _edata, _end are defined here
+*  This script is given as the only script to the linker
+*  Will map boot.S to LMA, and then everything else
+     will be linked to the VMA and mapped at the LMA
+*  _etext, _edata, _end are defined here
 
 */
 
 
 /*  KERNEL LINK LOCATIONS
 
-these are the locations to map to
-they need to be set within boot.h
-as well  */
+	these are the locations to map to
+	they need to be set within boot.h
+	as well
+
+ */
 
 kernel_VMA = 0xffffffff80000000;
 kernel_LMA = 0x100000;
@@ -35,7 +37,11 @@ SECTIONS
 
 	_eboot = .;
 
-/*	PROVIDE(_trampoline = .);
+	/* The following is for the trampoline code, if and when
+	 *   multiprocessor support will be necessary.
+	 */
+
+	/*	PROVIDE(_trampoline = .);
 
 	.text_trampoline ALIGN(0x1000) :
 	{
