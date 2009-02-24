@@ -12,7 +12,8 @@ module kernel.core.kmain;
 // This module contains our powerful kprintf function
 import kernel.core.kprintf;
 
-
+//handle everything that the boot loader gives us
+import kernel.core.multiboot;
 
 
 
@@ -27,14 +28,24 @@ import kernel.core.kprintf;
 extern(C) void kmain(int bootLoaderID, void *data)
 {
 
-	kprintfln!("{!cls}Welcome to {}! (version {}.{}.{})")("XOmB Bare Bones", 1,0,0);
-
+	kprintfln!("{!cls}Welcome to {}! (version {}.{}.{})")("XOmB", 0,5,0);
 
 	kprintfln!("{x} {x}")(bootLoaderID, data);
 
+  //first, we would validate all of the bootloader stuff
+  //and do the things that we need to do with it
+  handleMultibootInformation(bootLoaderID, data);
 
-	// Ok, so we don't want to just infinite loop (if you want it to do something)
-	// Replace this with your kernel logic!
+  //initialize architecture
+
+  //set up timer
+
+  //multi-core boot
+
+  //system calls
+
+  //scheduler
+
 
 	for(;;) {}
 
