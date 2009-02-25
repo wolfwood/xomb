@@ -78,36 +78,6 @@ template kprintfln(char[] Format)
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // The crazy D templating logic that implements the kprintf
 
 private

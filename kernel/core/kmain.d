@@ -12,8 +12,6 @@ module kernel.core.kmain;
 // This module contains our powerful kprintf function
 import kernel.core.kprintf;
 
-
-
 // The main function for the kernel.
 // This will receive data from the boot loader.
 
@@ -24,17 +22,21 @@ import kernel.core.kprintf;
 //           data is the pointer to the multiboot structure.
 extern(C) void kmain(int bootLoaderID, void *data)
 {
+	// 1) Convert bootloader information to Kernel Friendly information
 
-	kprintfln!("{!cls}{!fg:LightBlue}I will eat your {}! {}, {x}Cl{!bg:Blue}ea{!fg:White}red{!fg:LightGray!bg:Black}Cleared{!pos:10,10}{}!")("brains", 10, 3735928559, "BRAINS!!!");
+	kprintfln!("{!cls} boot loader id: {x} data: {x}")(bootLoaderID, data);
 
-	kprintfln!("hello world")();
-	for(;;) {}
+	// 2) Architecture Initialization (PASS / FAIL)
 
-	kprintfln!("{x} {x}")(bootLoaderID, data);
+	// 3) Processor Initialization (PASS / FAIL)
 
+	// 4) Timer Initialization (PASS / FAIL)
 
-	// Ok, so we don't want to just infinite loop (if you want it to do something)
-	// Replace this with your kernel logic!
+	// 5) Scheduler Initialization (PASS / FAIL)
+
+	// 6) Multiprocessor Initialization (PASS / FAIL)
+
+	// 7) Invoke Scheduler
 
 	for(;;) {}
 
