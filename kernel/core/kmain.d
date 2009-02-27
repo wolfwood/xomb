@@ -15,7 +15,8 @@ import kernel.core.kprintf;
 //handle everything that the boot loader gives us
 import kernel.core.multiboot;
 
-
+//we need to print log stuff to the screen
+import kernel.core.log;
 
 // The main function for the kernel.
 // This will receive data from the boot loader.
@@ -28,13 +29,17 @@ import kernel.core.multiboot;
 extern(C) void kmain(int bootLoaderID, void *data)
 {
 
+  //first, we'll print out some fun status messages.
 	kprintfln!("{!cls}Welcome to {}! (version {}.{}.{})")("XOmB", 0,5,0);
+  kprintfln!("{x} {x}")(bootLoaderID, data);
+  //printToLog(hr);
 
-	kprintfln!("{x} {x}")(bootLoaderID, data);
+  kprintfln!("size: {}")(uint.sizeof);
 
   //first, we would validate all of the bootloader stuff
   //and do the things that we need to do with it
-  handleMultibootInformation(bootLoaderID, data);
+  printToLog("Verifying Multiboot information", handleMultibootInformation(bootLoaderID, data));
+
 
   //initialize architecture
 
