@@ -13,7 +13,7 @@ module kernel.core.kmain;
 import kernel.core.kprintf;
 
 //handle everything that the boot loader gives us
-import kernel.core.multiboot;
+import kernel.system.info;
 
 //we need to print log stuff to the screen
 import kernel.core.log;
@@ -38,7 +38,7 @@ extern(C) void kmain(int bootLoaderID, void *data)
 
   //first, we would validate all of the bootloader stuff
   //and do the things that we need to do with it
-  printToLog("Verifying Multiboot information", handleMultibootInformation(bootLoaderID, data));
+  //printToLog("Verifying Multiboot information", handleMultibootInformation(bootLoaderID, data));
 
 
 	// 2) Architecture Initialization (PASS / FAIL)
