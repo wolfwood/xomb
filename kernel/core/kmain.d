@@ -30,7 +30,7 @@ extern(C) void kmain(int bootLoaderID, void *data)
 {
 
   //first, we'll print out some fun status messages.
-	kprintfln!("{!cls}Welcome to {}! (version {}.{}.{})")("XOmB", 0,5,0);
+	kprintfln!("{!cls!fg:White}Welcome to {!fg:Green}{}{!fg:White}! (version {}.{}.{})")("XOmB", 0,5,0);
   kprintfln!("{x} {x}")(bootLoaderID, data);
   //printToLog(hr);
 
