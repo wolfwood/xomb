@@ -41,16 +41,17 @@ extern(C) void kmain(int bootLoaderID, void *data)
   printToLog("Verifying Multiboot information", handleMultibootInformation(bootLoaderID, data));
 
 
-  //initialize architecture
+	// 2) Architecture Initialization (PASS / FAIL)
 
-  //set up timer
+	// 3) Processor Initialization (PASS / FAIL)
 
-  //multi-core boot
+	// 4) Timer Initialization (PASS / FAIL)
 
-  //system calls
+	// 5) Scheduler Initialization (PASS / FAIL)
 
-  //scheduler
+	// 6) Multiprocessor Initialization (PASS / FAIL)
 
+	// 7) Invoke Scheduler
 
 	for(;;) {}
 

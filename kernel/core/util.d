@@ -189,7 +189,7 @@ template isPointerType(T)
 
 template isPointerType(T : T*)
 {
-	const bool isPointerType = true;	
+	const bool isPointerType = true;
 }
 
 /**

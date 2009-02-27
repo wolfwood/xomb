@@ -78,6 +78,7 @@ template kprintfln(char[] Format)
 	}
 }
 
+<<<<<<< HEAD:kernel/core/kprintf.d
 
 
 
@@ -108,6 +109,8 @@ template kprintfln(char[] Format)
 
 
 
+=======
+>>>>>>> wilkie/ldc:kernel/core/kprintf.d
 // The crazy D templating logic that implements the kprintf
 
 private
