@@ -9,6 +9,8 @@
 
 module kernel.core.kmain;
 
+import kernel.arch.x86_64.tss;
+
 // This module contains our powerful kprintf function
 import kernel.core.kprintf;
 
