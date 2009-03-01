@@ -5,9 +5,13 @@
  *
  */
 
-module kernel.arch.x86_64.gdt;
+module kernel.arch.x86_64.core.gdt;
 
+// Import BitField!()
 import kernel.core.util;
+
+// Import ErrorVal
+import kernel.core.error;
 
 struct GDT
 {
@@ -26,7 +30,7 @@ public:
 	}
 
 	// this function will set up the GDT
-	void initialize()
+	ErrorVal initialize()
 	{
 		// The limit is the size of the table minus 1
 		gdtBase.limit	= (SegmentDescriptor.sizeof * entries.length) - 1;
@@ -51,6 +55,8 @@ public:
 		// Corresponds with CS_USER
 		setDataSegment(8, true, 3);
 		setCodeSegment(9, true, 3, true);
+
+		return ErrorVal.Success;
 	}
 
 	void install()

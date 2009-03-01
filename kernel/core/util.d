@@ -1,20 +1,6 @@
 module kernel.core.util;
 
 /**
-This method checks to see if the value stored in the bit number declared
-by the input variable "bit" in the flag declared by the input
-variable "flags" is set. Returns a 1 if it is set, returns a 0 if it is not set.
-	Params:
-		flags = The flags from the multiboot header the kernel wishes to check.
-		bit = The number of the bit the kernel would like to check for data.
-	Returns: Whether the bit "bit" in "flags" has a value (1 if it is set, 0 if it is not)
-*/
-uint CHECK_FLAG(uint flags, uint bit)
-{
-	return ((flags) & (1 << (bit)));
-}
-
-/**
 Given a struct type, gives a tuple of strings of the names of fields in the struct.
 */
 public template FieldNames(S, int idx = 0)

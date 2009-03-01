@@ -1,15 +1,13 @@
-/* XOmB Bare Bones
+/* XOmB
  *
- * This is the bare minimum needed for an OS written in the D language.
- *
- * Note: The kmain will be called in the higher memory region.
- *       The next step is setting up permanent kernel structures.
+ * This is the main function for the XOmB Kernel
  *
  */
 
 module kernel.core.kmain;
 
-import kernel.arch.x86_64.tss;
+// Import the architecture-dependent interface
+import kernel.arch.select;
 
 // This module contains our powerful kprintf function
 import kernel.core.kprintf;
@@ -38,7 +36,17 @@ extern(C) void kmain(int bootLoaderID, void *data)
 
   kprintfln!("size: {}")(uint.sizeof);
 
-  //first, we would validate all of the bootloader stuff
+
+
+	// 1. Bootloader Validation
+
+	// 2. Architecture Initialization
+	printToLog("Initializing Architecture", Architecture.initialize());
+
+	// 3. Processor Initialization
+	printToLog("Initializing Processor", Cpu.initialize());
+
+	//first, we would validate all of the bootloader stuff
   //and do the things that we need to do with it
   //printToLog("Verifying Multiboot information", handleMultibootInformation(bootLoaderID, data));
 

@@ -13,11 +13,14 @@
  *
  */
 
-module kernel.arch.x86_64.tss;
+module kernel.arch.x86_64.core.tss;
 
 // The TSS needs to be identified within a System Segment Descriptor
 // within the GDT (Global Descriptor Table)
-import kernel.arch.x86_64.gdt;
+import kernel.arch.x86_64.core.gdt;
+
+// Import ErrorVal
+import kernel.core.error;
 
 struct TSS
 {
@@ -25,10 +28,12 @@ static:
 public:
 
 	// Do the necessary work to allow the TSS to be installed.
-	void initialize()
+	ErrorVal initialize()
 	{
 		// Add the TSS entry to the GDT
 		GDT.setSystemSegment((tssBase >> 3), 0x67, (cast(ulong)&tss), GDT.SystemSegmentType.AvailableTSS, 0, true, false, false);
+
+		return ErrorVal.Success;
 	}
 
 	// This function will install the TSS using the LTR (Load Task Register)
