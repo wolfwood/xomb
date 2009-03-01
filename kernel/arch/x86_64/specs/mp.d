@@ -3,6 +3,10 @@
  *
  * This module implements the Multiprocessor Specification
  *
+ *
+ * TODO: - Add comments and\or update the flags bitfields to
+ *         cleaner and readible.
+ *
  */
 
 module kernel.arch.x86_64.specs.mp;
@@ -17,6 +21,8 @@ import kernel.core.kprintf;
 // Bitfield!()
 import kernel.core.util;
 
+
+
 // The struct for MP specification
 struct MP
 {
@@ -25,17 +31,50 @@ public:
 
 	// This function will search for the MP tables.
 	// It will return true when they have been found.
-	bool hasTable()
+	ErrorVal findTable()
 	{
-		return false;
+		// These two arrays define the regions to look for the table (in physical addresses)
+		static ubyte*[] checkStart	= [cast(ubyte*)0xf0000,	cast(ubyte*)0x9fc00];
+		static ulong[] checkLen = [0xffff, 0x400];
+
+		// This will be the temporary pointer to be used to find the table
+		MPFloatingPointer* tmp;
+
+		// For every region, scan for the table signature
+		foreach(i,val; checkStart)
+		{
+			// scan() -- searches for the signature `_MP_`
+			tmp = scan(val, val + checkLen[i]);
+			if (tmp !is null)
+			{
+				// The MP Table has been found, set
+				// our reference pointer.
+				mpFloating = tmp;
+
+				// Return success.
+				return ErrorVal.Success;
+			}
+		}
+
+		// We have exhausted our searches, and failed.
+		return ErrorVal.Fail;
 	}
 
+	// This function will utilize the table once it has been
+	// found and store the information in a convenient place
+	// for the IO APIC manager.
 	ErrorVal readTable()
 	{
 		return ErrorVal.Success;
 	}
 
+
 private:
+
+// -- The Local MP Floating Pointer -- //
+
+
+	MPFloatingPointer* mpFloating;
 
 
 // -- Main Structure Definitions -- //
@@ -202,4 +241,43 @@ private:
 
 	// Sanity check
 	static assert(CompatibilityBusAddressSpaceModifierEntry.sizeof == 8);
+
+
+// -- Helper Functions -- //
+
+
+	// This function will scan a section of memory looking for the telltale
+	// _MP_ signature that signifies the start of the MP Floating Pointer
+	MPFloatingPointer* scan(ubyte* start, ubyte* end)
+	{
+		for (ubyte* currentByte = start; currentByte < end - 3; currentByte++)
+		{
+			if (*(cast(uint*)currentByte) == *(cast(uint*)("_MP_"c.ptr)))
+			{
+				MPFloatingPointer* floatingTable = cast(MPFloatingPointer*)currentByte;
+				if (floatingTable.length == 0x1
+						&& floatingTable.mpVersion == 0x4
+						&& isChecksumValid(currentByte, MPFloatingPointer.sizeof))
+				{
+					return floatingTable;
+				}
+			}
+		}
+
+		return null;
+	}
+
+	// This will check the byte checksum for a range of memory.
+	// All checksums in the MP spec will result in 0 for success.
+	bool isChecksumValid(ubyte* startAddr, uint length)
+	{
+		ubyte* endAddr = startAddr + length;
+		int acc;
+		for ( ; startAddr < endAddr; startAddr++)
+		{
+			acc += *startAddr;
+		}
+
+		return ((acc &= 0xff) == 0);
+	}
 }
