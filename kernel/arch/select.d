@@ -59,7 +59,7 @@ public:
 
 	ErrorVal initialize()
 	{
-		return ErrorVal.Fail;
+		return mpInitialize();
 	}
 
 private:

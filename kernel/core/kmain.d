@@ -46,6 +46,15 @@ extern(C) void kmain(int bootLoaderID, void *data)
 	// 3. Processor Initialization
 	printToLog("Initializing Processor", Cpu.initialize());
 
+	// 4. Timer Initialization
+	// LATER
+
+	// 5. Scheduler Initialization
+	// LATER
+
+	// 6. Multiprocessor Initialization
+	printToLog("Initializing Multiprocessor", Multiprocessor.initialize());
+
 	//first, we would validate all of the bootloader stuff
   //and do the things that we need to do with it
   //printToLog("Verifying Multiboot information", handleMultibootInformation(bootLoaderID, data));
