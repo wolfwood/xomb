@@ -10,4 +10,4 @@ module archimport;
 
 public import kernel.arch.x86_64.main;
 public import kernel.arch.x86_64.cpu;
-public import kernel.arch.x86_64.mp;
+public import kernel.arch.x86_64.multiprocessor;

@@ -21,7 +21,9 @@ import kernel.core.kprintf;
 // Bitfield!()
 import kernel.core.util;
 
-
+// The Info struct holds all of the information we will enumerating
+import kernel.arch.x86_64.core.info;
+import kernel.arch.x86_64.core.ioapic;
 
 // The struct for MP specification
 struct MP
@@ -65,6 +67,206 @@ public:
 	// for the IO APIC manager.
 	ErrorVal readTable()
 	{
+		// Does the MP Configuration Table exist?
+		if (mpFloating.mpFeatures1 == 0)
+		{
+			mpConfig = cast(MPConfigurationTable*)(cast(ulong)mpFloating.mpConfigPointer);
+
+			// Check the checksum of the configuration table
+			if (!isChecksumValid(cast(ubyte*)mpConfig, mpConfig.baseTableLength))
+			{
+				return ErrorVal.Fail;
+			}
+		}
+		else
+		{
+			// This means that the configuration table is of the 'default'
+			// It is defined within the MP Specification
+
+			// We do not support this as of yet.
+			return ErrorVal.Fail;
+		}
+
+
+		// We need to map in the APIC register space info a separate
+		// kernel region.
+
+		// --- //
+
+		// We will obtain all other entry information
+
+		ubyte* curAddr = cast(ubyte*)mpConfig;
+		curAddr += MPConfigurationTable.sizeof;
+
+		int lastState = 0;
+
+		for (uint i=0; i < mpConfig.entryCount; i++)
+		{
+			if (lastState > cast(int)(*curAddr))
+			{
+				// Problem!
+
+				// The MP Specification denotes that entries appear in order.
+				// XXX: So this is weird. ... we will accept it for now ...
+			}
+
+			lastState = *curAddr;
+			switch(*curAddr)
+			{
+				case 0: // Processor Entry
+
+					// Set the Processor Entry in the Info struct
+					ProcessorEntry* processor = cast(ProcessorEntry*)curAddr;
+
+					Info.LAPICs[Info.numLAPICs].ID = processor.localAPICID;
+					Info.LAPICs[Info.numLAPICs].ver = processor.localAPICVersion;
+					Info.LAPICs[Info.numLAPICs].enabled = cast(bool)processor.cpuEnabledBit;
+
+					// increment the count
+					Info.numLAPICs++;
+
+					curAddr += ProcessorEntry.sizeof;
+					break;
+
+				case 1: // Bus Entry
+
+					curAddr += BusEntry.sizeof;
+					break;
+
+				case 2: // IO APIC Entry
+
+					IOAPICEntry* ioapic = cast(IOAPICEntry*)curAddr;
+
+					Info.IOAPICs[Info.numIOAPICs].ID = ioapic.ioAPICID;
+					Info.IOAPICs[Info.numIOAPICs].ver = ioapic.ioAPICVersion;
+					Info.IOAPICs[Info.numIOAPICs].enabled = cast(bool)ioapic.ioAPICEnabled;
+
+
+					/*ubyte entryType;	// 3
+		ubyte interruptType;
+		ubyte ioInterruptFlags;
+		ubyte reserved;
+		ubyte sourceBusID;
+		ubyte sourceBusIRQ;
+		ubyte destinationIOAPICID;
+		ubyte destinationIOAPICIntin;
+
+		mixin(Bitfield!(ioInterruptFlags,
+					"po", 2,
+					"el", 2,
+					"reserved2", 4));
+	}
+
+	struct RedirectionEntry
+	{
+		ubyte destination = 0xFF;
+		IOAPIC.InterruptType interruptType;
+		IOAPIC.TriggerMode triggerMode;
+		IOAPIC.InputPinPolarity inputPinPolarity;
+		IOAPIC.DestinationMode destinationMode;
+		IOAPIC.DeliveryMode deliveryMode;
+		ubyte vector;
+	}*/
+
+
+					// increment the count
+					Info.numIOAPICs++;
+
+					curAddr += IOAPICEntry.sizeof;
+					break;
+
+				case 3: // IO Interrupt Entry
+
+					IOInterruptEntry* ioentry = cast(IOInterruptEntry*)curAddr;
+					Info.redirectionEntries[Info.numEntries].sourceBusIRQ = ioentry.sourceBusIRQ;
+					Info.redirectionEntries[Info.numEntries].vector = ioentry.destinationIOAPICIntin;
+
+					switch (ioentry.po)
+					{
+						case 0:
+							// Conforms to the bus (dumb)
+						case 1:
+							// Active High
+							Info.redirectionEntries[Info.numEntries].inputPinPolarity = IOAPIC.InputPinPolarity.HighActive;
+							break;
+						case 3:
+							// Active Low
+							Info.redirectionEntries[Info.numEntries].inputPinPolarity = IOAPIC.InputPinPolarity.LowActive;
+							break;
+						default:
+							// undefined
+							break;
+					}
+
+					switch (ioentry.el)
+					{
+						case 0:
+							// Conforms to the bus (dumb!)
+						case 1:
+							// Edge-Triggered
+							Info.redirectionEntries[Info.numEntries].triggerMode = IOAPIC.TriggerMode.EdgeTriggered;
+							break;
+						case 3:
+							// Level-Triggered
+							Info.redirectionEntries[Info.numEntries].triggerMode = IOAPIC.TriggerMode.LevelTriggered;
+							break;
+						default:
+							// undefined
+							break;
+					}
+
+					switch (ioentry.interruptType)
+					{
+						case 0: // It is an INT (common)
+							Info.redirectionEntries[Info.numEntries].deliveryMode = IOAPIC.DeliveryMode.Fixed;
+							break;
+						case 1: // It is a NMI
+							Info.redirectionEntries[Info.numEntries].deliveryMode = IOAPIC.DeliveryMode.NonMaskedInterrupt;
+							break;
+						case 2: // It is a SMI
+							Info.redirectionEntries[Info.numEntries].deliveryMode = IOAPIC.DeliveryMode.SystemManagementInterrupt;
+							break;
+						case 3: // It is an external interrupt (devices, etc)
+							Info.redirectionEntries[Info.numEntries].deliveryMode = IOAPIC.DeliveryMode.ExtINT;
+							break;
+					}
+
+					Info.numEntries++;
+
+					curAddr += IOInterruptEntry.sizeof;
+					break;
+
+				case 4: // Local Interrupt Entry (LAPIC LIVT)
+
+					curAddr += LocalInterruptEntry.sizeof;
+					break;
+
+				case 128: // System Address Space Mapping
+
+					curAddr += SystemAddressSpaceMappingEntry.sizeof;
+					break;
+
+				case 129: // Bus Hierarchy Descriptor Entry
+
+					curAddr += BusHierarchyDescriptorEntry.sizeof;
+					break;
+
+				case 130:
+
+					curAddr += CompatibilityBusAddressSpaceModifierEntry.sizeof;
+					break;
+
+				default:
+
+					// WTF
+
+					// Unknown Entry type
+
+					break;
+
+			}
+		}
+
 		return ErrorVal.Success;
 	}
 
@@ -75,6 +277,7 @@ private:
 
 
 	MPFloatingPointer* mpFloating;
+	MPConfigurationTable* mpConfig;
 
 
 // -- Main Structure Definitions -- //
@@ -197,6 +400,9 @@ private:
 					"el", 2,
 					"reserved2",4));
 	}
+
+	// Sanity check
+	static assert(LocalInterruptEntry.sizeof == 8);
 
 
 // -- Extended MP Configuration Table Entries -- //
