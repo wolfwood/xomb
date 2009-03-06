@@ -16,6 +16,7 @@ import kernel.arch.x86_64.core.idt;
 // To return error values
 import kernel.core.error;
 import kernel.core.log;
+import kernel.core.kprintf;
 
 // We need some values from the linker script
 import kernel.arch.x86_64.linker;
@@ -23,24 +24,39 @@ import kernel.arch.x86_64.linker;
 // To set some values in the core table
 import kernel.system.info;
 
-// This function will initialize the architecture upon boot
-ErrorVal archInitialize()
+// We need to set up the page allocator
+import kernel.mem.heap;
+
+struct Architecture
 {
-	// Read from the linker script
-	// We want the length of the kernel module
-	System.kernel.start = cast(ubyte*)LinkerScript.kernelLMA;
-	System.kernel.length = LinkerScript.ekernel - LinkerScript.kernelVMA;
+static:
+public:
 
-	// Global Descriptor Table
-	printToLog("Initializing GDT", GDT.initialize());
+	// This function will initialize the architecture upon boot
+	ErrorVal initialize()
+	{
+		// Read from the linker script
+		// We want the length of the kernel module
+		System.kernel.start = cast(ubyte*)LinkerScript.kernelLMA;
+		System.kernel.length = LinkerScript.ekernel - LinkerScript.kernelVMA;
 
-	// Task State Segment
-	printToLog("Initializing TSS", TSS.initialize());
+		// Initialize the system heap, because we will need it
+		// XXX: for now
+		System.memoryInfo.length = 128 * 1024 * 1024;
+		kprintfln!("memlen: {x}")(System.memoryInfo.length);
+		Heap.initialize();
 
-	// Interrupt Descriptor Table
-	printToLog("Initializing IDT", IDT.initialize());
+		// Global Descriptor Table
+		printToLog("Initializing GDT", GDT.initialize());
 
-	// Everything must have succeeded
-	return ErrorVal.Success;
+		// Task State Segment
+		printToLog("Initializing TSS", TSS.initialize());
+
+		// Interrupt Descriptor Table
+		printToLog("Initializing IDT", IDT.initialize());
+
+		// Everything must have succeeded
+		return ErrorVal.Success;
+	}
 }
 

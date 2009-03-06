@@ -19,25 +19,32 @@ import kernel.arch.x86_64.specs.acpi;
 import kernel.core.error;	// ErrorVal
 import kernel.core.log;		// logging
 
-// This module will conform the the interface
-ErrorVal mpInitialize()
+struct Multiprocessor
 {
-	// 1. Look for the ACPI tables (preferred method)
-	if(ACPI.Tables.findTable() == ErrorVal.Success)
+static:
+public:
+
+	// This module will conform the the interface
+	ErrorVal initialize()
 	{
-		// ACPI tables found
-		return ACPI.Tables.readTable();
+		// 1. Look for the ACPI tables (preferred method)
+		if(ACPI.Tables.findTable() == ErrorVal.Success)
+		{
+			// ACPI tables found
+			return ACPI.Tables.readTable();
+		}
+
+		// 2. Fall back on looking for the MP tables
+
+		// 2a. Locate the MP Tables
+		if (MP.findTable() == ErrorVal.Fail)
+		{
+			// If the MP table is missing, fail.
+			return ErrorVal.Fail;
+		}
+
+		// 2b. Read MP Table
+		return MP.readTable();
 	}
-
-	// 2. Fall back on looking for the MP tables
-
-	// 2a. Locate the MP Tables
-	if (MP.findTable() == ErrorVal.Fail)
-	{
-		// If the MP table is missing, fail.
-		return ErrorVal.Fail;
-	}
-
-	// 2b. Read MP Table
-	return MP.readTable();
+private:
 }

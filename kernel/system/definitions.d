@@ -8,7 +8,7 @@ module kernel.system.definitions;
 struct Memory
 {
 	// The size of the RAM.
-	ulong ramSize;
+	ulong length;
 }
 
 // This structure keeps track of modules loaded alongside the kernel.

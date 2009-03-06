@@ -17,15 +17,21 @@ import kernel.core.error;
 import kernel.core.log;
 import kernel.core.kprintf;
 
-// This module will conform to the interface
-ErrorVal cpuInitialize()
+struct Cpu
 {
-	GDT.install();
-	printToLog("Enabling GDT", ErrorVal.Success);
-	TSS.install();
-	printToLog("Enabling TSS", ErrorVal.Success);
-	IDT.install();
-	printToLog("Enabling IDT", ErrorVal.Success);
+static:
+public:
 
-	return ErrorVal.Success;
+	// This module will conform to the interface
+	ErrorVal initialize()
+	{
+		GDT.install();
+		printToLog("Enabling GDT", ErrorVal.Success);
+		TSS.install();
+		printToLog("Enabling TSS", ErrorVal.Success);
+		IDT.install();
+		printToLog("Enabling IDT", ErrorVal.Success);
+
+		return ErrorVal.Success;
+	}
 }
