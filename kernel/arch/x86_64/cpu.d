@@ -17,9 +17,6 @@ import kernel.core.error;
 import kernel.core.log;
 import kernel.core.kprintf;
 
-// To set some values in the core table
-import kernel.system.info;
-
 // This module will conform to the interface
 ErrorVal cpuInitialize()
 {
