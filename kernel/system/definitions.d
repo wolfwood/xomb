@@ -8,7 +8,7 @@ module kernel.system.definitions;
 struct Memory
 {
 	// The size of the RAM.
-	ulong length;
+	ulong ramSize;
 }
 
 // This structure keeps track of modules loaded alongside the kernel.
@@ -27,7 +27,10 @@ struct Module
 enum RegionType: ubyte
 {
 	// The region is special reserved data from the BIOS
-	Reserved
+	Reserved,
+
+	// This signifies that this region is the kernel
+	Kernel,
 }
 
 // This structure keeps track of special memory regions.

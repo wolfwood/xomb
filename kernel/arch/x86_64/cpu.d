@@ -7,6 +7,7 @@
 
 module kernel.arch.x86_64.cpu;
 
+// Import Arch Modules
 import kernel.arch.x86_64.core.gdt;
 import kernel.arch.x86_64.core.tss;
 import kernel.arch.x86_64.core.idt;
@@ -14,6 +15,10 @@ import kernel.arch.x86_64.core.idt;
 // To return error values
 import kernel.core.error;
 import kernel.core.log;
+import kernel.core.kprintf;
+
+// To set some values in the core table
+import kernel.system.info;
 
 // This module will conform to the interface
 ErrorVal cpuInitialize()
