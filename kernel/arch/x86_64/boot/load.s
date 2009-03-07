@@ -37,7 +37,7 @@ start64:
 	; Go into canonical higher half
 	; It uses a trick to update the program counter
 	;   across a 64 bit address space
-	lretq
+	ret
 
 long_entry:
 

@@ -40,12 +40,6 @@ public:
 		System.kernel.start = cast(ubyte*)LinkerScript.kernelLMA;
 		System.kernel.length = LinkerScript.ekernel - LinkerScript.kernelVMA;
 
-		// Initialize the system heap, because we will need it
-		// XXX: for now
-		System.memoryInfo.length = 128 * 1024 * 1024;
-		kprintfln!("memlen: {x}")(System.memoryInfo.length);
-		Heap.initialize();
-
 		// Global Descriptor Table
 		printToLog("Initializing GDT", GDT.initialize());
 
@@ -54,6 +48,16 @@ public:
 
 		// Interrupt Descriptor Table
 		printToLog("Initializing IDT", IDT.initialize());
+
+
+		// Initialize the system heap, because we will need it
+		// XXX: for now
+		System.memoryInfo.length = 128 * 1024 * 1024;
+		kprintfln!("memlen: {x}")(System.memoryInfo.length);
+		kprintfln!("start: {x} + length: {x}")(System.kernel.start, System.kernel.length);
+		Heap.initialize(cast(ubyte*)LinkerScript.kernelVMA + cast(ulong)System.kernel.start + System.kernel.length);
+
+
 
 		// Everything must have succeeded
 		return ErrorVal.Success;

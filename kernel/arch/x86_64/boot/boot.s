@@ -155,7 +155,7 @@ pml2_base:
 	%assign i 0
 	%rep 15
 	dq (pml1_base + i + 0x7)
-	%assign i i+1
+	%assign i i+4096
 	%endrep
 	times 497 dq 0
 
