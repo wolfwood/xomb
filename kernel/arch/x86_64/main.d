@@ -12,6 +12,7 @@ module kernel.arch.x86_64.main;
 import kernel.arch.x86_64.core.gdt;
 import kernel.arch.x86_64.core.tss;
 import kernel.arch.x86_64.core.idt;
+import kernel.arch.x86_64.core.paging;
 
 // To return error values
 import kernel.core.error;
@@ -51,13 +52,12 @@ public:
 
 
 		// Initialize the system heap, because we will need it
-		// XXX: for now
-		System.memoryInfo.length = 128 * 1024 * 1024;
-		kprintfln!("memlen: {x}")(System.memoryInfo.length);
-		kprintfln!("start: {x} + length: {x}")(System.kernel.start, System.kernel.length);
-		Heap.initialize(cast(ubyte*)LinkerScript.kernelVMA + cast(ulong)System.kernel.start + System.kernel.length);
+		Heap.initialize(cast(ubyte*)LinkerScript.kernelVMA
+				+ cast(ulong)System.kernel.start
+				+ System.kernel.length);
 
-
+		// Install Virtual Memory and Paging
+		printToLog("Initializing Paging", Paging.initialize());
 
 		// Everything must have succeeded
 		return ErrorVal.Success;

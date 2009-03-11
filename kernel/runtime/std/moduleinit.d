@@ -28,6 +28,8 @@ struct ModuleReference
 
 extern(C) ModuleReference* _Dmodule_ref;
 
+//pragma(msg, (ModuleReference*).sizeof.stringof);
+
 //ModuleInfo[] _moduleinfo_dtors;
 uint _moduleinfo_dtors_i;
 

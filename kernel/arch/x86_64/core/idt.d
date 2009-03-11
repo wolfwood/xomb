@@ -46,7 +46,7 @@ public:
 	void install()
 	{
 		asm {
-			lidt [idtBase];
+		//	lidt [idtBase];
 		}
 	}
 
@@ -195,9 +195,10 @@ private:
 				asm
 				{
 					naked; ` ~
-						(needDummyError ? `pushq 0;` : ``) ~
-						`pushq ` ~ num.stringof ~ `;
-						jmp isr_common;
+					//	(needDummyError ? `pushq 0;` : ``) ~
+					//	`pushq ` ~ num.stringof ~ `;
+					//	jmp isr_common;
+						`
 				}
 			}
 		`;

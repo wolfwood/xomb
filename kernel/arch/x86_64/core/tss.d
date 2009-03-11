@@ -45,7 +45,7 @@ public:
 	{
 		asm
 		{
-			ltr tssBase;
+			//ltr tssBase;
 		}
 	}
 

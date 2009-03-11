@@ -9,6 +9,9 @@ struct Memory
 {
 	// The size of the RAM.
 	ulong length;
+
+	// The Virtual location of RAM
+	void* virtualStart;
 }
 
 // This structure keeps track of modules loaded alongside the kernel.

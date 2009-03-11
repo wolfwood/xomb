@@ -367,3 +367,12 @@ char[] itoa(char[] buf, char base, long d)
 
 	return buf[p + 1 .. $];
 }
+
+
+public int strlen(char *str) {
+  int len = 0;
+  while(*str++ !='\0')
+    len++;
+  return len;
+}
+

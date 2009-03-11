@@ -63,7 +63,7 @@ public:
 	{
 		asm
 		{
-			lgdt [gdtBase];
+		//	lgdt [gdtBase];
 		}
 	}
 

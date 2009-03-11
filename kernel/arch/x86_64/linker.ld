@@ -17,7 +17,7 @@
  *
  */
 
-kernel_VMA = 0xffffffff80000000;
+kernel_VMA = 0xffff800000000000;
 kernel_LMA = 0x100000;
 
 /* start from the entry point */

@@ -10,15 +10,8 @@ bits 64
 
 section .text
 
-; where is the kernel?
-%define KERNEL_VMA_BASE			0xFFFFFFFF80000000
-%define KERNEL_LMA_BASE			0x100000
-
-; the gdt entry to use for the kernel
-%define CS_KERNEL				0x10
-%define CS_KERNEL32				0x08
-
-%define STACK_SIZE				0x4000
+; include useful definitions
+%include "defines.mac"
 
 ; extern to kmain.d
 extern kmain
@@ -32,7 +25,12 @@ start64:
 
 	; Set up the stack for the return.
 	push CS_KERNEL
-	push (long_entry-KERNEL_VMA_BASE) + (KERNEL_VMA_BASE & 0xffffffff)
+
+	; RAX - the address to return to
+	mov rax, KERNEL_VMA_BASE >> 32
+	shl rax, 32
+	or rax, long_entry - (KERNEL_VMA_BASE & 0xffffffff00000000)
+	push rax
 
 	; Go into canonical higher half
 	; It uses a trick to update the program counter

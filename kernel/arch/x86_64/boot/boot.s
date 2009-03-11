@@ -5,17 +5,7 @@
 section .text
 bits 32
 
-; multiboot definitions
-%define MULTIBOOT_HEADER_MAGIC	0x1BADB002
-%define MULTIBOOT_HEADER_FLAGS	0x00010003
-
-; where is the kernel?
-%define KERNEL_VMA_BASE			0xFFFFFFFF80000000
-%define KERNEL_LMA_BASE			0x100000
-
-; the gdt entry to use for the kernel
-%define CS_KERNEL				0x10
-%define CS_KERNEL32				0x08
+%include "defines.mac"
 
 ; externs given by the linker script
 extern _edata
@@ -24,10 +14,6 @@ extern _end
 ; extern to the load.s
 extern start64
 extern stack
-
-; other definitions
-
-%define STACK_SIZE				0x4000
 
 ; define the starting point for this module
 global start
@@ -97,13 +83,17 @@ start32:
 	bts eax, 31
 	mov cr0, eax
 
-	jmp CS_KERNEL:(start64 - KERNEL_VMA_BASE)
+	jmp CS_KERNEL:(start64-KERNEL_VMA_BASE)
+
+bits 64
+code64Jump:
+	jmp (start64-KERNEL_VMA_BASE)
 
 
 
 
 ; Data Structures Follow
-
+bits 32
 
 ; 32 bit gdt
 
@@ -135,20 +125,19 @@ GDT_END:
 
 
 ; Temporary page tables
+
+; These assume linking to 0xFFFF800000000000
 align 4096
 pml4_base:
 	dq (pml3_base + 0x7)
-	times 510 dq 0
+	times 255 dq 0
 	dq (pml3_base + 0x7)
+	times 255 dq 0
 
 align 4096
 pml3_base:
 	dq (pml2_base + 0x7)
-	dq 0
-	dq (pml2_base + 0x7)
-	times 507 dq 0
-	dq (pml2_base + 0x7)
-	dq 0
+	times 511 dq 0
 
 align 4096
 pml2_base:
@@ -157,10 +146,10 @@ pml2_base:
 	dq (pml1_base + i + 0x7)
 	%assign i i+4096
 	%endrep
+
 	times 497 dq 0
 
-;align 4096
-
+align 4096
 ; 15 tables are described here
 ; this maps 40 MB from address 0x0
 ; to an identity mapping

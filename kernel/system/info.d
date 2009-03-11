@@ -14,7 +14,7 @@ static:
 public:
 
 	// The information about RAM
-	Memory memoryInfo;
+	Memory memory;
 
 	// This region is specifically the kernel
 	Region kernel = { type: RegionType.Kernel };
