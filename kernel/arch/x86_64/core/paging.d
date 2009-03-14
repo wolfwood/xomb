@@ -10,13 +10,27 @@ module kernel.arch.x86_64.core.paging;
 // Import common kernel stuff
 import kernel.core.util;
 import kernel.core.error;
+import kernel.core.kprintf;
 
 // Import the heap allocator, so we can allocate memory
 import kernel.mem.heap;
 
+// Import some arch-dependent modules
+import kernel.arch.x86_64.linker;	// want linker info
+import kernel.arch.x86_64.vm;		// want page size
+
 // Import information about the system
 // (we need to know where the kernel is)
 import kernel.system.info;
+
+// Kernel Memory Map:
+//
+// [0xFFFF800000000000]
+//   - kernel
+//   - RAM (page table entry map)
+//   - kheap
+//      - devices
+//      - misc
 
 struct Paging
 {
@@ -32,10 +46,16 @@ public:
 		// Initialize the structure. (Zero it)
 		*root = PageLevel4.init;
 
-		// We need to map the kernel
+		// The current position of the kernel space. All gets appended to this address.
+		heapAddress = LinkerScript.kernelVMA;
 
-		// Tell the system where RAM will be mapped (after the kernel)
-		System.memory.virtualStart = cast(void*)0x0;
+		// We need to map the kernel (starting from 0x0
+		kernelAddress = mapRegion(cast(void*)0x0, cast(ulong)(System.kernel.length + System.kernel.start));
+
+		// We now have the kernel mapped
+		kernelMapped = true;
+
+		kprintfln!("kernel Address: {x}")(kernelAddress);
 
 		// All is well.
 		return ErrorVal.Success;
@@ -62,7 +82,92 @@ public:
 				.entries[indexLevel1].getAddress();
 	}
 
+	ErrorVal mapSystem(void* physAddr, ulong regionLength)
+	{
+		// Check to make sure we aren't doing this again
+		if (systemMapped)
+		{
+			assert(false, "System RAM already mapped.");
+		}
+
+		// The kernel must be mapped before hand
+		if (kernelMapped)
+		{
+			assert(false, "The Kernel mapping has yet to be done.");
+		}
+
+		// heapAddress should be valid from the kernel mapping
+		systemAddress = mapRegion(physAddr, regionLength);
+
+		// Tell the system where RAM will be mapped (after the kernel)
+		System.memory.virtualStart = cast(void*)systemAddress;
+
+		// Consider the system mapping done, so we don't do it again
+		systemMapped = true;
+
+		// All is well
+		return ErrorVal.Success;
+	}
+
+	// Using heapAddress, this will add a region to the kernel space
+	// It returns the virtual address to this region.
+	void* mapRegion(void* physAddr, ulong regionLength)
+	{
+		// Sanitize inputs
+
+		// physAddr should be floored to the page boundary
+		// regionLength should be ceilinged to the page boundary
+		ulong curPhysAddr = cast(ulong)physAddr;
+		regionLength += (curPhysAddr % VirtualMemory.PAGESIZE);
+		curPhysAddr -= (curPhysAddr % VirtualMemory.PAGESIZE);
+
+		// Set the new starting address
+		physAddr = cast(void*)curPhysAddr;
+
+		// Get the end address
+		curPhysAddr += regionLength;
+
+		// Align the end address
+		if ((curPhysAddr % VirtualMemory.PAGESIZE) > 0)
+		{
+			curPhysAddr += VirtualMemory.PAGESIZE - (curPhysAddr % VirtualMemory.PAGESIZE);
+		}
+
+		// Define the end address
+		void* endAddr = cast(void*)curPhysAddr;
+
+		// Recalculate the region length
+		regionLength = cast(ulong)endAddr - cast(ulong)physAddr;
+
+		// Do the mapping
+		// TODO: this
+
+		// This region will be located at the current heapAddress
+		void* location = heapAddress;
+
+		// Relocate heap address
+		heapAddress += regionLength;
+
+		// Return the position of this region
+		return location;
+	}
+
 private:
+
+
+// -- Flags -- //
+
+
+	bool systemMapped;
+	bool kernelMapped;
+
+
+// -- Positions -- //
+
+
+	void* systemAddress;
+	void* kernelAddress;
+	void* heapAddress;
 
 
 // -- Main Page Table -- //

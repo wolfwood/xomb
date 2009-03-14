@@ -39,7 +39,7 @@ public:
 		// Read from the linker script
 		// We want the length of the kernel module
 		System.kernel.start = cast(ubyte*)LinkerScript.kernelLMA;
-		System.kernel.length = LinkerScript.ekernel - LinkerScript.kernelVMA;
+		System.kernel.length = LinkerScript.ekernel - LinkerScript.kernelVMA - cast(ulong)LinkerScript.kernelLMA;
 
 		// Global Descriptor Table
 		printToLog("Initializing GDT", GDT.initialize());
