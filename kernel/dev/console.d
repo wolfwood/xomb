@@ -2,6 +2,9 @@
 
 module kernel.dev.console;
 
+// Import system info
+import kernel.system.info;
+
 // This contains the hexidecimal values for various colors for printing to the screen.
 enum Color : ubyte
 {
@@ -22,7 +25,6 @@ enum Color : ubyte
 	LightYellow   = 0x0E,
 	White         = 0x0F
 }
-import kernel.core.kprintf;
 
 // This is the true interface to the console
 struct Console
@@ -37,8 +39,6 @@ public:
 	// The default color.
 	const ubyte DEFAULTCOLORS = Color.LightGray;
 
-	ubyte* videoMemoryLocation = cast(ubyte*)0xFFFF8000000B8000UL;
-
 	// The cursor position
 	private int xpos = 0;
 	private int ypos = 0;
@@ -49,10 +49,16 @@ public:
 	// The width of a tab
 	const auto TABSTOP = 4;
 
+	// This will init the console driver
+	void initialize()
+	{
+		videoMemoryLocation = cast(ubyte*)0xB8000;
+		videoMemoryLocation += cast(ulong)System.memory.virtualStart;
+	}
+
 	// This method will clear the screen and return the cursor to (0,0).
 	void clearScreen()
 	{
-		videoMemoryLocation = cast(ubyte*)0xffff8000000b8000;
 		int i;
 
 		for (i=0; i < COLUMNS * LINES * 2; i++)
@@ -62,8 +68,6 @@ public:
 
 		xpos = 0;
 		ypos = 0;
-		kprintfln!("mem loc: {x}")(videoMemoryLocation);
-		for(;;){}
 	}
 
 	// This method will return the current location of the cursor
@@ -195,4 +199,9 @@ public:
 			ypos = 0;
 		}
 	}
+
+private:
+
+	// Where the video memory lives (can be changed)
+	ubyte* videoMemoryLocation = cast(ubyte*)0xB8000UL;
 }

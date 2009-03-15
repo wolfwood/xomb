@@ -23,6 +23,9 @@ import kernel.arch.x86_64.vm;		// want page size
 // (we need to know where the kernel is)
 import kernel.system.info;
 
+// We need to restart the console driver
+import kernel.dev.console;
+
 // Kernel Memory Map:
 //
 // [0xFFFF800000000000]
@@ -69,6 +72,9 @@ public:
 
 		ulong rootAddr = cast(ulong)root;
 		rootAddr -= cast(ulong)LinkerScript.kernelVMA;
+
+		// Restart the console driver to look at the right place
+		Console.initialize();
 
 		kprintfln!("root addr: {x}")(rootAddr);
 		// Must map
@@ -228,19 +234,16 @@ private:
 		for ( ; indexL4 < 512 && physAddr < endAddr ; indexL4++ )
 		{
 			// get the L3 table
-			kprintfln!("get l3 {x}")(indexL4);
 			pl3 = root.entries[indexL4].getOrCreateTable();
 
 			for ( ; indexL3 < 512 ; indexL3++ )
 			{
 				// get the L2 table
-			kprintfln!("get l2 {x}")(indexL3);
 				pl2 = pl3.entries[indexL3].getOrCreateTable();
 
 				for ( ; indexL2 < 512 ; indexL2++ )
 				{
 					// get the L1 table
-			kprintfln!("get l1 {x}")(indexL2);
 					pl1 = pl2.entries[indexL2].getOrCreateTable();
 
 					for ( ; indexL1 < 512 ; indexL1++ )

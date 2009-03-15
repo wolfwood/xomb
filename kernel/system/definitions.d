@@ -43,6 +43,9 @@ struct Region
 	ubyte* start;
 	ulong length;
 
+	// The virtual location of the region
+	ubyte* virtualStart;
+
 	// The type of region. See above for a list of values.
 	RegionType type;
 }

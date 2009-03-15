@@ -25,6 +25,9 @@ import kernel.core.util;
 import kernel.arch.x86_64.core.info;
 import kernel.arch.x86_64.core.ioapic;
 
+// I need the virtual start for the memory mapping
+import kernel.system.info;
+
 // The struct for MP specification
 struct MP
 {
@@ -46,6 +49,8 @@ public:
 		foreach(i,val; checkStart)
 		{
 			// scan() -- searches for the signature `_MP_`
+			val += cast(ulong)System.kernel.virtualStart;
+
 			tmp = scan(val, val + checkLen[i]);
 			if (tmp !is null)
 			{
@@ -71,6 +76,9 @@ public:
 		if (mpFloating.mpFeatures1 == 0)
 		{
 			mpConfig = cast(MPConfigurationTable*)(cast(ulong)mpFloating.mpConfigPointer);
+
+			// Make sure we can read it through the paging
+			mpConfig = cast(MPConfigurationTable*)(cast(ubyte*)mpConfig + cast(ulong)System.kernel.virtualStart);
 
 			// Check the checksum of the configuration table
 			if (!isChecksumValid(cast(ubyte*)mpConfig, mpConfig.baseTableLength))
