@@ -142,12 +142,12 @@ pml3_base:
 align 4096
 pml2_base:
 	%assign i 0
-	%rep 15
+	%rep 25
 	dq (pml1_base + i + 0x7)
 	%assign i i+4096
 	%endrep
 
-	times 497 dq 0
+	times (512-25) dq 0
 
 align 4096
 ; 15 tables are described here
@@ -155,7 +155,7 @@ align 4096
 ; to an identity mapping
 pml1_base:
 	%assign i 0
-	%rep 512*15
+	%rep 512*25
 	dq (i << 12) | 0x087
 	%assign i i+1
 	%endrep

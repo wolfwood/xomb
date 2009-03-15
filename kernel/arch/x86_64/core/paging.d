@@ -48,14 +48,34 @@ public:
 
 		// The current position of the kernel space. All gets appended to this address.
 		heapAddress = LinkerScript.kernelVMA;
+		kprintfln!("heap Address: {x}")(heapAddress);
 
-		// We need to map the kernel (starting from 0x0
-		kernelAddress = mapRegion(cast(void*)0x0, cast(ulong)(System.kernel.length + System.kernel.start));
+		// We need to map the kernel
+		kernelAddress = mapRegion(System.kernel.start, System.kernel.length);
 
 		// We now have the kernel mapped
 		kernelMapped = true;
 
 		kprintfln!("kernel Address: {x}")(kernelAddress);
+		kprintfln!("memory length: {x}")(System.memory.length);
+
+		// Map the system memory
+		mapSystem(cast(void*)0x0, System.memory.length);
+
+		// The page table should be now addressable via a virtual address
+		root = cast(PageLevel4*)(cast(ulong)root + cast(ulong)LinkerScript.kernelVMA);
+
+		kprintfln!("root: {x}")(root);
+
+		ulong rootAddr = cast(ulong)root;
+		rootAddr -= cast(ulong)LinkerScript.kernelVMA;
+
+		kprintfln!("root addr: {x}")(rootAddr);
+		// Must map
+		asm {
+			mov RAX, rootAddr;
+			mov CR3, RAX;
+		}
 
 		// All is well.
 		return ErrorVal.Success;
@@ -82,6 +102,25 @@ public:
 				.entries[indexLevel1].getAddress();
 	}
 
+	void translateAddress( void* virtAddress,
+							out ulong indexLevel1,
+							out ulong indexLevel2,
+							out ulong indexLevel3,
+							out ulong indexLevel4)
+	{
+		ulong vAddr = cast(ulong)virtAddress;
+		kprintfln!("addr {x}")(virtAddress);
+
+		vAddr >>= 12;
+		indexLevel1 = vAddr & 0x1ff;
+		vAddr >>= 9;
+		indexLevel2 = vAddr & 0x1ff;
+		vAddr >>= 9;
+		indexLevel3 = vAddr & 0x1ff;
+		vAddr >>= 9;
+		indexLevel4 = vAddr & 0x1ff;
+	}
+
 	ErrorVal mapSystem(void* physAddr, ulong regionLength)
 	{
 		// Check to make sure we aren't doing this again
@@ -91,7 +130,7 @@ public:
 		}
 
 		// The kernel must be mapped before hand
-		if (kernelMapped)
+		if (!kernelMapped)
 		{
 			assert(false, "The Kernel mapping has yet to be done.");
 		}
@@ -136,17 +175,10 @@ public:
 		// Define the end address
 		void* endAddr = cast(void*)curPhysAddr;
 
-		// Recalculate the region length
-		regionLength = cast(ulong)endAddr - cast(ulong)physAddr;
-
-		// Do the mapping
-		// TODO: this
-
 		// This region will be located at the current heapAddress
 		void* location = heapAddress;
 
-		// Relocate heap address
-		heapAddress += regionLength;
+		doHeapMap(physAddr, endAddr);
 
 		// Return the position of this region
 		return location;
@@ -174,6 +206,84 @@ private:
 
 
 	PageLevel4* root;
+
+
+// -- Mapping Functions -- //
+
+
+	void doHeapMap(void* physAddr, void* endAddr)
+	{
+		// Do the mapping
+		PageLevel3* pl3;
+		PageLevel2* pl2;
+		PageLevel1* pl1;
+		ulong indexL1, indexL2, indexL3, indexL4;
+
+		// Find the initial page
+		translateAddress(heapAddress, indexL1, indexL2, indexL3, indexL4);
+
+		kprintfln!("{x} {x} {x} {x}")(indexL4, indexL3, indexL2, indexL1);
+		// From there, map the region
+		ulong done = 0;
+		for ( ; indexL4 < 512 && physAddr < endAddr ; indexL4++ )
+		{
+			// get the L3 table
+			kprintfln!("get l3 {x}")(indexL4);
+			pl3 = root.entries[indexL4].getOrCreateTable();
+
+			for ( ; indexL3 < 512 ; indexL3++ )
+			{
+				// get the L2 table
+			kprintfln!("get l2 {x}")(indexL3);
+				pl2 = pl3.entries[indexL3].getOrCreateTable();
+
+				for ( ; indexL2 < 512 ; indexL2++ )
+				{
+					// get the L1 table
+			kprintfln!("get l1 {x}")(indexL2);
+					pl1 = pl2.entries[indexL2].getOrCreateTable();
+
+					for ( ; indexL1 < 512 ; indexL1++ )
+					{
+						// set the address
+						pl1.entries[indexL1].setAddress(physAddr);
+
+						pl1.entries[indexL1].present = 1;
+						pl1.entries[indexL1].rw = 1;
+						pl1.entries[indexL1].pat = 1;
+
+						physAddr += VirtualMemory.PAGESIZE;
+						done += VirtualMemory.PAGESIZE;
+
+						if (physAddr >= endAddr)
+						{
+							indexL2 = 512;
+							indexL3 = 512;
+							break;
+						}
+					}
+
+					indexL1 = 0;
+				}
+
+				indexL2 = 0;
+			}
+
+			indexL3 = 0;
+		}
+
+		if (indexL4 >= 512)
+		{
+			// we have depleted our table!
+			assert(false, "Virtual Memory depleted");
+		}
+
+		// Recalculate the region length
+		ulong regionLength = cast(ulong)endAddr - cast(ulong)physAddr;
+
+		// Relocate heap address
+		heapAddress += regionLength;
+	}
 
 
 // -- Structures -- //
@@ -216,7 +326,48 @@ private:
 		// This will return the pointer to the table at that index.
 		T* getTable()
 		{
-			return cast(T*)getAddress();
+			void* tableAddr = getAddress();
+			if (tableAddr is null)
+			{
+				return null;
+			}
+
+			return cast(T*)(cast(ulong)tableAddr + systemAddress);
+		}
+
+		// This will return the pointer to a newly allocated table at that index, if one does not exist.
+		T* getOrCreateTable()
+		{
+			T* table = getTable();
+
+			if (table is null)
+			{
+				// allocate table
+				void* tableAddr = Heap.allocPageNoMap();
+
+				ulong addr = cast(ulong)tableAddr;
+				addr >>= 12;
+
+				// set this table within the page table
+				address = addr;
+				present = 1;
+				rw = 1;
+
+				tableAddr = cast(void*)(cast(ulong)tableAddr + systemAddress);
+
+				// set the table
+				table = cast(T*)tableAddr;
+
+				// clear the table
+				*table = T.init;
+			}
+
+			return table;
+		}
+
+		void setUserAccess()
+		{
+			us = 1;
 		}
 	}
 
@@ -247,12 +398,53 @@ private:
 
 			return cast(void*)addr;
 		}
+
+		// This will map the physical address to this page
+		void setAddress(void* physAddr)
+		{
+			ulong addr = cast(ulong)physAddr;
+			addr >>= 12;
+
+			address = addr;
+		}
+
+		void setUserAccess()
+		{
+			us = 1;
+		}
 	}
 
 	// Each of the following will use the entries above to define the page table.
 	align(1) struct PageLevel4
 	{
 		SecondaryPTE!(PageLevel3)[512] entries;
+
+		// Given a virtual address, this convenience function will set up the tables
+		// necessary to map a physical address to this virtual address.
+		void getOrCreateTranslation(in void* virtAddr,
+									out PageLevel3* pl3,
+									out PageLevel2* pl2,
+									out PageLevel1* pl1,
+									out ulong indexLevel1,
+									out ulong indexLevel2,
+									out ulong indexLevel3,
+									out ulong indexLevel4)
+		{
+			ulong vAddr = cast(ulong)virtAddr;
+
+			vAddr >>= 12;
+			indexLevel1 = vAddr & 0x1ff;
+			vAddr >>= 9;
+			indexLevel2 = vAddr & 0x1ff;
+			vAddr >>= 9;
+			indexLevel3 = vAddr & 0x1ff;
+			vAddr >>= 9;
+			indexLevel4 = vAddr & 0x1ff;
+
+			pl3 = entries[indexLevel4].getOrCreateTable();
+			pl2 = pl3.entries[indexLevel3].getOrCreateTable();
+			pl1 = pl2.entries[indexLevel2].getOrCreateTable();
+		}
 	}
 
 	align(1) struct PageLevel3

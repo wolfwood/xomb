@@ -22,6 +22,7 @@ enum Color : ubyte
 	LightYellow   = 0x0E,
 	White         = 0x0F
 }
+import kernel.core.kprintf;
 
 // This is the true interface to the console
 struct Console
@@ -36,7 +37,7 @@ public:
 	// The default color.
 	const ubyte DEFAULTCOLORS = Color.LightGray;
 
-	ubyte* videoMemoryLocation = cast(ubyte*)0xFFFF8000000B8000;
+	ubyte* videoMemoryLocation = cast(ubyte*)0xFFFF8000000B8000UL;
 
 	// The cursor position
 	private int xpos = 0;
@@ -51,15 +52,18 @@ public:
 	// This method will clear the screen and return the cursor to (0,0).
 	void clearScreen()
 	{
+		videoMemoryLocation = cast(ubyte*)0xffff8000000b8000;
 		int i;
 
 		for (i=0; i < COLUMNS * LINES * 2; i++)
 		{
-			volatile *(videoMemoryLocation + i) = 0;
+			*(videoMemoryLocation + i) = 0;
 		}
 
 		xpos = 0;
 		ypos = 0;
+		kprintfln!("mem loc: {x}")(videoMemoryLocation);
+		for(;;){}
 	}
 
 	// This method will return the current location of the cursor
@@ -91,9 +95,12 @@ public:
 		}
 		else if (c != '\n' && c != '\r')
 		{
+			ubyte* videoAddress = videoMemoryLocation;
+			videoAddress += (xpos + (ypos * COLUMNS)) * 2;
+
 			// Set the current piece of video memory to the character to print.
-			volatile *(videoMemoryLocation + (xpos + ypos * COLUMNS) * 2) = c & 0xFF;
-			volatile *(videoMemoryLocation + (xpos + ypos * COLUMNS) * 2 + 1) = colorAttribute;
+			*(videoAddress) = c & 0xFF;
+			*(videoAddress + 1) = colorAttribute;
 
 			// increase the cursor position
 			xpos++;

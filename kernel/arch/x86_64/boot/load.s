@@ -46,7 +46,10 @@ long_entry:
 	; need an identity mapping of this region
 
 	; set up a 64 bit virtual stack
-	mov rsp, (stack-KERNEL_VMA_BASE) + STACK_SIZE + (KERNEL_VMA_BASE & 0xffffffff)
+	mov rax, KERNEL_VMA_BASE >> 32
+	shl rax, 32
+	or rax, stack - (KERNEL_VMA_BASE & 0xffffffff00000000)
+	mov rsp, rax
 
 	; set cpu flags
 	push 0
