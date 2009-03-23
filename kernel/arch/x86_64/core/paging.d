@@ -63,7 +63,7 @@ public:
 		kprintfln!("memory length: {x}")(System.memory.length);
 
 		// Map the system memory
-		mapSystem(cast(void*)0x0, System.memory.length);
+		//mapSystem(cast(void*)0x0, System.memory.length);
 
 		// The page table should be now addressable via a virtual address
 		root = cast(PageLevel4*)(cast(ulong)root + cast(ulong)LinkerScript.kernelVMA);

@@ -53,7 +53,7 @@ public:
 	void initialize()
 	{
 		videoMemoryLocation = cast(ubyte*)0xB8000;
-		videoMemoryLocation += cast(ulong)System.memory.virtualStart;
+		videoMemoryLocation += cast(ulong)System.kernel.virtualStart;
 	}
 
 	// This method will clear the screen and return the cursor to (0,0).
