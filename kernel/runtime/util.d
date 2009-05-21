@@ -4,6 +4,20 @@
 
 module kernel.runtime.util;
 
+version(LDC)
+{
+	private import ldc.intrinsics;
+
+	version(LLVM64)
+	{
+		alias llvm_memcpy_i64 llvm_memcpy;
+	}
+	else
+	{
+		alias llvm_memcpy_i32 llvm_memcpy;
+	}
+}
+
 /**
 This function converts an integer to a string, depending on the base passed in.
 	Params:
@@ -55,13 +69,21 @@ This function copies data from a source piece of memory to a destination piece o
 */
 extern(C) void* memcpy(void* dest, void* src, size_t count)
 {
-	ubyte* d = cast(ubyte*)dest;
-	ubyte* s = cast(ubyte*)src;
+	version(LDC)
+	{
+		llvm_memcpy(dest, src, count, 0);
+		return dest;
+	}
+	else
+	{
+		ubyte* d = cast(ubyte*)dest;
+		ubyte* s = cast(ubyte*)src;
 
-	for(size_t i = count; count; count--, d++, s++)
-		*d = *s;
+		for(size_t i = count; count; count--, d++, s++)
+			*d = *s;
 
-	return dest;
+		return dest;
+	}
 }
 
 /**
