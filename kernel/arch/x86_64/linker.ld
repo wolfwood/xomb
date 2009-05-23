@@ -34,7 +34,7 @@ SECTIONS
     /* boot.S is ran in linear addresses */
     .text_boot :
     {
-        dsss_objs/G/kernel.arch.x86_64.boot.boot.o (.text)
+        dsss_objs/O/kernel.arch.x86_64.boot.boot.o (.text)
     }
 
 	_eboot = .;
