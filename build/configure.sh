@@ -3,7 +3,7 @@
 
 render_usage()
 {
-	echo "USAGE: ./configure --target=[TARGET]"
+	echo "USAGE: ./configure [TARGET]"
 	echo ""
 	echo "TARGET - one of the following values: "
 	for item in confs/*.conf;
