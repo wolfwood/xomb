@@ -69,12 +69,12 @@ This function copies data from a source piece of memory to a destination piece o
 */
 extern(C) void* memcpy(void* dest, void* src, size_t count)
 {
-	version(LDC)
-	{
-		llvm_memcpy(dest, src, count, 0);
-		return dest;
-	}
-	else
+	//version(LDC)
+	//{
+	//	llvm_memcpy(dest, src, count, 0);
+	//	return dest;
+	//}
+	//else
 	{
 		ubyte* d = cast(ubyte*)dest;
 		ubyte* s = cast(ubyte*)src;

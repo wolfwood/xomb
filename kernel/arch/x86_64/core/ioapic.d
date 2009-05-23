@@ -8,8 +8,7 @@
 module kernel.arch.x86_64.core.ioapic;
 
 // We need to know how to initialize the pins
-//import kernel.arch.x86_64.core.info;
-
+import kernel.arch.x86_64.core.info;
 
 // Import common kernel stuff
 import kernel.core.error;
@@ -35,45 +34,10 @@ public:
 // -- Common Structures -- //
 
 
-	enum DestinationMode
-	{
-		Physical,
-		Logical
-	}
-
-	enum InputPinPolarity
-	{
-		HighActive,
-		LowActive
-	}
-
-	enum TriggerMode
-	{
-		EdgeTriggered,
-		LevelTriggered
-	}
-
-	enum InterruptType
-	{
-		Unmasked,
-		Masked
-	}
-
-	enum DeliveryMode
-	{
-		Fixed,
-		LowestPriority,
-		SystemManagementInterrupt,
-		NonMaskedInterrupt = 0x4,
-		INIT,
-		ExtINT = 0x7
-	}
-
 private:
 
 
 // -- IRQs and PINs -- //
-
 
 	// stores which IO APIC pin a particular IRQ is connected.
 	// irqToPin = the pin number

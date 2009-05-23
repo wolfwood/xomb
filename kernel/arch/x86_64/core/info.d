@@ -17,15 +17,49 @@ struct Info
 static:
 public:
 
+	enum DestinationMode
+	{
+		Physical,
+		Logical
+	}
+
+	enum InputPinPolarity
+	{
+		HighActive,
+		LowActive
+	}
+
+	enum TriggerMode
+	{
+		EdgeTriggered,
+		LevelTriggered
+	}
+
+	enum InterruptType
+	{
+		Unmasked,
+		Masked
+	}
+
+	enum DeliveryMode
+	{
+		Fixed,
+		LowestPriority,
+		SystemManagementInterrupt,
+		NonMaskedInterrupt = 0x4,
+		INIT,
+		ExtINT = 0x7
+	}
+
 	// For redirection entries
 	struct RedirectionEntry
 	{
 		ubyte destination = 0xFF;
-		IOAPIC.InterruptType interruptType;
-		IOAPIC.TriggerMode triggerMode;
-		IOAPIC.InputPinPolarity inputPinPolarity;
-		IOAPIC.DestinationMode destinationMode = IOAPIC.DestinationMode.Logical;
-		IOAPIC.DeliveryMode deliveryMode;
+		InterruptType interruptType;
+		TriggerMode triggerMode;
+		InputPinPolarity inputPinPolarity;
+		DestinationMode destinationMode = DestinationMode.Logical;
+		DeliveryMode deliveryMode;
 		ubyte vector;
 		ubyte sourceBusIRQ;
 	}

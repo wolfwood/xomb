@@ -44,10 +44,13 @@ public:
 	ErrorVal initialize()
 	{
 		// Create a new page table.
+		kprintfln!("in initialize")();
 		root = cast(PageLevel4*)Heap.allocPageNoMap();
+		kprintfln!("root address: {x}")(root);
 
 		// Initialize the structure. (Zero it)
 		*root = PageLevel4.init;
+		kprintfln!("Is it broke?")();
 
 		// The current position of the kernel space. All gets appended to this address.
 		heapAddress = LinkerScript.kernelVMA;

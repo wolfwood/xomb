@@ -151,34 +151,6 @@ public:
 					Info.IOAPICs[Info.numIOAPICs].ver = ioapic.ioAPICVersion;
 					Info.IOAPICs[Info.numIOAPICs].enabled = cast(bool)ioapic.ioAPICEnabled;
 
-
-					/*ubyte entryType;	// 3
-		ubyte interruptType;
-		ubyte ioInterruptFlags;
-		ubyte reserved;
-		ubyte sourceBusID;
-		ubyte sourceBusIRQ;
-		ubyte destinationIOAPICID;
-		ubyte destinationIOAPICIntin;
-
-		mixin(Bitfield!(ioInterruptFlags,
-					"po", 2,
-					"el", 2,
-					"reserved2", 4));
-	}
-
-	struct RedirectionEntry
-	{
-		ubyte destination = 0xFF;
-		IOAPIC.InterruptType interruptType;
-		IOAPIC.TriggerMode triggerMode;
-		IOAPIC.InputPinPolarity inputPinPolarity;
-		IOAPIC.DestinationMode destinationMode;
-		IOAPIC.DeliveryMode deliveryMode;
-		ubyte vector;
-	}*/
-
-
 					// increment the count
 					Info.numIOAPICs++;
 
@@ -197,11 +169,11 @@ public:
 							// Conforms to the bus (dumb)
 						case 1:
 							// Active High
-							Info.redirectionEntries[Info.numEntries].inputPinPolarity = IOAPIC.InputPinPolarity.HighActive;
+							Info.redirectionEntries[Info.numEntries].inputPinPolarity = Info.InputPinPolarity.HighActive;
 							break;
 						case 3:
 							// Active Low
-							Info.redirectionEntries[Info.numEntries].inputPinPolarity = IOAPIC.InputPinPolarity.LowActive;
+							Info.redirectionEntries[Info.numEntries].inputPinPolarity = Info.InputPinPolarity.LowActive;
 							break;
 						default:
 							// undefined
@@ -214,11 +186,11 @@ public:
 							// Conforms to the bus (dumb!)
 						case 1:
 							// Edge-Triggered
-							Info.redirectionEntries[Info.numEntries].triggerMode = IOAPIC.TriggerMode.EdgeTriggered;
+							Info.redirectionEntries[Info.numEntries].triggerMode = Info.TriggerMode.EdgeTriggered;
 							break;
 						case 3:
 							// Level-Triggered
-							Info.redirectionEntries[Info.numEntries].triggerMode = IOAPIC.TriggerMode.LevelTriggered;
+							Info.redirectionEntries[Info.numEntries].triggerMode = Info.TriggerMode.LevelTriggered;
 							break;
 						default:
 							// undefined
@@ -230,16 +202,16 @@ public:
 					switch (intType)
 					{
 						case 0: // It is an INT (common)
-							Info.redirectionEntries[Info.numEntries].deliveryMode = IOAPIC.DeliveryMode.Fixed;
+							Info.redirectionEntries[Info.numEntries].deliveryMode = Info.DeliveryMode.Fixed;
 							break;
 						case 1: // It is a NMI
-							Info.redirectionEntries[Info.numEntries].deliveryMode = IOAPIC.DeliveryMode.NonMaskedInterrupt;
+							Info.redirectionEntries[Info.numEntries].deliveryMode = Info.DeliveryMode.NonMaskedInterrupt;
 							break;
 						case 2: // It is a SMI
-							Info.redirectionEntries[Info.numEntries].deliveryMode = IOAPIC.DeliveryMode.SystemManagementInterrupt;
+							Info.redirectionEntries[Info.numEntries].deliveryMode = Info.DeliveryMode.SystemManagementInterrupt;
 							break;
 						case 3: // It is an external interrupt (devices, etc)
-							Info.redirectionEntries[Info.numEntries].deliveryMode = IOAPIC.DeliveryMode.ExtINT;
+							Info.redirectionEntries[Info.numEntries].deliveryMode = Info.DeliveryMode.ExtINT;
 							break;
 					}
 

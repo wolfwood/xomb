@@ -68,6 +68,8 @@ public:
 			markOffRegion(System.regionInfo[i].start, System.regionInfo[i].length);
 		}
 
+		kprintfln!("Success")();
+
 		// It succeeded!
 		return ErrorVal.Success;
 	}
