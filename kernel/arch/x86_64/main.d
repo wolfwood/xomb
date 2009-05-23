@@ -13,6 +13,7 @@ import kernel.arch.x86_64.core.gdt;
 import kernel.arch.x86_64.core.tss;
 import kernel.arch.x86_64.core.idt;
 import kernel.arch.x86_64.core.paging;
+import kernel.arch.x86_64.syscall;
 
 // To return error values
 import kernel.core.error;
