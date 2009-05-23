@@ -27,9 +27,9 @@ SECTIONS
     /* link from LMA */
     . = kernel_LMA;
 
-	_boot = .;
-
 	_kernelLMA = .;
+
+	_boot = .;
 
     /* boot.S is ran in linear addresses */
     .text_boot :

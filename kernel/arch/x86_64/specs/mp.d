@@ -106,7 +106,7 @@ public:
 		ubyte* curAddr = cast(ubyte*)mpConfig;
 		curAddr += MPConfigurationTable.sizeof;
 
-		int lastState = 0;
+		ulong lastState = 0;
 
 		for (uint i=0; i < mpConfig.entryCount; i++)
 		{
@@ -119,7 +119,9 @@ public:
 			}
 
 			lastState = *curAddr;
-			switch(*curAddr)
+
+			// XXX: if lastState is an int, this causes a relocation error
+			switch(lastState)
 			{
 				case 0: // Processor Entry
 
@@ -223,7 +225,9 @@ public:
 							break;
 					}
 
-					switch (ioentry.interruptType)
+					// XXX: switch(ioentry.interruptType) will cause a relocation error
+					ulong intType = ioentry.interruptType;
+					switch (intType)
 					{
 						case 0: // It is an INT (common)
 							Info.redirectionEntries[Info.numEntries].deliveryMode = IOAPIC.DeliveryMode.Fixed;

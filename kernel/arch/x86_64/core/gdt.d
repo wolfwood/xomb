@@ -74,7 +74,13 @@ public:
 	// This will clear out an entry, which is necessary for the first entry
 	void setNull(uint index)
 	{
-		entries[index].value = 0;
+		// We just need to zero out the entire entry using this
+		// shady looking code.
+		ulong* ptr = cast(ulong*)&entries;
+		*ptr = 0;
+
+		// XXX: this causes a relocation error:
+		// entries[index].value = 0
 	}
 
 	// This will define an entry for a code segment
@@ -218,10 +224,6 @@ private:
 		CodeSegmentDescriptor		codeSegment;
 		SystemSegmentDescriptor		systemSegmentLo;
 		SystemSegmentExtension		systemSegmentHi;
-
-		// If you need it, you can use the value parameter
-		// to access the entire descriptor.
-		ulong						value;
 	}
 
 	// compile check for correctness

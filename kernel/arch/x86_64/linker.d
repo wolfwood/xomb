@@ -19,12 +19,12 @@ extern(C)
 	// The beginning of the kernel code (past the bootstrap)
 	extern ubyte _kernel;
 
-	// The virtual address where the kernel is loaded
-	extern ubyte _kernelVMA;
-
 	// The region of the .data section
 	extern ubyte _data;
 	extern ubyte _edata;
+
+	// The virtual address where the kernel is loaded
+	extern ubyte _kernelVMA;
 
 	// The region of the .text section
 	extern ubyte _text;
@@ -48,7 +48,8 @@ public:
 
 	void* kernelLMA()
 	{
-		return &_kernelLMA;
+		// XXX: return &_kernelLMA; causes a relocation error
+		return cast(void*)(0x100000);
 	}
 
 	void* kernelVMA()
