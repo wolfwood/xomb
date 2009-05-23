@@ -1,23 +1,23 @@
 /*
-linker.ld
-
-*  This script is given as the only script to the linker
-*  Will map boot.S to LMA, and then everything else
-     will be linked to the VMA and mapped at the LMA
-*  _etext, _edata, _end are defined here
-
-*/
-
-
-/*  KERNEL LINK LOCATIONS
-
-	these are the locations to map to
-	they need to be set within boot.h
-	as well
-
+ * linker.ld
+ *
+ *  This script is given as the only script to the linker
+ *  Will map boot.S to LMA, and then everything else
+ *  will be linked to the VMA and mapped at the LMA
+ *  _etext, _edata, _end are defined here
+ *
  */
 
-kernel_VMA = 0xffffffff80000000;
+/*
+ *  KERNEL LINK LOCATIONS
+ *
+ *  these are the locations to map to
+ *  they need to be set within boot.h
+ *  as well
+ *
+ */
+
+kernel_VMA = 0x100000;
 kernel_LMA = 0x100000;
 
 /* start from the entry point */
@@ -27,12 +27,14 @@ SECTIONS
     /* link from LMA */
     . = kernel_LMA;
 
+	_kernelLMA = .;
+
 	_boot = .;
 
     /* boot.S is ran in linear addresses */
     .text_boot :
     {
-        dsss_objs/G/kernel.arch.x86_64.boot.boot.o (.text)
+        dsss_objs/O/kernel.arch.x86.boot.boot.o (.text)
     }
 
 	_eboot = .;
@@ -55,8 +57,8 @@ SECTIONS
 
 	_text = .;
 
-	PROVIDE(_kernel = .);
-	PROVIDE(_kernelBase = kernel_VMA);
+	_kernel = .;
+	_kernelVMA = kernel_VMA;
 
     /* the rest of the code links to higher memory */
     .text : AT(ADDR(.text) - kernel_VMA + kernel_LMA)
@@ -72,10 +74,10 @@ SECTIONS
         . = ALIGN(4096);
     }
 
-	PROVIDE(_ekernel = .);
+	/*PROVIDE(_ekernel = .);*/
 
     /* _etext defined */
-    PROVIDE (_etext = .);
+    _etext = .; PROVIDE(etext = .);
 
 	_data = .;
 
@@ -102,12 +104,16 @@ SECTIONS
     /* _edata defined */
     _edata = .; PROVIDE (edata = .);
 
+	_bss = .;
+
     /* static code */
     .bss : AT(ADDR(.bss) - kernel_VMA + kernel_LMA)
     {
         *(.bss)
         . = ALIGN(4096);
     }
+
+	_ebss = .;
 
     /*  */
     .ehframe : AT(ADDR(.ehframe) - kernel_VMA + kernel_LMA)
@@ -117,8 +123,11 @@ SECTIONS
         . = ALIGN(4096);
     }
 
-    /* _end defined */
+
+    /* _end defined (for posterity and tradition) */
     _end = .; PROVIDE (end = .);
+
+	_ekernel = .;
 
 }
 
