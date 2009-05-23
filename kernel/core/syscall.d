@@ -2,7 +2,7 @@
 
 module kernel.core.syscall;
 
-import kernel.user.syscall;
+import user.syscall;
 
 struct SyscallImplementations
 {

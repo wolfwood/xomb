@@ -1,4 +1,4 @@
-module kernel.user.util;
+module user.util;
 
 template Tuple(T...)
 {
@@ -10,13 +10,13 @@ template Map(alias Templ, List...)
         static if(List.length == 0)
                 alias Tuple!() Map;
         else
-                alias Tuple!(Templ!(List[0]), Map!(Templ, List[1 .. $])) 
+                alias Tuple!(Templ!(List[0]), Map!(Templ, List[1 .. $]))
 Map;
 }
 
 template Reduce(alias Templ, List...)
 {
-        static assert(List.length > 0, "Reduce must be called on a list 
+        static assert(List.length > 0, "Reduce must be called on a list
 of at least one element");
 
         static if(is(List[0]))
@@ -24,7 +24,7 @@ of at least one element");
                 static if(List.length == 1)
                         alias List[0] Reduce;
                 else
-                        alias Reduce!(Templ, Tuple!(Templ!(List[0], 
+                        alias Reduce!(Templ, Tuple!(Templ!(List[0],
 List[1]), List[2 .. $])) Reduce;
         }
         else
@@ -32,7 +32,7 @@ List[1]), List[2 .. $])) Reduce;
                 static if(List.length == 1)
                         const Reduce = List[0];
                 else
-                        const Reduce = Reduce!(Templ, 
+                        const Reduce = Reduce!(Templ,
 Tuple!(Templ!(List[0], List[1]), List[2 .. $]));
         }
 }
@@ -86,7 +86,7 @@ template Capitalize(char[] s)
         static if(s.length == 0)
                 const char[] Capitalize = ""c;
         else
-                const char[] Capitalize = ToUpper!(s[0]) ~ ToLower!(s[1 
+                const char[] Capitalize = ToUpper!(s[0]) ~ ToLower!(s[1
 .. $]);
 }
 

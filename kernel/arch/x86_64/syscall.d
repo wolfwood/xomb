@@ -3,7 +3,8 @@ module kernel.arch.x86_64.syscall;
 import kernel.core.error;
 import kernel.core.util;
 import kernel.core.syscall;
-import kernel.user.syscall;
+
+import user.syscall;
 
 struct Syscall
 {

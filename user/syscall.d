@@ -1,7 +1,7 @@
 module user.syscall;
 
-import kernel.user.nativecall;
-import kernel.user.util;
+import user.nativecall;
+import user.util;
 
 // Errors
 enum SyscallError : ulong
