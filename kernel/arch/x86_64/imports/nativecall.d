@@ -15,7 +15,7 @@ extern(C) long nativeSyscall(ulong ID, void* ret, void* params)
 		pushq RCX;
 		pushq R11;
 		pushq RAX;
-		//syscallq;
+		syscall;
 		popq RAX;
 		popq R11;
 		popq RCX;

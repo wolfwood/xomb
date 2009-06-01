@@ -58,13 +58,7 @@ public:
 
 	void setIST(uint index, void* ptr)
 	{
-		// set the ist to the ptr given using this shady
-		// looking code here.
-		ulong* tssPtr = cast(ulong*)&tss.ist[index];
-		*tssPtr = cast(ulong)ptr;
-
-		// this causes a relocation error:
-		//tss.ist[index] = cast(ulong)ptr;
+		tss.ist[index] = cast(ulong)ptr;
 	}
 
 private:

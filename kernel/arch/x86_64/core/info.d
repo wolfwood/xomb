@@ -9,9 +9,6 @@
 
 module kernel.arch.x86_64.core.info;
 
-// This module supports the IO APIC
-import kernel.arch.x86_64.core.ioapic;
-
 struct Info
 {
 static:

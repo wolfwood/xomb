@@ -17,7 +17,6 @@ import kernel.mem.heap;
 
 // Import some arch-dependent modules
 import kernel.arch.x86_64.linker;	// want linker info
-import kernel.arch.x86_64.vm;		// want page size
 
 // Import information about the system
 // (we need to know where the kernel is)
@@ -39,6 +38,9 @@ struct Paging
 {
 static:
 public:
+
+	// The page size we are using
+	const auto PAGESIZE = 4096;
 
 	// This function will initialize paging and install a core page table.
 	ErrorVal initialize()
@@ -166,8 +168,8 @@ public:
 		// physAddr should be floored to the page boundary
 		// regionLength should be ceilinged to the page boundary
 		ulong curPhysAddr = cast(ulong)physAddr;
-		regionLength += (curPhysAddr % VirtualMemory.PAGESIZE);
-		curPhysAddr -= (curPhysAddr % VirtualMemory.PAGESIZE);
+		regionLength += (curPhysAddr % PAGESIZE);
+		curPhysAddr -= (curPhysAddr % PAGESIZE);
 
 		// Set the new starting address
 		physAddr = cast(void*)curPhysAddr;
@@ -176,9 +178,9 @@ public:
 		curPhysAddr += regionLength;
 
 		// Align the end address
-		if ((curPhysAddr % VirtualMemory.PAGESIZE) > 0)
+		if ((curPhysAddr % PAGESIZE) > 0)
 		{
-			curPhysAddr += VirtualMemory.PAGESIZE - (curPhysAddr % VirtualMemory.PAGESIZE);
+			curPhysAddr += PAGESIZE - (curPhysAddr % PAGESIZE);
 		}
 
 		// Define the end address
@@ -258,8 +260,8 @@ private:
 						pl1.entries[indexL1].rw = 1;
 						pl1.entries[indexL1].pat = 1;
 
-						physAddr += VirtualMemory.PAGESIZE;
-						done += VirtualMemory.PAGESIZE;
+						physAddr += PAGESIZE;
+						done += PAGESIZE;
 
 						if (physAddr >= endAddr)
 						{

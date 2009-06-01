@@ -48,8 +48,7 @@ public:
 
 	void* kernelLMA()
 	{
-		// XXX: return &_kernelLMA; causes a relocation error
-		return cast(void*)(0x100000);
+		return &_kernelLMA;
 	}
 
 	void* kernelVMA()

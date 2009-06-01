@@ -23,7 +23,9 @@ static:
 public:
 
 	// The page size we are using
-	const auto PAGESIZE = 4096;
+	uint getPageSize() {
+		return Paging.PAGESIZE;
+	}
 
 	// This function will translate a virtual address to a physical address.
 	void* translate(void* address)

@@ -7,7 +7,7 @@
 module kernel.core.kmain;
 
 // Import the architecture-dependent interface
-import kernel.arch.select;
+import architecture;
 
 // This module contains our powerful kprintf function
 import kernel.core.kprintf;

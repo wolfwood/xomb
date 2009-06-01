@@ -11,7 +11,7 @@ module kernel.mem.heap;
 import kernel.system.info;
 
 // Import architecture dependent foo
-import kernel.arch.select;
+import architecture;
 
 // Import kernel foo
 import kernel.core.kprintf;
@@ -37,14 +37,14 @@ public:
 		initialized = true;
 
 		// Calculate the number of pages.
-		totalPages = System.memory.length / VirtualMemory.PAGESIZE;
+		totalPages = System.memory.length / VirtualMemory.getPageSize();
 
 		// Find the first free page, and set up the bitmap.
 		bitmap = cast(ulong*)location;
 
 		// Align the bitmap address to the page size (ceiling)
-		ulong padding = cast(ulong)bitmap % VirtualMemory.PAGESIZE;
-		if (padding != 0) { padding = VirtualMemory.PAGESIZE - padding; }
+		ulong padding = cast(ulong)bitmap % VirtualMemory.getPageSize();
+		if (padding != 0) { padding = VirtualMemory.getPageSize() - padding; }
 		bitmap += padding;
 
 		// Calculate how much we need for the bitmap.
@@ -82,7 +82,7 @@ public:
 		ulong index = findPage();
 
 		// Return the address
-		return System.memory.virtualStart + ((index * VirtualMemory.PAGESIZE));
+		return System.memory.virtualStart + ((index * VirtualMemory.getPageSize()));
 	}
 
 	// This will allocate a page, and return the virtual address while
@@ -93,7 +93,7 @@ public:
 		ulong index = findPage();
 
 		// compute physical address
-		void* address = cast(void*)(index * VirtualMemory.PAGESIZE);
+		void* address = cast(void*)(index * VirtualMemory.getPageSize());
 
 		// map in the region
 		return VirtualMemory.mapKernelPage(address);
@@ -106,14 +106,14 @@ public:
 		ulong pageIndex = cast(ulong)address;
 
 		// Is this address a valid result of allocPage?
-		if ((pageIndex % VirtualMemory.PAGESIZE) > 0)
+		if ((pageIndex % VirtualMemory.getPageSize()) > 0)
 		{
 			// Should be aligned, otherwise, what to do here is ambiguious.
 			return ErrorVal.Fail;
 		}
 
 		// Get the page index
-		pageIndex /= VirtualMemory.PAGESIZE;
+		pageIndex /= VirtualMemory.getPageSize();
 
 		// Is this a valid page?
 		if (pageIndex >= totalPages)
@@ -156,18 +156,18 @@ private:
 		// Get the logical range
 		startAddr = cast(ulong)start;
 		endAddr = startAddr + length;
-		startAddr -= startAddr % VirtualMemory.PAGESIZE;
-		if ((endAddr % VirtualMemory.PAGESIZE)>0)
+		startAddr -= startAddr % VirtualMemory.getPageSize();
+		if ((endAddr % VirtualMemory.getPageSize())>0)
 		{
-			endAddr += VirtualMemory.PAGESIZE - (endAddr % VirtualMemory.PAGESIZE);
+			endAddr += VirtualMemory.getPageSize() - (endAddr % VirtualMemory.getPageSize());
 		}
 
 		// startAddr is the start address of the region aligned to a page
 		// endAddr is the end address of the region aligned to a page
 
 		// Now, we will get the page indices and mark off each page
-		ulong pageIndex = startAddr / VirtualMemory.PAGESIZE;
-		ulong maxIndex = (endAddr - startAddr) / VirtualMemory.PAGESIZE;
+		ulong pageIndex = startAddr / VirtualMemory.getPageSize();
+		ulong maxIndex = (endAddr - startAddr) / VirtualMemory.getPageSize();
 		maxIndex += pageIndex;
 
 		for(; pageIndex<maxIndex; pageIndex++)

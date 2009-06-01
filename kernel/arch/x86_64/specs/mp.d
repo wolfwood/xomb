@@ -106,7 +106,7 @@ public:
 		ubyte* curAddr = cast(ubyte*)mpConfig;
 		curAddr += MPConfigurationTable.sizeof;
 
-		ulong lastState = 0;
+		uint lastState = 0;
 
 		for (uint i=0; i < mpConfig.entryCount; i++)
 		{
@@ -120,7 +120,6 @@ public:
 
 			lastState = *curAddr;
 
-			// XXX: if lastState is an int, this causes a relocation error
 			switch(lastState)
 			{
 				case 0: // Processor Entry
