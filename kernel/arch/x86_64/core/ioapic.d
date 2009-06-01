@@ -32,6 +32,15 @@ public:
 	// The first IO APIC to get called gets pin 0 to pin maxRedirEnt (inclusive)
 	ErrorVal initialize() {
 		kprintfln!("IOAPIC count: {}")(Info.numIOAPICs);
+
+		// for all IOAPICs, init them
+		for(int i = 0; i < Info.numIOAPICs; i++) {
+			initUnit(Info.IOAPICs[i].ID, Info.IOAPICs[i].address, false);
+		}
+
+		// setting the redirection entries from the Info struct
+		setRedirectionTableEntries();
+
 		return ErrorVal.Success;
 	}
 
@@ -50,6 +59,34 @@ public:
 		if (irq > 15) { return ErrorVal.Fail; }
 
 		maskRedirectionTableEntry(irqToIOAPIC[irq], irqToPin[irq]);
+		return ErrorVal.Success;
+	}
+
+	ErrorVal unmaskPin(uint pin) {
+		if (pin >= numPins) {
+			// error: no pin available
+			return ErrorVal.Fail;
+		}
+
+		uint IOAPICID = pinToIOAPIC[pin];
+		uint IOAPICPin = pin - ioApicStartingPin[IOAPICID];
+
+		maskRedirectionTableEntry(IOAPICID, IOAPICPin);
+
+		return ErrorVal.Success;
+	}
+
+	ErrorVal maskPin(uint pin) {
+		if (pin >= numPins) {
+			// error: no pin available
+			return ErrorVal.Fail;
+		}
+
+		uint IOAPICID = pinToIOAPIC[pin];
+		uint IOAPICPin = pin - ioApicStartingPin[IOAPICID];
+
+		unmaskRedirectionTableEntry(IOAPICID, IOAPICPin);
+
 		return ErrorVal.Success;
 	}
 
@@ -84,6 +121,20 @@ private:
 		// set the addresses for the data register and window
 		ioApicRegisterSelect[ioAPICID] = cast(uint*)(IOAPICVirtAddr);
 		ioApicWindowRegister[ioAPICID] = cast(uint*)(IOAPICVirtAddr + 0x10);
+
+		// get the number of redirection table entries
+		ubyte apicVersion, maxRedirectionEntry;
+		getIOApicVersion(ioAPICID, apicVersion, maxRedirectionEntry);
+
+		// it will report one less
+		maxRedirectionEntry++;
+
+		// keep track of which IOAPIC unit has control of which pins
+		ioApicStartingPin[ioAPICID] = numPins;
+		for(int i = 0; i < maxRedirectionEntry; i++) {
+			pinToIOAPIC[i + numPins] = ioAPICID;
+		}
+		numPins += maxRedirectionEntry;
 	}
 
 // -- Register Read and Write -- //
@@ -110,6 +161,17 @@ private:
 		uint value = cast(uint)apicID << 24;
 
 		writeRegister(ioApicID, Register.ID, value);
+	}
+
+	void getIOApicVersion(uint ioApicID, out ubyte apicVersion,
+			out ubyte maxRedirectionEntry) {
+
+		uint value = readRegister(ioApicID, Register.VER);
+
+		apicVersion = (value & 0xFF);
+		value >>= 16;
+
+		maxRedirectionEntry = (value & 0xFF);
 	}
 
 	void setRedirectionTableEntry(uint ioApicID, uint registerIndex,
@@ -147,7 +209,25 @@ private:
 	}
 
 	void setRedirectionTableEntries() {
+		for(int i = 0; i < Info.numEntries; i++) {
+			// get IOAPIC info and pin info for the specific IO APIC unit
+			int IOAPICID = pinToIOAPIC[i];
+			int IOAPICPin = i - ioApicStartingPin[IOAPICID];
 
+			// set the table entry
+			setRedirectionTableEntry(IOAPICID, IOAPICPin,
+				Info.redirectionEntries[i].destination,
+				Info.redirectionEntries[i].interruptType,
+				Info.redirectionEntries[i].triggerMode,
+				Info.redirectionEntries[i].inputPinPolarity,
+				Info.redirectionEntries[i].destinationMode,
+				Info.redirectionEntries[i].deliveryMode,
+				Info.redirectionEntries[i].vector);
+
+			// set IRQ stuff
+			irqToPin[Info.redirectionEntries[i].sourceBusIRQ] = i;
+			irqToIOAPIC[Info.redirectionEntries[i].sourceBusIRQ] = IOAPICID;
+		}
 	}
 
 	void unmaskRedirectionTableEntry(uint ioApicID, uint registerIndex) {
