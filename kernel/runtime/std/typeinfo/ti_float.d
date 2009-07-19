@@ -52,11 +52,11 @@ class TypeInfo_f : TypeInfo
 
     void swap(void *p1, void *p2)
     {
-	float t;
+	/*float t;
 
 	t = *cast(float *)p1;
 	*cast(float *)p1 = *cast(float *)p2;
-	*cast(float *)p2 = t;
+	*cast(float *)p2 = t;*/
     }
 
     void[] init()

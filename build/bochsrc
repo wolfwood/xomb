@@ -1,4 +1,4 @@
-romimage: file=/usr/src/bochs-2.3.7/bios/BIOS-bochs-latest
+romimage: file=/usr/local/share/bochs/BIOS-bochs-latest
 megs: 128
 ata1-slave:  type=cdrom, path="./xomb.iso", status=inserted
 boot: cdrom
