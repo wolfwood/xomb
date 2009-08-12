@@ -74,4 +74,45 @@ public:
 			static assert (false, "Cannot determine data type.");
 		}
 	}
+
+	void writeMSR(uint MSR, ulong value) {
+		uint hi, lo;
+		lo = value & 0xFFFFFFFF;
+		hi = value >> 32UL;
+
+		asm {
+			// move the MSR index to ECX
+			// also move the perspective registers
+			// HI -> EDX
+			// LO -> EAX
+			mov EDX, hi;
+			mov EAX, lo;
+			mov ECX, MSR;
+			wrmsr;
+		}
+	}
+
+	ulong readMSR(uint MSR) {
+		ulong ret;
+		ulong hi;
+		ulong lo;
+
+		asm {
+			// move the MSR index to ECX
+			mov ECX, MSR;
+			
+			// read MSR
+			rdmsr;
+
+			// EDX -> hi, EAX -> lo
+			mov hi, EDX;
+			mov lo, EAX;
+		}
+
+		ret = hi;
+		ret <<= 32;
+		ret |= lo;
+
+		return ret;
+	}
 }

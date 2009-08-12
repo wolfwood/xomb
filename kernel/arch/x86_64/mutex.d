@@ -11,6 +11,13 @@ struct Mutex {
 	void lock() {
 		// Test and Test-and-set implementation:
 		while (value == Value.Locked || testAndSet(&value) == Value.Locked) {
+			asm {
+				// The following should compile into a 'PAUSE' instruction
+				// This will hint to the processor that this is a spinlock
+				// This is for performance and power saving
+				rep;
+				nop;
+			}
 		}
 	}
 

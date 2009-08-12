@@ -12,6 +12,7 @@ import kernel.arch.x86_64.core.tss;
 import kernel.arch.x86_64.core.idt;
 
 import kernel.arch.x86_64.core.ioapic;
+import kernel.arch.x86_64.core.lapic;
 
 // MP Spec
 import kernel.arch.x86_64.specs.mp;

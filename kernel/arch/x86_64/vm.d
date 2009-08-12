@@ -33,13 +33,6 @@ public:
 		return Paging.translateAddress(address);
 	}
 
-	// This defines the system memory. physAddr is the starting address
-	// which is probably 0x0 and then the length of RAM.
-	ErrorVal mapSystem(void* physAddr, ulong systemLength)
-	{
-		return Paging.mapSystem(physAddr, systemLength);
-	}
-
 	// This function will map a region to the region space starting at
 	// physAdd across a length of regionLength.
 	void* mapRegion(void* physAddr, ulong regionLength)

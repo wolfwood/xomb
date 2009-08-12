@@ -149,6 +149,7 @@ public:
 					Info.IOAPICs[Info.numIOAPICs].ID = ioapic.ioAPICID;
 					Info.IOAPICs[Info.numIOAPICs].ver = ioapic.ioAPICVersion;
 					Info.IOAPICs[Info.numIOAPICs].enabled = cast(bool)ioapic.ioAPICEnabled;
+					Info.IOAPICs[Info.numIOAPICs].address = cast(void*)ioapic.ioAPICAddress;
 
 					// increment the count
 					Info.numIOAPICs++;

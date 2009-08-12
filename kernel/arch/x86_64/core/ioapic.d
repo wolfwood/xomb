@@ -116,7 +116,9 @@ private:
 		}
 
 		// map IOAPIC region
-		void* IOAPICVirtAddr ;//= Paging.mapRegion(ioAPICAddress, 4096);
+		kprintfln!("IOAPIC Addr {x}")(ioAPICAddress);
+		void* IOAPICVirtAddr = Paging.mapRegion(ioAPICAddress, 4096);
+		kprintfln!("IOAPIC Addr {x}")(IOAPICVirtAddr);
 
 		// set the addresses for the data register and window
 		ioApicRegisterSelect[ioAPICID] = cast(uint*)(IOAPICVirtAddr);

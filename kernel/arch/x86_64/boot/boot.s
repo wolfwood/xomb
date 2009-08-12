@@ -49,6 +49,17 @@ start32:
 	; disable interrupts
 	cli
 
+	; enable SSE
+	mov ecx, cr0
+	btr ecx, 2
+	bts ecx, 1
+	mov cr0, ecx
+
+	mov ecx, cr4
+	bts ecx, 9
+	bts ecx, 10
+	mov cr4, ecx
+
 	; enable 64-bit page translation table entries
 	; by setting CR4.PAE = 1.
 	;

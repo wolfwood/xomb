@@ -82,7 +82,7 @@ public:
 		ulong index = findPage();
 
 		// Return the address
-		return System.memory.virtualStart + ((index * VirtualMemory.getPageSize()));
+		return cast(void*)(index * VirtualMemory.getPageSize());
 	}
 
 	// This will allocate a page, and return the virtual address while
