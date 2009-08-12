@@ -1,7 +1,0 @@
-romimage: file=/usr/src/bochs-2.3.7/bios/BIOS-bochs-latest
-floppya: 1_44="/Users/jamesll/Documents/PGOS/images/floppy2.img", status=inserted
-megs: 128
-ata1-slave:  type=cdrom, path="./xomb.iso", status=inserted
-#ata1-slave:  type=cdrom, path="/Users/jamesll/Documents/PGOS/RollYourOwn/PaGanOS/src/xomb.iso", status=inserted
-boot: cdrom
-cpu: count=2, reset_on_triple_fault=0
