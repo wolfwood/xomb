@@ -1,12 +1,3 @@
-//Config options
-
-bool enable_kgdb = false;
-bool remote_debug = true;	// Its like debugging for the debugger
-
-// Kernel options
-// Make sure this is the same as the value in boot.h
-const ulong KERNEL_VM_BASE = 0xFFFFFFFF80000000;
-
 // Debugging options
 // Setting DEBUG_ALL to true will cause *ALL* debug
 // flags to turn on.  If you only want to see some
