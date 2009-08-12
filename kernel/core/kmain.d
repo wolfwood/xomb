@@ -56,3 +56,6 @@ extern(C) void kmain(int bootLoaderID, void *data)
 	for(;;) { kprintfln!("OMG LOOP")(); }
 
 }
+
+extern(C) void apEntry() {
+}
