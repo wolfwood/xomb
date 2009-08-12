@@ -128,6 +128,7 @@ GDT_END:
 
 ; These assume linking to 0xFFFF800000000000
 align 4096
+global pml4_base
 pml4_base:
 	dq (pml3_base + 0x7)
 	times 255 dq 0
