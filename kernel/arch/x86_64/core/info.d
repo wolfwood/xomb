@@ -96,6 +96,9 @@ public:
 		bool enabled;
 	}
 
+	// The address of the apic registers
+	void* localAPICAddress;
+
 	LAPICInfo[256] LAPICs;
 	uint numLAPICs;
 

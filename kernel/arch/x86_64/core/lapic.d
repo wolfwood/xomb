@@ -9,17 +9,26 @@ module kernel.arch.x86_64.core.lapic;
 
 import kernel.arch.x86_64.mutex;
 import kernel.arch.x86_64.cpu;
+import kernel.arch.x86_64.linker;
+
+import kernel.arch.x86_64.core.paging;
+import kernel.arch.x86_64.core.info;
 
 import kernel.core.error;
+import kernel.core.kprintf;
 
-struct LAPIC {
+import kernel.system.info;
+
+struct LocalAPIC {
 static:
 public:
 
-	ErrorVal initialize(void* localAPICAddr) {
-	//	initLocalApic(localAPICAddr);
+	ErrorVal initialize() {
+		initLocalApic(Info.localAPICAddress);
 
-	//	enableLocalApic();
+		enableLocalApic();
+
+		startAPs();
 
 		return ErrorVal.Success;
 	}
@@ -27,6 +36,7 @@ public:
 private:
 
 	void initLocalApic(void* localAPICAddr) {
+		kprintfln!("register space: {x}")(localAPICAddr);
 		ubyte* apicRange;
 
 		ulong MSRValue = Cpu.readMSR(0x1B);
@@ -34,7 +44,21 @@ private:
 		Cpu.writeMSR(0x1B, MSRValue);
 
 		// Map in the register space
+		apicRegisters = cast(ApicRegisterSpace*)Paging.mapRegion(localAPICAddr, ApicRegisterSpace.sizeof);
 
+		// Map in the first megabyte of space
+		ubyte* bootRange;
+
+		bootRange = cast(ubyte*)Paging.mapRegion(cast(void*)0x0, 0x100000);
+
+		// Write the trampoline code where it needs to be
+
+		uint trampolineLength = cast(ulong)LinkerScript.etrampoline - cast(ulong)LinkerScript.trampoline;
+		ubyte* trampolineCode = cast(ubyte*)LinkerScript.trampoline + cast(ulong)System.kernel.virtualStart;
+
+		kprintfln!("trampolineLength: {} trampolineCode: {x} trampoline: {x} Kernel: {x}")(trampolineLength, trampolineCode, LinkerScript.trampoline, System.kernel.start);
+
+		bootRange[0..trampolineLength] = trampolineCode[0..trampolineLength];
 	}
 
 	void enableLocalApic() {
@@ -76,9 +100,18 @@ private:
 		return apicRegisters.localApicId >> 24;
 	}
 
+	void startAPs() {
+		foreach(localAPIC; Info.LAPICs[0..Info.numLAPICs]) {
+			if (localAPIC.enabled && localAPIC.ID != getLocalAPICId()) {
+				startAP(localAPIC.ID);
+			}
+		}
+	}
+
 	Mutex apLock;
 
 	void startAP(ubyte apicID) {
+		kprintfln!("Starting AP {}")(apicID);
 		apLock.lock();
 
 		// success will be printed by the AP in apExec();
@@ -152,7 +185,7 @@ private:
 		apicRegisters.interruptCommandLo = loword;
 	}
 
-	align(1) struct apicRegisterSpace {
+	align(1) struct ApicRegisterSpace {
 		/* 0000 */ uint reserved0;				ubyte[12] padding0;
 		/* 0010 */ uint reserved1;				ubyte[12] padding1;
 		/* 0020 */ uint localApicId;			ubyte[12] padding2;
@@ -218,5 +251,5 @@ private:
 		/* 03e0 */ uint tmrDivideConfiguration;	ubyte[12] padding62;
 	}
 
-	apicRegisterSpace* apicRegisters;
+	ApicRegisterSpace* apicRegisters;
 }

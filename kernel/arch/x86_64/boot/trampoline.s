@@ -27,8 +27,7 @@ _trampoline_start:
 	mov sp, (trampoline_stack_end - trampoline_start) 
 
 	; clear segment registers
-	xor ax, ax
-	mov cs, ax
+	mov ax, cs
 	mov ds, ax
 	mov ss, ax
 	mov es, ax
@@ -43,7 +42,55 @@ _trampoline_start:
 	lmsw ax
 
 	; "long" jump into protected mode
-	jmp CS_KERNEL:(trampoline_protected - trampoline_start)
+	jmp CS_KERNEL32:(trampoline_protected - trampoline_start)
+
+	; end
+
+; Protected Mode
+
+bits 32
+
+trampoline_protected:
+
+	; enable 64-bit page-translation-table entries by
+	; setting CR4.PAE=1. Paging is not enabled until after
+	; long mode is enabled
+
+	mov eax, cr4
+	bts eax, 5
+	mov cr4, eax
+
+	; Create long mode page table and init CR3 to point
+	; to the bast of the PML4 page table
+
+	mov eax, pml4_base
+	mov cr3, eax
+
+	; Enable long mode and SYSCALL/SYSRET instructions
+	mov ecx, 0xc0000080
+	rdmsr
+
+	xor eax, eax
+	bts eax, 8
+	bts eax, 0
+	wrmsr
+
+	; Load the 32 bit GDT
+	;lgdt [pGDT32]
+
+	; Load the 32 bit IDT
+	; lidt [pIDT32]
+
+	; Set up a stack
+	mov esp, (stack-KERNEL_VMA_BASE) + STACK_SIZE
+
+	; Enable paging to activate long mode
+	mov eax, cr0
+	bts eax, 31
+	mov cr0, eax
+
+	; Jump to long mode
+	jmp CS_KERNEL:(start64_ap-KERNEL_VMA_BASE)
 
 	; end
 
@@ -77,51 +124,3 @@ align 4096
 trampoline_stack:
 align 4096
 trampoline_stack_end:
-
-; Protected Mode
-
-bits 32
-
-trampoline_protected:
-
-	; enable 64-bit page-translation-table entries by
-	; setting CR4.PAE=1. Paging is not enabled until after
-	; long mode is enabled
-
-	mov eax, cr4
-	bts eax, 5
-	mov cr4, eax
-
-	; Create long mode page table and init CR3 to point
-	; to the bast of the PML4 page table
-
-	mov eax, pml4_base
-	mov cr3, eax
-
-	; Enable long mode and SYSCALL/SYSRET instructions
-	mov ecx, 0xc0000080
-	rdmsr
-
-	xor eax, eax
-	bts eax, 8
-	bts eax, 0
-	wrmsr
-
-	; Load the 32 bit GDT
-	; lgdt [pGDT32]
-
-	; Load the 32 bit IDT
-	; lidt [pIDT32]
-
-	; Set up a stack
-	; mov 
-
-	; Enable paging to activate long mode
-	mov eax, cr0
-	bts eax, 31
-	mov cr0, eax
-
-	; Jump to long mode
-	jmp CS_KERNEL:(start64_ap-KERNEL_VMA_BASE)
-
-	; end

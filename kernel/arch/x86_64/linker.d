@@ -33,6 +33,9 @@ extern(C)
 	// The region of the .bss section
 	extern ubyte _bss;
 	extern ubyte _ebss;
+
+	extern ubyte _trampoline;
+	extern ubyte _etrampoline;
 }
 
 // Just provides wrappers to access this information;
@@ -89,6 +92,14 @@ public:
 	void* ebss()
 	{
 		return &_ebss;
+	}
+
+	void* trampoline() {
+		return &_trampoline;
+	}
+
+	void* etrampoline() {
+		return &_etrampoline;
 	}
 
 private:

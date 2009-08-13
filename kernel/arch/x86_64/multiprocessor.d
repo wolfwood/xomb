@@ -26,7 +26,7 @@ struct Multiprocessor {
 static:
 public:
 
-	// This module will conform the the interface
+	// This module will conform to the interface
 	ErrorVal initialize()
 	{
 		// 1. Look for the ACPI tables (preferred method)
@@ -48,11 +48,17 @@ public:
 			return ErrorVal.Fail;
 		}
 
+		// 3a. Initialize Local APIC
+		if (LocalAPIC.initialize() != ErrorVal.Success) {
+			return ErrorVal.Fail;
+		}
+
 		// 3b. Initialize IOAPIC
 		if (IOAPIC.initialize() != ErrorVal.Success) {
 			return ErrorVal.Fail;
 		}
 
+		// If it got this far, it has succeeded
 		return ErrorVal.Success;
 	}
 private:

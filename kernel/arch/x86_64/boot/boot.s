@@ -110,6 +110,7 @@ bits 32
 
 align 4096
 
+global pGDT32
 pGDT32:
 	dw GDT_END - GDT_TABLE - 1
 	dq GDT_TABLE - KERNEL_VMA_BASE

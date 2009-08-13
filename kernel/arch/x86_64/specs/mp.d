@@ -95,6 +95,7 @@ public:
 			return ErrorVal.Fail;
 		}
 
+		Info.localAPICAddress = cast(void*)mpConfig.addressOfLocalAPIC;
 
 		// We need to map in the APIC register space info a separate
 		// kernel region.

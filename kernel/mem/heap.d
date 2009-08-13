@@ -132,6 +132,10 @@ public:
 		return ErrorVal.Success;
 	}
 
+	uint length() {
+		return bitmapPages * VirtualMemory.getPageSize(); 
+	}
+
 private:
 
 	// Whether or not this module has been initialized

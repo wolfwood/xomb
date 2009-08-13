@@ -84,7 +84,7 @@ public:
 		kernelAddress = heapAddress;
 
 		ulong curPhysAddr = cast(ulong)System.kernel.start;
-		ulong regionLength = System.kernel.length + (curPhysAddr % PAGESIZE);
+		ulong regionLength = System.kernel.length + Heap.length + (curPhysAddr % PAGESIZE);
 		curPhysAddr -= (curPhysAddr % PAGESIZE);
 
 		// Set the new starting address
@@ -250,7 +250,6 @@ private:
 			// Find the initial page
 			translateAddress(heapAddress, indexL1, indexL2, indexL3, indexL4);
 
-			kprintfln!("{x} {x} {x} {x}")(indexL4, indexL3, indexL2, indexL1);
 			// From there, map the region
 			ulong done = 0;
 			for ( ; indexL4 < 512 && physAddr < endAddr ; indexL4++ )
@@ -264,7 +263,6 @@ private:
 					root.entries[indexL4].rw = 1;
 				}
 				else {
-					kprintfln!("getOrCreateTable {}")(indexL4);
 					pl3 = root.getOrCreateTable(indexL4);
 				}
 
@@ -336,7 +334,6 @@ private:
 
 			// Relocate heap address
 			heapAddress += regionLength;
-			kprintfln!("done")();
 		}
 	}
 
@@ -406,8 +403,6 @@ private:
 		PageLevel3* getOrCreateTable(uint idx) {
 			PageLevel3* ret = getTable(idx);
 
-			kprintfln!("base addr {x}")(this);
-
 			if (ret is null) {
 				// Create Table
 				ret = cast(PageLevel3*)Heap.allocPageNoMap();
@@ -423,7 +418,6 @@ private:
 				*ret = PageLevel3.init;
 			}
 
-			kprintfln!("ret addr {x}")(ret);
 			return ret;
 		}
 	}
@@ -445,8 +439,6 @@ private:
 		PageLevel2* getOrCreateTable(uint idx) {
 			PageLevel2* ret = getTable(idx);
 
-			kprintfln!("base addr {x}")(this);
-
 			if (ret is null) {
 				// Create Table
 				ret = cast(PageLevel2*)Heap.allocPageNoMap();
@@ -465,7 +457,6 @@ private:
 				*ret = PageLevel2.init;
 			}
 
-			kprintfln!("ret addr {x}")(ret);
 			return ret;
 		}
 	}
@@ -486,9 +477,7 @@ private:
 
 		PageLevel1* getOrCreateTable(uint idx) {
 			PageLevel1* ret = getTable(idx);
-
-			kprintfln!("base addr {x}")(this);
-
+			
 			if (ret is null) {
 				// Create Table
 				ret = cast(PageLevel1*)Heap.allocPageNoMap();
@@ -507,7 +496,6 @@ private:
 				*ret = PageLevel1.init;
 			}
 
-			kprintfln!("ret addr {x}")(ret);
 			return ret;
 		}
 	}

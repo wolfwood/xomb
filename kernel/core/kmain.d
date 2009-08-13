@@ -53,9 +53,10 @@ extern(C) void kmain(int bootLoaderID, void *data)
 
 	// 7. Schedule
 
-	for(;;) { kprintfln!("OMG LOOP")(); }
+	for(;;) { }
 
 }
 
 extern(C) void apEntry() {
+	for(;;) { }
 }
