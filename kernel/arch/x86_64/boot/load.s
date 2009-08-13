@@ -93,7 +93,7 @@ global start64_ap
 start64_ap:
 
 	; Initialize the 64 bit stack pointer.
-	mov rsp, ((stack - KERNEL_VMA_BASE) + STACK_SIZE)
+	mov rsp, ((stack_ap - KERNEL_VMA_BASE) + STACK_SIZE)
 
 	; Set up the stack for the return.
 	push CS_KERNEL
@@ -120,7 +120,7 @@ long_entry_ap:
 	; set up a 64 bit virtual stack
 	mov rax, KERNEL_VMA_BASE >> 32
 	shl rax, 32
-	or rax, stack - (KERNEL_VMA_BASE & 0xffffffff00000000)
+	or rax, stack_ap - (KERNEL_VMA_BASE & 0xffffffff00000000)
 	mov rsp, rax
 
 	; set cpu flags
@@ -147,6 +147,14 @@ global stack
 align 4096
 
 stack:
+	%rep STACK_SIZE
+	dd 0
+	%endrep
+
+global stack_ap
+align 4096
+
+stack_ap:
 	%rep STACK_SIZE
 	dd 0
 	%endrep

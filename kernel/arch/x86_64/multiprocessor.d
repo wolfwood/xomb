@@ -7,10 +7,11 @@
 
 module kernel.arch.x86_64.multiprocessor;
 
+import kernel.arch.x86_64.cpu;
+
 import kernel.arch.x86_64.core.gdt;
 import kernel.arch.x86_64.core.tss;
 import kernel.arch.x86_64.core.idt;
-
 import kernel.arch.x86_64.core.ioapic;
 import kernel.arch.x86_64.core.lapic;
 

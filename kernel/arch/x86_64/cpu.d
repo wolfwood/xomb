@@ -11,6 +11,7 @@ module kernel.arch.x86_64.cpu;
 import kernel.arch.x86_64.core.gdt;
 import kernel.arch.x86_64.core.tss;
 import kernel.arch.x86_64.core.idt;
+import kernel.arch.x86_64.core.paging;
 
 // To return error values
 import kernel.core.error;
@@ -24,6 +25,10 @@ public:
 
 	// This module will conform to the interface
 	ErrorVal initialize() {
+
+		Paging.install();
+		printToLog("Enabling Paging", ErrorVal.Success);
+
 		GDT.install();
 		printToLog("Enabling GDT", ErrorVal.Success);
 		TSS.install();

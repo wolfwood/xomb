@@ -115,7 +115,7 @@ public:
 		kprintfln!("memory length: {x}")(System.memory.length);
 
 		// Save the physical address for later
-		ulong rootAddr = cast(ulong)root;
+		rootPhysical = cast(void*)root;
 
 		// Restart the console driver to look at the right place
 		Console.initialize();
@@ -124,16 +124,16 @@ public:
 		root = cast(PageLevel4*)0xFFFFFFFF_FFFFF000;
 		kprintfln!("root: {x}")(root);
 
-		kprintfln!("root addr: {x}")(rootAddr);
-		// Must map
+		// All is well.
+		return ErrorVal.Success;
+	}
+
+	void install() {
+		ulong rootAddr = cast(ulong)rootPhysical;
 		asm {
 			mov RAX, rootAddr;
 			mov CR3, RAX;
 		}
-		
-
-		// All is well.
-		return ErrorVal.Success;
 	}
 
 	// This function will get the physical address that is mapped from the
@@ -231,6 +231,7 @@ private:
 
 
 	PageLevel4* root;
+	void* rootPhysical;
 
 
 // -- Mapping Functions -- //

@@ -58,5 +58,10 @@ extern(C) void kmain(int bootLoaderID, void *data)
 }
 
 extern(C) void apEntry() {
+
+	// 1. Processor Initialization
+	Cpu.initialize();
+
+	// 2. Schedule
 	for(;;) { }
 }
