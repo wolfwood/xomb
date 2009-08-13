@@ -43,7 +43,7 @@ public:
 	//
 	void* mapKernelPage(void* physAddr)
 	{
-		return null;
+		return Paging.mapRegion(physAddr, 4096);
 	}
 
 	// This function will map a single page at the specified physical address

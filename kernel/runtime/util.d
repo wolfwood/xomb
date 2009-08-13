@@ -112,7 +112,7 @@ Params:
 Returns:
 	 0 if they are equal, < 0 if a is less than b, and > 0 if a is greater than b.
 */
-long memcmp(void* a, void* b, size_t n)
+extern(C) int memcmp(void* a, void* b, size_t n)
 {
 	ubyte* str_a = cast(ubyte*)a;
 	ubyte* str_b = cast(ubyte*)b;
@@ -136,11 +136,11 @@ This function sets a particular piece of memory to a particular value.
 		val = The value you wish to write to memory.
 		numBytes = The number of bytes you would like to write to memory.
 */
-void memset(void *addr, ubyte val, uint numBytes){
+extern(C) void memset(void *addr, int val, uint numBytes){
      ubyte *data = cast(ubyte*) addr;
 
      for(int i = 0; i < numBytes; i++){
-          data[i] = val;
+          data[i] = cast(ubyte)val;
      }
 }
 

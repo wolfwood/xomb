@@ -28,8 +28,7 @@ static:
 public:
 
 	// This module will conform to the interface
-	ErrorVal initialize()
-	{
+	ErrorVal initialize() {
 		// 1. Look for the ACPI tables (preferred method)
 		if(ACPI.Tables.findTable() == ErrorVal.Success) {
 			// ACPI tables found
@@ -60,6 +59,13 @@ public:
 		}
 
 		// If it got this far, it has succeeded
+		return ErrorVal.Success;
+	}
+
+	ErrorVal installCore(uint codeID) {
+		// Enable this core's Local APIC
+		LocalAPIC.install();
+
 		return ErrorVal.Success;
 	}
 private:

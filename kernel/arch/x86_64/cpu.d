@@ -18,6 +18,15 @@ import kernel.core.error;
 import kernel.core.log;
 import kernel.core.kprintf;
 
+// For heap allocation
+import kernel.mem.heap;
+
+private {
+	extern(C) {
+		extern ubyte stack;
+	}
+}
+
 struct Cpu
 {
 static:
@@ -35,6 +44,9 @@ public:
 		printToLog("Enabling TSS", ErrorVal.Success);
 		IDT.install();
 		printToLog("Enabling IDT", ErrorVal.Success);
+
+		installStack();
+		printToLog("Installed Stack", ErrorVal.Success);
 
 		return ErrorVal.Success;
 	}
@@ -119,5 +131,34 @@ public:
 		ret |= lo;
 
 		return ret;
+	}
+
+private:
+
+	// Will create and install a new kernel stack
+	// Note: You have to preserve the current stack
+	ErrorVal installStack() {
+		ubyte* stackSpace = cast(ubyte*)Heap.allocPage();
+		ubyte* currentStack = cast(ubyte*)(&stack-4096);
+
+		kprintfln!("currentStack: {x} stackSpace: {x}")(currentStack, stackSpace);
+		
+		stackSpace[0..4096] = currentStack[0..4096];
+
+		asm {
+			// Retrieve stack pointer, place in RAX
+			mov RAX, RSP;
+
+			// Get the page offset
+			and RAX, 0xFFF;
+
+			// Add this to the stackspace pointer
+			add RAX, stackSpace;
+
+			// Set stack pointer
+			mov RSP, RAX;
+		}
+
+		return ErrorVal.Success;
 	}
 }

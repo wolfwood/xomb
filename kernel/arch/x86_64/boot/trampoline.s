@@ -10,7 +10,7 @@ bits 16
 
 %include "defines.mac"
 
-extern stack_ap
+extern stack
 extern pGDT32
 extern pml4_base
 extern start64_ap
@@ -93,7 +93,7 @@ trampoline_protected:
 	; lidt [pIDT32]
 
 	; Set up a stack
-	mov esp, (stack_ap-KERNEL_VMA_BASE) + STACK_SIZE
+	mov esp, (stack-KERNEL_VMA_BASE) + STACK_SIZE
 
 	; Enable paging to activate long mode
 	mov eax, cr0

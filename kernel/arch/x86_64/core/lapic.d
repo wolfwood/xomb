@@ -26,42 +26,14 @@ public:
 	ErrorVal initialize() {
 		initLocalApic(Info.localAPICAddress);
 
-		enableLocalApic();
+		install();
 
 		startAPs();
 
 		return ErrorVal.Success;
 	}
 
-private:
-
-	void initLocalApic(void* localAPICAddr) {
-		kprintfln!("register space: {x}")(localAPICAddr);
-		ubyte* apicRange;
-
-		ulong MSRValue = Cpu.readMSR(0x1B);
-		MSRValue |= (1 << 11);
-		Cpu.writeMSR(0x1B, MSRValue);
-
-		// Map in the register space
-		apicRegisters = cast(ApicRegisterSpace*)Paging.mapRegion(localAPICAddr, ApicRegisterSpace.sizeof);
-
-		// Map in the first megabyte of space
-		ubyte* bootRange;
-
-		bootRange = cast(ubyte*)Paging.mapRegion(cast(void*)0x0, 0x100000);
-
-		// Write the trampoline code where it needs to be
-
-		uint trampolineLength = cast(ulong)LinkerScript.etrampoline - cast(ulong)LinkerScript.trampoline;
-		ubyte* trampolineCode = cast(ubyte*)LinkerScript.trampoline + cast(ulong)System.kernel.virtualStart;
-
-		kprintfln!("trampolineLength: {} trampolineCode: {x} trampoline: {x} Kernel: {x}")(trampolineLength, trampolineCode, LinkerScript.trampoline, System.kernel.start);
-
-		bootRange[0..trampolineLength] = trampolineCode[0..trampolineLength];
-	}
-
-	void enableLocalApic() {
+	void install() {
 		// Switch from PIC to APIC
 		// Using IMCR registers
 		Cpu.ioOut!(byte, "0x22")(0x70);
@@ -90,6 +62,36 @@ private:
 		apicRegisters.lint1LocalVectorTable = 0x422; // NMI
 
 		EOI();
+
+		if (apLock.locked) { apLock.unlock(); }
+	}
+
+private:
+
+	void initLocalApic(void* localAPICAddr) {
+		kprintfln!("register space: {x}")(localAPICAddr);
+		ubyte* apicRange;
+
+		ulong MSRValue = Cpu.readMSR(0x1B);
+		MSRValue |= (1 << 11);
+		Cpu.writeMSR(0x1B, MSRValue);
+
+		// Map in the register space
+		apicRegisters = cast(ApicRegisterSpace*)Paging.mapRegion(localAPICAddr, ApicRegisterSpace.sizeof);
+
+		// Map in the first megabyte of space
+		ubyte* bootRange;
+
+		bootRange = cast(ubyte*)Paging.mapRegion(cast(void*)0x0, 0x100000);
+
+		// Write the trampoline code where it needs to be
+
+		uint trampolineLength = cast(ulong)LinkerScript.etrampoline - cast(ulong)LinkerScript.trampoline;
+		ubyte* trampolineCode = cast(ubyte*)LinkerScript.trampoline + cast(ulong)System.kernel.virtualStart;
+
+		kprintfln!("trampolineLength: {} trampolineCode: {x} trampoline: {x} Kernel: {x}")(trampolineLength, trampolineCode, LinkerScript.trampoline, System.kernel.start);
+
+		bootRange[0..trampolineLength] = trampolineCode[0..trampolineLength];
 	}
 
 	void EOI() {

@@ -62,6 +62,9 @@ extern(C) void apEntry() {
 	// 1. Processor Initialization
 	Cpu.initialize();
 
+	// 2. Core Initialization
+	Multiprocessor.installCore(1);
+
 	// 2. Schedule
 	for(;;) { }
 }
