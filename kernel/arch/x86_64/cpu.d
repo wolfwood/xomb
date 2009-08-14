@@ -92,6 +92,49 @@ public:
 		}
 	}
 
+	template ioInMixinB(char[] port) {
+		const char[] ioInMixinB = `
+		asm {
+			naked;
+			in AL, ` ~ port ~ `;
+			ret;
+		}`;
+	}
+
+	template ioInMixinW(char[] port) {
+		const char[] ioInMixinW = `
+		asm {
+			naked;
+			in AX, ` ~ port ~ `;
+			ret;
+		}`;
+	}
+
+	template ioInMixinL(char[] port) {
+		const char[] ioInMixinL = `
+		asm {
+			naked;
+			in EAX, ` ~ port ~ `;
+			ret;
+		}`;
+	}
+
+
+	T ioIn(T, char[] port)() {
+		static if (is(T == ubyte) || is(T == byte)) {
+			mixin(ioInMixinB!(port));
+		}
+		else static if (is(T == ushort) || is(T == short)) {
+			mixin(ioInMixinW!(port));
+		}
+		else static if (is(T == uint) || is(T == int)) {
+			mixin(ioInMixinL!(port));
+		}
+		else {
+			static assert (false, "Cannot determine data type.");
+		}
+	}
+
 	void writeMSR(uint MSR, ulong value) {
 		uint hi, lo;
 		lo = value & 0xFFFFFFFF;

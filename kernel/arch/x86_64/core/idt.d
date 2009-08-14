@@ -15,17 +15,14 @@ import kernel.core.util;	// For BitField!()
 import kernel.core.error;	// For ErrorVal so errors can be indicated
 import kernel.core.kprintf;	// For printing the stack dump
 
-struct IDT
-{
+struct IDT {
 static:
 public:
 
 
 	// -- Functions to initialize the interrupt table -- //
 
-
-	ErrorVal initialize()
-	{
+	ErrorVal initialize() {
 		// Initialize the IDT base structure that will be
 		// loaded via LIDT
 		idtBase.limit = (InterruptGateDescriptor.sizeof * entries.length) - 1;
@@ -43,10 +40,9 @@ public:
 		return ErrorVal.Success;
 	}
 
-	void install()
-	{
+	void install() {
 		asm {
-		//	lidt [idtBase];
+			lidt [idtBase];
 		}
 	}
 
@@ -54,8 +50,7 @@ public:
 	// -- Stack Types -- //
 
 
-	enum StackType : uint
-	{
+	enum StackType : uint {
 		RegisterStack,
 		StackFault,
 		DoubleFault,
@@ -70,13 +65,11 @@ public:
 
 	// The following functions define entries within the table, where
 	// num is the index of the entry to set.
-	void setInterruptGate(uint num, void* funcPtr, uint ist = StackType.RegisterStack)
-	{
+	void setInterruptGate(uint num, void* funcPtr, uint ist = StackType.RegisterStack) {
 		setGate(num, GDT.SystemSegmentType.InterruptGate, cast(ulong)funcPtr, 0, ist);
 	}
 
-	void setSystemGate(uint num, void* funcPtr, uint ist = StackType.RegisterStack)
-	{
+	void setSystemGate(uint num, void* funcPtr, uint ist = StackType.RegisterStack) {
 		setGate(num, GDT.SystemSegmentType.InterruptGate, cast(ulong)funcPtr, 3, ist);
 	}
 
@@ -87,8 +80,7 @@ private:
 
 
 	// This, like GDT, is the base data to be loaded via LIDT
-	align (1) struct IDTBase
-	{
+	align (1) struct IDTBase {
 		ushort	limit;
 		ulong	base;
 	}
@@ -97,8 +89,7 @@ private:
 	IDTBase idtBase;
 
 	// This is the descriptor for the table
-	align(1) struct InterruptGateDescriptor
-	{
+	align(1) struct InterruptGateDescriptor {
 		ushort targetLo;
 		ushort segment;
 		ushort flags;
@@ -121,8 +112,7 @@ private:
 
 	// This structure represents the appearance of the stack
 	// upon receiving an interrupt on this architecture.
-	align(1) struct InterruptStack
-	{
+	align(1) struct InterruptStack {
 		// Registers
 		long r15, r14, r13, r12, r11, r10, r9, r8;
 		long rbp, rdi, rsi, rdx, rcx, rbx, rax;
@@ -135,8 +125,7 @@ private:
 
 		// This function will dump the stack information to
 		// the screen. Useful for debugging.
-		void dump()
-		{
+		void dump() {
 			kprintfln!("Stack Dump:")();
 			kprintfln!("r15:{x}|r14:{x}|r13:{x}|r12:{x}|r11:{x}")(r15,r14,r13,r12,r11);
 			kprintfln!("r10:{x}| r9:{x}| r8:{x}|rbp:{x}|rdi:{x}")(r10,r9,r8,rbp,rdi);
@@ -150,10 +139,8 @@ private:
 
 
 	// The generic setGate function
-	void setGate(uint num, GDT.SystemSegmentType gateType, ulong funcPtr, uint dplFlags, uint istFlags)
-	{
-		with(entries[num])
-		{
+	void setGate(uint num, GDT.SystemSegmentType gateType, ulong funcPtr, uint dplFlags, uint istFlags) {
+		with(entries[num]) {
 			targetLo = funcPtr & 0xffff;
 			segment = 0x10;	// It will use CS_KERNEL (entry 2)
 			ist = istFlags;
@@ -171,14 +158,11 @@ private:
 	// This template generates (for initialize()) the IDT table
 	// with default values for all interrupts
 
-	template generateIDT(uint numberISRs, uint idx = 0)
-	{
-		static if (numberISRs == idx)
-		{
+	template generateIDT(uint numberISRs, uint idx = 0) {
+		static if (numberISRs == idx) {
 			const char[] generateIDT = ``;
 		}
-		else
-		{
+		else {
 			const char[] generateIDT = `
 				setInterruptGate(` ~ idx.stringof ~ `, &isr` ~ idx.stringof[0..$-1] ~ `);
 			` ~ generateIDT!(numberISRs,idx+1);
@@ -187,31 +171,25 @@ private:
 
 	// This template generates a code stub for an ISR
 
-	template generateISR(uint num, bool needDummyError = true)
-	{
+	template generateISR(uint num, bool needDummyError = true) {
 		const char[] generateISR = `
-			void isr` ~ num.stringof[0..$-1] ~ `()
-			{
-				asm
-				{
+			void isr` ~ num.stringof[0..$-1] ~ `() {
+				asm {
 					naked; ` ~
-					//	(needDummyError ? `pushq 0;` : ``) ~
-					//	`pushq ` ~ num.stringof ~ `;
-					//	jmp isr_common;
+					(needDummyError ? `pushq 0;` : ``) ~
+					`pushq ` ~ num.stringof ~ `;` ~
+					`jmp isr_common;` ~
 						`
 				}
 			}
 		`;
 	}
 
-	template generateISRs(uint start, uint end, bool needDummyError = true)
-	{
-		static if (start > end)
-		{
+	template generateISRs(uint start, uint end, bool needDummyError = true) {
+		static if (start > end) {
 			const char[] generateISRs = ``;
 		}
-		else
-		{
+		else {
 			const char[] generateISRs = generateISR!(start, needDummyError)
 				~ generateISRs!(start+1,end,needDummyError);
 		}
@@ -219,7 +197,6 @@ private:
 
 
 	// -- The Interrupt Service Routine Stubs -- //
-
 
 	mixin(generateISR!(0));
 	mixin(generateISR!(1));
@@ -238,8 +215,62 @@ private:
 	mixin(generateISR!(14, false));
 	mixin(generateISRs!(15,39));
 
-	extern(C) void isr_common()
-	{
+	void dispatch(InterruptStack* stack) {
 	}
 
+	extern(C) void isr_common() {
+
+		// ISR routine has pushed either one or two values to the stack
+		// the stack will contain a few things pushed by hardware and then
+		// these two values
+
+		// Before an IRET can be issued, the first two values must be popped
+
+		asm {
+			naked;
+
+			// Save context
+
+			pushq RAX;
+			pushq RBX;
+			pushq RCX;
+			pushq RDX;
+			pushq RSI;
+			pushq RDI;
+			pushq RBP;
+			pushq R8;
+			pushq R9;
+			pushq R10;
+			pushq R11;
+			pushq R12;
+			pushq R13;
+			pushq R14;
+			pushq R15;
+
+			// Run dispatcher
+			mov RDI, RSP;
+			call dispatch;
+
+			// Restore context
+
+			popq R15;
+			popq R14;
+			popq R13;
+			popq R12;
+			popq R11;
+			popq R10;
+			popq R9;
+			popq R8;
+			popq RBP;
+			popq RDI;
+			popq RSI;
+			popq RDX;
+			popq RCX;
+			popq RBX;
+			popq RAX;
+
+			add RSP, 16;
+			iret;
+		}
+	}
 }

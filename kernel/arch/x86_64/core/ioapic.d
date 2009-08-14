@@ -13,6 +13,9 @@ import kernel.arch.x86_64.core.info;
 // for mapping the register space
 import kernel.arch.x86_64.core.paging;
 
+// For disabling PIC
+import kernel.arch.x86_64.core.pic;
+
 // We need port io
 import kernel.arch.x86_64.cpu;
 
@@ -32,6 +35,9 @@ public:
 	// The first IO APIC to get called gets pin 0 to pin maxRedirEnt (inclusive)
 	ErrorVal initialize() {
 		kprintfln!("IOAPIC count: {}")(Info.numIOAPICs);
+
+		// Disable PIC
+		PIC.disable();
 
 		// for all IOAPICs, init them
 		for(int i = 0; i < Info.numIOAPICs; i++) {
