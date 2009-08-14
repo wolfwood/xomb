@@ -58,6 +58,12 @@ public:
 			return ErrorVal.Fail;
 		}
 
+		// Enable Interrupts
+		asm {
+			sti;
+		}
+//		enableInterrupts();
+
 		// If it got this far, it has succeeded
 		return ErrorVal.Success;
 	}

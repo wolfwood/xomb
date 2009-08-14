@@ -13,14 +13,11 @@ import kernel.core.util;
 // Import ErrorVal
 import kernel.core.error;
 
-struct GDT
-{
+struct GDT {
 static:
-public:
 
 	// This list provides the types allowed for a system segment descriptor
-	enum SystemSegmentType
-	{
+	enum SystemSegmentType {
 		LocalDescriptorTable	= 0b0010,
 		AvailableTSS			= 0b1001,
 		BusyTSS					= 0b1011,
@@ -30,8 +27,7 @@ public:
 	}
 
 	// this function will set up the GDT
-	ErrorVal initialize()
-	{
+	ErrorVal initialize() {
 		// The limit is the size of the table minus 1
 		gdtBase.limit	= (SegmentDescriptor.sizeof * entries.length) - 1;
 		gdtBase.base	= cast(ulong)entries.ptr;
@@ -59,10 +55,8 @@ public:
 		return ErrorVal.Success;
 	}
 
-	void install()
-	{
-		asm
-		{
+	void install() {
+		asm {
 			lgdt [gdtBase];
 		}
 	}
@@ -77,12 +71,10 @@ public:
 	}
 
 	// This will define an entry for a code segment
-	void setCodeSegment(uint index, bool conforming, ubyte DPL, bool present)
-	{
+	void setCodeSegment(uint index, bool conforming, ubyte DPL, bool present) {
 		entries[index].codeSegment = CodeSegmentDescriptor.init;
 
-		with(entries[index].codeSegment)
-		{
+		with(entries[index].codeSegment) {
 			c = conforming;
 			dpl = DPL;
 			p = present;
@@ -92,25 +84,21 @@ public:
 	}
 
 	// This will define an entry for a data segment
-	void setDataSegment(uint index, bool present, ubyte DPL)
-	{
+	void setDataSegment(uint index, bool present, ubyte DPL) {
 		entries[index].dataSegment = DataSegmentDescriptor.init;
 
-		with(entries[index].dataSegment)
-		{
+		with(entries[index].dataSegment) {
 			p = present;
 			dpl = DPL;
 		}
 	}
 
 	// This will define a system segment, which will be used to define the TSS
-	void setSystemSegment(uint index, uint limit, ulong base, SystemSegmentType segType, ubyte DPL, bool present, bool avail, bool granularity)
-	{
+	void setSystemSegment(uint index, uint limit, ulong base, SystemSegmentType segType, ubyte DPL, bool present, bool avail, bool granularity) {
 		entries[index].systemSegmentLo = SystemSegmentDescriptor.init;
 		entries[index+1].systemSegmentHi = SystemSegmentExtension.init;
 
-		with(entries[index].systemSegmentLo)
-		{
+		with(entries[index].systemSegmentLo) {
 			baseLo = (base & 0xffff);
 			baseMidLo = (base >> 16) & 0xff;
 			baseMidHi = (base >> 24) & 0xff;
@@ -125,8 +113,7 @@ public:
 			g = granularity;
 		}
 
-		with(entries[index].systemSegmentHi)
-		{
+		with(entries[index].systemSegmentHi) {
 			baseHi = (base >> 32) & 0xffffffff;
 		}
 	}
@@ -139,14 +126,12 @@ private:
 
 	// This structure is the one pointed to by the hardware's GDTR register.
 	// It is loaded via the LGDT instruction
-	align(1) struct GDTBase
-	{
+	align(1) struct GDTBase {
 		ushort limit;
 		ulong base;
 	}
 
-	align(1) struct CodeSegmentDescriptor
-	{
+	align(1) struct CodeSegmentDescriptor {
 		ushort limit	= 0x0000;
 		ushort base		= 0xffff;
 		ubyte zero1		= 0;
@@ -160,8 +145,7 @@ private:
 
 	static assert(CodeSegmentDescriptor.sizeof == 8);
 
-	align(1) struct DataSegmentDescriptor
-	{
+	align(1) struct DataSegmentDescriptor {
 		ushort limit	= 0x0000;
 		ushort base		= 0xffff;
 		ubyte zero1		= 0;
@@ -183,8 +167,7 @@ private:
 	// other descriptor. For ease of use, it has been split into
 	// two structures. The first structure is the low half, and the
 	// second is the high half.
-	align(1) struct SystemSegmentDescriptor
-	{
+	align(1) struct SystemSegmentDescriptor {
 		// Refer to the Intel Docs or the 'GDT' article on wiki.xomb.org
 		ushort limitLo;
 		ushort baseLo;
@@ -198,8 +181,7 @@ private:
 		mixin(Bitfield!(flags2, "limitHi", 4, "avl", 1, "zero1", 2, "g", 1));
 	}
 
-	align(1) struct SystemSegmentExtension
-	{
+	align(1) struct SystemSegmentExtension {
 		uint baseHi;
 		uint reserved = 0;
 	}
@@ -211,8 +193,7 @@ private:
 	// This structure is the combination of all other structures.
 	// It defines generically a single entry in the GDT. (Or half of
 	// one if it is the system segment descriptor)
-	align(1) union SegmentDescriptor
-	{
+	align(1) union SegmentDescriptor {
 		DataSegmentDescriptor		dataSegment;
 		CodeSegmentDescriptor		codeSegment;
 		SystemSegmentDescriptor		systemSegmentLo;

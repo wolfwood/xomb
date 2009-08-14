@@ -22,14 +22,11 @@ import kernel.arch.x86_64.core.gdt;
 // Import ErrorVal
 import kernel.core.error;
 
-struct TSS
-{
+struct TSS {
 static:
-public:
 
 	// Do the necessary work to allow the TSS to be installed.
-	ErrorVal initialize()
-	{
+	ErrorVal initialize() {
 		// Add the TSS entry to the GDT
 		GDT.setSystemSegment((tssBase >> 3), 0x67, (cast(ulong)&tss), GDT.SystemSegmentType.AvailableTSS, 0, true, false, false);
 
@@ -41,23 +38,20 @@ public:
 	// available and present. It will be set to BusyTSS afterward.
 	// To reset the TSS, you will need to reset the Segment Type to
 	// AvailableTSS.
-	void install()
-	{
-		asm
-		{
-			//ltr tssBase;
+	void install() {
+		GDT.setSystemSegment((tssBase >> 3), 0x67, (cast(ulong)&tss), GDT.SystemSegmentType.AvailableTSS, 0, true, false, false);
+		asm {
+			ltr tssBase;
 		}
 	}
 
 	// This function will set the stack for interrupts that call into
 	// ring 0 (kernel mode)
-	void setRSP0(void* stackPointer)
-	{
+	void setRSP0(void* stackPointer) {
 		tss.rsp0 = cast(ulong)stackPointer;
 	}
 
-	void setIST(uint index, void* ptr)
-	{
+	void setIST(uint index, void* ptr) {
 		tss.ist[index] = cast(ulong)ptr;
 	}
 
@@ -66,8 +60,7 @@ private:
 	ushort tssBase = 0x30;
 
 	// This structure defines the TSS used by the architecture
-	align(1) struct TaskStateSegment
-	{
+	align(1) struct TaskStateSegment {
 		uint reserved0;		// Reserved Space
 
 		ulong rsp0;			// The stack to use for Ring 0 Interrupts

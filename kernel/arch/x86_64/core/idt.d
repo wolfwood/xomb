@@ -36,6 +36,7 @@ public:
 
 		// Now, set the IDT entries that differ from the norm
 		setSystemGate(3, &isr3, StackType.Debug);
+		setInterruptGate(8, &isrIgnore);
 
 		return ErrorVal.Success;
 	}
@@ -215,6 +216,16 @@ private:
 	mixin(generateISR!(14, false));
 	mixin(generateISRs!(15,39));
 
+	void isrIgnore() {
+		asm {
+			naked;
+			nop;
+			nop;
+			nop;
+			iretq;
+		}
+	}
+
 	void dispatch(InterruptStack* stack) {
 	}
 
@@ -248,8 +259,8 @@ private:
 			pushq R15;
 
 			// Run dispatcher
-			mov RDI, RSP;
-			call dispatch;
+			//mov RDI, RSP;
+			//call dispatch;
 
 			// Restore context
 
@@ -270,7 +281,7 @@ private:
 			popq RAX;
 
 			add RSP, 16;
-			iret;
+			iretq;
 		}
 	}
 }

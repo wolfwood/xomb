@@ -178,6 +178,18 @@ public:
 
 private:
 
+	void enableInterrupts() {
+		asm {
+			sti;
+		}
+	}
+
+	void disableInterrupts() {
+		asm {
+			cli;
+		}
+	}
+
 	// Will create and install a new kernel stack
 	// Note: You have to preserve the current stack
 	ErrorVal installStack() {
