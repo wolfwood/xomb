@@ -116,8 +116,6 @@ private:
 		kprintfln!("Starting AP {}")(apicID);
 		apLock.lock();
 
-		// success will be printed by the AP in apExec();
-		
 		ulong p;
 		for (ulong o=0; o < 10000; o++) {
 			p = o << 5 + 10;
