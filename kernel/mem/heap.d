@@ -18,18 +18,31 @@ import kernel.core.kprintf;
 import kernel.core.log;
 import kernel.core.error;
 
-struct Heap
-{
+/*
+
+   The Heap will be placed in virtual space directly after the virtual space
+   taken up by the kernel (kernel.virtualStart + kernel.length).
+
+   The Architecture initialization will be responsible for reporting the
+   length and virtual address of the kernel. The architecture will need to
+   allot space for the bitmap and have a direct mapping to RAM for the Heap
+   to initialize.
+
+   The Heap can be asked its location via the 'start' and 'virtualStart'
+   functions. When VirtualMemory is initialized, it will need to make
+   sure a mapping exists for Heap.start .. Heap.start + Heap.length to
+   map to Heap.virtualStart. 
+
+ */
+
+struct Heap {
 static:
 public:
 
 	// Needs to be called by the architecture
-	ErrorVal initialize(void* location)
-	{
-		kprintfln!("location: {x}")(location);
+	ErrorVal initialize() {
 		// We do not want to reinitialize this module.
-		if (initialized)
-		{
+		if (initialized) {
 			return ErrorVal.Fail;
 		}
 
@@ -40,7 +53,9 @@ public:
 		totalPages = System.memory.length / VirtualMemory.getPageSize();
 
 		// Find the first free page, and set up the bitmap.
-		bitmap = cast(ulong*)location;
+
+		// First, start out with the address at the end of the kernel
+		bitmap = cast(ulong*)(System.kernel.start + System.kernel.length);
 
 		// Align the bitmap address to the page size (ceiling)
 		ulong padding = cast(ulong)bitmap % VirtualMemory.getPageSize();
@@ -54,30 +69,92 @@ public:
 		bitmapPages = totalPages / 64;
 		if ((totalPages % 64) > 0) { bitmapPages++; }
 
+		ulong bitmapSize = bitmapPages * VirtualMemory.getPageSize();
+		ulong* bitmapEdge = bitmap + (bitmapSize >> 3);
+
 		kprintfln!("bitmap: {x} for {x} pages : totalpages {x}")(bitmap, bitmapPages, totalPages);
+
+		// Now, check to see if the bitmap can fit here
+		bool bitmapOk = false;
+		while(!bitmapOk) {
+			uint i;
+			for (i = 0; i < System.numRegions; i++) {
+				ulong* regionAddr = cast(ulong*)System.regionInfo[i].start;
+				ulong* regionEdge = cast(ulong*)(System.regionInfo[i].start + System.regionInfo[i].length);
+				if ((bitmap < regionEdge) && (bitmapEdge > regionAddr)) {
+					// overlap...
+					// move bitmap
+					kprintfln!("Region Overlaps! Moving Heap")();
+					bitmap = regionEdge;
+					// align to page size
+					bitmap = cast(ulong*)(cast(ubyte*)bitmap + VirtualMemory.getPageSize() - (cast(ulong)bitmap % VirtualMemory.getPageSize()));
+					bitmapEdge = bitmap + (bitmapSize >> 3);
+					break;
+				}
+			}
+			if (i < System.numRegions) {
+				continue;
+			}
+
+			for (i = 0; i < System.numModules; i++) {
+				ulong* regionAddr = cast(ulong*)System.moduleInfo[i].start;
+				ulong* regionEdge = cast(ulong*)(System.moduleInfo[i].start + System.moduleInfo[i].length);
+				if ((bitmap < regionEdge) && (bitmapEdge > regionAddr)) {
+					// overlap...
+					// move bitmap
+					kprintfln!("Module Overlaps! Moving Heap")();
+					bitmap = regionEdge;
+					// align to page size
+					bitmap = cast(ulong*)(cast(ubyte*)bitmap + VirtualMemory.getPageSize() - (cast(ulong)bitmap % VirtualMemory.getPageSize()));
+					bitmapEdge = bitmap + (bitmapSize >> 3);
+					kprintfln!("(NEW) Bitmap location: {x}")(bitmap);
+					break;
+				}
+			}
+			if (i == System.numModules) {
+				bitmapOk = true;
+			}
+		}
+		kprintfln!("Bitmap location: {x}")(bitmap);
 
 		// Set up the bitmap for the regions used by the system.
 
 		// The kernel...
 		markOffRegion(System.kernel.start, System.kernel.length);
 
+		// The bitmap...
+		markOffRegion(cast(void*)bitmap, bitmapSize);
+
 		// Each other region
-		for(uint i=0; i<System.numRegions; i++)
-		{
+		for(uint i; i < System.numRegions; i++) {
 			kprintfln!("Region: start:0x{x} length:0x{x}")(System.regionInfo[i].start, System.regionInfo[i].length);
 			markOffRegion(System.regionInfo[i].start, System.regionInfo[i].length);
 		}
 
-		kprintfln!("Success")();
+		// Each module as well
+		for (uint i; i < System.numModules; i++) {
+			kprintfln!("Module: start:0x{x} length:0x{x}")(System.moduleInfo[i].start, System.moduleInfo[i].length);
+			markOffRegion(System.moduleInfo[i].start, System.moduleInfo[i].length);
+		}
 
+		// Virtual Address for the heap is relative to the kernel
+		bitmapPhys = bitmap;
+	//	kprintfln!("findPage: {x}")(allocPageNoMap());
+		//kprintfln!("findPage: {x}")(findPage());
+//		kprintfln!("findPage: {x}")(findPage());
+//		kprintfln!("findPage: {x}")(findPage());
+		kprintfln!("Success : {x}")(bitmap);
 		// It succeeded!
 		return ErrorVal.Success;
 	}
 
+	void virtualStart(void* newAddr) {
+		bitmap = cast(ulong*)newAddr;
+	}
+
 	// This will allocate a page and return a physical address and will
 	// not attempt to map it into virtual memory.
-	void* allocPageNoMap()
-	{
+	void* allocPageNoMap() {
 		// Find a page
 		ulong index = findPage();
 
@@ -87,8 +164,7 @@ public:
 
 	// This will allocate a page, and return the virtual address while
 	// coordinating with the VirtualMemory module.
-	void* allocPage()
-	{
+	void* allocPage() {
 		// Find a page
 		ulong index = findPage();
 
@@ -99,15 +175,24 @@ public:
 		return VirtualMemory.mapKernelPage(address);
 	}
 
+	void* allocRegion(ulong regionLength) {
+		void* ret = allocPage();
+
+		while (regionLength > VirtualMemory.getPageSize) {
+			allocPage();
+			regionLength -= VirtualMemory.getPageSize();
+		}
+
+		return ret;
+	}
+
 	// This will free an allocated page, if it is allowed.
-	ErrorVal freePage(void* address)
-	{
+	ErrorVal freePage(void* address) {
 		// Find the page index
 		ulong pageIndex = cast(ulong)address;
 
 		// Is this address a valid result of allocPage?
-		if ((pageIndex % VirtualMemory.getPageSize()) > 0)
-		{
+		if ((pageIndex % VirtualMemory.getPageSize()) > 0) {
 			// Should be aligned, otherwise, what to do here is ambiguious.
 			return ErrorVal.Fail;
 		}
@@ -136,6 +221,14 @@ public:
 		return bitmapPages * VirtualMemory.getPageSize(); 
 	}
 
+	ubyte* start() {
+		return cast(ubyte*)bitmapPhys;
+	}
+
+	ubyte* virtualStart() {
+		return cast(ubyte*)bitmap;
+	}
+
 private:
 
 	// Whether or not this module has been initialized
@@ -148,10 +241,10 @@ private:
 	ulong bitmapPages;
 
 	ulong* bitmap;
+	ulong* bitmapPhys;
 
 	// A helper function to mark off a range of memory
-	void markOffRegion(void* start, ulong length)
-	{
+	void markOffRegion(void* start, ulong length) {
 		// When aligning to a page, floor the start, ceiling the end
 
 		// Get the first pageIndex
@@ -161,8 +254,7 @@ private:
 		startAddr = cast(ulong)start;
 		endAddr = startAddr + length;
 		startAddr -= startAddr % VirtualMemory.getPageSize();
-		if ((endAddr % VirtualMemory.getPageSize())>0)
-		{
+		if ((endAddr % VirtualMemory.getPageSize())>0) {
 			endAddr += VirtualMemory.getPageSize() - (endAddr % VirtualMemory.getPageSize());
 		}
 
@@ -174,19 +266,16 @@ private:
 		ulong maxIndex = (endAddr - startAddr) / VirtualMemory.getPageSize();
 		maxIndex += pageIndex;
 
-		for(; pageIndex<maxIndex; pageIndex++)
-		{
+		for(; pageIndex<maxIndex; pageIndex++) {
 			markOffPage(pageIndex);
 		}
 	}
 
-	void markOffPage(ulong pageIndex)
-	{
+	void markOffPage(ulong pageIndex) {
 		// Go to the specific ulong
 		// Set the corresponding bit
 
-		if (pageIndex >= totalPages)
-		{
+		if (pageIndex >= totalPages) {
 			return;
 		}
 
@@ -197,48 +286,42 @@ private:
 	}
 
 	// Returns the page index of a free page
-	ulong findPage()
-	{
+	ulong findPage() {
 		ulong* curPtr = bitmap;
 		ulong curIndex = 0;
-		ulong subIndex = 0;
 
-		while(true)
-		{
+		while(true) {
 			// this would mean that there is a 0 in there somewhere
-			if (*curPtr < 0xffffffffffffffffUL)
-			{
+			if (*curPtr < 0xffffffffffffffffUL) {
 				// look for the 0
-				subIndex = 0;
-
 				ulong tmpVal = *curPtr;
+				ulong subIndex = curIndex;
 
-				if((tmpVal & 0x1) == 0)
-				{
-					if (curIndex < totalPages)
-					{
-						// mark it off as used
-						*curPtr |= (1 << subIndex);
+				for (uint b; b < 64; b++) {
+					if((tmpVal & 0x1) == 0) {
+						if (subIndex < totalPages) {
+							// mark it off as used
+							*curPtr |= cast(ulong)(1UL << b);
 
-						// return the page index
-						return curIndex;
+							// return the page index
+							return subIndex;
+						}
+						else {
+							return 0xffffffffffffffffUL;
+						}
 					}
-					else
-					{
-						return 0xffffffffffffffffUL;
+					else {
+						tmpVal >>= 1;
+						subIndex++;
 					}
 				}
-				else
-				{
-					tmpVal >>= 1;
-					curIndex++;
-					subIndex++;
-				}
+
+				// Shouldn't get here... the world will end
+				return 0xffffffffffffffffUL;
 			}
 
 			curIndex += 64;
-			if (curIndex >= totalPages)
-			{
+			if (curIndex >= totalPages) {
 				return 0xffffffffffffffffUL;
 			}
 			curPtr++;

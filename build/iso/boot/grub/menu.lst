@@ -126,4 +126,4 @@ hiddenmenu
 title		XOmB
 kernel		/boot/xomb
 #module		/your/module
-### END PITTGEEKS AUTOMAGIC KERNELS LIST
+module		/boot/testapp

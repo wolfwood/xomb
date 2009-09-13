@@ -5,8 +5,7 @@
 module kernel.system.definitions;
 
 // This structure keeps track of information pertaining to onboard memory.
-struct Memory
-{
+struct Memory {
 	// The size of the RAM.
 	ulong length;
 
@@ -15,11 +14,12 @@ struct Memory
 }
 
 // This structure keeps track of modules loaded alongside the kernel.
-struct Module
-{
+struct Module {
 	// The location and length of the module.
 	ubyte* start;
 	ulong length;
+
+	ubyte* virtualStart;
 
 	// The name of the module, if given.
 	char[64] name;
@@ -27,8 +27,7 @@ struct Module
 
 // This enum is for the Region structure
 // It contains human-read information about the type of region.
-enum RegionType: ubyte
-{
+enum RegionType: ubyte {
 	// The region is special reserved data from the BIOS
 	Reserved,
 
@@ -37,8 +36,7 @@ enum RegionType: ubyte
 }
 
 // This structure keeps track of special memory regions.
-struct Region
-{
+struct Region {
 	// The location and length of the region
 	ubyte* start;
 	ulong length;
@@ -51,8 +49,7 @@ struct Region
 }
 
 // This structure keeps information about the disks found in the system.
-struct Disk
-{
+struct Disk {
 	// Some identifing number for the drive, as reported by the system.
 	ulong number;
 
@@ -68,8 +65,7 @@ struct Disk
 
 // This structure stores information about the processors available
 // in the system.
-struct Processor
-{
+struct Processor {
 }
 
 

@@ -52,15 +52,6 @@ public:
 		// Interrupt Descriptor Table
 		printToLog("Initializing IDT", IDT.initialize());
 
-
-		// Initialize the system heap, because we will need it
-		Heap.initialize(cast(ubyte*)LinkerScript.kernelVMA
-				+ cast(ulong)System.kernel.start
-				+ System.kernel.length);
-
-		// Install Virtual Memory and Paging
-		printToLog("Initializing Paging", Paging.initialize());
-
 		// Everything must have succeeded
 		return ErrorVal.Success;
 	}

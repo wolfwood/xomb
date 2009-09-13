@@ -34,6 +34,7 @@ public:
 
 	// This module will conform to the interface
 	ErrorVal initialize() {
+		kprintfln!("Paging?")();
 
 		Paging.install();
 		printToLog("Enabling Paging", ErrorVal.Success);

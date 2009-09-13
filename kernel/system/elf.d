@@ -7,11 +7,11 @@
 
 module kernel.core.elf;
 
-import kernel.core.multiboot;
+import kernel.system.multiboot;
 
-import kernel.arch.vmem;
+import kernel.core.kprintf;
 
-struct ELF {
+struct Elf {
 static:
 
 	alias void* elf64_addr;	   // size 8
@@ -74,9 +74,9 @@ static:
 	const elfosabi_standalone = 255;
 
 	const elfmag0 = 0x7f;
-	const elfmag1 = 'e';
-	const elfmag2 = 'l';
-	const elfmag3 = 'f';
+	const elfmag1 = 0x45;
+	const elfmag2 = 0x4c;
+	const elfmag3 = 0x46;
 
 	/** these constant variables declare possible values for the ei_class
 	  member of the e_ident[] array. they identify the object file as
@@ -211,8 +211,8 @@ static:
 	template elf32_st_type(int i) { const elf32_st_type = i & 0xf; }
 	template elf32_st_info(int b, int t) { const elf32_st_info = (b << 4) + (t & 0xf); }
 	template elf64_r_sym(int i) { const elf64_r_sym = i >> 32; }
-	template elf64_r_type(int i) { const elf64_r_type = i & 0xffffffffl; }
-	template elf64_r_info(int s, int t) { const elf64_r_info = (s << 32) + (t & 0xffffffffl); }
+	template elf64_r_type(int i) { const elf64_r_type = i & 0xffffffffL; }
+	template elf64_r_info(int s, int t) { const elf64_r_info = (s << 32) + (t & 0xffffffffL); }
 
 	const elf_entryaddy_offset = (ei_nident * ubyte.sizeof) + 2 * elf64_half.sizeof + elf64_word.sizeof + 4;
 
@@ -478,21 +478,21 @@ static:
 		elf_start = a pointer to the beginning of the elf header.
 			returns: int (0 or 1), depending on whether the magic number matches or not.
 	*/
-	int elf64_check_magic(char *elf_start) {
-		if (elf_start[0] == elfmag0 &&
-			elf_start[1] == elfmag1 &&
-			elf_start[2] == elfmag2 &&
-			elf_start[3] == elfmag3) {
-			return 1;
+	bool isValid(ubyte* address) {
+		kprintfln!("ELF header: {x} {x} {x} {x}...")(address[0], address[1], address[2], address[3]);
+		if (address[0] == elfmag0 &&
+			address[1] == elfmag1 &&
+			address[2] == elfmag2 &&
+			address[3] == elfmag3) {
+			kprintfln!("true")();
+			return true;
 		}
-		else { 
-			return 0;
-		}
+		return false;
 	}
 
 	// will return the offset to the bss section or null.  it will fill the variables.  it will return true on success.
 	bool fillbssinfo(void* address, out void* bssaddress, out uint length) {
-		bssaddress = null;
+	/*	bssaddress = null;
 		length = 0;
 
 		elf64_ehdr* header = cast(elf64_ehdr*)address;
@@ -524,7 +524,7 @@ static:
 				length = section.sh_size;
 				return true;
 			}
-		}
+		}*/
 
 		return false;
 	}
@@ -544,7 +544,7 @@ static:
 
 	// gets the entry point at the elf header located at address
 	void* getentry(void* address) {
-		elf64_ehdr* header = cast(elf64_ehdr*)address;
+/*		elf64_ehdr* header = cast(elf64_ehdr*)address;
 
 		// find all the sections in the module's elf section header.
 		elf64_shdr[] sections = (cast(elf64_shdr*)(address + header.e_shoff))[0 .. header.e_shnum];
@@ -555,6 +555,35 @@ static:
 
 		// declare a void function which can be called to jump to the memory position of
 		// __start().
-		return cast(void*)text.sh_offset;
+		return cast(void*)text.sh_offset;*/
+		return (cast(void*)(cast(elf64_ehdr*)address).e_entry);
+	}
+
+	void* getphysaddr(void* address) {
+		elf64_ehdr* header = cast(elf64_ehdr*)address;
+		elf64_phdr* load = cast(elf64_phdr*)(address + header.e_phoff);
+		return cast(void*)load.p_paddr;
+	}
+
+	void* getvirtaddr(void* address) {
+		elf64_ehdr* header = cast(elf64_ehdr*)address;
+		elf64_phdr* load = cast(elf64_phdr*)(address + header.e_phoff);
+		return cast(void*)load.p_vaddr;
+	}
+
+	ulong getoffset(void* address) {
+		elf64_ehdr* header = cast(elf64_ehdr*)address;
+
+		// find all the sections in the module's elf section header.
+		//elf64_shdr[] sections = (cast(elf64_shdr*)(address + header.e_shoff))[0 .. header.e_shnum];
+		//elf64_shdr* strtable = &sections[header.e_shstrndx];
+
+		// go to the first section in the section header.
+		elf64_phdr* load = cast(elf64_phdr*)(address + header.e_phoff);
+
+		kprintfln!("text phoff: {x} ptr: {x}")(header.e_phoff, load);
+		// declare a void function which can be called to jump to the memory position of
+		// __start();;
+		return cast(ulong)load.p_offset;
 	}
 }

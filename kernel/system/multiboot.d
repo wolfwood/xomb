@@ -151,12 +151,15 @@ ErrorVal verifyBootInformation(int id, void *data) {
 		multi_module *mod = cast(multi_module *)(info.mods_addr);
 		int mod_count = info.mods_count;
 
-		for(int i = 0; i < mod_count; i++, mod++) {
+		for(int i = 0; i < mod_count && i < 10; i++, mod++) {
 			System.moduleInfo[i].start = cast(ubyte *)(mod.mod_start);
-			System.moduleInfo[i].length = cast(uint)(mod.mod_end);
+			System.moduleInfo[i].length = cast(uint)(mod.mod_end - mod.mod_start);
+
 			int len = strlen(cast(char *)mod.string);
 			System.moduleInfo[i].name[0 .. len] = (cast(char *)(mod.string))[0 .. len];
-			kprintfln!("module {}: start:{} length:{} name:{}")(i, cast(uint)(mod.mod_start), cast(uint)(mod.mod_end), cast(char *)(mod.string));
+
+			kprintfln!("module {}: start:{} length:{} name:{}")(i, System.moduleInfo[i].start, System.moduleInfo[i].length, System.moduleInfo[i].name[0..len]);
+			System.numModules++;
 		}
 	}
 
@@ -222,23 +225,23 @@ ErrorVal verifyBootInformation(int id, void *data) {
 				number = dinfo.drive_number;
 
 				// Configuration
-			heads = dinfo.drive_heads;
-			cylinders = dinfo.drive_cylinders;
-			sectors = dinfo.drive_sectors;
+				heads = dinfo.drive_heads;
+				cylinders = dinfo.drive_cylinders;
+				sectors = dinfo.drive_sectors;
 
-			// Ports (determined by the size of the structure)
-			numPorts = dinfo.size - 10;
-			numPorts /= 2;
+				// Ports (determined by the size of the structure)
+				numPorts = dinfo.size - 10;
+				numPorts /= 2;
 
-		// Allow no more than the amount we can statically store
-		if (numPorts > ports.length)
-		{
-			numPorts = ports.length;
-		}
+				// Allow no more than the amount we can statically store
+				if (numPorts > ports.length)
+				{
+					numPorts = ports.length;
+				}
 
-		// Copy the information
-		ports[0..numPorts] = dinfo.ports[0..numPorts];
-		}
+				// Copy the information
+				ports[0..numPorts] = dinfo.ports[0..numPorts];
+			}
 
 			// Go to the next disk entry.
 			System.numDisks++;
