@@ -22,6 +22,11 @@ struct VirtualMemory
 static:
 public:
 
+	ErrorVal initialize() {
+		// Install Virtual Memory and Paging
+		return Paging.initialize();
+	}
+
 	// The page size we are using
 	uint getPageSize() {
 		return Paging.PAGESIZE;

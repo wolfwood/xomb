@@ -34,8 +34,7 @@ import kernel.dev.console;
 //      - devices
 //      - misc
 
-struct Paging
-{
+struct Paging {
 static:
 public:
 
@@ -83,30 +82,13 @@ public:
 		// We need to map the kernel
 		kernelAddress = heapAddress;
 
-		ulong curPhysAddr = cast(ulong)System.kernel.start;
-		ulong regionLength = System.kernel.length + Heap.length + (curPhysAddr % PAGESIZE);
-		curPhysAddr -= (curPhysAddr % PAGESIZE);
+		mapRegion(System.kernel.start, System.kernel.length);
 
-		// Set the new starting address
-		void* physAddr = cast(void*)curPhysAddr;
-
-		// Get the end address
-		curPhysAddr += regionLength;
-
-		// Align the end address
-		if ((curPhysAddr % PAGESIZE) > 0)
-		{
-			curPhysAddr += PAGESIZE - (curPhysAddr % PAGESIZE);
-		}
-
-		// Define the end address
-		void* endAddr = cast(void*)curPhysAddr;
-
-		// This region will be located at the current heapAddress
-		void* location = heapAddress;
-
-		// Do the actual mapping
-		heapMap!(true)(physAddr, endAddr);
+		void* bitmapLocation = heapAddress;
+		
+		// Map Heap bitmap
+		kprintfln!("Heap: {x}")(*(cast(ulong*)Heap.start));
+		mapRegion(Heap.start, Heap.length);
 
 		// We now have the kernel mapped
 		kernelMapped = true;
@@ -119,21 +101,29 @@ public:
 
 		// Restart the console driver to look at the right place
 		Console.initialize();
+		kprintfln!("bitmapLocation: {x}")(bitmapLocation);
+		Heap.virtualStart = bitmapLocation;
 
 		// This is the virtual address for the page table
 		root = cast(PageLevel4*)0xFFFFFFFF_FFFFF000;
-		kprintfln!("root: {x}")(root);
+		kprintfln!("root: {x} : {x}")(root, rootPhysical);
+		kprintfln!("heap: {x}")(Heap.virtualStart);
 
 		// All is well.
 		return ErrorVal.Success;
 	}
 
 	void install() {
+		kprintfln!("Installing...")();
 		ulong rootAddr = cast(ulong)rootPhysical;
+		kprintfln!("Installing........")();
 		asm {
 			mov RAX, rootAddr;
 			mov CR3, RAX;
 		}
+		kprintfln!("Installed")();
+		kprintfln!("Heap: {x}")(*(cast(ulong*)Heap.virtualStart));
+
 	}
 
 	// This function will get the physical address that is mapped from the
@@ -161,7 +151,6 @@ public:
 							out ulong indexLevel4)
 	{
 		ulong vAddr = cast(ulong)virtAddress;
-		kprintfln!("addr {x}")(virtAddress);
 
 		vAddr >>= 12;
 		indexLevel1 = vAddr & 0x1ff;
@@ -203,10 +192,53 @@ public:
 		// This region will be located at the current heapAddress
 		void* location = heapAddress;
 
-		doHeapMap(physAddr, endAddr);
+		if (kernelMapped) {
+			doHeapMap(physAddr, endAddr);
+		}
+		else {
+			heapMap!(true)(physAddr, endAddr);
+		}
 
 		// Return the position of this region
 		return location;
+	}
+
+	void* mapRegion(PageLevel4* rootTable, void* physAddr, ulong regionLength, void* virtAddr = null) {
+		if (virtAddr is null) {
+			virtAddr = physAddr;
+		}
+		// Sanitize inputs
+
+		// physAddr should be floored to the page boundary
+		// regionLength should be ceilinged to the page boundary
+		ulong curPhysAddr = cast(ulong)physAddr;
+		regionLength += (curPhysAddr % PAGESIZE);
+		curPhysAddr -= (curPhysAddr % PAGESIZE);
+
+		// Set the new starting address
+		physAddr = cast(void*)curPhysAddr;
+
+		// Get the end address
+		curPhysAddr += regionLength;
+
+		// Align the end address
+		if ((curPhysAddr % PAGESIZE) > 0)
+		{
+			curPhysAddr += PAGESIZE - (curPhysAddr % PAGESIZE);
+		}
+
+		// Define the end address
+		void* endAddr = cast(void*)curPhysAddr;
+
+		kprintfln!("virtaddr: {x}")(virtAddr);
+
+		heapMap!(false, false)(physAddr, endAddr, virtAddr);
+
+		return virtAddr;
+	}
+
+	PageLevel4* kernelPageTable() {
+		return cast(PageLevel4*)0xfffffffffffff000;
 	}
 
 private:
@@ -236,10 +268,9 @@ private:
 
 // -- Mapping Functions -- //
 
+	template heapMap(bool initialMapping = false, bool kernelLevel = true) {
+		void heapMap(void* physAddr, void* endAddr, void* virtAddr = heapAddress) {
 
-	template heapMap(bool initialMapping = false) {
-		void heapMap(void* physAddr, void* endAddr)
-		{
 			// Do the mapping
 			PageLevel3* pl3;
 			PageLevel2* pl2;
@@ -249,7 +280,7 @@ private:
 			void* startAddr = physAddr;
 
 			// Find the initial page
-			translateAddress(heapAddress, indexL1, indexL2, indexL3, indexL4);
+			translateAddress(virtAddr, indexL1, indexL2, indexL3, indexL4);
 
 			// From there, map the region
 			ulong done = 0;
@@ -257,52 +288,84 @@ private:
 			{
 				// get the L3 table
 				static if (initialMapping) {
-					pl3 = cast(PageLevel3*)Heap.allocPageNoMap();
-					*pl3 = PageLevel3.init;
-					root.entries[indexL4].pml = cast(ulong)pl3;
-					root.entries[indexL4].present = 1;
-					root.entries[indexL4].rw = 1;
+					if (root.entries[indexL4].present) {
+						pl3 = cast(PageLevel3*)(root.entries[indexL4].address << 12);
+					}
+					else {
+						pl3 = cast(PageLevel3*)Heap.allocPageNoMap();
+						*pl3 = PageLevel3.init;
+						root.entries[indexL4].pml = cast(ulong)pl3;
+						root.entries[indexL4].present = 1;
+						root.entries[indexL4].rw = 1;
+						static if (!kernelLevel) {
+							root.entries[indexL4].us = 1;
+						}
+					}
 				}
 				else {
-					pl3 = root.getOrCreateTable(indexL4);
+					pl3 = root.getOrCreateTable(indexL4, !kernelLevel);
 				}
 
 				for ( ; indexL3 < 512 ; indexL3++ )
 				{
 					// get the L2 table
 					static if (initialMapping) {
-						pl2 = cast(PageLevel2*)Heap.allocPageNoMap();
-						*pl2 = PageLevel2.init;
-						pl3.entries[indexL3].pml = cast(ulong)pl2;
-						pl3.entries[indexL3].present = 1;
-						pl3.entries[indexL3].rw = 1;
+						if (pl3.entries[indexL3].present) {
+							pl2 = cast(PageLevel2*)(pl3.entries[indexL3].address << 12);
+						}
+						else {
+							pl2 = cast(PageLevel2*)Heap.allocPageNoMap();
+							*pl2 = PageLevel2.init;
+							pl3.entries[indexL3].pml = cast(ulong)pl2;
+							pl3.entries[indexL3].present = 1;
+							pl3.entries[indexL3].rw = 1;
+							static if (!kernelLevel) {
+								pl3.entries[indexL3].us = 1;
+							}
+						}
 					}
 					else {
-						pl2 = pl3.getOrCreateTable(indexL3);
+						pl2 = pl3.getOrCreateTable(indexL3, !kernelLevel);
 					}
 
 					for ( ; indexL2 < 512 ; indexL2++ )
 					{
 						// get the L1 table
 						static if (initialMapping) {
-							pl1 = cast(PageLevel1*)Heap.allocPageNoMap();
-							*pl1 = PageLevel1.init;
-							pl2.entries[indexL2].pml = cast(ulong)pl1;
-							pl2.entries[indexL2].present = 1;
-							pl2.entries[indexL2].rw = 1;
+							if (pl2.entries[indexL2].present) {
+								pl1 = cast(PageLevel1*)(pl2.entries[indexL2].address << 12);
+							}
+							else {
+								pl1 = cast(PageLevel1*)Heap.allocPageNoMap();
+								*pl1 = PageLevel1.init;
+								pl2.entries[indexL2].pml = cast(ulong)pl1;
+								pl2.entries[indexL2].present = 1;
+								pl2.entries[indexL2].rw = 1;
+								static if (!kernelLevel) {
+									pl2.entries[indexL2].us = 1;
+								}
+							}
 						}
 						else {
-							pl1 = pl2.getOrCreateTable(indexL2);
+							pl1 = pl2.getOrCreateTable(indexL2, !kernelLevel);
 						}
 
 						for ( ; indexL1 < 512 ; indexL1++ )
 						{
 							// set the address
+							if (pl1.entries[indexL1].present) {
+								// Page already allocated
+								// XXX: Fail
+							}
+
 							pl1.entries[indexL1].pml = cast(ulong)physAddr;
 
 							pl1.entries[indexL1].present = 1;
 							pl1.entries[indexL1].rw = 1;
 							pl1.entries[indexL1].pat = 1;
+							static if (!kernelLevel) {
+								pl1.entries[indexL1].us = 1;
+							}
 
 							physAddr += PAGESIZE;
 							done += PAGESIZE;
@@ -334,14 +397,17 @@ private:
 			ulong regionLength = cast(ulong)endAddr - cast(ulong)startAddr;
 
 			// Relocate heap address
-			heapAddress += regionLength;
+			static if (kernelLevel) {
+				heapAddress += regionLength;
+			}
 		}
 	}
 
 	alias heapMap!(false) doHeapMap;
 
-// -- Structures -- //
+}
 
+// -- Structures -- //
 
 	// The x86 implements a four level page table.
 	// We use the 4KB page size hierarchy
@@ -401,7 +467,7 @@ private:
 			return cast(PageLevel3*)(0xFFFFFF7F_BFE00000 + (idx << 12));
 		}
 
-		PageLevel3* getOrCreateTable(uint idx) {
+		PageLevel3* getOrCreateTable(uint idx, bool usermode = false) {
 			PageLevel3* ret = getTable(idx);
 
 			if (ret is null) {
@@ -412,6 +478,7 @@ private:
 				entries[idx].pml = cast(ulong)ret;
 				entries[idx].present = 1;
 				entries[idx].rw = 1;
+				entries[idx].us = usermode;
 
 				// Calculate virtual address
 				ret = cast(PageLevel3*)(0xFFFFFF7F_BFE00000 + (idx << 12));
@@ -437,7 +504,7 @@ private:
 			return cast(PageLevel2*)(0xFFFFFF7F_C0000000 + ((baseAddr + idx) << 12));
 		}
 
-		PageLevel2* getOrCreateTable(uint idx) {
+		PageLevel2* getOrCreateTable(uint idx, bool usermode = false) {
 			PageLevel2* ret = getTable(idx);
 
 			if (ret is null) {
@@ -448,6 +515,7 @@ private:
 				entries[idx].pml = cast(ulong)ret;
 				entries[idx].present = 1;
 				entries[idx].rw = 1;
+				entries[idx].us = usermode;
 
 				// Calculate virtual address
 				ulong baseAddr = cast(ulong)this;
@@ -476,7 +544,7 @@ private:
 			return cast(PageLevel1*)(0xFFFFFF80_00000000 + ((baseAddr + idx) << 12));
 		}
 
-		PageLevel1* getOrCreateTable(uint idx) {
+		PageLevel1* getOrCreateTable(uint idx, bool usermode = false) {
 			PageLevel1* ret = getTable(idx);
 			
 			if (ret is null) {
@@ -487,6 +555,7 @@ private:
 				entries[idx].pml = cast(ulong)ret;
 				entries[idx].present = 1;
 				entries[idx].rw = 1;
+				entries[idx].us = usermode;
 
 				// Calculate virtual address
 				ulong baseAddr = cast(ulong)this;
@@ -508,4 +577,4 @@ private:
 			return cast(void*)(entries[idx].address << 12);
 		}
 	}
-}
+

@@ -28,7 +28,7 @@ public:
 
 		install();
 
-		startAPs();
+	//	startAPs();
 
 		return ErrorVal.Success;
 	}
@@ -79,19 +79,24 @@ private:
 		// Map in the register space
 		apicRegisters = cast(ApicRegisterSpace*)Paging.mapRegion(localAPICAddr, ApicRegisterSpace.sizeof);
 
-		// Map in the first megabyte of space
-		ubyte* bootRange;
-
-		bootRange = cast(ubyte*)Paging.mapRegion(cast(void*)0x0, 0x100000);
-
 		// Write the trampoline code where it needs to be
 
 		uint trampolineLength = cast(ulong)LinkerScript.etrampoline - cast(ulong)LinkerScript.trampoline;
 		ubyte* trampolineCode = cast(ubyte*)LinkerScript.trampoline + cast(ulong)System.kernel.virtualStart;
 
-		kprintfln!("trampolineLength: {} trampolineCode: {x} trampoline: {x} Kernel: {x}")(trampolineLength, trampolineCode, LinkerScript.trampoline, System.kernel.start);
+		// Map in the first megabyte of space
+		ubyte* bootRange;
+		bootRange = cast(ubyte*)Paging.mapRegion(cast(void*)0x0, trampolineLength);
 
-		bootRange[0..trampolineLength] = trampolineCode[0..trampolineLength];
+		kprintfln!("bootRange: {} trampolineLength: {} trampolineCode: {x} trampoline: {x} Kernel: {x}")(bootRange, trampolineLength, trampolineCode, LinkerScript.trampoline, System.kernel.start);
+
+		for(uint i; i < trampolineLength; i++) {
+			*bootRange = *trampolineCode;
+			bootRange++;
+			trampolineCode++;
+		}
+	//	bootRange[0..trampolineLength] = trampolineCode[0..trampolineLength];
+		kprintfln!("Trampoline copied")();
 	}
 
 	void EOI() {

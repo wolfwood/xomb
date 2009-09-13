@@ -15,8 +15,17 @@ import kernel.core.kprintf;
 //handle everything that the boot loader gives us
 import kernel.system.bootinfo;
 
+// handle loading executables from modules
+import kernel.system.loader;
+
+// Scheduler
+import kernel.environ.scheduler;
+
 //we need to print log stuff to the screen
 import kernel.core.log;
+
+// kernel heap
+import kernel.mem.heap;
 
 // The main function for the kernel.
 // This will receive data from the boot loader.
@@ -39,6 +48,12 @@ extern(C) void kmain(int bootLoaderID, void *data)
 	// 2. Architecture Initialization
 	printToLog("Initializing Architecture", Architecture.initialize());
 
+	// Initialize the kernel Heap
+	Heap.initialize();
+
+	// 2b. Paging Initialization
+	printToLog("Initializing Virtual Memory", VirtualMemory.initialize());
+
 	// 3. Processor Initialization
 	printToLog("Initializing Processor", Cpu.initialize());
 
@@ -52,6 +67,15 @@ extern(C) void kmain(int bootLoaderID, void *data)
 	printToLog("Initializing Multiprocessor", Multiprocessor.initialize());
 
 	// 7. Schedule
+	
+	Loader.loadModules();
+
+	Scheduler.initialize();
+	Scheduler.schedule();
+
+	Scheduler.execute();
+
+	// Run task
 
 	for(;;) { }
 
