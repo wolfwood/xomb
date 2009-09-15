@@ -120,28 +120,28 @@ ErrorVal verifyBootInformation(int id, void *data) {
 
 	multiboot_info *info = cast(multiboot_info *)(data);
 
-	kprintfln!("flags: 0x{x}")(info.flags);
+	//kprintfln!("flags: 0x{x}")(info.flags);
 
 	//is mem_* valid?
 	if(!checkFlag(info.flags, 0)) {
 		return ErrorVal.Fail;
 	}
 
-	kprintfln!("wh")();
+	//kprintfln!("wh")();
 
 	//is our boot device valid
 	if(!checkFlag(info.flags, 1)) {
 		return ErrorVal.Fail;
 	}
 
-	kprintfln!("wha")();
+	//kprintfln!("wha")();
 
 	//is command line passed?
 	if(!checkFlag(info.flags, 2)) {
 		return ErrorVal.Fail;
 	}
 
-	kprintfln!("what")();
+	//kprintfln!("what")();
 
 	//are the modules valid?
 	if(checkFlag(info.flags, 3)) {
@@ -158,7 +158,7 @@ ErrorVal verifyBootInformation(int id, void *data) {
 			int len = strlen(cast(char *)mod.string);
 			System.moduleInfo[i].name[0 .. len] = (cast(char *)(mod.string))[0 .. len];
 
-			kprintfln!("module {}: start:{} length:{} name:{}")(i, System.moduleInfo[i].start, System.moduleInfo[i].length, System.moduleInfo[i].name[0..len]);
+		//	kprintfln!("module {}: start:{} length:{} name:{}")(i, System.moduleInfo[i].start, System.moduleInfo[i].length, System.moduleInfo[i].name[0..len]);
 			System.numModules++;
 		}
 	}
@@ -181,7 +181,7 @@ ErrorVal verifyBootInformation(int id, void *data) {
 				ulong endAddr = baseAddr + length;
 				if (System.memory.length < endAddr) {
 					System.memory.length = endAddr;
-					kprintfln!("Memory Length Update: {x}")(System.memory.length);
+					//kprintfln!("Memory Length Update: {x}")(System.memory.length);
 				}
 			}
 			else {

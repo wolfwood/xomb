@@ -9,6 +9,7 @@ module kernel.system.loader;
 
 import kernel.system.elf;
 import kernel.system.info;
+import kernel.system.segment;
 
 import kernel.environ.info;
 import kernel.environ.scheduler;
@@ -19,6 +20,7 @@ import kernel.core.kprintf;
 import kernel.mem.heap;
 
 import kernel.core.util;
+import kernel.core.log;
 
 import architecture;
 
@@ -33,7 +35,7 @@ static:
 			// Map in module
 
 			System.moduleInfo[i].virtualStart = cast(ubyte*)VirtualMemory.mapRegion(System.moduleInfo[i].start, System.moduleInfo[i].length);
-			loadFromModule(i);
+			printToLog("Loader: loadFromModule()", loadFromModule(i));
 		}	
 		return ErrorVal.Success;
 	}
@@ -52,12 +54,16 @@ static:
 
 		// Check the module for being a compatible executable
 		ubyte* moduleAddr = System.moduleInfo[index].virtualStart;
-		kprintfln!("Module Found: {x} : {x}")(System.moduleInfo[index].start, moduleAddr);
 		if (Elf.isValid(moduleAddr)) {
 			void* entryAddress = Elf.getentry(moduleAddr);
 			void* physAddress = Elf.getphysaddr(moduleAddr);
 			void* virtAddress = Elf.getvirtaddr(moduleAddr);
-			kprintfln!("ELF Module : {}\n  Entry: {x} p: {x} v: {x}")(index, entryAddress, physAddress, virtAddress);
+			//kprintfln!("ELF Module : {}\n  Entry: {x} p: {x} v: {x}")(index, entryAddress, physAddress, virtAddress);
+
+			Segment curSegment;
+
+			uint numSegments = Elf.segmentCount(moduleAddr);
+
 
 			// Create an environment through the scheduler
 			Environment* environ = Scheduler.newEnvironment();
@@ -70,7 +76,7 @@ static:
 				environ.virtualStart = virtAddress;
 				environ.length = System.moduleInfo[index].length - Elf.getoffset(moduleAddr);
 
-				kprintfln!("Initializing this environment")();
+				//kprintfln!("Initializing this environment")();
 				//environ.start = System.moduleInfo[index].start;
 				environ.start = physAddress;
 				//environ.virtualStart = moduleAddr;
@@ -78,8 +84,19 @@ static:
 				environ.entry = entryAddress;
 
 				environ.initialize();
-				kprintfln!("Loading this environment {}")(Elf.getoffset(moduleAddr));
-				ulong length = environ.length;
+				//kprintfln!("Loading this environment {}")(Elf.getoffset(moduleAddr));
+
+				for(uint i; i < numSegments; i++) {
+					curSegment = Elf.segment(moduleAddr, i);
+					environ.allocSegment(curSegment);
+
+					// Copy segment
+					memcpy(curSegment.virtAddress, moduleAddr + curSegment.offset, curSegment.length);
+
+					//kprintfln!("p: {x} v: {x} o: {x} l: {x}")(curSegment.physAddress, curSegment.virtAddress, curSegment.offset, curSegment.length);
+				}
+
+/*				ulong length = environ.length;
 				ubyte* d = cast(ubyte*)environ.virtualStart;
 				ubyte* s = cast(ubyte*)moduleAddr;
 				s += Elf.getoffset(moduleAddr);
@@ -87,11 +104,11 @@ static:
 					*d = *s;
 					d++;
 					s++;
-				}
-				kprintfln!("Environment Loaded")();
+				}*/
+				//kprintfln!("Environment Loaded")();
 				
 				Scheduler.add(environ);
-				kprintfln!("Success (Environment Loaded)")();
+				//kprintfln!("Success (Environment Loaded)")();
 			}
 		}
 

@@ -1,20 +1,22 @@
 /*
- * pagetable.d
+ * context.d
  *
- * This module implements the magic behind page tables for the architecture.
+ * This module represents the environment to the architecture.
  *
  */
 
-module kernel.arch.x86_64.pagetable;
+module kernel.arch.x86_64.context;
 
 import kernel.arch.x86_64.core.paging;
+
+import kernel.system.segment;
 
 import kernel.core.error;
 import kernel.core.kprintf;
 
 import kernel.mem.heap;
 
-struct PageTable {
+struct Context {
 public:
 
 	ErrorVal initialize() {
@@ -22,8 +24,6 @@ public:
 		rootPhysAddr = Heap.allocPageNoMap();
 		root = cast(PageLevel3*)(Paging.mapRegion(rootPhysAddr, 4096));
 		*root = PageLevel3.init;
-
-		kprintfln!("New Page Table: {x} {x}")(rootPhysAddr, root);
 
 		// Map to kernel page table
 		Paging.kernelPageTable.entries[0].pml = cast(ulong)rootPhysAddr;
@@ -80,7 +80,6 @@ public:
 
 	ErrorVal map(void* physAddr, ulong length) {
 		Paging.mapRegion(null, physAddr, length, cast(void*)0x100000);
-		kprintfln!("success...")();
 
 		return ErrorVal.Success;
 	}
@@ -92,13 +91,16 @@ public:
 
 		while (length > 4096) {
 			physAddr = Heap.allocPageNoMap();
-			kprintfln!("mapping: {x} -> {x}")(physAddr, virtAddr);
 			Paging.mapRegion(null, physAddr, 4096, virtAddr);
 			virtAddr += 4096;
 			length -= 4096;
 		}
 
 		return ErrorVal.Success;
+	}
+
+	ErrorVal allocSegment(ref Segment s) {
+		return alloc(s.virtAddress, s.length);
 	}
 
 	void* install() {

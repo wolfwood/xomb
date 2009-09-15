@@ -9,6 +9,8 @@ module kernel.environ.info;
 
 import kernel.core.error;
 
+import kernel.system.segment;
+
 import architecture;
 
 struct Environment {
@@ -19,16 +21,19 @@ struct Environment {
 
 	ulong length;
 
-	PageTable pageTable;
+	Context context;
 
 	ErrorVal initialize() {
 		// Create a page table for this environment
-		pageTable.initialize();
-		pageTable.alloc(virtualStart, length);
+		context.initialize();
 
-		pageTable.preamble(entry);
+		context.preamble(entry);
 
 		return ErrorVal.Success;
+	}
+
+	ErrorVal allocSegment(ref Segment s) {
+		return context.allocSegment(s);
 	}
 
 	ErrorVal preamble() {
@@ -40,7 +45,7 @@ struct Environment {
 	}
 
 	void execute() {
-		pageTable.execute();
+		context.execute();
 	}
 }
 

@@ -34,7 +34,7 @@ public:
 	// We assume that we set up IO APICs in order.
 	// The first IO APIC to get called gets pin 0 to pin maxRedirEnt (inclusive)
 	ErrorVal initialize() {
-		kprintfln!("IOAPIC count: {}")(Info.numIOAPICs);
+		//kprintfln!("IOAPIC count: {}")(Info.numIOAPICs);
 
 		// Disable PIC
 		PIC.disable();
@@ -122,9 +122,9 @@ private:
 		}
 
 		// map IOAPIC region
-		kprintfln!("IOAPIC Addr {x}")(ioAPICAddress);
+		//kprintfln!("IOAPIC Addr {x}")(ioAPICAddress);
 		void* IOAPICVirtAddr = Paging.mapRegion(ioAPICAddress, 4096);
-		kprintfln!("IOAPIC Addr {x}")(IOAPICVirtAddr);
+		//kprintfln!("IOAPIC Addr {x}")(IOAPICVirtAddr);
 
 		// set the addresses for the data register and window
 		ioApicRegisterSelect[ioAPICID] = cast(uint*)(IOAPICVirtAddr);

@@ -37,25 +37,23 @@ extern(C) void kmain(int bootLoaderID, void *data)
 
 	//first, we'll print out some fun status messages.
 	kprintfln!("{!cls!fg:White}Welcome to {!fg:Green}{}{!fg:White}! (version {}.{}.{})")("XOmB", 0,5,0);
-	kprintfln!("{x} {x}")(bootLoaderID, data);
+	kprintfln!("--------------------------------------------------------------------------------")();
 	//printToLog(hr);
 
-	kprintfln!("size: {}")(uint.sizeof);
-
 	// 1. Bootloader Validation
-	printToLog("Initializing Boot Information", BootInfo.initialize(bootLoaderID, data));
+	printToLog("BootInfo: initialize()", BootInfo.initialize(bootLoaderID, data));
 
 	// 2. Architecture Initialization
-	printToLog("Initializing Architecture", Architecture.initialize());
+	printToLog("Architecture: initialize()", Architecture.initialize());
 
 	// Initialize the kernel Heap
 	Heap.initialize();
 
 	// 2b. Paging Initialization
-	printToLog("Initializing Virtual Memory", VirtualMemory.initialize());
+	printToLog("VirtualMemory: initialize()", VirtualMemory.initialize());
 
 	// 3. Processor Initialization
-	printToLog("Initializing Processor", Cpu.initialize());
+	printToLog("Cpu: initialize()", Cpu.initialize());
 
 	// 4. Timer Initialization
 	// LATER
@@ -64,7 +62,7 @@ extern(C) void kmain(int bootLoaderID, void *data)
 	// LATER
 
 	// 6. Multiprocessor Initialization
-	printToLog("Initializing Multiprocessor", Multiprocessor.initialize());
+	printToLog("Multiprocessor: initialize()", Multiprocessor.initialize());
 
 	// 7. Schedule
 	

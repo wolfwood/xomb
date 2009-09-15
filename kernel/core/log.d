@@ -19,26 +19,19 @@ const char[] hr = ".............................................................
 
 // this function prints a message and an error
 // to a log line on the screen.
-void printToLog(char[] message, ErrorVal e) {
+ErrorVal printToLog(char[] message, ErrorVal e) {
 
   //call the simpler function to print the message
   printToLog(message);
 
-  //these are used to print the error value
-	int x,y;
-	Console.getPosition(x,y);
-  Console.setPosition(x-5,y);
-
   //now test the value
   if(e == ErrorVal.Success) {
-  	Console.setColors(Color.Green, Color.Black);
-  	kprintfln!(" OK ")();
+	  printSuccess();
   } else {
-    Console.setColors(Color.Red, Color.Black);
-    kprintfln!("FAIL")();
+	  printFail();
   }
-  //if we fail, we fail hard.
-  assert(e == ErrorVal.Success);
+
+  return e;
 }
 
 //this function does most of the work
@@ -53,4 +46,22 @@ void printToLog(char[] message) {
 	kprintf!(".. ")();
 	Console.resetColors();
 	kprintf!("]")();
+}
+
+void printSuccess() {
+	int x, y;
+	Console.getPosition(x,y);
+	Console.setPosition(x-5,y);
+
+	Console.setColors(Color.Green, Color.Black);
+	kprintfln!(" OK ")();
+}
+
+void printFail() {
+	int x, y;
+	Console.getPosition(x,y);
+	Console.setPosition(x-5,y);
+
+	Console.setColors(Color.Red, Color.Black);
+	kprintfln!("FAIL")();
 }

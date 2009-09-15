@@ -44,13 +44,13 @@ public:
 		System.kernel.virtualStart = cast(ubyte*)LinkerScript.kernelVMA;
 
 		// Global Descriptor Table
-		printToLog("Initializing GDT", GDT.initialize());
+		printToLog("Architecture: Initializing GDT", GDT.initialize());
 
 		// Task State Segment
-		printToLog("Initializing TSS", TSS.initialize());
+		printToLog("Architecture: Initializing TSS", TSS.initialize());
 
 		// Interrupt Descriptor Table
-		printToLog("Initializing IDT", IDT.initialize());
+		printToLog("Architecture: Initializing IDT", IDT.initialize());
 
 		// Everything must have succeeded
 		return ErrorVal.Success;

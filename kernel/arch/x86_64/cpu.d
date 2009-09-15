@@ -34,20 +34,19 @@ public:
 
 	// This module will conform to the interface
 	ErrorVal initialize() {
-		kprintfln!("Paging?")();
 
 		Paging.install();
-		printToLog("Enabling Paging", ErrorVal.Success);
+		printToLog("Cpu: Enabling Paging", ErrorVal.Success);
 
 		GDT.install();
-		printToLog("Enabling GDT", ErrorVal.Success);
+		printToLog("Cpu: Enabling GDT", ErrorVal.Success);
 		TSS.install();
-		printToLog("Enabling TSS", ErrorVal.Success);
+		printToLog("Cpu: Enabling TSS", ErrorVal.Success);
 		IDT.install();
-		printToLog("Enabling IDT", ErrorVal.Success);
+		printToLog("Cpu: Enabling IDT", ErrorVal.Success);
 
 		installStack();
-		printToLog("Installed Stack", ErrorVal.Success);
+		printToLog("Cpu: Installed Stack", ErrorVal.Success);
 
 		return ErrorVal.Success;
 	}
@@ -197,7 +196,7 @@ private:
 		ubyte* stackSpace = cast(ubyte*)Heap.allocPage();
 		ubyte* currentStack = cast(ubyte*)(&stack-4096);
 
-		kprintfln!("currentStack: {x} stackSpace: {x}")(currentStack, stackSpace);
+		//kprintfln!("currentStack: {x} stackSpace: {x}")(currentStack, stackSpace);
 		
 		stackSpace[0..4096] = currentStack[0..4096];
 

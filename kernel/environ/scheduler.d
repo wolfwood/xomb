@@ -14,6 +14,7 @@ import kernel.environ.info;
 import kernel.sched.uniprocess;
 
 import kernel.core.kprintf;
+import kernel.core.log;
 
 struct Scheduler {
 static:
@@ -24,18 +25,19 @@ public:
 	}
 
 	Environment* schedule() {
-		kprintfln!("Scheduler.schedule()")();
+		printToLog("Scheduler: schedule()");
+		printSuccess(); 
 		return (current = UniprocessScheduler.schedule());
 	}
 
 	Environment* newEnvironment() {
-		kprintfln!("Scheduler.newEnvironment()")();
+		printToLog("Scheduler: newEnvironment()");
+		printSuccess(); 
 		return UniprocessScheduler.newEnvironment();
 	}
 
 	ErrorVal add(Environment* environ) {
-		kprintfln!("Scheduler.add()")();
-		return UniprocessScheduler.add(environ);
+		return printToLog("Scheduler: add()",UniprocessScheduler.add(environ));
 	}
 
 	ErrorVal execute() {

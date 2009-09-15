@@ -44,17 +44,14 @@ public:
 	// This function will initialize paging and install a core page table.
 	ErrorVal initialize() {
 		// Create a new page table.
-		kprintfln!("in initialize")();
 		root = cast(PageLevel4*)Heap.allocPageNoMap();
 		PageLevel3* pl3 = cast(PageLevel3*)Heap.allocPageNoMap();
 		PageLevel2* pl2 = cast(PageLevel2*)Heap.allocPageNoMap();
-		kprintfln!("root address: {x}")(root);
 
 		// Initialize the structure. (Zero it)
 		*root = PageLevel4.init;
 		*pl3 = PageLevel3.init;
 		*pl2 = PageLevel2.init;
-		kprintfln!("Is it broke?")();
 
 		// Map entries 511 to the PML4
 		root.entries[511].pml = cast(ulong)root;
@@ -77,7 +74,6 @@ public:
 
 		// The current position of the kernel space. All gets appended to this address.
 		heapAddress = LinkerScript.kernelVMA;
-		kprintfln!("heap Address: {x}")(heapAddress);
 
 		// We need to map the kernel
 		kernelAddress = heapAddress;
@@ -87,43 +83,31 @@ public:
 		void* bitmapLocation = heapAddress;
 		
 		// Map Heap bitmap
-		kprintfln!("Heap: {x}")(*(cast(ulong*)Heap.start));
 		mapRegion(Heap.start, Heap.length);
 
 		// We now have the kernel mapped
 		kernelMapped = true;
-
-		kprintfln!("kernel Address: {x}")(kernelAddress);
-		kprintfln!("memory length: {x}")(System.memory.length);
 
 		// Save the physical address for later
 		rootPhysical = cast(void*)root;
 
 		// Restart the console driver to look at the right place
 		Console.initialize();
-		kprintfln!("bitmapLocation: {x}")(bitmapLocation);
 		Heap.virtualStart = bitmapLocation;
 
 		// This is the virtual address for the page table
 		root = cast(PageLevel4*)0xFFFFFFFF_FFFFF000;
-		kprintfln!("root: {x} : {x}")(root, rootPhysical);
-		kprintfln!("heap: {x}")(Heap.virtualStart);
 
 		// All is well.
 		return ErrorVal.Success;
 	}
 
 	void install() {
-		kprintfln!("Installing...")();
 		ulong rootAddr = cast(ulong)rootPhysical;
-		kprintfln!("Installing........")();
 		asm {
 			mov RAX, rootAddr;
 			mov CR3, RAX;
 		}
-		kprintfln!("Installed")();
-		kprintfln!("Heap: {x}")(*(cast(ulong*)Heap.virtualStart));
-
 	}
 
 	// This function will get the physical address that is mapped from the
@@ -229,8 +213,6 @@ public:
 
 		// Define the end address
 		void* endAddr = cast(void*)curPhysAddr;
-
-		kprintfln!("virtaddr: {x}")(virtAddr);
 
 		heapMap!(false, false)(physAddr, endAddr, virtAddr);
 
