@@ -145,9 +145,13 @@ public:
 			// also move the perspective registers
 			// HI -> EDX
 			// LO -> EAX
-			mov EDX, hi;
-			mov EAX, lo;
-			mov ECX, MSR;
+			mov R15, hi;
+			mov R14, lo;
+			mov R13, MSR;
+
+			mov RDX, R15;
+			mov RAX, R14;
+			mov RCX, R13;
 			wrmsr;
 		}
 	}

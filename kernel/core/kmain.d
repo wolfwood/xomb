@@ -32,8 +32,7 @@ import kernel.mem.heap;
 
 // bootLoaderID is the unique identifier for a boot loader.
 // data is a structure given by the boot loader.
-extern(C) void kmain(int bootLoaderID, void *data)
-{
+extern(C) void kmain(int bootLoaderID, void *data) {
 
 	//first, we'll print out some fun status messages.
 	kprintfln!("{!cls!fg:White}Welcome to {!fg:Green}{}{!fg:White}! (version {}.{}.{})")("XOmB", 0,5,0);
@@ -63,6 +62,9 @@ extern(C) void kmain(int bootLoaderID, void *data)
 
 	// 6. Multiprocessor Initialization
 	printToLog("Multiprocessor: initialize()", Multiprocessor.initialize());
+
+	// 7. Syscall Initialization
+	printToLog("Syscall: initialize()", Syscall.initialize());
 
 	// 7. Schedule
 	

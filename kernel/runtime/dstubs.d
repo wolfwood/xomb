@@ -76,10 +76,19 @@ private
  Random stubs (they'll go somewhere eventually)
 **************************************************/
 
-mixin(Stub!("void abort()"));
-mixin(Stub!("bool rt_isHalting()"));
-mixin(Stub!("bool runModuleUnitTests()"));
-mixin(Stub!("void _d_monitordelete(Object h, bool det = true)"));
+void abort() {
+}
+
+bool rt_isHalting() {
+	return false;
+}
+
+bool runModuleUnitTests() {
+	return false;
+}
+
+void _d_monitordelete(Object h, bool det = true) {
+}
 
 /******************************************
  * Given a pointer:

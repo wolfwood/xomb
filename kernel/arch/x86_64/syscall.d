@@ -1,18 +1,17 @@
 module kernel.arch.x86_64.syscall;
 
+import kernel.arch.x86_64.cpu;
+
 import kernel.core.error;
 import kernel.core.util;
 import kernel.core.syscall;
 
 import user.syscall;
 
-struct Syscall
-{
-
+struct Syscall {
 static:
 
-	ErrorVal initialize ()
-	{
+	ErrorVal initialize () {
 		// TODO: USE MSR ROUTINES IN kernel.arch.x86_64.init TO SET THESE!!!
 
 		// STAR (MSR: 0xC0000081)
@@ -49,33 +48,19 @@ static:
 		const uint STARLO = STAR & 0xFFFF_FFFF;
 
 		ulong addy = cast(ulong)&syscallHandler;
-		uint hi = addy >> 32;
-		uint lo = addy & 0xFFFFFFFF;
 
-		//kprintfln!("Setting the Handler.")();
+		// Set the LSTAR register.  This is the address of the system call handling
+		// routine.
+		Cpu.writeMSR(LSTAR_MSR, addy);
 
-		asm
-		{
-			// Set the LSTAR register.  This is the address of the system call handling
-			// routine.
-			mov EDX, hi;
-			mov EAX, lo;
-			mov ECX, LSTAR_MSR;
-			wrmsr;
+		// Set the STAR register.  This is more stupid segmentation bullshit.
+		Cpu.writeMSR(STAR_MSR, STAR);
 
-			// Set the STAR register.  This is more stupid segmentation bullshit.
-			mov EDX, STARHI;
-			mov EAX, STARLO;
-			mov ECX, STAR_MSR;
-			wrmsr;
+		// Set the SF_MASK register.  Top should be 0, bottom is our mask,
+		// but we're not masking anything (yet).
+		Cpu.writeMSR(SFMASK_MSR, 0);
 
-			// Set the SF_MASK register.  Top should be 0, bottom is our mask,
-			// but we're not masking anything (yet).
-			xor EAX, EAX;
-			xor EDX, EDX;
-			mov ECX, SFMASK_MSR;
-			wrmsr;
-		}
+		return ErrorVal.Success;
 	}
 }
 
@@ -83,19 +68,26 @@ static:
 // alright, so %rdi, %rsi, %rdx are the registers loaded by NativeSyscall()
 //
 
-void syscallHandler()
-{
-	asm
-	{
+void syscallHandler() {
+	asm {
 		naked;
+
+		pushq RCX;
+		pushq R11;
+		pushq RAX;
 
 		// call dispatcher
 		call syscallDispatcher;
+
+		popq RAX;
+		popq R11;
+		popq RCX;
+
+		sysretq;
 	}
 }
 
-template MakeSyscallDispatchCase(uint idx)
-{
+template MakeSyscallDispatchCase(uint idx) {
 	static if(!is(SyscallRetTypes[idx] == void))
 		const char[] MakeSyscallDispatchCase =
 `case ` ~ idx.stringof ~ `:
@@ -107,8 +99,7 @@ template MakeSyscallDispatchCase(uint idx)
 	return SyscallImplementations.` ~ SyscallName!(idx) ~ `(cast(` ~ ArgsStruct!(idx) ~ `*)params);`;
 }
 
-template MakeSyscallDispatchList()
-{
+template MakeSyscallDispatchList() {
 	const char[] MakeSyscallDispatchList =
 `switch(ID)
 {`
@@ -118,8 +109,7 @@ template MakeSyscallDispatchList()
 }`;
 }
 
-extern(C) void syscallDispatcher(ulong ID, void* ret, void* params)
-{
+extern(C) void syscallDispatcher(ulong ID, void* ret, void* params) {
 	//void* stackPtr;
 	//asm {
 	//	"movq %%rsp, %%rax" ::: "rax";

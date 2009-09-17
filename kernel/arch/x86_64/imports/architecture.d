@@ -14,3 +14,4 @@ public import kernel.arch.x86_64.multiprocessor;
 public import kernel.arch.x86_64.vm;
 public import kernel.arch.x86_64.mutex;
 public import kernel.arch.x86_64.context;
+public import kernel.arch.x86_64.syscall;

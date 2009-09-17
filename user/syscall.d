@@ -3,6 +3,8 @@ module user.syscall;
 import user.nativecall;
 import user.util;
 
+import user.console;
+
 // Errors
 enum SyscallError : ulong
 {
@@ -24,6 +26,7 @@ struct KeyboardInfo
 enum SyscallID : ulong
 {
 	Add = 0,
+	RequestConsole,
 	Exit
 }
 
@@ -31,6 +34,7 @@ enum SyscallID : ulong
 alias Tuple!
 (
 	"add",			// add()
+	"requestConsole",	// requestConsole()
 	"exit"			// exit()
 ) SyscallNames;
 
@@ -39,17 +43,20 @@ alias Tuple!
 alias Tuple!
 (
 	long,			// add
+	void,			// requestConsole
 	void			// exit
 ) SyscallRetTypes;
 
 // Parameters to system call
-struct AddArgs
-{
+struct AddArgs {
 	long a, b;
 }
 
-struct ExitArgs
-{
+struct RequestConsoleArgs {
+	ConsoleInfo* cinfo;
+}
+
+struct ExitArgs {
 	long retVal;
 }
 
