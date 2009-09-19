@@ -20,6 +20,7 @@ enum SyscallID : ulong
 {
 	Add = 0,
 	RequestConsole,
+	AllocPage,
 	Exit
 }
 
@@ -90,3 +91,4 @@ SyscallRetTypes[ID].stringof ~ ` ` ~ SyscallNames[ID] ~ `(Tuple!` ~ typeof(mixin
 }
 
 mixin(Reduce!(Cat, Map!(MakeSyscall, Range!(SyscallID.max + 1))));
+
