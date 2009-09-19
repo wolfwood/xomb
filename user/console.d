@@ -1,5 +1,7 @@
 module user.console;
 
+extern(C):
+
 enum ConsoleType {
 	Buffer8Char8Attr,
 }

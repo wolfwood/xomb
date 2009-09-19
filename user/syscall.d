@@ -6,6 +6,8 @@ import user.util;
 import user.console;
 import user.keyboard;
 
+extern(C):
+
 // Errors
 enum SyscallError : ulong
 {
@@ -33,14 +35,14 @@ alias Tuple!
 // Return types for each system call
 alias Tuple!
 (
-	long,			// add
+	int,			// add
 	void,			// requestConsole
 	void			// exit
 ) SyscallRetTypes;
 
 // Parameters to system call
 struct AddArgs {
-	long a, b;
+	int a, b;
 }
 
 struct RequestConsoleArgs {

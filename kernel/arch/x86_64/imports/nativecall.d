@@ -1,6 +1,6 @@
 module kernel.user.nativecall; // implements the native syscall function
 
-extern(C) long nativeSyscall(ulong ID, void* ret, void* params)
+extern(C) int nativeSyscall(uint ID, void* ret, void* params)
 {
 	// arguments for x86-64:
 	// %rdi, %rsi, %rdx, %rcx, %r8, %r9

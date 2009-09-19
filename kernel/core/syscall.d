@@ -18,7 +18,7 @@ public:
 
 	// add two numbers, a and b, and return the result
 	// ulong add(long a, long b)
-	SyscallError add(out long ret, AddArgs* params) {
+	SyscallError add(out int ret, AddArgs* params) {
 		ret = params.a + params.b;
 		return SyscallError.OK;
 	}
