@@ -7,3 +7,4 @@ build/iso/boot/xomb
 build/dsss.conf
 user/nativecall.d
 *.swp
+*.o
