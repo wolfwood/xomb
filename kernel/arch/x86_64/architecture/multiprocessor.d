@@ -5,9 +5,9 @@
  *
  */
 
-module kernel.arch.x86_64.multiprocessor;
+module architecture.multiprocessor;
 
-import kernel.arch.x86_64.cpu;
+import architecture.cpu;
 
 import kernel.arch.x86_64.core.gdt;
 import kernel.arch.x86_64.core.tss;

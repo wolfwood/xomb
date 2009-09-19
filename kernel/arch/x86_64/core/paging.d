@@ -187,7 +187,7 @@ public:
 		return location;
 	}
 
-	void* mapRegion(PageLevel4* rootTable, void* physAddr, ulong regionLength, void* virtAddr = null) {
+	ulong mapRegion(PageLevel4* rootTable, void* physAddr, ulong regionLength, void* virtAddr = null) {
 		if (virtAddr is null) {
 			virtAddr = physAddr;
 		}
@@ -216,7 +216,7 @@ public:
 
 		heapMap!(false, false)(physAddr, endAddr, virtAddr);
 
-		return virtAddr;
+		return regionLength;
 	}
 
 	PageLevel4* kernelPageTable() {

@@ -7,7 +7,11 @@
 module kernel.core.kmain;
 
 // Import the architecture-dependent interface
-import architecture;
+import architecture.cpu;
+import architecture.multiprocessor;
+import architecture.vm;
+import architecture.syscall;
+import architecture.main;
 
 // This module contains our powerful kprintf function
 import kernel.core.kprintf;

@@ -11,7 +11,7 @@ import kernel.core.error;
 
 import kernel.system.segment;
 
-import architecture;
+import architecture.context;
 
 struct Environment {
 	void* start;
@@ -34,6 +34,10 @@ struct Environment {
 
 	ErrorVal allocSegment(ref Segment s) {
 		return context.allocSegment(s);
+	}
+
+	void* mapRegion(void* physAddr, ulong length) {
+		return context.mapRegion(physAddr, length);
 	}
 
 	ErrorVal preamble() {

@@ -6,7 +6,7 @@
 
 module kernel.arch.x86_64.core.pic;
 
-import kernel.arch.x86_64.cpu;
+import architecture.cpu;
 
 struct PIC {
 static:

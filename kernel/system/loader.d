@@ -22,7 +22,7 @@ import kernel.mem.heap;
 import kernel.core.util;
 import kernel.core.log;
 
-import architecture;
+import architecture.vm;
 
 extern(C) void* memcpy(void*, void*, size_t); 
 

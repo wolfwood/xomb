@@ -7,9 +7,10 @@
 
 module kernel.arch.x86_64.core.lapic;
 
-import kernel.arch.x86_64.mutex;
-import kernel.arch.x86_64.cpu;
 import kernel.arch.x86_64.linker;
+
+import architecture.mutex;
+import architecture.cpu;
 
 import kernel.arch.x86_64.core.paging;
 import kernel.arch.x86_64.core.info;
@@ -65,6 +66,10 @@ public:
 		EOI();
 
 		if (apLock.locked) { apLock.unlock(); }
+	}
+
+	uint identifier() {
+		return getLocalAPICId();
 	}
 
 private:

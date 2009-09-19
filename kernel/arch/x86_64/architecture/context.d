@@ -5,7 +5,7 @@
  *
  */
 
-module kernel.arch.x86_64.context;
+module architecture.context;
 
 import kernel.arch.x86_64.core.paging;
 
@@ -35,6 +35,8 @@ public:
 		stack = Heap.allocPageNoMap();
 		Paging.mapRegion(null, stack, 4096, cast(void*)0x80000000);
 		stack = cast(void*)0x80000000;
+
+		resourceHeap = cast(void*)0x80f00000;
 
 		contextStack = Heap.allocPageNoMap();
 		contextStack = cast(void*)Paging.mapRegion(contextStack, 4096);
@@ -82,6 +84,12 @@ public:
 		Paging.mapRegion(null, physAddr, length, cast(void*)0x100000);
 
 		return ErrorVal.Success;
+	}
+
+	void* mapRegion(void* physAddr, ulong length) {
+		void* addr = resourceHeap;
+		resourceHeap += Paging.mapRegion(null, physAddr, length, cast(void*)resourceHeap);
+		return addr;
 	}
 
 	ErrorVal alloc(void* virtAddr, ulong length) {
@@ -133,6 +141,8 @@ protected:
 
 	void* contextStack;
 	void* contextStackPtr;
+
+	void* resourceHeap;
 
 	void* rootPhysAddr;
 	PageLevel3* root;

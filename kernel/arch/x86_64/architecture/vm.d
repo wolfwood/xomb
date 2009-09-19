@@ -6,7 +6,7 @@
  *
  */
 
-module kernel.arch.x86_64.vm;
+module architecture.vm;
 
 // All of the paging calls
 import kernel.arch.x86_64.core.paging;

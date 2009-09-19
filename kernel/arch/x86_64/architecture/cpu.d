@@ -5,13 +5,14 @@
  *
  */
 
-module kernel.arch.x86_64.cpu;
+module architecture.cpu;
 
 // Import Arch Modules
 import kernel.arch.x86_64.core.gdt;
 import kernel.arch.x86_64.core.tss;
 import kernel.arch.x86_64.core.idt;
 import kernel.arch.x86_64.core.paging;
+import kernel.arch.x86_64.core.lapic;
 
 // To return error values
 import kernel.core.error;
@@ -51,6 +52,10 @@ public:
 		return ErrorVal.Success;
 	}
 
+	uint identifier() {
+		return LocalAPIC.identifier;
+	}
+
 	template ioOutMixinB(char[] port) {
 		const char[] ioOutMixinB = `
 		asm {
@@ -63,7 +68,8 @@ public:
 		const char[] ioOutMixinW = `
 		asm {
 			mov AX, data;
-			out ` ~ port ~ `, AX;
+			mov DX, ` ~ port ~ `;
+			out DX, AX;
 		}`;
 	}
 
@@ -71,7 +77,8 @@ public:
 		const char[] ioOutMixinL = `
 		asm {
 			mov EAX, data;
-			out ` ~ port ~ `, EAX;
+			mov EDX, ` ~ port ~ `;
+			out EDX, EAX;
 		}`;
 	}
 

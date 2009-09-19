@@ -1,6 +1,6 @@
-module kernel.arch.x86_64.syscall;
+module architecture.syscall;
 
-import kernel.arch.x86_64.cpu;
+import architecture.cpu;
 
 import kernel.core.error;
 import kernel.core.util;

@@ -17,7 +17,7 @@ import kernel.arch.x86_64.core.paging;
 import kernel.arch.x86_64.core.pic;
 
 // We need port io
-import kernel.arch.x86_64.cpu;
+import architecture.cpu;
 
 // Import common kernel stuff
 import kernel.core.error;

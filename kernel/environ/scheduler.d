@@ -27,7 +27,7 @@ public:
 	Environment* schedule() {
 		printToLog("Scheduler: schedule()");
 		printSuccess(); 
-		return (current = UniprocessScheduler.schedule());
+		return (_current = UniprocessScheduler.schedule());
 	}
 
 	Environment* newEnvironment() {
@@ -41,14 +41,18 @@ public:
 	}
 
 	ErrorVal execute() {
-		current.execute();
+		_current.execute();
 
 		// The previous function should NOT return
 		// So if it does, fail
 		return ErrorVal.Fail;
 	}
 
+	Environment* current() {
+		return _current;
+	}
+
 private:
 
-	Environment* current;
+	Environment* _current;
 }

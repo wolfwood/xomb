@@ -11,7 +11,7 @@ module kernel.mem.heap;
 import kernel.system.info;
 
 // Import architecture dependent foo
-import architecture;
+import architecture.vm;
 
 // Import kernel foo
 import kernel.core.kprintf;

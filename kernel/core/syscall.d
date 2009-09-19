@@ -5,6 +5,11 @@ module kernel.core.syscall;
 import user.syscall;
 import user.console;
 
+import kernel.environ.info;
+import kernel.environ.scheduler;
+
+import kernel.dev.console;
+
 struct SyscallImplementations {
 static:
 public:
@@ -19,9 +24,13 @@ public:
 	}
 
 	SyscallError requestConsole(RequestConsoleArgs* params) {
-		params.cinfo.buffer = null;
-		params.cinfo.width = 80;
-		params.cinfo.height = 24;
+		Environment* current = Scheduler.current();
+		void* loc = current.mapRegion(Console.physicalLocation(), Console.width * Console.height * 2);
+		params.cinfo.buffer = loc;
+
+		params.cinfo.width = Console.width;
+		params.cinfo.height = Console.height;
+
 		params.cinfo.type = ConsoleType.Buffer8Char8Attr;
 		return SyscallError.OK;
 	}
