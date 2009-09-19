@@ -13,4 +13,6 @@ void main() {
 	}
 
 	for(;;) {}
+
+	exit(0);
 }
