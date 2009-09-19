@@ -11,8 +11,4 @@ void main() {
 		*ptr = 10;
 		ptr++;
 	}
-
-	for(;;) {}
-
-	exit(0);
 }

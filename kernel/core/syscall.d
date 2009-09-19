@@ -13,6 +13,7 @@ import kernel.dev.console;
 import kernel.mem.heap;
 
 import kernel.core.error;
+import kernel.core.kprintf;
 
 struct SyscallImplementations {
 static:
@@ -53,6 +54,8 @@ public:
 
 	// void exit(ulong retval)
 	SyscallError exit(ExitArgs* params) {
+		kprintfln!("exit() called. No processes.")();
+		for(;;){}
 		return SyscallError.OK;
 	}
 }
