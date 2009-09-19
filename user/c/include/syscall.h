@@ -6,3 +6,5 @@ struct ConsoleInfo;
 void requestConsole(struct ConsoleInfo*);
 
 int allocPage(void* virtualAddress);
+
+void exit(int);
