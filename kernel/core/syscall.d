@@ -45,10 +45,12 @@ public:
 
 		if (current.alloc(params.virtualAddress, 4096) == ErrorVal.Fail) {
 			ret = -1;
+			kprintfln!("allocPage({}): FAIL")(params.virtualAddress);
 			return SyscallError.Failcopter;
 		}	
 
 		ret = 0;
+		kprintfln!("allocPage({}): OK")(params.virtualAddress);
 		return SyscallError.OK;
 	}
 
