@@ -36,6 +36,10 @@ struct Environment {
 		return context.allocSegment(s);
 	}
 
+	ErrorVal alloc(void* virtualAddress, ulong length) {
+		return context.alloc(virtualAddress, length);
+	}
+
 	void* mapRegion(void* physAddr, ulong length) {
 		return context.mapRegion(physAddr, length);
 	}

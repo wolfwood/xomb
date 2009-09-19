@@ -26,9 +26,10 @@ enum SyscallID : ulong
 // Names of system calls
 alias Tuple!
 (
-	"add",			// add()
+	"add",				// add()
 	"requestConsole",	// requestConsole()
-	"exit"			// exit()
+	"allocPage",		// allocPage()
+	"exit"				// exit()
 ) SyscallNames;
 
 
@@ -37,6 +38,7 @@ alias Tuple!
 (
 	int,			// add
 	void,			// requestConsole
+	int,			// allocPage
 	void			// exit
 ) SyscallRetTypes;
 
@@ -47,6 +49,10 @@ struct AddArgs {
 
 struct RequestConsoleArgs {
 	ConsoleInfo* cinfo;
+}
+
+struct AllocPageArgs {
+	void* virtualAddress;
 }
 
 struct ExitArgs {

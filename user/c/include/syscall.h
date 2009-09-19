@@ -4,3 +4,5 @@ int add(int a, int b);
 
 struct ConsoleInfo;
 void requestConsole(struct ConsoleInfo*);
+
+int allocPage(void* virtualAddress);

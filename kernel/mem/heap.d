@@ -158,6 +158,10 @@ public:
 		// Find a page
 		ulong index = findPage();
 
+		if (index == 0xffffffffffffffffUL) {
+			return null;
+		}
+
 		// Return the address
 		return cast(void*)(index * VirtualMemory.getPageSize());
 	}

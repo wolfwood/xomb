@@ -10,6 +10,10 @@ import kernel.environ.scheduler;
 
 import kernel.dev.console;
 
+import kernel.mem.heap;
+
+import kernel.core.error;
+
 struct SyscallImplementations {
 static:
 public:
@@ -32,6 +36,18 @@ public:
 		params.cinfo.height = Console.height;
 
 		params.cinfo.type = ConsoleType.Buffer8Char8Attr;
+		return SyscallError.OK;
+	}
+
+	SyscallError allocPage(out int ret, AllocPageArgs* params) {
+		Environment* current = Scheduler.current();
+
+		if (current.alloc(params.virtualAddress, 4096) == ErrorVal.Fail) {
+			ret = -1;
+			return SyscallError.Failcopter;
+		}	
+
+		ret = 0;
 		return SyscallError.OK;
 	}
 
