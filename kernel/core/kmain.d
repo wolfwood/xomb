@@ -39,8 +39,13 @@ import kernel.mem.heap;
 extern(C) void kmain(int bootLoaderID, void *data) {
 
 	//first, we'll print out some fun status messages.
-	kprintfln!("{!cls!fg:White}Welcome to {!fg:Green}{}{!fg:White}! (version {}.{}.{})")("XOmB", 0,5,0);
-	kprintfln!("--------------------------------------------------------------------------------")();
+	kprintfln!("{!cls!fg:White} Welcome to {!fg:Green}{}{!fg:White}! (version {}.{}.{})")("XOmB", 0,5,0);
+	for(int i; i < 80; i++) {
+		// 0xc4 -- horiz line
+		// 0xcd -- double horiz line
+		kprintf!("{}")(cast(char)0xcd);
+	}
+	//kprintfln!("--------------------------------------------------------------------------------")();
 	//printToLog(hr);
 
 	// 1. Bootloader Validation

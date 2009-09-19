@@ -22,7 +22,7 @@ void main() {
 	Console.forecolor = Console.Color.White;
 	Console.clear();
 
-	Console.putString("Hello XOmB World...view");
+	Console.putString("Arrrr, welcome ye to XOmB.\n\n ... ... forgive me ability to rhyme.");
 
 	for (;;) {}
 }

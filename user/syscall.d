@@ -4,22 +4,13 @@ import user.nativecall;
 import user.util;
 
 import user.console;
+import user.keyboard;
 
 // Errors
 enum SyscallError : ulong
 {
 	OK = 0,
 	Failcopter
-}
-
-// Return structures
-struct KeyboardInfo
-{
-	short* buffer;
-	uint bufferLength;
-
-	int* writePointer;
-	int* readPointer;
 }
 
 // IDs of the system calls
