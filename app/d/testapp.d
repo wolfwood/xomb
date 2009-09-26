@@ -20,7 +20,7 @@ void main() {
 	Console.initialize();
 	Console.backcolor = Console.Color.Blue; 
 	Console.forecolor = Console.Color.White;
-	Console.clear();
+//	Console.clear();
 
 	Console.putString("Arrrr, welcome ye to XOmB.\n\n ... ... forgive me ability to rhyme.");
 

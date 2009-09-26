@@ -44,6 +44,19 @@ public:
 		return ErrorVal.Success;
 	}
 
+	ErrorVal uninitialize() {
+		// Remove page table
+		// XXX: TODO
+
+		// Deallocate Stack
+		// XXX: TODO
+
+		// Reclaim Resources
+		// XXX: TODO
+
+		return ErrorVal.Success;
+	}
+
 	ErrorVal preamble(void* entry) {
 		ulong* stackSpace = cast(ulong*)(contextStack + 4096);
 

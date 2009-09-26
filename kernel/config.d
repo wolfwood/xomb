@@ -1,4 +1,7 @@
+module kernel.config;
+
 // Debugging options
+
 // Setting DEBUG_ALL to true will cause *ALL* debug
 // flags to turn on.  If you only want to see some
 // debug messages, turn DEBUG_ALL off, and only
@@ -16,3 +19,25 @@ const auto DEBUG_IOAPIC = false;
 const auto DEBUG_APENTRY = false;
 const auto DEBUG_KBD = false;
 const auto DEBUG_SCHEDULER = false;
+
+struct Config {
+static:
+
+	// Scheduler Implementation
+	// Options:
+	//    UniprocessScheduler
+	//    RoundRobinScheduler
+	const char[] SchedulerImplementation = "UniprocessScheduler";
+
+	// ReadOption!("SchedulerImplementation")
+	// Returns the value of a configuration option
+	template ReadOption(char[] Option) {
+		mixin("const char[] ReadOption = (Config." ~ Option ~ ".stringof)[1..$-1];");
+	}
+
+	// For implementing config options as aliases
+	template Alias(char[] Option) {
+		const char[] Alias = "alias " ~ ReadOption!(Option) ~ " " ~ Option ~ ";";
+	}
+}
+

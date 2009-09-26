@@ -76,10 +76,10 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	printToLog("Syscall: initialize()", Syscall.initialize());
 
 	// 7. Schedule
+	Scheduler.initialize();
 	
 	Loader.loadModules();
 
-	Scheduler.initialize();
 	Scheduler.schedule();
 
 	Scheduler.execute();

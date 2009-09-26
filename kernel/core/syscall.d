@@ -56,8 +56,7 @@ public:
 
 	// void exit(ulong retval)
 	SyscallError exit(ExitArgs* params) {
-		kprintfln!("exit() called. No processes.")();
-		for(;;){}
+		Scheduler.removeEnvironment();
 		return SyscallError.OK;
 	}
 }

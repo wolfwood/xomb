@@ -13,7 +13,24 @@ import kernel.system.segment;
 
 import architecture.context;
 
+import kernel.sched.select : SchedulerInfo;
+
+// The configuration options are loaded:
+//import Config = kernel.config;
+//mixin(Config.Alias!("SchedulerImplementation"));
+
 struct Environment {
+	enum State {
+		Inactive,
+		Initializing,
+		Uninitializing,
+		Blocked,
+		Ready,
+		Running,
+	}
+
+	State state = State.Inactive;
+
 	void* start;
 	void* virtualStart;
 
@@ -23,13 +40,21 @@ struct Environment {
 
 	Context context;
 
+	SchedulerInfo info;
+
 	ErrorVal initialize() {
 		// Create a page table for this environment
 		context.initialize();
 
 		context.preamble(entry);
 
+		state = State.Ready;
+
 		return ErrorVal.Success;
+	}
+
+	ErrorVal uninitialize() {
+		return context.uninitialize();
 	}
 
 	ErrorVal allocSegment(ref Segment s) {
@@ -42,14 +67,6 @@ struct Environment {
 
 	void* mapRegion(void* physAddr, ulong length) {
 		return context.mapRegion(physAddr, length);
-	}
-
-	ErrorVal preamble() {
-		return ErrorVal.Success;
-	}
-
-	ErrorVal postamble() {
-		return ErrorVal.Success;
 	}
 
 	void execute() {

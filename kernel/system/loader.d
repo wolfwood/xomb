@@ -70,6 +70,7 @@ static:
 
 			if (environ is null) {
 				kprintfln!("No more environments!")();
+				return ErrorVal.Fail;
 			}
 			else {
 				// Load executable
@@ -93,21 +94,8 @@ static:
 					// Copy segment
 					memcpy(curSegment.virtAddress, moduleAddr + curSegment.offset, curSegment.length);
 
-					//kprintfln!("p: {x} v: {x} o: {x} l: {x}")(curSegment.physAddress, curSegment.virtAddress, curSegment.offset, curSegment.length);
 				}
 
-/*				ulong length = environ.length;
-				ubyte* d = cast(ubyte*)environ.virtualStart;
-				ubyte* s = cast(ubyte*)moduleAddr;
-				s += Elf.getoffset(moduleAddr);
-				for(ulong i; i < length; i++) {
-					*d = *s;
-					d++;
-					s++;
-				}*/
-				//kprintfln!("Environment Loaded")();
-				
-				Scheduler.add(environ);
 				//kprintfln!("Success (Environment Loaded)")();
 			}
 		}

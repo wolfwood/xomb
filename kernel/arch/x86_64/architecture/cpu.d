@@ -78,7 +78,7 @@ public:
 		asm {
 			mov EAX, data;
 			mov EDX, ` ~ port ~ `;
-			out EDX, EAX;
+			out DX, EAX;
 		}`;
 	}
 

@@ -1,10 +1,6 @@
 #include <syscall.h>
 #include <stdlib.h>
 
-void* sbrk(int a) {
-	return (void*)(long)_sbrk(a);
-}
-
 void main() {
 	int foo = add(3,4);
 
