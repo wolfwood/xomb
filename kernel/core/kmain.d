@@ -31,6 +31,10 @@ import kernel.core.log;
 // kernel heap
 import kernel.mem.heap;
 
+// kernel-side ramfs
+import kernel.filesystem.ramfs;
+
+
 // The main function for the kernel.
 // This will receive data from the boot loader.
 
@@ -79,6 +83,8 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Scheduler.initialize();
 	
 	Loader.loadModules();
+
+	RamFS.initialize();
 
 	Scheduler.schedule();
 
