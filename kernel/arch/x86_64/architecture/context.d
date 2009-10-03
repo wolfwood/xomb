@@ -116,6 +116,25 @@ public:
 		return addr;
 	}
 
+	ErrorVal mapExisting(void* virtAddrDestination, void* virtAddrSource, ulong length) {
+		void* addr;
+	   
+		addr = Paging.translateAddress(virtAddrSource);
+		map(addr, 4096);
+		virtAddrSource += 4096;
+		virtAddrDestination += 4096;
+
+		while (length > 4096) {
+			addr = Paging.translateAddress(virtAddrSource);
+			map(addr, 4096);
+			virtAddrSource += 4096;
+			virtAddrDestination += 4096;
+			length -= 4096;
+		}
+
+		return ErrorVal.Success;
+	}
+
 	ErrorVal alloc(void* virtAddr, ulong length) {
 
 		// check validity of virtAddr

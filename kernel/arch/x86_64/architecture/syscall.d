@@ -110,6 +110,9 @@ template MakeSyscallDispatchList() {
 }
 
 extern(C) void syscallDispatcher(ulong ID, void* ret, void* params) {
+	// RCX holds the return address for the system call, which is useful
+	// for certain system calls (such as fork)
+
 	//void* stackPtr;
 	//asm {
 	//	"movq %%rsp, %%rax" ::: "rax";
