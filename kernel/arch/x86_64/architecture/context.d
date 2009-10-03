@@ -132,7 +132,6 @@ public:
 		while (length > 4096) {
 			physAddr = Heap.allocPageNoMap();
 			if (physAddr is null) { return ErrorVal.Fail; }
-			kprintfln!("mapping {} to {}")(physAddr, virtAddr);
 			Paging.mapRegion(null, physAddr, 4096, virtAddr);
 			virtAddr += 4096;
 			length -= 4096;
