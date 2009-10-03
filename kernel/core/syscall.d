@@ -62,5 +62,9 @@ public:
 
 		return SyscallError.OK;
 	}
+
+	SyscallError fork(out int ret, ForkArgs* params) {
+		return SyscallError.OK;
+	}
 }
 
