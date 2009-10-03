@@ -7,7 +7,7 @@
 
 module kernel.core.elf;
 
-import kernel.system.multiboot;
+import kernel.system.segment;
 
 import kernel.core.kprintf;
 
@@ -479,12 +479,11 @@ static:
 			returns: int (0 or 1), depending on whether the magic number matches or not.
 	*/
 	bool isValid(ubyte* address) {
-		kprintfln!("ELF header: {x} {x} {x} {x}...")(address[0], address[1], address[2], address[3]);
+		//kprintfln!("ELF header: {x} {x} {x} {x}...")(address[0], address[1], address[2], address[3]);
 		if (address[0] == elfmag0 &&
 			address[1] == elfmag1 &&
 			address[2] == elfmag2 &&
 			address[3] == elfmag3) {
-			kprintfln!("true")();
 			return true;
 		}
 		return false;
@@ -581,9 +580,33 @@ static:
 		// go to the first section in the section header.
 		elf64_phdr* load = cast(elf64_phdr*)(address + header.e_phoff);
 
-		kprintfln!("text phoff: {x} ptr: {x}")(header.e_phoff, load);
+		//kprintfln!("text phoff: {x} ptr: {x}")(header.e_phoff, load);
 		// declare a void function which can be called to jump to the memory position of
 		// __start();;
 		return cast(ulong)load.p_offset;
+	}
+
+	ulong segmentCount(void* address) {
+		elf64_ehdr* header = cast(elf64_ehdr*)address;
+		return header.e_phnum;
+	}
+
+	Segment segment(void* address, uint index) {
+		elf64_ehdr* header = cast(elf64_ehdr*)address;
+	
+		elf64_phdr* prog = cast(elf64_phdr*)(address + header.e_phoff + (elf64_phdr.sizeof * index));
+
+		Segment s;
+		s.physAddress = cast(void*)prog.p_paddr;
+		s.virtAddress = cast(void*)prog.p_vaddr;
+
+		s.offset = prog.p_offset;
+
+		s.length = prog.p_filesz;
+
+		s.writeable = true;
+		s.executable = true;
+
+		return s;
 	}
 }

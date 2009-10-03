@@ -6,14 +6,14 @@
  *
  */
 
-module kernel.arch.x86_64.main;
+module architecture.main;
 
 // import normal architecture dependencies
 import kernel.arch.x86_64.core.gdt;
 import kernel.arch.x86_64.core.tss;
 import kernel.arch.x86_64.core.idt;
 import kernel.arch.x86_64.core.paging;
-import kernel.arch.x86_64.syscall;
+import architecture.syscall;
 
 // To return error values
 import kernel.core.error;
@@ -44,13 +44,13 @@ public:
 		System.kernel.virtualStart = cast(ubyte*)LinkerScript.kernelVMA;
 
 		// Global Descriptor Table
-		printToLog("Initializing GDT", GDT.initialize());
+		printToLog("Architecture: Initializing GDT", GDT.initialize());
 
 		// Task State Segment
-		printToLog("Initializing TSS", TSS.initialize());
+		printToLog("Architecture: Initializing TSS", TSS.initialize());
 
 		// Interrupt Descriptor Table
-		printToLog("Initializing IDT", IDT.initialize());
+		printToLog("Architecture: Initializing IDT", IDT.initialize());
 
 		// Everything must have succeeded
 		return ErrorVal.Success;

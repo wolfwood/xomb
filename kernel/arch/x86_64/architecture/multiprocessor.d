@@ -5,9 +5,9 @@
  *
  */
 
-module kernel.arch.x86_64.multiprocessor;
+module architecture.multiprocessor;
 
-import kernel.arch.x86_64.cpu;
+import architecture.cpu;
 
 import kernel.arch.x86_64.core.gdt;
 import kernel.arch.x86_64.core.tss;
@@ -49,12 +49,14 @@ public:
 		}
 
 		// 3a. Initialize Local APIC
-		if (LocalAPIC.initialize() != ErrorVal.Success) {
+		ErrorVal LAPICInitialized = printToLog("LocalAPIC: initialize()", LocalAPIC.initialize());
+		if (LAPICInitialized != ErrorVal.Success) {
 			return ErrorVal.Fail;
 		}
 
 		// 3b. Initialize IOAPIC
-		if (IOAPIC.initialize() != ErrorVal.Success) {
+		ErrorVal IOAPICInitialized = printToLog("IOAPIC: initialize()", IOAPIC.initialize());
+		if (IOAPICInitialized != ErrorVal.Success) {
 			return ErrorVal.Fail;
 		}
 

@@ -127,3 +127,5 @@ title		XOmB
 kernel		/boot/xomb
 #module		/your/module
 module		/boot/testapp
+module		/boot/testc
+#module		/boot/test

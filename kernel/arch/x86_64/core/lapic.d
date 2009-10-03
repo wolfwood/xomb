@@ -7,15 +7,17 @@
 
 module kernel.arch.x86_64.core.lapic;
 
-import kernel.arch.x86_64.mutex;
-import kernel.arch.x86_64.cpu;
 import kernel.arch.x86_64.linker;
+
+import architecture.mutex;
+import architecture.cpu;
 
 import kernel.arch.x86_64.core.paging;
 import kernel.arch.x86_64.core.info;
 
 import kernel.core.error;
 import kernel.core.kprintf;
+import kernel.core.log;
 
 import kernel.system.info;
 
@@ -66,10 +68,14 @@ public:
 		if (apLock.locked) { apLock.unlock(); }
 	}
 
+	uint identifier() {
+		return getLocalAPICId();
+	}
+
 private:
 
 	void initLocalApic(void* localAPICAddr) {
-		kprintfln!("register space: {x}")(localAPICAddr);
+		//kprintfln!("register space: {x}")(localAPICAddr);
 		ubyte* apicRange;
 
 		ulong MSRValue = Cpu.readMSR(0x1B);
@@ -88,7 +94,7 @@ private:
 		ubyte* bootRange;
 		bootRange = cast(ubyte*)Paging.mapRegion(cast(void*)0x0, trampolineLength);
 
-		kprintfln!("bootRange: {} trampolineLength: {} trampolineCode: {x} trampoline: {x} Kernel: {x}")(bootRange, trampolineLength, trampolineCode, LinkerScript.trampoline, System.kernel.start);
+		//kprintfln!("bootRange: {} trampolineLength: {} trampolineCode: {x} trampoline: {x} Kernel: {x}")(bootRange, trampolineLength, trampolineCode, LinkerScript.trampoline, System.kernel.start);
 
 		for(uint i; i < trampolineLength; i++) {
 			*bootRange = *trampolineCode;
@@ -96,7 +102,7 @@ private:
 			trampolineCode++;
 		}
 	//	bootRange[0..trampolineLength] = trampolineCode[0..trampolineLength];
-		kprintfln!("Trampoline copied")();
+		//kprintfln!("Trampoline copied")();
 	}
 
 	void EOI() {
@@ -118,7 +124,8 @@ private:
 	Mutex apLock;
 
 	void startAP(ubyte apicID) {
-		kprintfln!("Starting AP {}")(apicID);
+		printToLog("LocalAPIC: Starting AP");
+		//kprintfln!("Starting AP {}")(apicID);
 		apLock.lock();
 
 		ulong p;
@@ -147,6 +154,7 @@ private:
 		// Wait for the AP to boot
 		apLock.lock();
 		apLock.unlock();
+		printSuccess();
 	}
 
 	enum DeliveryMode {

@@ -6,10 +6,7 @@
  *
  */
 
-module kernel.arch.x86_64.vm;
-
-// Import the PageTable
-import kernel.arch.x86_64.pagetable;
+module architecture.vm;
 
 // All of the paging calls
 import kernel.arch.x86_64.core.paging;

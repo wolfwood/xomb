@@ -11,7 +11,7 @@ module kernel.mem.heap;
 import kernel.system.info;
 
 // Import architecture dependent foo
-import architecture;
+import architecture.vm;
 
 // Import kernel foo
 import kernel.core.kprintf;
@@ -72,7 +72,7 @@ public:
 		ulong bitmapSize = bitmapPages * VirtualMemory.getPageSize();
 		ulong* bitmapEdge = bitmap + (bitmapSize >> 3);
 
-		kprintfln!("bitmap: {x} for {x} pages : totalpages {x}")(bitmap, bitmapPages, totalPages);
+		//kprintfln!("bitmap: {x} for {x} pages : totalpages {x}")(bitmap, bitmapPages, totalPages);
 
 		// Now, check to see if the bitmap can fit here
 		bool bitmapOk = false;
@@ -84,7 +84,7 @@ public:
 				if ((bitmap < regionEdge) && (bitmapEdge > regionAddr)) {
 					// overlap...
 					// move bitmap
-					kprintfln!("Region Overlaps! Moving Heap")();
+					//kprintfln!("Region Overlaps! Moving Heap")();
 					bitmap = regionEdge;
 					// align to page size
 					bitmap = cast(ulong*)(cast(ubyte*)bitmap + VirtualMemory.getPageSize() - (cast(ulong)bitmap % VirtualMemory.getPageSize()));
@@ -102,12 +102,12 @@ public:
 				if ((bitmap < regionEdge) && (bitmapEdge > regionAddr)) {
 					// overlap...
 					// move bitmap
-					kprintfln!("Module Overlaps! Moving Heap")();
+					//kprintfln!("Module Overlaps! Moving Heap")();
 					bitmap = regionEdge;
 					// align to page size
 					bitmap = cast(ulong*)(cast(ubyte*)bitmap + VirtualMemory.getPageSize() - (cast(ulong)bitmap % VirtualMemory.getPageSize()));
 					bitmapEdge = bitmap + (bitmapSize >> 3);
-					kprintfln!("(NEW) Bitmap location: {x}")(bitmap);
+					//kprintfln!("(NEW) Bitmap location: {x}")(bitmap);
 					break;
 				}
 			}
@@ -115,7 +115,7 @@ public:
 				bitmapOk = true;
 			}
 		}
-		kprintfln!("Bitmap location: {x}")(bitmap);
+		//kprintfln!("Bitmap location: {x}")(bitmap);
 
 		// Set up the bitmap for the regions used by the system.
 
@@ -127,13 +127,13 @@ public:
 
 		// Each other region
 		for(uint i; i < System.numRegions; i++) {
-			kprintfln!("Region: start:0x{x} length:0x{x}")(System.regionInfo[i].start, System.regionInfo[i].length);
+			//kprintfln!("Region: start:0x{x} length:0x{x}")(System.regionInfo[i].start, System.regionInfo[i].length);
 			markOffRegion(System.regionInfo[i].start, System.regionInfo[i].length);
 		}
 
 		// Each module as well
 		for (uint i; i < System.numModules; i++) {
-			kprintfln!("Module: start:0x{x} length:0x{x}")(System.moduleInfo[i].start, System.moduleInfo[i].length);
+			//kprintfln!("Module: start:0x{x} length:0x{x}")(System.moduleInfo[i].start, System.moduleInfo[i].length);
 			markOffRegion(System.moduleInfo[i].start, System.moduleInfo[i].length);
 		}
 
@@ -143,7 +143,7 @@ public:
 		//kprintfln!("findPage: {x}")(findPage());
 //		kprintfln!("findPage: {x}")(findPage());
 //		kprintfln!("findPage: {x}")(findPage());
-		kprintfln!("Success : {x}")(bitmap);
+		//kprintfln!("Success : {x}")(bitmap);
 		// It succeeded!
 		return ErrorVal.Success;
 	}
@@ -157,6 +157,10 @@ public:
 	void* allocPageNoMap() {
 		// Find a page
 		ulong index = findPage();
+
+		if (index == 0xffffffffffffffffUL) {
+			return null;
+		}
 
 		// Return the address
 		return cast(void*)(index * VirtualMemory.getPageSize());

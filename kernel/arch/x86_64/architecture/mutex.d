@@ -5,7 +5,7 @@
 
 */
 
-module kernel.arch.x86_64.mutex;
+module architecture.mutex;
 
 struct Mutex {
 	void lock() {

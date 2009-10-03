@@ -8,8 +8,18 @@
 // Will be linked to the user's main function
 int main(char[][]);
 
+extern(C) ubyte _bss;
+extern(C) ubyte _ebss;
+
 extern(C) void _start() {
-	// foo
+	// Zero the bss 
+
+	ubyte* startBSS = &_bss;
+	ubyte* endBSS = &_ebss;
+
+	for( ; startBSS != endBSS; startBSS++) {
+		*startBSS = 0x00;
+	}
 
 	main(null);
 

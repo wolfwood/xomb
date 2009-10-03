@@ -3,6 +3,11 @@ module user.syscall;
 import user.nativecall;
 import user.util;
 
+import user.console;
+import user.keyboard;
+
+extern(C):
+
 // Errors
 enum SyscallError : ulong
 {
@@ -10,46 +15,48 @@ enum SyscallError : ulong
 	Failcopter
 }
 
-// Return structures
-struct KeyboardInfo
-{
-	short* buffer;
-	uint bufferLength;
-
-	int* writePointer;
-	int* readPointer;
-}
-
 // IDs of the system calls
 enum SyscallID : ulong
 {
 	Add = 0,
+	RequestConsole,
+	AllocPage,
 	Exit
 }
 
 // Names of system calls
 alias Tuple!
 (
-	"add",			// add()
-	"exit"			// exit()
+	"add",				// add()
+	"requestConsole",	// requestConsole()
+	"allocPage",		// allocPage()
+	"exit"				// exit()
 ) SyscallNames;
 
 
 // Return types for each system call
 alias Tuple!
 (
-	long,			// add
+	int,			// add
+	void,			// requestConsole
+	int,			// allocPage
 	void			// exit
 ) SyscallRetTypes;
 
 // Parameters to system call
-struct AddArgs
-{
-	long a, b;
+struct AddArgs {
+	int a, b;
 }
 
-struct ExitArgs
-{
+struct RequestConsoleArgs {
+	ConsoleInfo* cinfo;
+}
+
+struct AllocPageArgs {
+	void* virtualAddress;
+}
+
+struct ExitArgs {
 	long retVal;
 }
 
@@ -84,3 +91,4 @@ SyscallRetTypes[ID].stringof ~ ` ` ~ SyscallNames[ID] ~ `(Tuple!` ~ typeof(mixin
 }
 
 mixin(Reduce!(Cat, Map!(MakeSyscall, Range!(SyscallID.max + 1))));
+

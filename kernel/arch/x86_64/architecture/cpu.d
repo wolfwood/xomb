@@ -5,13 +5,14 @@
  *
  */
 
-module kernel.arch.x86_64.cpu;
+module architecture.cpu;
 
 // Import Arch Modules
 import kernel.arch.x86_64.core.gdt;
 import kernel.arch.x86_64.core.tss;
 import kernel.arch.x86_64.core.idt;
 import kernel.arch.x86_64.core.paging;
+import kernel.arch.x86_64.core.lapic;
 
 // To return error values
 import kernel.core.error;
@@ -34,22 +35,25 @@ public:
 
 	// This module will conform to the interface
 	ErrorVal initialize() {
-		kprintfln!("Paging?")();
 
 		Paging.install();
-		printToLog("Enabling Paging", ErrorVal.Success);
+		printToLog("Cpu: Enabling Paging", ErrorVal.Success);
 
 		GDT.install();
-		printToLog("Enabling GDT", ErrorVal.Success);
+		printToLog("Cpu: Enabling GDT", ErrorVal.Success);
 		TSS.install();
-		printToLog("Enabling TSS", ErrorVal.Success);
+		printToLog("Cpu: Enabling TSS", ErrorVal.Success);
 		IDT.install();
-		printToLog("Enabling IDT", ErrorVal.Success);
+		printToLog("Cpu: Enabling IDT", ErrorVal.Success);
 
 		installStack();
-		printToLog("Installed Stack", ErrorVal.Success);
+		printToLog("Cpu: Installed Stack", ErrorVal.Success);
 
 		return ErrorVal.Success;
+	}
+
+	uint identifier() {
+		return LocalAPIC.identifier;
 	}
 
 	template ioOutMixinB(char[] port) {
@@ -64,7 +68,8 @@ public:
 		const char[] ioOutMixinW = `
 		asm {
 			mov AX, data;
-			out ` ~ port ~ `, AX;
+			mov DX, ` ~ port ~ `;
+			out DX, AX;
 		}`;
 	}
 
@@ -72,7 +77,8 @@ public:
 		const char[] ioOutMixinL = `
 		asm {
 			mov EAX, data;
-			out ` ~ port ~ `, EAX;
+			mov EDX, ` ~ port ~ `;
+			out DX, EAX;
 		}`;
 	}
 
@@ -146,9 +152,13 @@ public:
 			// also move the perspective registers
 			// HI -> EDX
 			// LO -> EAX
-			mov EDX, hi;
-			mov EAX, lo;
-			mov ECX, MSR;
+			mov R15, hi;
+			mov R14, lo;
+			mov R13, MSR;
+
+			mov RDX, R15;
+			mov RAX, R14;
+			mov RCX, R13;
 			wrmsr;
 		}
 	}
@@ -197,7 +207,7 @@ private:
 		ubyte* stackSpace = cast(ubyte*)Heap.allocPage();
 		ubyte* currentStack = cast(ubyte*)(&stack-4096);
 
-		kprintfln!("currentStack: {x} stackSpace: {x}")(currentStack, stackSpace);
+		//kprintfln!("currentStack: {x} stackSpace: {x}")(currentStack, stackSpace);
 		
 		stackSpace[0..4096] = currentStack[0..4096];
 

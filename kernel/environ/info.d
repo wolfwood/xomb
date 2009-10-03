@@ -9,9 +9,28 @@ module kernel.environ.info;
 
 import kernel.core.error;
 
-import architecture;
+import kernel.system.segment;
+
+import architecture.context;
+
+import kernel.sched.roundrobin;
+
+// The configuration options are loaded:
+//import Config = kernel.config;
+//mixin(Config.Alias!("SchedulerImplementation"));
 
 struct Environment {
+	enum State {
+		Inactive,
+		Initializing,
+		Uninitializing,
+		Blocked,
+		Ready,
+		Running,
+	}
+
+	State state = State.Inactive;
+
 	void* start;
 	void* virtualStart;
 
@@ -19,28 +38,39 @@ struct Environment {
 
 	ulong length;
 
-	PageTable pageTable;
+	Context context;
+
+	SchedulerInfo info;
 
 	ErrorVal initialize() {
 		// Create a page table for this environment
-		pageTable.initialize();
-		pageTable.alloc(virtualStart, length);
+		context.initialize();
 
-		pageTable.preamble(entry);
+		context.preamble(entry);
+
+		state = State.Ready;
 
 		return ErrorVal.Success;
 	}
 
-	ErrorVal preamble() {
-		return ErrorVal.Success;
+	ErrorVal uninitialize() {
+		return context.uninitialize();
 	}
 
-	ErrorVal postamble() {
-		return ErrorVal.Success;
+	ErrorVal allocSegment(ref Segment s) {
+		return context.allocSegment(s);
+	}
+
+	ErrorVal alloc(void* virtualAddress, ulong length) {
+		return context.alloc(virtualAddress, length);
+	}
+
+	void* mapRegion(void* physAddr, ulong length) {
+		return context.mapRegion(physAddr, length);
 	}
 
 	void execute() {
-		pageTable.execute();
+		context.execute();
 	}
 }
 
