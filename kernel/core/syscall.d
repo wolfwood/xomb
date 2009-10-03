@@ -43,7 +43,7 @@ public:
 	SyscallError allocPage(out int ret, AllocPageArgs* params) {
 		Environment* current = Scheduler.current();
 
-		if (current.alloc(params.virtualAddress, 4096) == ErrorVal.Fail) {
+		if (current.alloc(params.virtualAddress, 4096, true) == ErrorVal.Fail) {
 			ret = -1;
 			kprintfln!("allocPage({}): FAIL")(params.virtualAddress);
 			return SyscallError.Failcopter;
