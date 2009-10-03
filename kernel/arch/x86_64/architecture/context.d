@@ -43,7 +43,7 @@ public:
 
 		// Allocate Stack
 		stack = Heap.allocPageNoMap();
-		Paging.mapRegion(null, stack, 4096, cast(void*)0xe00000);
+		Paging.mapRegion(null, stack, 4096, cast(void*)0xe00000, true);
 		stack = cast(void*)0xe00000;
 		kprintfln!("c")();
 
@@ -112,7 +112,7 @@ public:
 
 	void* mapRegion(void* physAddr, ulong length) {
 		void* addr = resourceHeap;
-		resourceHeap += Paging.mapRegion(null, physAddr, length, cast(void*)resourceHeap);
+		resourceHeap += Paging.mapRegion(null, physAddr, length, cast(void*)resourceHeap, true);
 		return addr;
 	}
 
