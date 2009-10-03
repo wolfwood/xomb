@@ -13,7 +13,7 @@ import kernel.system.segment;
 
 import architecture.context;
 
-import kernel.sched.select : SchedulerInfo;
+import kernel.sched.roundrobin;
 
 // The configuration options are loaded:
 //import Config = kernel.config;

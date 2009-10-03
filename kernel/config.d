@@ -27,7 +27,8 @@ static:
 	// Options:
 	//    UniprocessScheduler
 	//    RoundRobinScheduler
-	const char[] SchedulerImplementation = "UniprocessScheduler";
+//	const char[] SchedulerImplementation = "UniprocessScheduler";
+	const char[] SchedulerImplementation = "RoundRobinScheduler";
 
 	// ReadOption!("SchedulerImplementation")
 	// Returns the value of a configuration option

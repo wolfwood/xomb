@@ -13,8 +13,10 @@ import kernel.core.error;
 import kernel.core.kprintf;
 import kernel.core.log;
 
-import kernel.sched.select;
+import kernel.sched.roundrobin;
 import kernel.config;
+
+alias RoundRobinScheduler SchedulerImplementation;
 
 struct Scheduler {
 static:
@@ -39,8 +41,13 @@ public:
 
 	Environment* newEnvironment() {
 		printToLog("Scheduler: newEnvironment()");
-		printSuccess(); 
 		Environment* newEnv = SchedulerImplementation.newEnvironment();
+		if (newEnv is null) {
+			printFail();
+		}
+		else {
+			printSuccess(); 
+		}
 		return newEnv;
 	}
 

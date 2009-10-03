@@ -84,8 +84,9 @@ static:
 
 				environ.entry = entryAddress;
 
+				kprintfln!("Initialize this environment")();
 				environ.initialize();
-				//kprintfln!("Loading this environment {}")(Elf.getoffset(moduleAddr));
+				kprintfln!("Loading this environment")();
 
 				for(uint i; i < numSegments; i++) {
 					curSegment = Elf.segment(moduleAddr, i);
@@ -96,7 +97,7 @@ static:
 
 				}
 
-				//kprintfln!("Success (Environment Loaded)")();
+				kprintfln!("Success (Environment Loaded)")();
 			}
 		}
 

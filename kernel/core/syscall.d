@@ -57,6 +57,9 @@ public:
 	// void exit(ulong retval)
 	SyscallError exit(ExitArgs* params) {
 		Scheduler.removeEnvironment();
+		Scheduler.schedule();
+		Scheduler.execute();
+
 		return SyscallError.OK;
 	}
 }

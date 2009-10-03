@@ -9,7 +9,9 @@
 module kernel.sched.roundrobin;
 
 import kernel.environ.info;
+
 import kernel.core.error;
+import kernel.core.kprintf;
 
 // Linked List Structure
 struct SchedulerInfo {
@@ -26,10 +28,18 @@ static:
 
 	// Return next environment
 	Environment* schedule(Environment* current) {
+			kprintfln!("woo")();
+		Environment* next;
 		if (current !is null) {
 			current.state = Environment.State.Ready;
+			next = current.info.next;
 		}
-		Environment* next = current.info.next;
+		else {
+			next = head;
+		}
+
+		assert(next !is null, "Nothing to schedule");
+			kprintfln!("woo2")();
 		while(next.state != Environment.State.Ready) {
 			next = next.info.next;
 		}
@@ -48,6 +58,8 @@ static:
 		if (numEnvironments == 0) {
 			head = &environments[0];
 			tail = head;
+			head.info.next = head;
+			head.info.prev = head;
 			ret = &environments[0];
 		}
 		else {
@@ -55,8 +67,8 @@ static:
 				if (env.state == Environment.State.Inactive) {
 					ret = &environments[i];
 					ret.info.next = head;	
-					ret.info.prev = head.prev;
-					head.prev = ret;
+					ret.info.prev = head.info.prev;
+					head.info.prev = ret;
 					head = ret;
 					break;
 				}
@@ -64,19 +76,22 @@ static:
 		}
 		numEnvironments++;
 		ret.state = Environment.State.Initializing;
+		kprintfln!("ret: {}")(ret);
 		return ret;
 	}
 
 	ErrorVal removeEnvironment(Environment* environment) {
-		environment.state = Environment.State.Inactive;
 		if (numEnvironments == 1) {
 			head = null;
 			tail = null;
 		}
 		else {
-			environment.next.prev = environment.prev;
-			environment.prev.next = environment.next;
+			environment.info.next.info.prev = environment.info.prev;
+			environment.info.prev.info.next = environment.info.next;
 		}
+		environment.state = Environment.State.Inactive;
+		numEnvironments--;
+		return ErrorVal.Success;
 	}
 
 protected:

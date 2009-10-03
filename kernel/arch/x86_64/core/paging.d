@@ -286,6 +286,7 @@ private:
 				}
 				else {
 					pl3 = root.getOrCreateTable(indexL4, !kernelLevel);
+					//static if (!kernelLevel) { kprintfln!("pl3 {}")(indexL4); }
 				}
 
 				for ( ; indexL3 < 512 ; indexL3++ )
@@ -308,6 +309,7 @@ private:
 					}
 					else {
 						pl2 = pl3.getOrCreateTable(indexL3, !kernelLevel);
+//						static if (!kernelLevel) { kprintfln!("pl2 {}")(indexL3); }
 					}
 
 					for ( ; indexL2 < 512 ; indexL2++ )
@@ -329,7 +331,9 @@ private:
 							}
 						}
 						else {
+							//static if (!kernelLevel) { kprintfln!("attempting pl1 {}")(indexL2); }
 							pl1 = pl2.getOrCreateTable(indexL2, !kernelLevel);
+							//static if (!kernelLevel) { kprintfln!("pl1 {}")(indexL2); }
 						}
 
 						for ( ; indexL1 < 512 ; indexL1++ )
@@ -506,6 +510,7 @@ private:
 				ret = cast(PageLevel2*)(0xFFFFFF7F_C0000000 + ((baseAddr + idx) << 12));
 
 				*ret = PageLevel2.init;
+				if (usermode) { kprintfln!("creating pl3 {}")(idx); }
 			}
 
 			return ret;
@@ -516,9 +521,12 @@ private:
 		SecondaryField[512] entries;
 
 		PageLevel1* getTable(uint idx) {
+//			kprintfln!("getting pl2 {}?")(idx);
 			if (entries[idx].present == 0) {
+//				kprintfln!("no pl2 {}!")(idx);
 				return null;
 			}
+//			kprintfln!("getting pl2 {}!")(idx);
 
 			ulong baseAddr = cast(ulong)this;
 			baseAddr &= 0x3FFFF000;
@@ -531,6 +539,7 @@ private:
 			
 			if (ret is null) {
 				// Create Table
+//				if (usermode) { kprintfln!("creating pl2 {}?")(idx); }
 				ret = cast(PageLevel1*)Heap.allocPageNoMap();
 
 				// Set table entry
@@ -546,6 +555,7 @@ private:
 				ret = cast(PageLevel1*)(0xFFFFFF80_00000000 + ((baseAddr + idx) << 12));
 
 				*ret = PageLevel1.init;
+//				if (usermode) { kprintfln!("creating pl2 {}")(idx); }
 			}
 
 			return ret;

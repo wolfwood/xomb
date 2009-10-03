@@ -22,21 +22,32 @@ public:
 	ErrorVal initialize() {
 		// Make a new root pagetable
 		rootPhysAddr = Heap.allocPageNoMap();
-		root = cast(PageLevel3*)(Paging.mapRegion(rootPhysAddr, 4096));
-		*root = PageLevel3.init;
+		root = cast(PageLevel4*)(Paging.mapRegion(rootPhysAddr, 4096));
+		*root = *Paging.kernelPageTable;
+		root.entries[511].pml = cast(ulong)rootPhysAddr;
+		root.entries[511].present = 1;
+		root.entries[511].rw = 1;
+		PageLevel3* pl3 = root.getTable(510);
+		pl3.entries[511] = root.entries[511];
+		PageLevel2* pl2 = pl3.getTable(510);
+		pl2.entries[511] = root.entries[511];
 
-		// Map to kernel page table
-		Paging.kernelPageTable.entries[0].pml = cast(ulong)rootPhysAddr;
-		Paging.kernelPageTable.entries[0].present = 1;
-		Paging.kernelPageTable.entries[0].rw = 1;
-		Paging.kernelPageTable.entries[0].us = 1;
+		kprintfln!("a")();
+
+		ulong addr = cast(ulong)rootPhysAddr;
+		asm {
+			mov RAX, addr;
+			mov CR3, RAX;
+		}
+		kprintfln!("b")();
 
 		// Allocate Stack
 		stack = Heap.allocPageNoMap();
-		Paging.mapRegion(null, stack, 4096, cast(void*)0x80000000);
-		stack = cast(void*)0x80000000;
+		Paging.mapRegion(null, stack, 4096, cast(void*)0xe00000);
+		stack = cast(void*)0xe00000;
+		kprintfln!("c")();
 
-		resourceHeap = cast(void*)0x80f00000;
+		resourceHeap = cast(void*)0xf00000;
 
 		contextStack = Heap.allocPageNoMap();
 		contextStack = cast(void*)Paging.mapRegion(contextStack, 4096);
@@ -121,6 +132,7 @@ public:
 		while (length > 4096) {
 			physAddr = Heap.allocPageNoMap();
 			if (physAddr is null) { return ErrorVal.Fail; }
+			kprintfln!("mapping {} to {}")(physAddr, virtAddr);
 			Paging.mapRegion(null, physAddr, 4096, virtAddr);
 			virtAddr += 4096;
 			length -= 4096;
@@ -136,7 +148,11 @@ public:
 	void* install() {
 
 		// Install Page Table
-		Paging.kernelPageTable.entries[0].address = (cast(ulong)rootPhysAddr) >> 12;
+		ulong addr = cast(ulong)rootPhysAddr;
+		asm {
+			mov RAX, addr;
+			mov CR3, RAX;
+		}
 
 		return contextStackPtr;
 	}
@@ -167,5 +183,5 @@ protected:
 	void* resourceHeap;
 
 	void* rootPhysAddr;
-	PageLevel3* root;
+	PageLevel4* root;
 }
