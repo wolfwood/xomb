@@ -18,11 +18,13 @@ void main() {
 	}
 
 	Console.initialize();
-	Console.backcolor = Console.Color.Blue; 
-	Console.forecolor = Console.Color.White;
-	//Console.clear();
+	Console.backcolor = Console.Color.Black; 
+	Console.forecolor = Console.Color.Green;
+	Console.clear();
 
 //	Console.putString("Arrrr, welcome ye to XOmB.\n\n ... ... forgive me ability to rhyme.");
+	Console.position((Console.width - 15) / 2, Console.height / 2);
+	Console.putString("Welcome to XOmB\n\n");
 
 	for (;;) {}
 }

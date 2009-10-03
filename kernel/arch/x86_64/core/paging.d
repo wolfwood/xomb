@@ -187,7 +187,7 @@ public:
 		return location;
 	}
 
-	ulong mapRegion(PageLevel4* rootTable, void* physAddr, ulong regionLength, void* virtAddr = null) {
+	ulong mapRegion(PageLevel4* rootTable, void* physAddr, ulong regionLength, void* virtAddr = null, bool writeable = false) {
 		if (virtAddr is null) {
 			virtAddr = physAddr;
 		}
@@ -214,7 +214,7 @@ public:
 		// Define the end address
 		void* endAddr = cast(void*)curPhysAddr;
 
-		heapMap!(false, false)(physAddr, endAddr, virtAddr);
+		heapMap!(false, false)(physAddr, endAddr, virtAddr, writeable);
 
 		return regionLength;
 	}
@@ -251,7 +251,7 @@ private:
 // -- Mapping Functions -- //
 
 	template heapMap(bool initialMapping = false, bool kernelLevel = true) {
-		void heapMap(void* physAddr, void* endAddr, void* virtAddr = heapAddress) {
+		void heapMap(void* physAddr, void* endAddr, void* virtAddr = heapAddress, bool writeable = true) {
 
 			// Do the mapping
 			PageLevel3* pl3;
@@ -347,7 +347,7 @@ private:
 							pl1.entries[indexL1].pml = cast(ulong)physAddr;
 
 							pl1.entries[indexL1].present = 1;
-							pl1.entries[indexL1].rw = 1;
+							pl1.entries[indexL1].rw = writeable;
 							pl1.entries[indexL1].pat = 1;
 							static if (!kernelLevel) {
 								pl1.entries[indexL1].us = 1;

@@ -43,7 +43,7 @@ public:
 
 		// Allocate Stack
 		stack = Heap.allocPageNoMap();
-		Paging.mapRegion(null, stack, 4096, cast(void*)0xe00000);
+		Paging.mapRegion(null, stack, 4096, cast(void*)0xe00000, true);
 		stack = cast(void*)0xe00000;
 		kprintfln!("c")();
 
@@ -112,11 +112,30 @@ public:
 
 	void* mapRegion(void* physAddr, ulong length) {
 		void* addr = resourceHeap;
-		resourceHeap += Paging.mapRegion(null, physAddr, length, cast(void*)resourceHeap);
+		resourceHeap += Paging.mapRegion(null, physAddr, length, cast(void*)resourceHeap, true);
 		return addr;
 	}
 
-	ErrorVal alloc(void* virtAddr, ulong length) {
+	ErrorVal mapExisting(void* virtAddrDestination, void* virtAddrSource, ulong length) {
+		void* addr;
+	   
+		addr = Paging.translateAddress(virtAddrSource);
+		map(addr, 4096);
+		virtAddrSource += 4096;
+		virtAddrDestination += 4096;
+
+		while (length > 4096) {
+			addr = Paging.translateAddress(virtAddrSource);
+			map(addr, 4096);
+			virtAddrSource += 4096;
+			virtAddrDestination += 4096;
+			length -= 4096;
+		}
+
+		return ErrorVal.Success;
+	}
+
+	ErrorVal alloc(void* virtAddr, ulong length, bool writeable = true) {
 
 		// check validity of virtAddr
 		if (cast(ulong)virtAddr > 0x00000000fffff000UL) {
@@ -126,13 +145,13 @@ public:
 		void* physAddr = Heap.allocPageNoMap();
 		if (physAddr is null) { return ErrorVal.Fail; }
 
-		Paging.mapRegion(null, physAddr, 4096, virtAddr);
+		Paging.mapRegion(null, physAddr, 4096, virtAddr, writeable);
 		virtAddr += 4096;
 
 		while (length > 4096) {
 			physAddr = Heap.allocPageNoMap();
 			if (physAddr is null) { return ErrorVal.Fail; }
-			Paging.mapRegion(null, physAddr, 4096, virtAddr);
+			Paging.mapRegion(null, physAddr, 4096, virtAddr, writeable);
 			virtAddr += 4096;
 			length -= 4096;
 		}
@@ -141,7 +160,7 @@ public:
 	}
 
 	ErrorVal allocSegment(ref Segment s) {
-		return alloc(s.virtAddress, s.length);
+		return alloc(s.virtAddress, s.length, s.writeable);
 	}
 
 	void* install() {

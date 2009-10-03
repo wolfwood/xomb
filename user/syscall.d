@@ -21,7 +21,8 @@ enum SyscallID : ulong
 	Add = 0,
 	RequestConsole,
 	AllocPage,
-	Exit
+	Exit,
+	Fork
 }
 
 // Names of system calls
@@ -30,7 +31,8 @@ alias Tuple!
 	"add",				// add()
 	"requestConsole",	// requestConsole()
 	"allocPage",		// allocPage()
-	"exit"				// exit()
+	"exit",				// exit()
+	"fork"				// fork()
 ) SyscallNames;
 
 
@@ -40,7 +42,8 @@ alias Tuple!
 	int,			// add
 	void,			// requestConsole
 	int,			// allocPage
-	void			// exit
+	void,			// exit
+	int				// fork
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -60,19 +63,19 @@ struct ExitArgs {
 	long retVal;
 }
 
+struct ForkArgs {
+}
+
 // XXX: This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason
-template SyscallName(uint ID)
-{
+template SyscallName(uint ID) {
 	const char[] SyscallName = SyscallNames[ID];
 }
 
-template ArgsStruct(uint ID)
-{
+template ArgsStruct(uint ID) {
 	const char[] ArgsStruct = Capitalize!(SyscallName!(ID)) ~ "Args";
 }
 
-template MakeSyscall(uint ID)
-{
+template MakeSyscall(uint ID) {
 	const char[] MakeSyscall =
 SyscallRetTypes[ID].stringof ~ ` ` ~ SyscallNames[ID] ~ `(Tuple!` ~ typeof(mixin(ArgsStruct!(ID)).tupleof).stringof ~ ` args)
 {
