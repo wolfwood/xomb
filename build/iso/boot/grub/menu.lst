@@ -129,3 +129,4 @@ kernel		/boot/xomb
 module		/boot/testapp
 module		/boot/testc
 #module		/boot/test
+module    /boot/text

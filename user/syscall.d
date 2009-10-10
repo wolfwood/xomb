@@ -6,6 +6,8 @@ import user.util;
 import user.console;
 import user.keyboard;
 
+import user.ramfs;
+
 extern(C):
 
 // Errors
@@ -22,7 +24,8 @@ enum SyscallID : ulong
 	RequestConsole,
 	AllocPage,
 	Exit,
-	Fork
+	Fork,
+	Open
 }
 
 // Names of system calls
@@ -32,7 +35,8 @@ alias Tuple!
 	"requestConsole",	// requestConsole()
 	"allocPage",		// allocPage()
 	"exit",				// exit()
-	"fork"				// fork()
+	"fork",				// fork()
+	"open"        // open()
 ) SyscallNames;
 
 
@@ -43,7 +47,8 @@ alias Tuple!
 	void,			// requestConsole
 	int,			// allocPage
 	void,			// exit
-	int				// fork
+	int,				// fork
+	int     // open
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -64,6 +69,11 @@ struct ExitArgs {
 }
 
 struct ForkArgs {
+}
+
+struct OpenArgs {
+	char[] path;
+	Inode** node;
 }
 
 // XXX: This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason
