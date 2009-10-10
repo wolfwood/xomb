@@ -21,7 +21,7 @@ public:
 
 	// Information about specific memory regions
 	uint numRegions;
-	Region[10] regionInfo;
+	Region[25] regionInfo;
 
 	// Information about modules that have been loaded
 	// during the boot process.

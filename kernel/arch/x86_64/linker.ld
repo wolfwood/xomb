@@ -101,6 +101,7 @@ SECTIONS
 	_edata = .; PROVIDE (edata = .);
 
 	_bss = .;
+	sbss = .;
 
 	/* static code */
 	.bss : AT(ADDR(.bss) - kernel_VMA + kernel_LMA)
@@ -110,6 +111,7 @@ SECTIONS
 	}
 
 	_ebss = .;
+	ebss = .;
 
 	/*  */
 	.ehframe : AT(ADDR(.ehframe) - kernel_VMA + kernel_LMA)

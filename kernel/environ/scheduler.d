@@ -52,6 +52,7 @@ public:
 	}
 
 	ErrorVal removeEnvironment() {
+		printToLog("Scheduler: removeEnvironment()");
 		Environment* cur = current;
 		cur.state = Environment.State.Uninitializing;
 		cur.uninitialize();

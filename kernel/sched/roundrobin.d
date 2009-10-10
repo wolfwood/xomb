@@ -76,14 +76,17 @@ static:
 		}
 		numEnvironments++;
 		ret.state = Environment.State.Initializing;
-		kprintfln!("ret: {}")(ret);
+		kprintfln!("ret: {}, {}")(ret, numEnvironments);
 		return ret;
 	}
 
 	ErrorVal removeEnvironment(Environment* environment) {
+		kprintfln!("removing: {}")(numEnvironments);
 		if (numEnvironments == 1) {
 			head = null;
 			tail = null;
+			kprintfln!("No More Environments")();
+			for(;;) {}
 		}
 		else {
 			environment.info.next.info.prev = environment.info.prev;
