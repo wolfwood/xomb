@@ -15,6 +15,9 @@ import kernel.mem.heap;
 import kernel.core.error;
 import kernel.core.kprintf;
 
+import user.ramfs;
+import kernel.filesystem.ramfs;
+
 struct SyscallImplementations {
 static:
 public:
@@ -65,6 +68,17 @@ public:
 
 	SyscallError fork(out int ret, ForkArgs* params) {
 		return SyscallError.OK;
+	}
+
+	SyscallError open(out int ret, OpenArgs* params){
+		Inode* node = RamFS.open(params.path);
+
+		if(node !is null){
+			*params.node = node;
+			return SyscallError.OK;
+		}else{
+			return SyscallError.Failcopter;
+		}
 	}
 }
 
