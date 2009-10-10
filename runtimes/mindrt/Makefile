@@ -45,3 +45,4 @@ mindrt.a:
 	ldc -nodefaultlib -Imindrt/. -c std/typeinfo/ti_wchar.d -ofdsss_objs/G/runtime.std.typeinfo.ti_wchar.o;
 	ldc -nodefaultlib -Imindrt/. -c entry.d -ofdsss_objs/O/runtime.entry.o;
 	ar rcs mindrt.a dsss_objs/G/*.o
+	ar rcs drt0.a dsss_objs/O/*.o
