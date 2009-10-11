@@ -602,7 +602,7 @@ static:
 
 		s.offset = prog.p_offset;
 
-		s.length = prog.p_filesz;
+		s.length = prog.p_memsz;
 
 		s.writeable = true;
 		s.executable = true;
