@@ -40,6 +40,8 @@ int close(int f){
 		fdtable[f].offset = 0;
 		fdtable[f].inode  = null;
 
+		//XXX: Close syscall...
+
 		return 0;
 	}
 }
@@ -66,7 +68,15 @@ int read(int file, char[] ptr, int len) {
 }
 
 // write
+/*
+int
+write(int file, char *ptr, int len) {
+        //XXX: write to stdout
 
+        return -1;
+}
+
+*/
 
 enum Whence { SEEK_SET = 0, SEEK_CUR = 1, SEEK_END = 2}
 
@@ -91,7 +101,37 @@ int lseek(int file, int ptr, int dir) {
 }
 
 // link
-
+/*
+int
+link(char *old, char *new) {
+        errno = EMLINK;
+        return -1;
+}
+*/
 
 // unlink
+/*
+int
+unlink(char *name) {
+        errno = ENOENT;
+        return -1;
+}
+*/
 
+// stat
+/*
+int 
+stat(int file, struct stat *st) {
+        st->st_mode = S_IFCHR;
+        return 0;
+}
+*/
+
+//istty
+
+/*int
+isatty(fd)
+     int fd;
+{
+  return (1);
+	}*/
