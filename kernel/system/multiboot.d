@@ -151,7 +151,7 @@ ErrorVal verifyBootInformation(int id, void *data) {
 		multi_module *mod = cast(multi_module *)(info.mods_addr);
 		int mod_count = info.mods_count;
 
-		for(int i = 0; i < mod_count && i < 10; i++, mod++) {
+		for(int i = 0; i < mod_count && i < System.moduleInfo.length; i++, mod++) {
 			System.moduleInfo[i].start = cast(ubyte *)(mod.mod_start);
 			System.moduleInfo[i].length = cast(uint)(mod.mod_end - mod.mod_start);
 
@@ -186,9 +186,11 @@ ErrorVal verifyBootInformation(int id, void *data) {
 			}
 			else {
 				// This is a reserved region
-				System.regionInfo[System.numRegions].start = cast(ubyte*)baseAddr;
-				System.regionInfo[System.numRegions].length = length;
-				System.numRegions++;
+				if (System.numRegions < System.regionInfo.length) {
+					System.regionInfo[System.numRegions].start = cast(ubyte*)baseAddr;
+					System.regionInfo[System.numRegions].length = length;
+					System.numRegions++;
+				}
 			}
 
 			// Advance to the next entry (Note: the size field is implied)

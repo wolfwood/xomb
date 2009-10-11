@@ -10,6 +10,7 @@ bits 32
 ; externs given by the linker script
 extern _edata
 extern _end
+extern _ebss
 
 ; extern to the load.s
 extern start64
@@ -39,7 +40,7 @@ _start:
 	dd multiboot_header
 	dd _start
 	dd (_edata-KERNEL_VMA_BASE)
-	dd (_end-KERNEL_VMA_BASE)
+	dd (_ebss-KERNEL_VMA_BASE)
 	dd _start
 
 ; the 32 bit entry

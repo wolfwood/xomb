@@ -10,6 +10,10 @@ void main() {
 	int size = 5000;
 	char* a_ptr = (char*)malloc(sizeof(char) * size);
 
+	if (a_ptr == NULL) {
+		return;
+	}
+
 	int i;
 	for (i=0; i<4096; i++) {
 		*ptr = 10;
