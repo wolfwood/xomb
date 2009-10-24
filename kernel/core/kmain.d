@@ -87,7 +87,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	RamFS.initialize();
 	RamFS.create("/dev/video");
 	RamFS.create("/boot/testc");
-	for(;;){}
 
 	Scheduler.schedule();
 
