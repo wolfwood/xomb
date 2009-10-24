@@ -35,6 +35,10 @@ public:
 		return ErrorVal.Success;
 	}
 
+	void startCores() {
+		startAPs();
+	}
+
 	void install() {
 		// Switch from PIC to APIC
 		// Using IMCR registers
@@ -65,14 +69,26 @@ public:
 
 		EOI();
 
+		logicalIDToAPICId[curCoreId] = getLocalAPICId();
+		APICIdToLogicalID[getLocalAPICId()] = curCoreId;
+
+	//	kprintfln!("Installed Core {}")(curCoreId);
+
+		curCoreId++;
+
 		if (apLock.locked) { apLock.unlock(); }
 	}
 
 	uint identifier() {
-		return getLocalAPICId();
+		return APICIdToLogicalID[getLocalAPICId()];
 	}
 
 private:
+
+	uint curCoreId = 0;
+
+	uint[256] logicalIDToAPICId;
+	uint[256] APICIdToLogicalID;
 
 	void initLocalApic(void* localAPICAddr) {
 		//kprintfln!("register space: {x}")(localAPICAddr);

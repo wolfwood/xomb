@@ -87,23 +87,23 @@ public:
 		// Map Heap bitmap
 		mapRegion(Heap.start, Heap.length);
 
+		// The first gib for the kernel
+		nextGib++;
+
+		// Assign the page fault handler
+		IDT.assignHandler(&faultHandler, 14);
+
 		// We now have the kernel mapped
 		kernelMapped = true;
 
 		// Save the physical address for later
 		rootPhysical = cast(void*)root;
 
-		// Restart the console driver to look at the right place
-		Console.initialize();
+		// Tell the heap where the end of the kernel's virtual space should be
 		Heap.virtualStart = bitmapLocation;
 
 		// This is the virtual address for the page table
 		root = cast(PageLevel4*)0xFFFFFFFF_FFFFF000;
-
-		// The first gib for the kernel
-		nextGib++;
-
-		IDT.assignHandler(&faultHandler, 14);
 
 		// All is well.
 		return ErrorVal.Success;
@@ -152,12 +152,13 @@ public:
 		}
 	}
 
-	void install() {
+	ErrorVal install() {
 		ulong rootAddr = cast(ulong)rootPhysical;
 		asm {
 			mov RAX, rootAddr;
 			mov CR3, RAX;
 		}
+		return ErrorVal.Success;
 	}
 
 	// This function will get the physical address that is mapped from the

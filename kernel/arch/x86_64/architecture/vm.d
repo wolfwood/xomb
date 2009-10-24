@@ -24,6 +24,10 @@ public:
 		return Paging.initialize();
 	}
 
+	ErrorVal install() {
+		return Paging.install();
+	}
+
 	// Allocs a new gib
 	void* allocGib() {
 		return Paging.allocGib();

@@ -31,7 +31,7 @@ public:
 	// This module will conform to the interface
 	ErrorVal initialize() {
 		// 1. Look for the ACPI tables (preferred method)
-		if(ACPI.Tables.findTable() == ErrorVal.Success && ACPI.Tables.readTable() == ErrorVal.Success) {
+		if(ACPI.Tables.findTable() == ErrorVal.Success && ACPI.Tables.readTable() != ErrorVal.Success) {
 			return ErrorVal.Fail;
 		}
 		else {
@@ -76,10 +76,11 @@ public:
 	}
 
 	ErrorVal bootCores() {
-		return ErrorVal.Fail;
+		LocalAPIC.startCores();
+		return ErrorVal.Success;
 	}
 
-	ErrorVal installCore(uint codeID) {
+	ErrorVal installCore() {
 		// Enable this core's Local APIC
 		LocalAPIC.install();
 

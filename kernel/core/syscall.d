@@ -71,14 +71,15 @@ public:
 	}
 
 	SyscallError open(out int ret, OpenArgs* params){
-		Inode* node = RamFS.open(params.path);
+/*		Inode* node = RamFS.open(params.path);
 
 		if(node !is null){
 			*params.node = node;
 			return SyscallError.OK;
 		}else{
 			return SyscallError.Failcopter;
-		}
+		}*/
+		return SyscallError.Failcopter;
 	}
 }
 
