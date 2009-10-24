@@ -91,21 +91,35 @@ struct RamFS{
 				}
 			}
 		}
-		*(cast(ulong*)foo) = 3;
 		kprintfln!("Gib: {}")(foo);
 
 		// return kernel address for file
 		return foo;
 	}
 
-	void allocRegion(Gib file, ulong offset, ulong length) {
+	void allocRegion(Gib gib, ulong offset, ulong length) {
 		// allocate pages and append them to the file region
 	}
 
-	void mapRegion(Gib file, void* addr, ulong length) {
+	void mapRegion(Gib gib, void* addr, ulong length) {
 		// map existing pages to the file region
 
-		VirtualMemory.mapRegion(file, addr, length);
+		VirtualMemory.mapRegion(gib, addr, length);
+	}
+
+	ulong read(ref Gib gib, void* buffer, ulong length) {
+		ubyte* gibPtr = cast(ubyte*)gib;
+		ubyte* bufferPtr = cast(ubyte*)buffer;
+
+		for(ulong i; i < length; i++) {
+			*bufferPtr = *gibPtr;
+			gibPtr++;
+			bufferPtr++;
+		}
+
+		gib = cast(void*)gibPtr;
+
+		return length;
 	}
 
 	ulong write(ref Gib gib, void* buffer, ulong length) {
@@ -178,6 +192,7 @@ struct RamFS{
 	DirPage* root;
 	
 	ErrorVal initialize(){
+/*		
 		root = cast(DirPage*)Heap.allocPage();
 		
 		for(uint i = 0; i < (System.numModules < NUM_DIR_ENTRIES ? System.numModules : NUM_DIR_ENTRIES); i++){
@@ -194,8 +209,9 @@ struct RamFS{
 
 			mapRegion(root.entries[i].ptr.inode, System.moduleInfo[i].virtualStart,
 																					System.moduleInfo[i].length);
-			
+
 		}
+ */
 		
 		return ErrorVal.Success;
 	}

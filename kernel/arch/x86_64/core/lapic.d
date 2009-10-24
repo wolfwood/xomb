@@ -35,6 +35,10 @@ public:
 		return ErrorVal.Success;
 	}
 
+	void startCores() {
+		startAPs();
+	}
+
 	void install() {
 		// Switch from PIC to APIC
 		// Using IMCR registers
@@ -65,14 +69,26 @@ public:
 
 		EOI();
 
+		logicalIDToAPICId[curCoreId] = getLocalAPICId();
+		APICIdToLogicalID[getLocalAPICId()] = curCoreId;
+
+		kprintfln!("Installed Core {}")(curCoreId);
+
+		curCoreId++;
+
 		if (apLock.locked) { apLock.unlock(); }
 	}
 
 	uint identifier() {
-		return getLocalAPICId();
+		return APICIdToLogicalID[getLocalAPICId()];
 	}
 
 private:
+
+	uint curCoreId = 0;
+
+	uint[256] logicalIDToAPICId;
+	uint[256] APICIdToLogicalID;
 
 	void initLocalApic(void* localAPICAddr) {
 		//kprintfln!("register space: {x}")(localAPICAddr);
@@ -94,13 +110,14 @@ private:
 		ubyte* bootRange;
 		bootRange = cast(ubyte*)Paging.mapRegion(cast(void*)0x0, trampolineLength);
 
-		//kprintfln!("bootRange: {} trampolineLength: {} trampolineCode: {x} trampoline: {x} Kernel: {x}")(bootRange, trampolineLength, trampolineCode, LinkerScript.trampoline, System.kernel.start);
+		kprintfln!("bootRange: {} trampolineLength: {} trampolineCode: {x} trampoline: {x} Kernel: {x}")(bootRange, trampolineLength, trampolineCode, LinkerScript.trampoline, System.kernel.start);
 
 		for(uint i; i < trampolineLength; i++) {
 			*bootRange = *trampolineCode;
 			bootRange++;
 			trampolineCode++;
 		}
+		kprintfln!("copied trampoline")();
 	//	bootRange[0..trampolineLength] = trampolineCode[0..trampolineLength];
 		//kprintfln!("Trampoline copied")();
 	}

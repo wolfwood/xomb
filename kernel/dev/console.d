@@ -5,6 +5,12 @@ module kernel.dev.console;
 // Import system info
 import kernel.system.info;
 
+// For Gibs
+import kernel.filesystem.ramfs;
+
+// Errors
+import kernel.core.error;
+
 import architecture.cpu;
 
 // This contains the hexidecimal values for various colors for printing to the screen.
@@ -39,20 +45,23 @@ public:
 	// The default color.
 	const ubyte DEFAULTCOLORS = Color.LightGray;
 
-	// The cursor position
-	private int xpos = 0;
-	private int ypos = 0;
-
-	// The current color
-	private ubyte colorAttribute = DEFAULTCOLORS;
-
 	// The width of a tab
 	const auto TABSTOP = 4;
 
+	void virtualAddress(void* addr) {
+		videoMemoryLocation = cast(ubyte*)addr;
+	}
+
 	// This will init the console driver
-	void initialize() {
-		videoMemoryLocation = cast(ubyte*)0xB8000;
-		videoMemoryLocation += cast(ulong)System.kernel.virtualStart;
+	ErrorVal initialize() {
+		Gib video = RamFS.create("/dev/video");
+		MetaData* videoMetaData = cast(MetaData*)video;
+		*videoMetaData = info;
+		RamFS.seek(video, 4096);
+		RamFS.mapRegion(video, cast(void*)0xB8000, 1028*1028);
+
+		videoMemoryLocation = cast(ubyte*)video;
+		videoInfo = videoMetaData;
 
 		uint temp = LINES * COLUMNS;
 		temp++;
@@ -61,6 +70,8 @@ public:
 		Cpu.ioOut!(ushort, "0x3D5")(temp >> 8);
 		Cpu.ioOut!(ushort, "0x3D4")(15);
 		Cpu.ioOut!(ushort, "0x3D5")(temp);
+
+		return ErrorVal.Success;
 	}
 
 	// This method will clear the screen and return the cursor to (0,0).
@@ -71,14 +82,14 @@ public:
 			*(videoMemoryLocation + i) = 0;
 		}
 
-		xpos = 0;
-		ypos = 0;
+		videoInfo.xpos = 0;
+		videoInfo.ypos = 0;
 	}
 
 	// This method will return the current location of the cursor
 	void getPosition(out int x, out int y) {
-		x = xpos;
-		y = ypos;
+		x = videoInfo.xpos;
+		y = videoInfo.ypos;
 	}
 
 	// This method will set the current location of the cursor to the x and y given.
@@ -88,34 +99,34 @@ public:
 		if (x >= COLUMNS) { x = COLUMNS - 1; }
 		if (y >= LINES) { y = LINES - 1; }
 
-		xpos = x;
-		ypos = y;
+		videoInfo.xpos = x;
+		videoInfo.ypos = y;
 	}
 
 	// This method will post the character to the screen at the current location.
 	void putChar(char c) {
 		if (c == '\t') {
 			// Insert a tab.
-			xpos += TABSTOP;
+			videoInfo.xpos += TABSTOP;
 		}
 		else if (c != '\n' && c != '\r') {
 			ubyte* videoAddress = videoMemoryLocation;
-			videoAddress += (xpos + (ypos * COLUMNS)) * 2;
+			videoAddress += (videoInfo.xpos + (videoInfo.ypos * COLUMNS)) * 2;
 
 			// Set the current piece of video memory to the character to print.
 			*(videoAddress) = c & 0xFF;
-			*(videoAddress + 1) = colorAttribute;
+			*(videoAddress + 1) = videoInfo.colorAttribute;
 
 			// increase the cursor position
-			xpos++;
+			videoInfo.xpos++;
 		}
 
 		// if you have reached the end of the line, or printing a newline, increase the y position
-		if (c == '\n' || c == '\r' || xpos >= COLUMNS) {
-			xpos = 0;
-			ypos++;
+		if (c == '\n' || c == '\r' || videoInfo.xpos >= COLUMNS) {
+			videoInfo.xpos = 0;
+			videoInfo.ypos++;
 
-			if (ypos >= LINES) {
+			if (videoInfo.ypos >= LINES) {
 				scrollDisplay(1);
 			}
 		}
@@ -130,22 +141,22 @@ public:
 
 	// This function sets the console colors back to their defaults.
 	void resetColors() {
-		colorAttribute = DEFAULTCOLORS;
+		videoInfo.colorAttribute = DEFAULTCOLORS;
 	}
 
 	// This function will set the text foreground to a new color.
 	void setForeColor(Color newColor) {
-		colorAttribute = (colorAttribute & 0xf0) | newColor;
+		videoInfo.colorAttribute = (videoInfo.colorAttribute & 0xf0) | newColor;
 	}
 
 	// This function will set the text background to a new color.
 	void setBackColor(Color newColor) {
-		colorAttribute = (colorAttribute & 0x0f) | (newColor << 4);
+		videoInfo.colorAttribute = (videoInfo.colorAttribute & 0x0f) | (newColor << 4);
 	}
 
 	// This function will set both the foreground and background colors.
 	void setColors(Color foreColor, Color backColor) {
-		colorAttribute = (foreColor & 0x0f) | (backColor << 4);
+		videoInfo.colorAttribute = (foreColor & 0x0f) | (backColor << 4);
 	}
 
 	// This function will scroll the entire screen.
@@ -178,10 +189,10 @@ public:
 			}
 		}
 
-		ypos -= numLines;
+		videoInfo.ypos -= numLines;
 
-		if (ypos < 0) {
-			ypos = 0;
+		if (videoInfo.ypos < 0) {
+			videoInfo.ypos = 0;
 		}
 	}
 
@@ -198,6 +209,24 @@ public:
 	}
 
 private:
+
+	// The MetaData is the first page of the video Gib
+	// It will be shared with the user app.
+	struct MetaData {
+		// Something to identify the layout of the console frame
+		int consoleType = 0;
+
+		// The cursor position
+		int xpos = 0;
+		int ypos = 0;
+
+		// The current color
+		ubyte colorAttribute = DEFAULTCOLORS;
+	}
+
+	MetaData info;
+
+	MetaData* videoInfo = &info;
 
 	// Where the video memory lives (can be changed)
 	ubyte* videoMemoryLocation = cast(ubyte*)0xB8000UL;

@@ -34,6 +34,9 @@ import kernel.mem.heap;
 // kernel-side ramfs
 import kernel.filesystem.ramfs;
 
+// console device
+import kernel.dev.console;
+
 
 // The main function for the kernel.
 // This will receive data from the boot loader.
@@ -64,8 +67,17 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	// 2b. Paging Initialization
 	printToLog("VirtualMemory: initialize()", VirtualMemory.initialize());
 
+	// 2c. Paging Install
+	printToLog("VirtualMemory: install()", VirtualMemory.install());
+
 	// 3. Processor Initialization
 	printToLog("Cpu: initialize()", Cpu.initialize());
+
+	// 3b. RamFS Initialization
+	printToLog("RamFS: initialize()", RamFS.initialize());
+
+	// 3c. Console Initialization
+	printToLog("Console: initialize()", Console.initialize());
 
 	// 4. Timer Initialization
 	// LATER
@@ -75,24 +87,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	// 6. Multiprocessor Initialization
 	printToLog("Multiprocessor: initialize()", Multiprocessor.initialize());
-
-	// 6b. RamFS Initialization
-	printToLog("RamFS: initialize()", RamFS.initialize());
-
-	Gib video = RamFS.create("/dev/video");
-	ubyte* videoMetaData = cast(ubyte*)video;
-	*(videoMetaData) = 1;
-	video = cast(Gib)(videoMetaData + 4096);
-	RamFS.mapRegion(video, cast(void*)0xB8000, 1028*1028);
-	*(videoMetaData + 4096) = 'a';
-	*(videoMetaData + 4098) = 'b';
-	*(videoMetaData + 4100) = 'c';
-
-	Gib video2 = RamFS.locate("/dev/video");
-	RamFS.seek(video2, 4096);
-	const ubyte[] foo = cast(ubyte[])['a', 42, 'b', 42, 'c', 42, '!', 42, '!', 42];
-	RamFS.write(video2, foo.ptr, foo.length);
-
 	kprintfln!("Number of Cores: {}")(Multiprocessor.cpuCount);
 
 	// 7. Syscall Initialization
@@ -105,9 +99,13 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	
 	Loader.loadModules();
 
-	RamFS.create("/boot/testc");
-
 	Scheduler.schedule();
+
+	Gib video2 = RamFS.locate("/dev/video");
+	RamFS.seek(video2, 4096);
+	const ubyte[] foo = cast(ubyte[])['a', 42, 'b', 42, 'c', 42, '!', 42, '!', 42];
+	RamFS.write(video2, foo.ptr, foo.length);
+	for(;;){}
 
 	Scheduler.execute();
 
@@ -117,11 +115,14 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 extern(C) void apEntry() {
 
+	// 0. Paging Initialization
+	VirtualMemory.install();
+
 	// 1. Processor Initialization
 	Cpu.initialize();
 
 	// 2. Core Initialization
-	Multiprocessor.installCore(1);
+	Multiprocessor.installCore();
 
 	// 2. Schedule
 	for(;;) { }

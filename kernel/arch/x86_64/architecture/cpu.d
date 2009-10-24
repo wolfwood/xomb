@@ -36,8 +36,8 @@ public:
 	// This module will conform to the interface
 	ErrorVal initialize() {
 
-		Paging.install();
-		printToLog("Cpu: Enabling Paging", ErrorVal.Success);
+//		Paging.install();
+//		printToLog("Cpu: Enabling Paging", ErrorVal.Success);
 
 		GDT.install();
 		printToLog("Cpu: Enabling GDT", ErrorVal.Success);
@@ -48,6 +48,11 @@ public:
 
 		installStack();
 		printToLog("Cpu: Installed Stack", ErrorVal.Success);
+
+		asm {
+			sti;
+		}
+		printToLog("Cpu: Enabled Interrupts", ErrorVal.Success);
 
 		return ErrorVal.Success;
 	}

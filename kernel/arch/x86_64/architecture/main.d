@@ -20,6 +20,8 @@ import kernel.core.error;
 import kernel.core.log;
 import kernel.core.kprintf;
 
+import kernel.dev.console;
+
 // We need some values from the linker script
 import kernel.arch.x86_64.linker;
 
@@ -35,8 +37,7 @@ static:
 public:
 
 	// This function will initialize the architecture upon boot
-	ErrorVal initialize()
-	{
+	ErrorVal initialize() {
 		// Read from the linker script
 		// We want the length of the kernel module
 		System.kernel.start = cast(ubyte*)0x0;
@@ -51,6 +52,8 @@ public:
 
 		// Interrupt Descriptor Table
 		printToLog("Architecture: Initializing IDT", IDT.initialize());
+
+		Console.virtualAddress = cast(void*)(cast(ubyte*)System.kernel.virtualStart + 0xB8000);
 
 		// Everything must have succeeded
 		return ErrorVal.Success;
