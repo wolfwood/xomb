@@ -13,7 +13,7 @@ import kernel.core.error;
 import kernel.core.kprintf;
 import kernel.core.log;
 
-import kernel.sched.multicore-uniprocess;
+import kernel.sched.multicore_uniprocess;
 import kernel.config;
 
 alias MulticoreUniprocessScheduler SchedulerImplementation;

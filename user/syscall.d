@@ -25,7 +25,10 @@ enum SyscallID : ulong
 	AllocPage,
 	Exit,
 	Fork,
-	Open
+		Open,
+		CanHasHwThread,
+		YieldHwThread,
+		ReturnHwThread
 }
 
 // Names of system calls
@@ -36,7 +39,10 @@ alias Tuple!
 	"allocPage",		// allocPage()
 	"exit",				// exit()
 	"fork",				// fork()
-	"open"        // open()
+	"open",        // open()
+	"canHasHwThread",   // canHasCpu(numcpus, void &function(void))
+	"yieldHwThread",    // YieldHwThread
+	"returnHwThread"
 ) SyscallNames;
 
 
@@ -48,7 +54,10 @@ alias Tuple!
 	int,			// allocPage
 	void,			// exit
 	int,				// fork
-	int     // open
+	int,     // open
+	int,     // vfork()
+	void,    // YieldHwThread
+	void    // returnHwThread
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -74,6 +83,17 @@ struct ForkArgs {
 struct OpenArgs {
 	char[] path;
 	Inode** node;
+}
+
+struct CanHasHwThreadArgs {
+	int numcpus;
+	void* entry;
+}
+
+struct YieldHwThreadArgs{
+}
+
+struct ReturnHwThreadArgs{
 }
 
 // XXX: This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason

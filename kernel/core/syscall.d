@@ -81,5 +81,23 @@ public:
 		}*/
 		return SyscallError.Failcopter;
 	}
+
+	SyscallError canHasHwThread(out int ret, CanHasHwThreadArgs* params){
+
+		return SyscallError.Failcopter;
+	}
+
+	void yieldHwThread(YieldHwThreadArgs* params){
+		Scheduler.idleOrExecute();
+	}
+
+	void returnHwThread(ReturnHwThreadArgs* params){
+		// remove environment
+		//Scheduler.
+
+		Scheduler.idleOrExecute();
+	}
+
 }
+
 
