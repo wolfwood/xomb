@@ -15,6 +15,7 @@ import architecture.main;
 
 // This module contains our powerful kprintf function
 import kernel.core.kprintf;
+import kernel.core.error;
 
 //handle everything that the boot loader gives us
 import kernel.system.bootinfo;

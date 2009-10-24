@@ -72,7 +72,7 @@ public:
 		logicalIDToAPICId[curCoreId] = getLocalAPICId();
 		APICIdToLogicalID[getLocalAPICId()] = curCoreId;
 
-		kprintfln!("Installed Core {}")(curCoreId);
+	//	kprintfln!("Installed Core {}")(curCoreId);
 
 		curCoreId++;
 
@@ -110,14 +110,13 @@ private:
 		ubyte* bootRange;
 		bootRange = cast(ubyte*)Paging.mapRegion(cast(void*)0x0, trampolineLength);
 
-		kprintfln!("bootRange: {} trampolineLength: {} trampolineCode: {x} trampoline: {x} Kernel: {x}")(bootRange, trampolineLength, trampolineCode, LinkerScript.trampoline, System.kernel.start);
+		//kprintfln!("bootRange: {} trampolineLength: {} trampolineCode: {x} trampoline: {x} Kernel: {x}")(bootRange, trampolineLength, trampolineCode, LinkerScript.trampoline, System.kernel.start);
 
 		for(uint i; i < trampolineLength; i++) {
 			*bootRange = *trampolineCode;
 			bootRange++;
 			trampolineCode++;
 		}
-		kprintfln!("copied trampoline")();
 	//	bootRange[0..trampolineLength] = trampolineCode[0..trampolineLength];
 		//kprintfln!("Trampoline copied")();
 	}
