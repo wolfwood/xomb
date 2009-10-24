@@ -96,7 +96,7 @@ struct RamFS{
 				}
 			}
 		}
-		*(cast(ulong*)foo) = 3;
+		//*(cast(ulong*)foo) = 3;
 		kprintfln!("Gib: {}")(foo);
 
 		// return kernel address for file

@@ -76,8 +76,12 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	// 6. Multiprocessor Initialization
 	printToLog("Multiprocessor: initialize()", Multiprocessor.initialize());
 
+	kprintfln!("Number of Cores: {}")(Multiprocessor.cpuCount);
+
 	// 7. Syscall Initialization
 	printToLog("Syscall: initialize()", Syscall.initialize());
+
+	printToLog("Multiprocessor: bootCores()", Multiprocessor.bootCores());
 
 	// 7. Schedule
 	Scheduler.initialize();
@@ -87,7 +91,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	RamFS.initialize();
 	RamFS.create("/dev/video");
 	RamFS.create("/boot/testc");
-	for(;;){}
 
 	Scheduler.schedule();
 
