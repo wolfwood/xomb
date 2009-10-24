@@ -24,6 +24,11 @@ public:
 		return Paging.initialize();
 	}
 
+	// Allocs a new gib
+	void* allocGib() {
+		return Paging.allocGib();
+	}
+
 	// The page size we are using
 	uint getPageSize() {
 		return Paging.PAGESIZE;

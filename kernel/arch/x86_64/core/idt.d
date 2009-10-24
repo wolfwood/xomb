@@ -15,10 +15,35 @@ import kernel.core.util;	// For BitField!()
 import kernel.core.error;	// For ErrorVal so errors can be indicated
 import kernel.core.kprintf;	// For printing the stack dump
 
+// This structure represents the appearance of the stack
+// upon receiving an interrupt on this architecture.
+align(1) struct InterruptStack {
+	// Registers
+	long r15, r14, r13, r12, r11, r10, r9, r8;
+	long rbp, rdi, rsi, rdx, rcx, rbx, rax;
+
+	// Data pushed by the isr
+	long intNumber, errorCode;
+
+	// Pushed by the processor
+	long rip, cs, rflags, rsp, ss;
+
+	// This function will dump the stack information to
+	// the screen. Useful for debugging.
+	void dump() {
+		kprintfln!("Stack Dump:")();
+		kprintfln!("r15:{x}|r14:{x}|r13:{x}|r12:{x}|r11:{x}")(r15,r14,r13,r12,r11);
+		kprintfln!("r10:{x}| r9:{x}| r8:{x}|rbp:{x}|rdi:{x}")(r10,r9,r8,rbp,rdi);
+		kprintfln!("rsi:{x}|rdx:{x}|rcx:{x}|rbx:{x}|rax:{x}")(rsi,rdx,rcx,rbx,rax);
+		kprintfln!(" ss:{x}|rsp:{x}| cs:{x}")(ss,rsp,cs);
+	}
+}
+
 struct IDT {
 static:
 public:
 
+	alias void function(InterruptStack*) InterruptHandler;
 
 	// -- Functions to initialize the interrupt table -- //
 
@@ -74,6 +99,11 @@ public:
 		setGate(num, GDT.SystemSegmentType.InterruptGate, cast(ulong)funcPtr, 3, ist);
 	}
 
+	void assignHandler(InterruptHandler func, uint vector) {
+		handlers[vector] = func;
+	}
+
+
 private:
 
 
@@ -109,31 +139,6 @@ private:
 
 
 	// -- Common Structures -- //
-
-
-	// This structure represents the appearance of the stack
-	// upon receiving an interrupt on this architecture.
-	align(1) struct InterruptStack {
-		// Registers
-		long r15, r14, r13, r12, r11, r10, r9, r8;
-		long rbp, rdi, rsi, rdx, rcx, rbx, rax;
-
-		// Data pushed by the isr
-		long intNumber, errorCode;
-
-		// Pushed by the processor
-		long rip, cs, rflags, rsp, ss;
-
-		// This function will dump the stack information to
-		// the screen. Useful for debugging.
-		void dump() {
-			kprintfln!("Stack Dump:")();
-			kprintfln!("r15:{x}|r14:{x}|r13:{x}|r12:{x}|r11:{x}")(r15,r14,r13,r12,r11);
-			kprintfln!("r10:{x}| r9:{x}| r8:{x}|rbp:{x}|rdi:{x}")(r10,r9,r8,rbp,rdi);
-			kprintfln!("rsi:{x}|rdx:{x}|rcx:{x}|rbx:{x}|rax:{x}")(rsi,rdx,rcx,rbx,rax);
-			kprintfln!(" ss:{x}|rsp:{x}| cs:{x}")(ss,rsp,cs);
-		}
-	}
 
 
 	// -- Table Mutators -- //
@@ -226,7 +231,15 @@ private:
 		}
 	}
 
+	InterruptHandler[256] handlers;
+
 	void dispatch(InterruptStack* stack) {
+		if (handlers[stack.intNumber] !is null) {
+			handlers[stack.intNumber](stack);
+			return;
+		}
+
+		// common interrupt handling
 	}
 
 	extern(C) void isr_common() {
@@ -259,8 +272,8 @@ private:
 			pushq R15;
 
 			// Run dispatcher
-			//mov RDI, RSP;
-			//call dispatch;
+			mov RDI, RSP;
+			call dispatch;
 
 			// Restore context
 

@@ -1,6 +1,7 @@
 
 module std.typeinfo.ti_Ag;
 import kernel.runtime.util;
+import kernel.core.kprintf;
 
 // byte[]
 
@@ -53,6 +54,7 @@ class TypeInfo_Ag : TypeInfo
     {
 	ubyte[] s1 = *cast(ubyte[]*)p1;
 	ubyte[] s2 = *cast(ubyte[]*)p2;
+	kprintfln!("memcmp {} {} ; {} {} {}")(p1, p2, s1.ptr, s2.ptr, s1.length);
 
 	return s1.length == s2.length &&
 	       memcmp(s1.ptr, s2.ptr, s1.length) == 0;
