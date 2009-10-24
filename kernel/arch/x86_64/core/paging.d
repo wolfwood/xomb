@@ -122,6 +122,34 @@ public:
 		void* addr = cast(void*)cr2;
 
 		kprintfln!("CR2 {}")(addr);
+
+		while (addr is null) {
+		}
+
+		ulong indexL4, indexL3, indexL2, indexL1;
+		translateAddress(addr, indexL1, indexL2, indexL3, indexL4);
+
+		// check for gib status
+		PageLevel3* pl3 = root.getTable(indexL4);
+		if (pl3 is null) {
+			// NOT AVAILABLE
+		}
+		else {
+			PageLevel2* pl2 = pl3.getTable(indexL3);
+			if (pl2 is null) {
+				// NOT AVAILABLE (FOR SOME REASON)
+			}
+			else {
+				kprintfln!("Gib Available")();
+
+				// Allocate Page
+
+				kprintfln!("Allocating a page")();
+				void* page = Heap.allocPageNoMap();
+
+				mapRegion(null, page, PAGESIZE, addr, true);
+			}
+		}
 	}
 
 	void install() {
@@ -195,6 +223,11 @@ public:
 
 		// Return the address of the gib
 		return gibAddr;
+	}
+
+	ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
+		mapRegion(null, physAddr, regionLength, gib, true);
+		return ErrorVal.Success;
 	}
 
 	// Using heapAddress, this will add a region to the kernel space

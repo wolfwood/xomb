@@ -76,6 +76,23 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	// 6. Multiprocessor Initialization
 	printToLog("Multiprocessor: initialize()", Multiprocessor.initialize());
 
+	// 6b. RamFS Initialization
+	printToLog("RamFS: initialize()", RamFS.initialize());
+
+	Gib video = RamFS.create("/dev/video");
+	ubyte* videoMetaData = cast(ubyte*)video;
+	*(videoMetaData) = 1;
+	video = cast(Gib)(videoMetaData + 4096);
+	RamFS.mapRegion(video, cast(void*)0xB8000, 1028*1028);
+	*(videoMetaData + 4096) = 'a';
+	*(videoMetaData + 4098) = 'b';
+	*(videoMetaData + 4100) = 'c';
+
+	Gib video2 = RamFS.locate("/dev/video");
+	RamFS.seek(video2, 4096);
+	const ubyte[] foo = cast(ubyte[])['a', 42, 'b', 42, 'c', 42, '!', 42, '!', 42];
+	RamFS.write(video2, foo.ptr, foo.length);
+
 	kprintfln!("Number of Cores: {}")(Multiprocessor.cpuCount);
 
 	// 7. Syscall Initialization
@@ -88,8 +105,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	
 	Loader.loadModules();
 
-	RamFS.initialize();
-	RamFS.create("/dev/video");
 	RamFS.create("/boot/testc");
 
 	Scheduler.schedule();
@@ -97,9 +112,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Scheduler.execute();
 
 	// Run task
-
-	for(;;) { }
-
+	assert(false, "Something is VERY VERY WRONG. Scheduler.execute returned. :(");
 }
 
 extern(C) void apEntry() {

@@ -29,6 +29,10 @@ public:
 		return Paging.allocGib();
 	}
 
+	ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
+		return Paging.mapRegion(gib, physAddr, regionLength);
+	}
+
 	// The page size we are using
 	uint getPageSize() {
 		return Paging.PAGESIZE;

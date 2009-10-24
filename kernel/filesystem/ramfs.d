@@ -67,36 +67,31 @@ struct RamFS{
 		Gib foo;
 		kprintfln!("createFile: creating {}...")(filename);
 
-		if (streq(filename, "/dev/video")) {
-			kprintfln!("createFile: creating video file!!")();
-			// it is video
-			if (videoFile is null) {
+		foo = locate(filename);
+
+		if (foo is null) {
+			if (streq(filename, "/dev/video")) {
+				kprintfln!("createFile: creating video file!!")();
+				// it is video
 				kprintfln!("createFile: creating video file.")();
 				foo = VirtualMemory.allocGib();
 				videoFile = foo;
 			}
 			else {
-				foo = videoFile;
-			}
-		}
-		else {
-			// look up module, attach this module to this file
-			for(uint i; i < System.numModules; i++) {
-				uint len = System.moduleInfo[i].nameLength;
-				kprintfln!("comparing {} {}")(System.moduleInfo[i].name[0..len], filename);
-				if (streq(System.moduleInfo[i].name[0..len], filename)) {
-					if (modules[i] is null) {
+				// look up module, attach this module to this file
+				for(uint i; i < System.numModules; i++) {
+					uint len = System.moduleInfo[i].nameLength;
+					kprintfln!("comparing {} {}")(System.moduleInfo[i].name[0..len], filename);
+					if (streq(System.moduleInfo[i].name[0..len], filename)) {
 						kprintfln!("createFile: creating module file.")();
+						foo = VirtualMemory.allocGib();
 						modules[i] = foo;
+						break;
 					}
-					else {
-						foo = modules[i];
-					}
-					break;
 				}
 			}
 		}
-		//*(cast(ulong*)foo) = 3;
+		*(cast(ulong*)foo) = 3;
 		kprintfln!("Gib: {}")(foo);
 
 		// return kernel address for file
@@ -107,22 +102,45 @@ struct RamFS{
 		// allocate pages and append them to the file region
 	}
 
-	void mapRegion(Gib file, void* addr, ulong offset, ulong length) {
+	void mapRegion(Gib file, void* addr, ulong length) {
 		// map existing pages to the file region
+
+		VirtualMemory.mapRegion(file, addr, length);
+	}
+
+	ulong write(ref Gib gib, void* buffer, ulong length) {
+		ubyte* gibPtr = cast(ubyte*)gib;
+		ubyte* bufferPtr = cast(ubyte*)buffer;
+
+		for(ulong i; i < length; i++) {
+			*gibPtr = *bufferPtr;
+			gibPtr++;
+			bufferPtr++;
+		}
+
+		gib = cast(void*)gibPtr;
+
+		return length;
+	}
+
+	ulong seek(ref Gib gib, ulong length) {
+		gib = cast(void*)(cast(ubyte*)gib + length);
+		return length;
 	}
 
 	Gib locate(char[] filename) {
 		// locate the file from the path
 		Gib ret;
 
-		if (filename == "/dev/video") {
+		if (streq(filename, "/dev/video")) {
 			ret = videoFile;
 		}
 		else {
 			// locate module, return file address
 			for(uint i; i < System.numModules; i++) {
 				uint len = System.moduleInfo[i].nameLength;
-				if (System.moduleInfo[i].name[0..len] == filename) {
+				kprintfln!("comparing {} {}")(System.moduleInfo[i].name[0..len], filename);
+				if (streq(System.moduleInfo[i].name[0..len], filename)) {
 					ret = modules[i];
 					break;
 				}
@@ -134,7 +152,7 @@ struct RamFS{
 		
 	// OLD STUFF //
 	
-	void mapRegion(Inode* inode, void* addy, ulong length){
+	/*void mapRegion(Inode* inode, void* addy, ulong length){
 		//assert(length <= (directPtrs.length * 4096), "module too big to become a file");
 		assert((cast(ulong)addy % 4096) == 0);
 		
@@ -155,7 +173,7 @@ struct RamFS{
 			
 		}
 		
-	}
+	}*/
 
 	DirPage* root;
 	
