@@ -13,10 +13,10 @@ import kernel.core.error;
 import kernel.core.kprintf;
 import kernel.core.log;
 
-import kernel.sched.roundrobin;
+import kernel.sched.multicore-uniprocess;
 import kernel.config;
 
-alias RoundRobinScheduler SchedulerImplementation;
+alias MulticoreUniprocessScheduler SchedulerImplementation;
 
 struct Scheduler {
 static:
@@ -67,6 +67,10 @@ public:
 		// The previous function should NOT return
 		// So if it does, fail
 		return ErrorVal.Fail;
+	}
+
+	void idleOrExecute(){
+		SchedulerImplementation.idleOrExecute();
 	}
 
 	Environment* current() {

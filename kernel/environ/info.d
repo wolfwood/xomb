@@ -42,6 +42,10 @@ struct Environment {
 
 	SchedulerInfo info;
 
+	int numHwThreads;
+	Environment* next;
+
+
 	ErrorVal initialize() {
 		// Create a page table for this environment
 		context.initialize();
@@ -49,6 +53,8 @@ struct Environment {
 		context.preamble(entry);
 
 		state = State.Ready;
+
+		numHwThreads = 1;
 
 		return ErrorVal.Success;
 	}

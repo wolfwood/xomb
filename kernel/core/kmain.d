@@ -98,14 +98,15 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	// 7. Syscall Initialization
 	printToLog("Syscall: initialize()", Syscall.initialize());
 
+	// 8. Schedule
+	Scheduler.initialize();
+
+	// 9. bring up cores
 	printToLog("Multiprocessor: bootCores()", Multiprocessor.bootCores());
 
-	// 7. Schedule
-	Scheduler.initialize();
-	
-	Loader.loadModules();
 
-	RamFS.create("/boot/testc");
+	// 10. create evironments out of grub modules and run them
+	Loader.loadModules();
 
 	Scheduler.schedule();
 
@@ -124,5 +125,7 @@ extern(C) void apEntry() {
 	Multiprocessor.installCore(1);
 
 	// 2. Schedule
+	Scheduler.idleOrExecute();
+
 	for(;;) { }
 }
