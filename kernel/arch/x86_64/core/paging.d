@@ -18,6 +18,8 @@ import kernel.mem.heap;
 // Import some arch-dependent modules
 import kernel.arch.x86_64.linker;	// want linker info
 
+import kernel.arch.x86_64.core.idt;
+
 // Import information about the system
 // (we need to know where the kernel is)
 import kernel.system.info;
@@ -98,8 +100,28 @@ public:
 		// This is the virtual address for the page table
 		root = cast(PageLevel4*)0xFFFFFFFF_FFFFF000;
 
+		// The first gib for the kernel
+		nextGib++;
+
+		IDT.assignHandler(&faultHandler, 14);
+
 		// All is well.
 		return ErrorVal.Success;
+	}
+
+	void faultHandler(InterruptStack* stack) {
+		kprintfln!("Page Fault")();
+
+		ulong cr2;
+
+		asm {
+			mov RAX, CR2;
+			mov cr2, RAX;
+		}
+
+		void* addr = cast(void*)cr2;
+
+		kprintfln!("CR2 {}")(addr);
 	}
 
 	void install() {
@@ -112,8 +134,7 @@ public:
 
 	// This function will get the physical address that is mapped from the
 	// specified virtual address.
-	void* translateAddress(void* virtAddress)
-	{
+	void* translateAddress(void* virtAddress) {
 		ulong vAddr = cast(ulong)virtAddress;
 
 		vAddr >>= 12;
@@ -132,8 +153,7 @@ public:
 							out ulong indexLevel1,
 							out ulong indexLevel2,
 							out ulong indexLevel3,
-							out ulong indexLevel4)
-	{
+							out ulong indexLevel4) {
 		ulong vAddr = cast(ulong)virtAddress;
 
 		vAddr >>= 12;
@@ -146,10 +166,40 @@ public:
 		indexLevel4 = vAddr & 0x1ff;
 	}
 
+	// Return an address to a new gib (kernel)
+	ulong nextGib = (256 * 512);
+	const ulong MAX_GIB = (512 * 512);
+	const ulong GIB_SIZE = (512 * 512 * PAGESIZE);
+	void* allocGib() {
+		// Check for maximum
+		if (nextGib >= MAX_GIB) {
+			return cast(void*)-1;
+		}
+
+		// Calculate address
+		void* gibAddr = cast(void*)(GIB_SIZE * nextGib); 
+
+		// Create PML2 for this gib (sets present bits and allocates tables)
+		ulong indexL4, indexL3, indexL2, indexL1;
+		translateAddress(gibAddr, indexL1, indexL2, indexL3, indexL4);
+		PageLevel3* pl3 = root.getOrCreateTable(indexL4, false);
+		PageLevel2* pl2 = pl3.getOrCreateTable(indexL3, false);
+
+		// Advance gib count
+		nextGib++;
+
+		// This is to ensure canonical addressing (high memory vs low)
+		if (cast(ulong)gibAddr >= 0x800000000000) {
+			gibAddr = cast(void*)(cast(ulong)gibAddr | 0xffff000000000000);
+		}
+
+		// Return the address of the gib
+		return gibAddr;
+	}
+
 	// Using heapAddress, this will add a region to the kernel space
 	// It returns the virtual address to this region.
-	void* mapRegion(void* physAddr, ulong regionLength)
-	{
+	void* mapRegion(void* physAddr, ulong regionLength) {
 		// Sanitize inputs
 
 		// physAddr should be floored to the page boundary
@@ -206,8 +256,7 @@ public:
 		curPhysAddr += regionLength;
 
 		// Align the end address
-		if ((curPhysAddr % PAGESIZE) > 0)
-		{
+		if ((curPhysAddr % PAGESIZE) > 0) {
 			curPhysAddr += PAGESIZE - (curPhysAddr % PAGESIZE);
 		}
 

@@ -156,6 +156,10 @@ ErrorVal verifyBootInformation(int id, void *data) {
 			System.moduleInfo[i].length = cast(uint)(mod.mod_end - mod.mod_start);
 
 			int len = strlen(cast(char *)mod.string);
+			if (len > System.moduleInfo[i].name.length) {
+				len = System.moduleInfo[i].name.length;
+			}
+			System.moduleInfo[i].nameLength = len;
 			System.moduleInfo[i].name[0 .. len] = (cast(char *)(mod.string))[0 .. len];
 
 		//	kprintfln!("module {}: start:{} length:{} name:{}")(i, System.moduleInfo[i].start, System.moduleInfo[i].length, System.moduleInfo[i].name[0..len]);

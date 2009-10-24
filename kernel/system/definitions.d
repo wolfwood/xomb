@@ -22,6 +22,7 @@ struct Module {
 	ubyte* virtualStart;
 
 	// The name of the module, if given.
+	uint nameLength;
 	char[64] name;
 }
 
