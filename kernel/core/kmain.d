@@ -106,7 +106,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	RamFS.seek(video2, 4096);
 	const ubyte[] foo = cast(ubyte[])['a', 42, 'b', 42, 'c', 42, '!', 42, '!', 42];
 	RamFS.write(video2, foo.ptr, foo.length);
-	for(;;){}
 
 	Scheduler.execute();
 

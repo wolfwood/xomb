@@ -59,8 +59,9 @@ struct RamFS{
 	static:
 	public:
 
-	Gib videoFile;
-	Gib modules[System.moduleInfo.length];
+	ErrorVal initialize() {
+		return ErrorVal.Success;
+	}
 
 	// WILKIE STUFF //
 	Gib create(char[] filename) {
@@ -163,10 +164,17 @@ struct RamFS{
 
 		return ret;
 	}
-		
+
+private:
+	
+	Gib videoFile;
+	Gib modules[System.moduleInfo.length];
+
 	// OLD STUFF //
 	
-	/*void mapRegion(Inode* inode, void* addy, ulong length){
+	/*
+	   
+	   void mapRegion(Inode* inode, void* addy, ulong length){
 		//assert(length <= (directPtrs.length * 4096), "module too big to become a file");
 		assert((cast(ulong)addy % 4096) == 0);
 		
@@ -187,12 +195,12 @@ struct RamFS{
 			
 		}
 		
-	}*/
+	}
 
 	DirPage* root;
 	
 	ErrorVal initialize(){
-/*		
+	
 		root = cast(DirPage*)Heap.allocPage();
 		
 		for(uint i = 0; i < (System.numModules < NUM_DIR_ENTRIES ? System.numModules : NUM_DIR_ENTRIES); i++){
@@ -211,7 +219,7 @@ struct RamFS{
 																					System.moduleInfo[i].length);
 
 		}
- */
+
 		
 		return ErrorVal.Success;
 	}
@@ -226,5 +234,6 @@ struct RamFS{
 
 		return null;
 	}
+*/
 
 }// end namespace foo
