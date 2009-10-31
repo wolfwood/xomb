@@ -14,6 +14,8 @@ import kernel.system.segment;
 import kernel.core.error;
 import kernel.core.kprintf;
 
+import kernel.filesystem.ramfs;
+
 import kernel.mem.heap;
 
 struct Context {
@@ -51,6 +53,9 @@ public:
 
 		contextStack = Heap.allocPageNoMap();
 		contextStack = cast(void*)Paging.mapRegion(contextStack, 4096);
+
+		// The first gib is the code and heap
+		nextGib++;
 
 		return ErrorVal.Success;
 	}
@@ -102,6 +107,11 @@ public:
 		contextStackPtr = stackSpace;
 
 		return ErrorVal.Success;
+	}
+
+	Gib allocGib() {
+		return Paging.allocUserGib(nextGib);
+		nextGib++;
 	}
 
 	ErrorVal map(void* physAddr, ulong length) {
@@ -202,4 +212,6 @@ protected:
 
 	void* rootPhysAddr;
 	PageLevel4* root;
+
+	ulong nextGib;
 }

@@ -5,6 +5,8 @@
  *
  */
 
+import user.syscall;
+
 // Will be linked to the user's main function
 int main(char[][]);
 
@@ -13,6 +15,10 @@ extern(C) ubyte _ebss;
 
 extern(C) void _start() {
 	// Zero the bss 
+
+	asm {
+		pushq 0;
+	}
 
 	ubyte* startBSS = &_bss;
 	ubyte* endBSS = &_ebss;
@@ -23,5 +29,5 @@ extern(C) void _start() {
 
 	main(null);
 
-	// exit();
+	exit(0);
 }

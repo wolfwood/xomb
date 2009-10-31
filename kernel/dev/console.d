@@ -11,27 +11,10 @@ import kernel.filesystem.ramfs;
 // Errors
 import kernel.core.error;
 
-import architecture.cpu;
+// Shared structures for userspace
+public import user.console;
 
-// This contains the hexidecimal values for various colors for printing to the screen.
-enum Color : ubyte {
-	Black		  = 0x00,
-	Blue		  = 0x01,
-	Green	      = 0x02,
-	Cyan		  = 0x03,
-	Red           = 0x04,
-	Magenta       = 0x05,
-	Yellow        = 0x06,
-	LightGray     = 0x07,
-	Gray          = 0x08,
-	LightBlue     = 0x09,
-	LightGreen    = 0x0A,
-	LightCyan     = 0x0B,
-	LightRed      = 0x0C,
-	LightMagenta  = 0x0D,
-	LightYellow   = 0x0E,
-	White         = 0x0F
-}
+import architecture.cpu;
 
 // This is the true interface to the console
 struct Console {
@@ -54,10 +37,13 @@ public:
 
 	// This will init the console driver
 	ErrorVal initialize() {
-		Gib video = RamFS.create("/dev/video");
+		info.width = COLUMNS;
+		info.height = LINES;
+
+		Gib video = RamFS.open("/dev/video", Access.Create | Access.Read | Access.Write);
 		MetaData* videoMetaData = cast(MetaData*)video;
 		*videoMetaData = info;
-		RamFS.seek(video, 4096);
+		RamFS.seek(video, RamFS.metadataLength);
 		RamFS.mapRegion(video, cast(void*)0xB8000, 1028*1028);
 
 		videoMemoryLocation = cast(ubyte*)video;
@@ -209,20 +195,6 @@ public:
 	}
 
 private:
-
-	// The MetaData is the first page of the video Gib
-	// It will be shared with the user app.
-	struct MetaData {
-		// Something to identify the layout of the console frame
-		int consoleType = 0;
-
-		// The cursor position
-		int xpos = 0;
-		int ypos = 0;
-
-		// The current color
-		ubyte colorAttribute = DEFAULTCOLORS;
-	}
 
 	MetaData info;
 

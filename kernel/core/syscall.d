@@ -15,7 +15,6 @@ import kernel.mem.heap;
 import kernel.core.error;
 import kernel.core.kprintf;
 
-import user.ramfs;
 import kernel.filesystem.ramfs;
 
 struct SyscallImplementations {
@@ -32,14 +31,6 @@ public:
 	}
 
 	SyscallError requestConsole(RequestConsoleArgs* params) {
-		Environment* current = Scheduler.current();
-		void* loc = current.mapRegion(Console.physicalLocation(), Console.width * Console.height * 2);
-		params.cinfo.buffer = loc;
-
-		params.cinfo.width = Console.width;
-		params.cinfo.height = Console.height;
-
-		params.cinfo.type = ConsoleType.Buffer8Char8Attr;
 		return SyscallError.OK;
 	}
 
@@ -70,7 +61,7 @@ public:
 		return SyscallError.OK;
 	}
 
-	SyscallError open(out int ret, OpenArgs* params){
+	SyscallError open(out Gib ret, OpenArgs* params){
 /*		Inode* node = RamFS.open(params.path);
 
 		if(node !is null){
@@ -79,7 +70,10 @@ public:
 		}else{
 			return SyscallError.Failcopter;
 		}*/
-		return SyscallError.Failcopter;
+		kprintfln!("open called {}")(params.path);
+		ret = RamFS.userOpen(params.path, Access.Read | Access.Write);
+		kprintfln!("returning {}")(ret);
+		return SyscallError.OK;
 	}
 }
 

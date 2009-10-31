@@ -1,64 +1,53 @@
 module libos.libconsole;
 
 import user.syscall;
-import user.console;
+public import user.console;
+import user.ramfs;
 
 struct Console {
 static:
 
-	enum Color : ubyte {
-		Black			= 0x00,
-		Blue			= 0x01,
-		Green			= 0x02,
-		Cyan			= 0x03,
-		Red				= 0x04,
-		Magenta			= 0x05,
-		Yellow			= 0x06,
-		LightGray		= 0x07,
-		Gray			= 0x08,
-		LightBlue		= 0x09,
-		LightGreen		= 0x0A,
-		LightCyan		= 0x0B,
-		LightRed		= 0x0C,
-		LightMagenta	= 0x0D,
-		LightYellow		= 0x0E,
-		White			= 0x0F
-	}
-	
+	// The default color.
+	const ubyte DEFAULTCOLORS = Color.LightGray;
+
+	// The width of a tab
+	const auto TABSTOP = 4;
+
 	void initialize() {
 
-		requestConsole(&cinfo);
+		video = open("/dev/video"); 
 
-		if (cinfo.buffer is null) {
-			// boo
-		}
+		videoBuffer = cast(ubyte*)video;
 
-		_xpos = 0;
-		_ypos = 0;
+		// Get video info
+		videoInfo = cast(MetaData*)videoBuffer;
+
+		// Go to actual video buffer
+		videoBuffer += 4096;
 	}
 
 	void putChar(char c) {
 		if (c == '\t') {
-			_xpos += TABSTOP;
+			videoInfo.xpos += TABSTOP;
 		}
 		else if (c != '\n' && c != '\r') {
-			ubyte* ptr = cast(ubyte*)cinfo.buffer;
-			ptr += (_xpos + (_ypos * cinfo.width)) * 2;
+			ubyte* ptr = cast(ubyte*)videoBuffer;
+			ptr += (videoInfo.xpos + (videoInfo.ypos * videoInfo.width)) * 2;
 
 			// Set the current piece of video memory to the character
 			*(ptr) = c & 0xff;
-			*(ptr + 1) = _attr;
+			*(ptr + 1) = videoInfo.colorAttribute;
 
 			// Increment
-			_xpos++;
+			videoInfo.xpos++;
 		}
 
 		// check for end of line, or newline
-		if (c == '\n' || c == '\r' || _xpos >= cinfo.width) {
-			_xpos = 0;
-			_ypos++;
+		if (c == '\n' || c == '\r' || videoInfo.xpos >= videoInfo.width) {
+			videoInfo.xpos = 0;
+			videoInfo.ypos++;
 
-			while (_ypos >= cinfo.height) {
+			while (videoInfo.ypos >= videoInfo.height) {
 				scroll(1);
 			}
 		}
@@ -71,113 +60,108 @@ static:
 	}
 
 	void clear() {
-		ubyte* ptr = cast(ubyte*)cinfo.buffer;
+		ubyte* ptr = cast(ubyte*)videoBuffer;
 
-		for (int i; i < cinfo.width * cinfo.height * 2; i += 2) {
+		for (int i; i < videoInfo.width * videoInfo.height * 2; i += 2) {
 			*(ptr + i) = 0x00;
-			*(ptr + i + 1) = _attr;
+			*(ptr + i + 1) = videoInfo.colorAttribute;
 		}
 
-		_xpos = 0;
-		_ypos = 0;
+		videoInfo.xpos = 0;
+		videoInfo.ypos = 0;
 	}
 
 	void scroll(uint numLines) {
-		ubyte* ptr = cast(ubyte*)cinfo.buffer;
+		ubyte* ptr = cast(ubyte*)videoBuffer;
 
-		if (numLines >= cinfo.height) {
+		if (numLines >= videoInfo.height) {
 			clear();
 			return;
 		}
 
 		int cury = 0;
 		int offset1 = 0;
-		int offset2 = numLines * cinfo.width;
+		int offset2 = numLines * videoInfo.width;
 
 		// Go through and shift the correct amount
-		for ( ; cury <= cinfo.height - numLines; cury++) {
-			for (int curx = 0; curx < cinfo.height; curx++) {
+		for ( ; cury <= videoInfo.height - numLines; cury++) {
+			for (int curx = 0; curx < videoInfo.width; curx++) {
 				*(ptr + (curx + offset1) * 2) 
 					= *(ptr + (curx + offset1 + offset2) * 2);
 				*(ptr + (curx + offset1) * 2 + 1) 
 					= *(ptr + (curx + offset1 + offset2) * 2 + 1);
 			}
 
-			offset1 += cinfo.width;
+			offset1 += videoInfo.width;
 		}
 
 		// clear remaining lines
-		for ( ; cury <= cinfo.height; cury++) {
-			for (int curx = 0; curx < cinfo.width; curx++) {
+		for ( ; cury <= videoInfo.height; cury++) {
+			for (int curx = 0; curx < videoInfo.width; curx++) {
 				*(ptr + (curx + offset1) * 2) = 0x00;
 				*(ptr + (curx + offset1) * 2 + 1) = 0x00;
 			}
 		}
 
-		_ypos -= numLines;
-		if (_ypos < 0) {
-			_ypos = 0;
+		videoInfo.ypos -= numLines;
+		if (videoInfo.ypos < 0) {
+			videoInfo.ypos = 0;
 		}
 	}
 
 	void position(uint x, uint y) {
-		_xpos = x;
-		_ypos = y;
+		videoInfo.xpos = x;
+		videoInfo.ypos = y;
 
-		if (_xpos >= cinfo.width) {
-			_xpos = cinfo.width - 1;
+		if (videoInfo.xpos >= videoInfo.width) {
+			videoInfo.xpos = videoInfo.width - 1;
 		}
 
-		if (_ypos >= cinfo.height) {
-			_ypos = cinfo.height - 1;
+		if (videoInfo.ypos >= videoInfo.height) {
+			videoInfo.ypos = videoInfo.height - 1;
 		}
 	}
 
 	void reset() {
-		_attr = DEFAULTCOLORS;
+		videoInfo.colorAttribute = DEFAULTCOLORS;
 		clear();
 	}
 
 	void resetColor() {
-		_attr = DEFAULTCOLORS;
+		videoInfo.colorAttribute = DEFAULTCOLORS;
 	}
 
 	void forecolor(Color clr) {
-		_attr = (_attr & 0xf0) | clr; 
+		videoInfo.colorAttribute = (videoInfo.colorAttribute & 0xf0) | clr; 
 	}
 
 	Color forecolor() {
-		ubyte clr = _attr & 0xf;
+		ubyte clr = videoInfo.colorAttribute & 0xf;
 		return cast(Color)clr;
 	}
 
 	void backcolor(Color clr) {
-		_attr = (_attr & 0x0f) | (clr << 4);
+		videoInfo.colorAttribute = (videoInfo.colorAttribute & 0x0f) | (clr << 4);
 	}
 
 	Color backcolor() {
-		ubyte clr = _attr & 0xf0;
+		ubyte clr = videoInfo.colorAttribute & 0xf0;
 		clr >>= 4;
 		return cast(Color)clr;
 	}
 
 	uint width() {
-		return cinfo.width;
+		return videoInfo.width;
 	}
 
 	uint height() {
-		return cinfo.height;
+		return videoInfo.height;
 	}
 
 private:
 
-	ConsoleInfo cinfo;
-
-	int _ypos;
-	int _xpos;
-
-	ubyte _attr = DEFAULTCOLORS;
-
-	const ubyte DEFAULTCOLORS = Color.LightGray;
-	const ubyte TABSTOP = 4;
+	MetaData* videoInfo;
+	
+	Gib video;
+	ubyte* videoBuffer;
 }

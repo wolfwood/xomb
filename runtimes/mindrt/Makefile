@@ -1,4 +1,8 @@
-mindrt.a:
+drt0.a: entry.d mindrt.a
+	ldc -nodefaultlib -I../../. -Imindrt/. -c entry.d -ofdsss_objs/O/runtime.entry.o;
+	ar rcs drt0.a dsss_objs/O/*.o
+
+mindrt.a: object.d invariant.d dstubs.d util.d
 	mkdir -p dsss_imports;
 	mkdir -p dsss_objs;
 	mkdir -p dsss_objs/G;
@@ -43,6 +47,5 @@ mindrt.a:
 	ldc -nodefaultlib -Imindrt/. -c std/typeinfo/ti_ushort.d -ofdsss_objs/G/runtime.std.typeinfo.ti_ushort.o;
 	ldc -nodefaultlib -Imindrt/. -c std/typeinfo/ti_void.d -ofdsss_objs/G/runtime.std.typeinfo.ti_void.o;
 	ldc -nodefaultlib -Imindrt/. -c std/typeinfo/ti_wchar.d -ofdsss_objs/G/runtime.std.typeinfo.ti_wchar.o;
-	ldc -nodefaultlib -Imindrt/. -c entry.d -ofdsss_objs/O/runtime.entry.o;
 	ar rcs mindrt.a dsss_objs/G/*.o
-	ar rcs drt0.a dsss_objs/O/*.o
+

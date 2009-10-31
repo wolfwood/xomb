@@ -195,6 +195,57 @@ public:
 		indexLevel4 = vAddr & 0x1ff;
 	}
 
+	const ulong MAX_USER_GIB = (256 * 512);
+	void* allocUserGib(ulong gibIndex) {
+		if (gibIndex > MAX_USER_GIB) {
+			return cast(void*)-1;
+		}
+
+		// Calculate address
+		void* gibAddr = cast(void*)(GIB_SIZE * gibIndex); 
+
+		// Create PML2 for this gib (sets present bits and allocates tables)
+		ulong indexL4, indexL3, indexL2, indexL1;
+		translateAddress(gibAddr, indexL1, indexL2, indexL3, indexL4);
+		PageLevel3* pl3 = root.getOrCreateTable(indexL4, true);
+		PageLevel2* pl2 = pl3.getOrCreateTable(indexL3, true);
+
+		// This is to ensure canonical addressing (high memory vs low)
+		if (cast(ulong)gibAddr >= 0x800000000000) {
+			gibAddr = cast(void*)(cast(ulong)gibAddr | 0xffff000000000000);
+		}
+
+		// Return this gib address
+		return gibAddr;
+	}
+
+	ErrorVal mapGib(void* gib, void* to) {
+		// Get the address of the gib, and find its PL3 and PL2
+		ulong indexL4, indexL3, indexL2, indexL1;
+		translateAddress(gib, indexL1, indexL2, indexL3, indexL4);
+		PageLevel3* pl3 = root.getTable(indexL4);
+		if (pl3 is null) {
+			return ErrorVal.Fail;
+		}
+
+		ulong indexL4_to, indexL3_to, indexL2_to, indexL1_to;
+		translateAddress(to, indexL1_to, indexL2_to, indexL3_to, indexL4_to);
+
+		PageLevel3* pl3_to = root.getTable(indexL4_to);
+		if (pl3_to is null) {
+			return ErrorVal.Fail;
+		}
+		PageLevel2* pl2_to = pl3_to.getTable(indexL3_to);
+		if (pl2_to is null) {
+			return ErrorVal.Fail;
+		}
+
+		pl3.entries[indexL3].pml = pl3_to.entries[indexL3_to].pml;
+		pl3.entries[indexL3].us = 1;
+
+		return ErrorVal.Success;
+	}
+
 	// Return an address to a new gib (kernel)
 	ulong nextGib = (256 * 512);
 	const ulong MAX_GIB = (512 * 512);

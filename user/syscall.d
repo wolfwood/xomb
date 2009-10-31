@@ -48,7 +48,7 @@ alias Tuple!
 	int,			// allocPage
 	void,			// exit
 	int,				// fork
-	int     // open
+	Gib     // open
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -57,7 +57,6 @@ struct AddArgs {
 }
 
 struct RequestConsoleArgs {
-	ConsoleInfo* cinfo;
 }
 
 struct AllocPageArgs {
@@ -73,7 +72,6 @@ struct ForkArgs {
 
 struct OpenArgs {
 	char[] path;
-	Inode** node;
 }
 
 // XXX: This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason

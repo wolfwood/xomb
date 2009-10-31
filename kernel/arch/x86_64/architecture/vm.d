@@ -33,6 +33,11 @@ public:
 		return Paging.allocGib();
 	}
 
+	// This function will take the "gib" specified and map it to the gib determined by "to".
+	ErrorVal mapGib(void* gib, void* to) {
+		return Paging.mapGib(gib, to);
+	}
+
 	ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
 		return Paging.mapRegion(gib, physAddr, regionLength);
 	}

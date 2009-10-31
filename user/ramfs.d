@@ -1,6 +1,18 @@
 
 module user.ramfs;
 
+alias void* Gib;
+
+
+
+
+
+
+
+
+
+
+// BLEH
 	
 alias void* PagePtr;
 

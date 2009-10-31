@@ -16,19 +16,23 @@ import libos.ramfs;
 void main() {
 
 	Console.initialize();
-	Console.backcolor = Console.Color.Black; 
-	Console.forecolor = Console.Color.Green;
-	Console.clear();
+	Console.backcolor = Color.Black; 
+	Console.forecolor = Color.Green;
 
-	Console.putString("Welcome to XOmB\n\n");
+	Console.putString("\nWelcome to XOmB\n");
+	Console.putString("---------------\n\n");
 
-	int fd = Open("/boot/text", 0, 0);
+	Console.backcolor = Color.Black; 
+	Console.forecolor = Color.Red;
 
-	char[128] str;
+	Console.putString("What to do...\n");
 
-	while(read(fd, str, str.length) == str.length){
-		Console.putString(str);
-	}
+	//char[128] str;
 
-	for (;;) {}
+//	while(read(fd, str, str.length) == str.length){
+//		Console.putString(str);
+//	}
+
+	for(;;) {}
+
 }

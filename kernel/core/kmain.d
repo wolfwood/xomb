@@ -102,7 +102,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	Scheduler.schedule();
 
-	Gib video2 = RamFS.locate("/dev/video");
+	Gib video2 = RamFS.open("/dev/video", Access.Read | Access.Write);
 	RamFS.seek(video2, 4096);
 	const ubyte[] foo = cast(ubyte[])['a', 42, 'b', 42, 'c', 42, '!', 42, '!', 42];
 	RamFS.write(video2, foo.ptr, foo.length);

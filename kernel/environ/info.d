@@ -11,6 +11,8 @@ import kernel.core.error;
 
 import kernel.system.segment;
 
+import kernel.filesystem.ramfs;
+
 import architecture.context;
 
 import kernel.sched.roundrobin;
@@ -67,6 +69,10 @@ struct Environment {
 
 	void* mapRegion(void* physAddr, ulong length) {
 		return context.mapRegion(physAddr, length);
+	}
+
+	Gib allocGib() {
+		return context.allocGib();
 	}
 
 	void execute() {
