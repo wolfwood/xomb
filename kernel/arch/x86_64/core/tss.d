@@ -21,6 +21,7 @@ import kernel.arch.x86_64.core.gdt;
 
 // Import ErrorVal
 import kernel.core.error;
+import kernel.core.kprintf;
 
 struct TSS {
 static:
@@ -39,6 +40,7 @@ static:
 	// To reset the TSS, you will need to reset the Segment Type to
 	// AvailableTSS.
 	void install() {
+		kprintfln!("TSS BASE {}")(&tss);
 		GDT.setSystemSegment((tssBase >> 3), 0x67, (cast(ulong)&tss), GDT.SystemSegmentType.AvailableTSS, 0, true, false, false);
 		asm {
 			ltr tssBase;

@@ -52,6 +52,7 @@ public:
 		asm {
 			sti;
 		}
+
 		printToLog("Cpu: Enabled Interrupts", ErrorVal.Success);
 
 		return ErrorVal.Success;

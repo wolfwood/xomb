@@ -113,7 +113,7 @@ static:
 			g = granularity;
 		}
 
-		with(entries[index].systemSegmentHi) {
+		with(entries[index+1].systemSegmentHi) {
 			baseHi = (base >> 32) & 0xffffffff;
 		}
 	}

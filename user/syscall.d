@@ -97,7 +97,7 @@ SyscallRetTypes[ID].stringof ~ ` ` ~ SyscallNames[ID] ~ `(Tuple!` ~ typeof(mixin
 
 	// check err!
 
-	return ret;
+	` ~ (is(SyscallRetTypes[ID] == void) ? "" : "return ret;") ~ `
 }`;
 }
 
