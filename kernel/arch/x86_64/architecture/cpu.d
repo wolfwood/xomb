@@ -38,6 +38,7 @@ public:
 
 //		Paging.install();
 //		printToLog("Cpu: Enabling Paging", ErrorVal.Success);
+		printToLog("Cpu: Verifying", verify());
 
 		GDT.install();
 		printToLog("Cpu: Enabling GDT", ErrorVal.Success);
@@ -207,6 +208,46 @@ private:
 		}
 	}
 
+	uint cpuidDX(uint func) {
+		asm {
+			naked;
+			mov EAX, EDI;
+			cpuid;
+			mov EAX, EDX;
+			ret;
+		}
+	}
+
+	uint cpuidAX(uint func) {
+		asm {
+			naked;
+			mov EAX, EDI;
+			cpuid;
+			mov EAX, EBX;
+			ret;
+		}
+	}
+
+	uint cpuidBX(uint func) {
+		asm {
+			naked;
+			mov EAX, EDI;
+			cpuid;
+			mov EAX, EBX;
+			ret;
+		}
+	}
+
+	uint cpuidCX(uint func) {
+		asm {
+			naked;
+			mov EAX, EDI;
+			cpuid;
+			mov EAX, ECX;
+			ret;
+		}
+	}
+
 	// Will create and install a new kernel stack
 	// Note: You have to preserve the current stack
 	ErrorVal installStack() {
@@ -231,6 +272,21 @@ private:
 			mov RSP, RAX;
 		}
 
+		return ErrorVal.Success;
+	}
+
+	ErrorVal verify() {
+		if(!(cpuidDX(0x80000001) & 0b100000000000)) {
+			kprintfln!("Your computer is not cool enough. We need SYSCALL and SYSRET.")();
+			return ErrorVal.Fail;
+		}
+
+//		uint pmu_info = cpuidAX(0xA);
+//		pmu_info &= 0xFF;
+
+//		kprintfln!("code: {x}\n")(pmu_info);
+
+//		for(;;){}
 		return ErrorVal.Success;
 	}
 }
