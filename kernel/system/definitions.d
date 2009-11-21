@@ -67,6 +67,15 @@ struct Disk {
 // This structure stores information about the processors available
 // in the system.
 struct Processor {
+	Cache L1Cache;
+	Cache LLCache;
+}
+
+// This structure stores information about processor caches available
+struct Cache {
+	uint associativity;
+	uint length;
+	uint blockSize;
 }
 
 
