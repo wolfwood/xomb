@@ -7,11 +7,21 @@ import kernel.mem.heap;
 
 import kernel.core.kprintf;
 
+import kernel.environ.info;
+import kernel.environ.scheduler;
+
 import architecture.vm;
 
 import user.ramfs;
 
 alias void* Gib;
+
+enum Access : uint {
+	Create = 1,
+	Read = 2,
+	Write = 4,
+	Append = 8
+}
 
 int strcmp(char[] s1, char[] s2) {
 	if (s1.length != s2.length) {
@@ -63,38 +73,49 @@ struct RamFS{
 		return ErrorVal.Success;
 	}
 
-	// WILKIE STUFF //
-	Gib create(char[] filename) {
-		Gib foo;
-		kprintfln!("createFile: creating {}...")(filename);
+	ulong metadataLength() {
+		return VirtualMemory.getPageSize();
+	}
 
+	// WILKIE STUFF //
+	Gib userOpen(char[] filename, Access flags) {
+		Gib kernelGib = open(filename, flags);
+		kprintfln!("kernel gib for this file: {}")(kernelGib);
+
+		// Map into userspace gib region
+		Environment* current = Scheduler.current;
+		Gib userGib = current.allocGib();
+		kprintfln!("user gib for this file: {}")(userGib);
+
+		VirtualMemory.mapGib(userGib, kernelGib);
+		
+		Gib tempGib = userGib;
+
+		seek(tempGib, metadataLength);
+		const ubyte[] foo = cast(ubyte[])['a', 42, 'b', 42, 'c', 42, '!', 42, '!', 42];
+		write(tempGib, foo.ptr, foo.length);
+
+		return userGib;
+	}
+
+	void userClose(char[] filename, Access flags) {
+	}
+
+	Gib open(char[] filename, Access flags) {
+		Gib foo;
 		foo = locate(filename);
 
 		if (foo is null) {
-			if (streq(filename, "/dev/video")) {
-				kprintfln!("createFile: creating video file!!")();
-				// it is video
-				kprintfln!("createFile: creating video file.")();
-				foo = VirtualMemory.allocGib();
-				videoFile = foo;
-			}
-			else {
-				// look up module, attach this module to this file
-				for(uint i; i < System.numModules; i++) {
-					uint len = System.moduleInfo[i].nameLength;
-					kprintfln!("comparing {} {}")(System.moduleInfo[i].name[0..len], filename);
-					if (streq(System.moduleInfo[i].name[0..len], filename)) {
-						kprintfln!("createFile: creating module file.")();
-						foo = VirtualMemory.allocGib();
-						modules[i] = foo;
-						break;
-					}
-				}
+			if (flags & Access.Create) {
+				foo = create(filename);
 			}
 		}
-		kprintfln!("Gib: {}")(foo);
+		else {
+			if (flags & Access.Create) {
+				// XXX: delete Gib and recreate
+			}
+		}
 
-		// return kernel address for file
 		return foo;
 	}
 
@@ -143,6 +164,43 @@ struct RamFS{
 		return length;
 	}
 
+private:
+	
+	Gib videoFile;
+	Gib modules[System.moduleInfo.length];
+
+	Gib create(char[] filename) {
+		Gib foo;
+		kprintfln!("createFile: creating {}...")(filename);
+
+		foo = locate(filename);
+
+		if (foo is null) {
+			if (streq(filename, "/dev/video")) {
+				kprintfln!("createFile: creating video file!!")();
+				foo = VirtualMemory.allocGib();
+				videoFile = foo;
+			}
+			else {
+				// look up module, attach this module to this file
+				for(uint i; i < System.numModules; i++) {
+					uint len = System.moduleInfo[i].nameLength;
+					kprintfln!("comparing {} {}")(System.moduleInfo[i].name[0..len], filename);
+					if (streq(System.moduleInfo[i].name[0..len], filename)) {
+						kprintfln!("createFile: creating module file.")();
+						foo = VirtualMemory.allocGib();
+						modules[i] = foo;
+						break;
+					}
+				}
+			}
+		}
+		kprintfln!("Gib: {}")(foo);
+
+		// return kernel address for file
+		return foo;
+	}
+
 	Gib locate(char[] filename) {
 		// locate the file from the path
 		Gib ret;
@@ -165,10 +223,6 @@ struct RamFS{
 		return ret;
 	}
 
-private:
-	
-	Gib videoFile;
-	Gib modules[System.moduleInfo.length];
 
 	// OLD STUFF //
 	

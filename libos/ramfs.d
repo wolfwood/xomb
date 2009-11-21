@@ -6,6 +6,7 @@ import user.syscall;
 
 extern(C) void* memcpy(void*, void*, size_t);
 
+
 struct FD{
 	Inode* inode;
 	ulong offset;
@@ -135,3 +136,4 @@ isatty(fd)
 {
   return (1);
 	}*/
+

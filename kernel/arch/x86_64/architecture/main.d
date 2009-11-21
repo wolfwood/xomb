@@ -31,8 +31,7 @@ import kernel.system.info;
 // We need to set up the page allocator
 import kernel.mem.heap;
 
-struct Architecture
-{
+struct Architecture {
 static:
 public:
 

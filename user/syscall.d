@@ -54,10 +54,10 @@ alias Tuple!
 	int,			// allocPage
 	void,			// exit
 	int,				// fork
-	int,     // open
 	int,     // vfork()
 	void,    // YieldHwThread
 	void    // returnHwThread
+	Gib     // open
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -66,7 +66,6 @@ struct AddArgs {
 }
 
 struct RequestConsoleArgs {
-	ConsoleInfo* cinfo;
 }
 
 struct AllocPageArgs {
@@ -82,7 +81,6 @@ struct ForkArgs {
 
 struct OpenArgs {
 	char[] path;
-	Inode** node;
 }
 
 struct CanHasHwThreadArgs {
@@ -119,7 +117,7 @@ SyscallRetTypes[ID].stringof ~ ` ` ~ SyscallNames[ID] ~ `(Tuple!` ~ typeof(mixin
 
 	// check err!
 
-	return ret;
+	` ~ (is(SyscallRetTypes[ID] == void) ? "" : "return ret;") ~ `
 }`;
 }
 

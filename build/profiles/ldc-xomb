@@ -10,7 +10,7 @@ objext=o
 version=LDC
 
 [compile]
-cmd=ldc -nodefaultlib -m64 -code-model=large -g -I../kernel/arch/x86_64/ -I../kernel/runtime/ -c $i
+cmd=ldc -nodefaultlib -mattr=-sse -m64 -code-model=large -g -I../kernel/arch/x86_64/ -I../kernel/runtime/ -c $i
 
 [link]
 cmd=#
