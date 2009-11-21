@@ -27,7 +27,7 @@ public:
 	ErrorVal initialize() {
 		// Determine capabilites
 		ulong ia32_misc_enable = Cpu.readMSR(0x1A0);
-		if (!((ia32_misc_enable & 0b01000000) > 0)) {
+		if (!((ia32_misc_enable & 0b10000000) > 0)) {
 			return ErrorVal.Fail;
 		}
 
