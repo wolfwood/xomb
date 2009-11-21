@@ -42,3 +42,4 @@ static:
 	}
 }
 
+public import HeapImplementation = kernel.mem.bitmap;
