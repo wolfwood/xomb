@@ -22,6 +22,10 @@ import kernel.core.kprintf;
 // For heap allocation
 import kernel.mem.heap;
 
+//For System info struct?
+import kernel.system.info;
+import kernel.system.definitions;
+
 private {
 	extern(C) {
 		extern ubyte stack;
@@ -193,8 +197,242 @@ public:
 
 		return ret;
 	}
+	
+	/*
+		added by pmcclory.
+		calls cpuid with EAX set as 0x2.
+		calls examineRegister on eax, ebx, and ecx to set cache info
+	*/
+	void getCacheInfo() {
+	     uint eax_ret = cpuidAX(0x2);
+	     uint ebx_ret, ecx_ret, edx_ret;
+	     uint count = eax_ret & 0x000000FF;
+	     uint i=0;
+	     uint temp;
+	     while(i < count-1) {
+	     	    temp = (eax_ret >> 31) & 0x1;
+		    if(temp == 1) {
+		    	    examineRegister(eax_ret);
+		    }
+
+		    ebx_ret = getBX();
+		    temp = (ebx_ret >> 31) & 0x1;
+		    if(temp == 1) {
+		    	    examineRegister(ebx_ret);
+		    }
+
+		    ecx_ret = getCX();
+		    temp = (ecx_ret >> 31) & 0x1;
+		    if(temp == 1) {
+		    	    examineRegister(ecx_ret);
+		    }
+
+		    edx_ret = getDX();
+		    temp = (edx_ret >> 31) & 0x1;
+		    if(temp == 1) {
+		    	    examineRegister(edx_ret);
+		    }
+
+		    eax_ret = cpuidAX(0x2);
+		    i++;	     	     
+	     }
+	}
 
 private:
+	
+	/*
+	added by pmcclory.
+	      loops through the bytes of the given register (should be set by a call to CPUID with EAX set to 0x2).
+	      checks to see if it matches cache entries (from the Intel System programmers guide), sets appropriate fields.
+	*/
+	void examineRegister(uint reg) {
+	     uint i;
+	     uint temp;
+	
+	     for(i=0; i<4; i++) {
+	     	      temp = reg >> (8 * i);
+		      temp = temp & 0xFF;
+		      switch(temp) {
+		      		   case 0x06:
+				   	System.processorInfo[Cpu.identifier].L1ICache.length = 8192;
+					System.processorInfo[Cpu.identifier].L1ICache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L1ICache.blockSize = 32;
+					break;
+				   case 0x08:
+				   	System.processorInfo[Cpu.identifier].L1ICache.length = 16384;
+					System.processorInfo[Cpu.identifier].L1ICache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L1ICache.blockSize = 32;
+					break;
+				   case 0x09:
+				   	System.processorInfo[Cpu.identifier].L1ICache.length = 16384;
+					System.processorInfo[Cpu.identifier].L1ICache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L1ICache.blockSize = 64;
+					break;
+				   case 0x0A:
+				   	System.processorInfo[Cpu.identifier].L1DCache.length = 8192;
+					System.processorInfo[Cpu.identifier].L1DCache.associativity = 2;
+					System.processorInfo[Cpu.identifier].L1DCache.blockSize = 32;
+					break;
+				   case 0x0C:
+				   	System.processorInfo[Cpu.identifier].L1DCache.length = 16384;
+					System.processorInfo[Cpu.identifier].L1DCache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L1DCache.blockSize = 32;
+					break;
+				   case 0x0D:
+				   	System.processorInfo[Cpu.identifier].L1DCache.length = 16384;
+					System.processorInfo[Cpu.identifier].L1DCache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L1DCache.blockSize = 64;
+					break;
+				   case 0x0E:
+				   	System.processorInfo[Cpu.identifier].L1DCache.length = 24576;
+					System.processorInfo[Cpu.identifier].L1DCache.associativity = 6;
+					System.processorInfo[Cpu.identifier].L1DCache.blockSize = 64;
+					break;
+				   case 0x21:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 262144;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 64;
+					break;
+				   case 0x2C:
+				   	System.processorInfo[Cpu.identifier].L1DCache.length = 32768;
+					System.processorInfo[Cpu.identifier].L1DCache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L1DCache.blockSize = 64;
+					break;
+				   case 0x30:
+				   	System.processorInfo[Cpu.identifier].L1ICache.length = 32768;
+					System.processorInfo[Cpu.identifier].L1ICache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L1ICache.blockSize = 64;
+					break;
+				   case 0x41:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 131072;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 32;
+					break;
+				   case 0x42:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 262144;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 32;
+					break;
+				   case 0x43:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 524288;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 32;
+					break;
+				   case 0x44:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 1048576;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 32;
+					break;
+				   case 0x45:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 2097152;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 32;
+					break;
+				   case 0x48:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 3145728;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 12;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 64;
+					break;
+				   case 0x60:
+				   	System.processorInfo[Cpu.identifier].L1DCache.length = 16384;
+					System.processorInfo[Cpu.identifier].L1DCache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L1DCache.blockSize = 64;
+					break;
+				   case 0x66:
+				   	System.processorInfo[Cpu.identifier].L1DCache.length = 8192;
+					System.processorInfo[Cpu.identifier].L1DCache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L1DCache.blockSize = 64;
+					break;
+				   case 0x67:
+				   	System.processorInfo[Cpu.identifier].L1DCache.length = 16384;
+					System.processorInfo[Cpu.identifier].L1DCache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L1DCache.blockSize = 64;
+					break;
+				   case 0x68:
+				   	System.processorInfo[Cpu.identifier].L1DCache.length = 32768;
+					System.processorInfo[Cpu.identifier].L1DCache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L1DCache.blockSize = 64;
+					break;
+				   case 0x78:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 1048576;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 64;
+					break;
+				   case 0x79:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 131072;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 64;
+					System.processorInfo[Cpu.identifier].L2Cache.linesPerSector = 2;
+					break;
+				   case 0x7A:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 262144;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 64;
+					System.processorInfo[Cpu.identifier].L2Cache.linesPerSector = 2;
+				   	break;
+				   case 0x7B:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 524288;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 64;
+					System.processorInfo[Cpu.identifier].L2Cache.linesPerSector = 2;
+				   	break;
+				   case 0x7C:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 1048576;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 64;
+					System.processorInfo[Cpu.identifier].L2Cache.linesPerSector = 2;
+				   	break;
+				   case 0x7D:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 2097152;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 64;
+					break;
+				   case 0x7F:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 524288;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 2;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 64;
+					break;
+				   case 0x80:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 524288;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 64;
+					break;
+				   case 0x82:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 262144;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 3;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 32;
+					break;
+				   case 0x83:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 524288;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 32;
+					break;
+				   case 0x84:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 1048576;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 32;
+					break;
+				   case 0x85:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 2097152;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 32;
+					break;
+				   case 0x86:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 524288;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 4;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 64;
+					break;
+				   case 0x87:
+				   	System.processorInfo[Cpu.identifier].L2Cache.length = 1048576;
+					System.processorInfo[Cpu.identifier].L2Cache.associativity = 8;
+					System.processorInfo[Cpu.identifier].L2Cache.blockSize = 64;
+					break;
+		      		   default:
+					break;
+		      }
+	     }
+	     return;
+	}
 
 	void enableInterrupts() {
 		asm {
@@ -223,7 +461,7 @@ private:
 			naked;
 			mov EAX, EDI;
 			cpuid;
-			mov EAX, EBX;
+			//mov EAX, EBX;
 			ret;
 		}
 	}
@@ -246,6 +484,30 @@ private:
 			mov EAX, ECX;
 			ret;
 		}
+	}
+
+	uint getBX() {
+	     asm {
+	     	 naked;
+		 mov EAX, EBX;
+		 ret;
+	     }
+	}
+
+	uint getCX() {
+	     asm {
+	     	 naked;
+		 mov EAX, ECX;
+		 ret;
+	     }
+	}
+
+	uint getDX() {
+	     asm {
+	     	 naked;
+		 mov EAX, EDX;
+		 ret;
+	     }
 	}
 
 	// Will create and install a new kernel stack
