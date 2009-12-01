@@ -14,6 +14,7 @@ import kernel.arch.x86_64.core.tss;
 import kernel.arch.x86_64.core.idt;
 import kernel.arch.x86_64.core.paging;
 import architecture.syscall;
+import architecture.cpu;
 
 // To return error values
 import kernel.core.error;
@@ -35,24 +36,6 @@ struct Architecture {
 static:
 public:
 	
-	// This function will clear the BSS
-	ErrorVal initZeroes() {
-		// Zero BSS
-		ubyte* bss = cast(ubyte*)(LinkerScript.bss);
-		ubyte* ebss = cast(ubyte*)(LinkerScript.ebss);
-
-		kprintfln!("bss: {}")(bss);
-		kprintfln!("ebss: {}")(ebss);
-		while(bss != ebss) {
-			*bss = 0;
-			bss++;
-		}
-
-		kprintfln!("Booting")();
-
-		return ErrorVal.Success;
-	}
-
 	// This function will initialize the architecture upon boot
 	ErrorVal initialize() {
 		// Reading from the linker script
@@ -72,6 +55,9 @@ public:
 		// Interrupt Descriptor Table
 		Log.print("Architecture: Initializing IDT");
 		Log.result(IDT.initialize());
+
+		Log.print("Cpu: Polling Cache Info");
+		Log.result(Cpu.getCacheInfo());
 
 		Console.virtualAddress = cast(void*)(cast(ubyte*)System.kernel.virtualStart + 0xB8000);
 
