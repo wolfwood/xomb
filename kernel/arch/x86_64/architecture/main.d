@@ -34,23 +34,44 @@ import kernel.mem.heap;
 struct Architecture {
 static:
 public:
+	
+	// This function will clear the BSS
+	ErrorVal initZeroes() {
+		// Zero BSS
+		ubyte* bss = cast(ubyte*)(LinkerScript.bss);
+		ubyte* ebss = cast(ubyte*)(LinkerScript.ebss);
+
+		kprintfln!("bss: {}")(bss);
+		kprintfln!("ebss: {}")(ebss);
+		while(bss != ebss) {
+			*bss = 0;
+			bss++;
+		}
+
+		kprintfln!("Booting")();
+
+		return ErrorVal.Success;
+	}
 
 	// This function will initialize the architecture upon boot
 	ErrorVal initialize() {
-		// Read from the linker script
+		// Reading from the linker script
 		// We want the length of the kernel module
 		System.kernel.start = cast(ubyte*)0x0;
 		System.kernel.length = LinkerScript.ekernel - LinkerScript.kernelVMA;
 		System.kernel.virtualStart = cast(ubyte*)LinkerScript.kernelVMA;
 
 		// Global Descriptor Table
-		printToLog("Architecture: Initializing GDT", GDT.initialize());
+		Log.print("Architecture: Initializing GDT");
+	   	Log.result(GDT.initialize());
 
 		// Task State Segment
-		printToLog("Architecture: Initializing TSS", TSS.initialize());
+		Log.print("Architecture: Initializing TSS");
+		Log.result(TSS.initialize());
 
 		// Interrupt Descriptor Table
-		printToLog("Architecture: Initializing IDT", IDT.initialize());
+		Log.print("Architecture: Initializing IDT");
+		Log.result(IDT.initialize());
 
 		Console.virtualAddress = cast(void*)(cast(ubyte*)System.kernel.virtualStart + 0xB8000);
 

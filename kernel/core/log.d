@@ -14,54 +14,84 @@ import kernel.core.error;
 //helps us print to the screen
 import kernel.core.kprintf;
 
-// a horizontal rule
-const char[] hr = "...........................................................................";
+struct Log {
+static:
+public:
 
-// this function prints a message and an error
-// to a log line on the screen.
-ErrorVal printToLog(char[] message, ErrorVal e) {
+	// a horizontal rule
+	const char[] hr = "...........................................................................";
 
-  //call the simpler function to print the message
-  printToLog(message);
+	// this function prints a message and an error
+	// to a log line on the screen.
+	ErrorVal print(char[] message) {
+		//call the simpler function to print the message
+		printToLog(message);
 
-  //now test the value
-  if(e == ErrorVal.Success) {
-	  printSuccess();
-  } else {
-	  printFail();
-  }
+		logDepth++;
+	
+		return ErrorVal.Success;
+	}
 
-  return e;
-}
+	ErrorVal result(ErrorVal e) {
+		//now test the value
+		logDepth--;
+		if(e == ErrorVal.Success) {
+			printSuccess();
+		} else {
+			printFail();
+		}
 
-//this function does most of the work
-//it just prints a string
-void printToLog(char[] message) {
-	Console.resetColors();
-  //there are 14 characters in our print string, so we need
-  //to stubtract them from the number of columns and the message
-  //length in order to print things out correctly
-	kprintf!("  .  {} {} [ ")(message, hr[0..65-message.length]);
-	Console.setColors(Color.Yellow, Color.Black);
-	kprintf!(".. ")();
-	Console.resetColors();
-	kprintf!("]")();
-}
+		return e;
+	}
 
-void printSuccess() {
-	int x, y;
-	Console.getPosition(x,y);
-	Console.setPosition(x-5,y);
+private:
 
-	Console.setColors(Color.Green, Color.Black);
-	kprintfln!(" OK ")();
-}
+	//this function does most of the work
+	//it just prints a string
+	void printToLog(char[] message) {
+		Console.resetColors();
+		//there are 14 characters in our print string, so we need
+		//to subtract them from the number of columns and the message
+		//length in order to print things out correctly
+		uint dots = (logDepth * 2) + 1;
+		kprintf!("  ")();
+		kprintf!("{}")(hr[0..dots]);
+		kprintf!("  {} {} [")(message, hr[0..66-message.length-dots]);
 
-void printFail() {
-	int x, y;
-	Console.getPosition(x,y);
-	Console.setPosition(x-5,y);
+		int x, y;
 
-	Console.setColors(Color.Red, Color.Black);
-	kprintfln!("FAIL")();
+		Console.getPosition(x,y);
+
+		xAtMessage = x;
+		yForDepth[logDepth] = Console.getGlobalY();
+
+		Console.setColors(Color.Yellow, Color.Black);
+		kprintf!(" .. ")();
+		Console.resetColors();
+		kprintf!("]\n")();
+	}
+
+	uint logDepth;
+	uint xAtMessage;
+	long yForDepth[16];
+
+	void printSuccess() {
+		printStatus(" OK ", Color.Green, Color.Black);
+	}
+
+	void printFail() {
+		printStatus("FAIL", Color.Red, Color.Black);
+	}
+
+	void printStatus(char[] message, Color fore, Color back) {
+		long gY = Console.getGlobalY();
+		int x,y;
+		int nY;
+		Console.getPosition(x,y);
+		nY = y - cast(int)(gY - yForDepth[logDepth]);
+		Console.setPosition(xAtMessage,nY);
+		Console.setColors(fore, back);
+		kprintfln!("{}")(message);
+		Console.setPosition(x,y);
+	}
 }

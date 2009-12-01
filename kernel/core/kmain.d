@@ -23,6 +23,9 @@ import kernel.system.bootinfo;
 // handle loading executables from modules
 import kernel.system.loader;
 
+// get basic info about the system
+import kernel.system.info;
+
 // Scheduler
 import kernel.environ.scheduler;
 
@@ -54,31 +57,38 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 		kprintf!("{}")(cast(char)0xcd);
 	}
 	//kprintfln!("--------------------------------------------------------------------------------")();
-	//printToLog(hr);
+	//Log.print(hr);
 
 	// 1. Bootloader Validation
-	printToLog("BootInfo: initialize()", BootInfo.initialize(bootLoaderID, data));
+	Log.print("BootInfo: initialize()");
+	Log.result(BootInfo.initialize(bootLoaderID, data));
 
 	// 2. Architecture Initialization
-	printToLog("Architecture: initialize()", Architecture.initialize());
+	Log.print("Architecture: initialize()");
+   	Log.result(Architecture.initialize());
 
 	// Initialize the kernel Heap
 	Heap.initialize();
 
 	// 2b. Paging Initialization
-	printToLog("VirtualMemory: initialize()", VirtualMemory.initialize());
+	Log.print("VirtualMemory: initialize()");
+   	Log.result(VirtualMemory.initialize());
 
 	// 2c. Paging Install
-	printToLog("VirtualMemory: install()", VirtualMemory.install());
+	Log.print("VirtualMemory: install()");
+	Log.result(VirtualMemory.install());
 
 	// 3. Processor Initialization
-	printToLog("Cpu: initialize()", Cpu.initialize());
+	Log.print("Cpu: initialize()");
+	Log.result(Cpu.initialize());
 
 	// 3b. RamFS Initialization
-	printToLog("RamFS: initialize()", RamFS.initialize());
+	Log.print("RamFS: initialize()");
+	Log.result(RamFS.initialize());
 
 	// 3c. Console Initialization
-	printToLog("Console: initialize()", Console.initialize());
+	Log.print("Console: initialize()");
+	Log.result(Console.initialize());
 
 	// 4. Timer Initialization
 	// LATER
@@ -87,13 +97,16 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	// LATER
 
 	// 6. Multiprocessor Initialization
-	printToLog("Multiprocessor: initialize()", Multiprocessor.initialize());
-	kprintfln!("Number of Cores: {}")(Multiprocessor.cpuCount);
+	Log.print("Multiprocessor: initialize()");
+	Log.result(Multiprocessor.initialize());
+	//kprintfln!("Number of Cores: {}")(Multiprocessor.cpuCount);
 
 	// 7. Syscall Initialization
-	printToLog("Syscall: initialize()", Syscall.initialize());
+	Log.print("Syscall: initialize()");
+	Log.result(Syscall.initialize());
 
-	printToLog("Multiprocessor: bootCores()", Multiprocessor.bootCores());
+	Log.print("Multiprocessor: bootCores()");
+	Log.result(Multiprocessor.bootCores());
 
 	// 7. Schedule
 	Scheduler.initialize();
@@ -106,6 +119,8 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	RamFS.seek(video2, 4096);
 	const ubyte[] foo = cast(ubyte[])['a', 42, 'b', 42, 'c', 42, '!', 42, '!', 42];
 	RamFS.write(video2, foo.ptr, foo.length);
+
+	//kprintfln!("L2Cache: assoc: {} blocksize: {} size: {}")(System.processorInfo[Cpu.identifier].L2Cache.associativity, System.processorInfo[Cpu.identifier].L2Cache.blockSize, System.processorInfo[Cpu.identifier].L2Cache.length);
 
 	Scheduler.execute();
 

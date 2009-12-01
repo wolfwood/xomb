@@ -39,26 +39,30 @@ public:
 
 	// This module will conform to the interface
 	ErrorVal initialize() {
+		Log.print("Cpu: Verifying");
+		Log.result(verify());
 
-//		Paging.install();
-//		printToLog("Cpu: Enabling Paging", ErrorVal.Success);
-		printToLog("Cpu: Verifying", verify());
+		Log.print("Cpu: Enabling GDT");
+		Log.result(GDT.install());
 
-		GDT.install();
-		printToLog("Cpu: Enabling GDT", ErrorVal.Success);
-		TSS.install();
-		printToLog("Cpu: Enabling TSS", ErrorVal.Success);
-		IDT.install();
-		printToLog("Cpu: Enabling IDT", ErrorVal.Success);
+		Log.print("Cpu: Enabling TSS");
+		Log.result(TSS.install());
 
-		installStack();
-		printToLog("Cpu: Installed Stack", ErrorVal.Success);
+		Log.print("Cpu: Enabling IDT");
+		Log.result(IDT.install());
+
+		Log.print("Cpu: Installing Stack");
+		Log.result(installStack());
 
 		asm {
 			sti;
 		}
 
-		printToLog("Cpu: Enabled Interrupts", ErrorVal.Success);
+		Log.print("Cpu: Enabled Interrupts");
+	   	Log.result(ErrorVal.Success);
+
+		Log.print("Cpu: Polling Cache Info");
+		Log.result(getCacheInfo());
 
 		return ErrorVal.Success;
 	}
@@ -203,39 +207,47 @@ public:
 		calls cpuid with EAX set as 0x2.
 		calls examineRegister on eax, ebx, and ecx to set cache info
 	*/
-	void getCacheInfo() {
-	     uint eax_ret = cpuidAX(0x2);
+	ErrorVal getCacheInfo() {
+	     uint eax_ret;
 	     uint ebx_ret, ecx_ret, edx_ret;
-	     uint count = eax_ret & 0x000000FF;
+	     uint count;
 	     uint i=0;
 	     uint temp;
-	     while(i < count-1) {
-	     	    temp = (eax_ret >> 31) & 0x1;
-		    if(temp == 1) {
+	     eax_ret = cpuidAX(0x2);
+		 ebx_ret = getBX();
+		 ecx_ret = getCX();
+		 edx_ret = getDX();
+		 count = eax_ret & 0x000000FF;
+		 //kprintfln!("count: {} eax: {x} ebx: {x} ecx: {x} edx: {x}")(count, eax_ret, ebx_ret, ecx_ret, edx_ret);
+	     do {
+			// In all fields, a 0 at the MSB will indicate that these are valid entries
+	     	temp = (eax_ret >> 31) & 0x1;
+		    if(temp == 0) {
 		    	    examineRegister(eax_ret);
 		    }
 
-		    ebx_ret = getBX();
 		    temp = (ebx_ret >> 31) & 0x1;
-		    if(temp == 1) {
+		    if(temp == 0) {
 		    	    examineRegister(ebx_ret);
 		    }
 
-		    ecx_ret = getCX();
 		    temp = (ecx_ret >> 31) & 0x1;
-		    if(temp == 1) {
+		    if(temp == 0) {
 		    	    examineRegister(ecx_ret);
 		    }
 
-		    edx_ret = getDX();
 		    temp = (edx_ret >> 31) & 0x1;
-		    if(temp == 1) {
+		    if(temp == 0) {
 		    	    examineRegister(edx_ret);
 		    }
 
 		    eax_ret = cpuidAX(0x2);
+		 	ebx_ret = getBX();
+			ecx_ret = getCX();
+			edx_ret = getDX();
 		    i++;	     	     
-	     }
+	     } while (i < count);
+		 return ErrorVal.Success;
 	}
 
 private:
@@ -250,7 +262,7 @@ private:
 	     uint temp;
 	
 	     for(i=0; i<4; i++) {
-	     	      temp = reg >> (8 * i);
+	     	  temp = reg >> (8 * i);
 		      temp = temp & 0xFF;
 		      switch(temp) {
 		      		   case 0x06:
@@ -461,7 +473,6 @@ private:
 			naked;
 			mov EAX, EDI;
 			cpuid;
-			//mov EAX, EBX;
 			ret;
 		}
 	}
@@ -548,7 +559,6 @@ private:
 
 //		kprintfln!("code: {x}\n")(pmu_info);
 
-//		for(;;){}
 		return ErrorVal.Success;
 	}
 }

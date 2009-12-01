@@ -80,6 +80,11 @@ public:
 	}
 
 	uint identifier() {
+		if (curCoreId == 0) {
+			// We have not initialized the LAPIC, therefore
+			// the boot processor is calling this function.
+			return 0;
+		}
 		return APICIdToLogicalID[getLocalAPICId()];
 	}
 
@@ -140,7 +145,7 @@ private:
 	Mutex apLock;
 
 	void startAP(ubyte apicID) {
-		printToLog("LocalAPIC: Starting AP");
+		Log.print("LocalAPIC: Starting AP");
 		//kprintfln!("Starting AP {}")(apicID);
 		apLock.lock();
 
@@ -170,7 +175,7 @@ private:
 		// Wait for the AP to boot
 		apLock.lock();
 		apLock.unlock();
-		printSuccess();
+		Log.result(ErrorVal.Success);
 	}
 
 	enum DeliveryMode {

@@ -39,12 +39,13 @@ static:
 	// available and present. It will be set to BusyTSS afterward.
 	// To reset the TSS, you will need to reset the Segment Type to
 	// AvailableTSS.
-	void install() {
-		kprintfln!("TSS BASE {}")(&tss);
+	ErrorVal install() {
+	//	kprintfln!("TSS BASE {}")(&tss);
 		GDT.setSystemSegment((tssBase >> 3), 0x67, (cast(ulong)&tss), GDT.SystemSegmentType.AvailableTSS, 0, true, false, false);
 		asm {
 			ltr tssBase;
 		}
+		return ErrorVal.Success;
 	}
 
 	// This function will set the stack for interrupts that call into

@@ -106,7 +106,7 @@ struct drive_info {
 	ubyte drive_sectors;
 
 	// The rest are ports
-	ushort[] ports;
+	ushort ports;
 }
 
 // this function takes the information that the boot loader gives us,
@@ -162,7 +162,7 @@ ErrorVal verifyBootInformation(int id, void *data) {
 			System.moduleInfo[i].nameLength = len;
 			System.moduleInfo[i].name[0 .. len] = (cast(char *)(mod.string))[0 .. len];
 
-		//	kprintfln!("module {}: start:{} length:{} name:{}")(i, System.moduleInfo[i].start, System.moduleInfo[i].length, System.moduleInfo[i].name[0..len]);
+			//kprintfln!("module {}: start:{} length:{} name:{}")(i, System.moduleInfo[i].start, System.moduleInfo[i].length, System.moduleInfo[i].name[0..len]);
 			System.numModules++;
 		}
 	}
@@ -203,7 +203,6 @@ ErrorVal verifyBootInformation(int id, void *data) {
 		}
 	}
 
-
 	// bit 4 and bit 5 are mutually exculsive
 
 	// flag 4 checks to see if a.out is valid.
@@ -215,6 +214,7 @@ ErrorVal verifyBootInformation(int id, void *data) {
 	if((checkFlag(info.flags, 4)) && (checkFlag(info.flags, 5))) {
 		return ErrorVal.Fail;
 	}
+	//kprintfln!("HEY {}")(System.numDisks);
 
 	// Drive Information
 	if (checkFlag(info.flags, 7)) {
@@ -240,23 +240,33 @@ ErrorVal verifyBootInformation(int id, void *data) {
 				numPorts /= 2;
 
 				// Allow no more than the amount we can statically store
-				if (numPorts > ports.length)
-				{
+				if (numPorts > ports.length) {
 					numPorts = ports.length;
 				}
+				//kprintfln!("Drive: {} Heads: {} Cyl: {} Sectors: {} Ports: {}")(number, heads, cylinders, sectors, numPorts);
 
 				// Copy the information
-				ports[0..numPorts] = dinfo.ports[0..numPorts];
+				ushort* curPort = &dinfo.ports;
+				for (uint j = 0; j < numPorts; j++) {
+					ports[j] = *curPort;
+					curPort++;
+				}
 			}
 
 			// Go to the next disk entry.
 			System.numDisks++;
+
+			if (System.numDisks >= System.diskInfo.length) {
+				break;
+			}
 
 			// Advance to the next entry (Note: the size field is implied)
 			i += dinfo.size + 4;
 			dinfo = cast(drive_info*)((cast(ubyte*)dinfo) + dinfo.size + 4);
 		}
 	}
+
+	//kprintfln!("DONE")();
 
 	//wow, we made it!
 	return ErrorVal.Success;

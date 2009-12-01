@@ -44,7 +44,7 @@ public:
 		}	
 
 		ret = 0;
-		kprintfln!("allocPage({}): OK")(params.virtualAddress);
+		//kprintfln!("allocPage({}): OK")(params.virtualAddress);
 		return SyscallError.OK;
 	}
 
@@ -70,9 +70,9 @@ public:
 		}else{
 			return SyscallError.Failcopter;
 		}*/
-		kprintfln!("open called {}")(params.path);
+		//kprintfln!("open called {}")(params.path);
 		ret = RamFS.userOpen(params.path, Access.Read | Access.Write);
-		kprintfln!("returning {}")(ret);
+		//kprintfln!("returning {}")(ret);
 		return SyscallError.OK;
 	}
 }

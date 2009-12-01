@@ -39,58 +39,47 @@ extern(C)
 }
 
 // Just provides wrappers to access this information;
-struct LinkerScript
-{
+struct LinkerScript {
 static:
 public:
 
-	void* ekernel()
-	{
+	void* ekernel() {
 		return &_ekernel;
 	}
 
-	void* kernelLMA()
-	{
+	void* kernelLMA() {
 		return &_kernelLMA;
 	}
 
-	void* kernelVMA()
-	{
+	void* kernelVMA() {
 		return &_kernelVMA;
 	}
 
-	void* kernel()
-	{
+	void* kernel() {
 		return &_kernel;
 	}
 
-	void* data()
-	{
+	void* data() {
 		return &_data;
 	}
 
-	void* edata()
-	{
+	void* edata() {
 		return &_edata;
 	}
 
-	void* text()
-	{
+	void* text() {
 		return &_text;
 	}
 
-	void* etext()
-	{
+	void* etext() {
 		return &_etext;
 	}
 
-	void* bss()
-	{
+	void* bss() {
 		return &_bss;
 	}
 
-	void* ebss()
-	{
+	void* ebss() {
 		return &_ebss;
 	}
 

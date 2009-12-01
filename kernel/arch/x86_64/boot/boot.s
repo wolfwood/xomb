@@ -10,6 +10,7 @@ bits 32
 ; externs given by the linker script
 extern _edata
 extern _end
+extern _bss
 extern _ebss
 
 ; extern to the load.s
@@ -39,7 +40,7 @@ _start:
 	dd -(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)
 	dd multiboot_header
 	dd _start
-	dd (_edata-KERNEL_VMA_BASE)
+	dd (_bss-KERNEL_VMA_BASE)
 	dd (_ebss-KERNEL_VMA_BASE)
 	dd _start
 
@@ -51,15 +52,15 @@ start32:
 	cli
 
 	; enable SSE
-	mov ecx, cr0
-	btr ecx, 2
-	bts ecx, 1
-	mov cr0, ecx
+	;mov ecx, cr0
+	;btr ecx, 2
+	;bts ecx, 1
+	;mov cr0, ecx
 
-	mov ecx, cr4
-	bts ecx, 9
-	bts ecx, 10
-	mov cr4, ecx
+	;mov ecx, cr4
+	;bts ecx, 9
+	;bts ecx, 10
+	;mov cr4, ecx
 
 	; enable 64-bit page translation table entries
 	; by setting CR4.PAE = 1.
@@ -156,20 +157,20 @@ pml3_base:
 align 4096
 pml2_base:
 	%assign i 0
-	%rep 25
+	%rep 50
 	dq (pml1_base + i + 0x7)
 	%assign i i+4096
 	%endrep
 
-	times (512-25) dq 0
+	times (512-50) dq 0
 
 align 4096
 ; 15 tables are described here
-; this maps 40 MB from address 0x0
+; this maps 100 MB from address 0x0
 ; to an identity mapping
 pml1_base:
 	%assign i 0
-	%rep 512*25
+	%rep 512*50
 	dq (i << 12) | 0x087
 	%assign i i+1
 	%endrep

@@ -28,7 +28,6 @@ static:
 
 	// Return next environment
 	Environment* schedule(Environment* current) {
-			kprintfln!("woo")();
 		Environment* next;
 		if (current !is null) {
 			current.state = Environment.State.Ready;
@@ -39,7 +38,6 @@ static:
 		}
 
 		assert(next !is null, "Nothing to schedule");
-			kprintfln!("woo2")();
 		while(next.state != Environment.State.Ready) {
 			next = next.info.next;
 		}
@@ -76,12 +74,12 @@ static:
 		}
 		numEnvironments++;
 		ret.state = Environment.State.Initializing;
-		kprintfln!("ret: {}, {}")(ret, numEnvironments);
+		//kprintfln!("ret: {}, {}")(ret, numEnvironments);
 		return ret;
 	}
 
 	ErrorVal removeEnvironment(Environment* environment) {
-		kprintfln!("removing: {}")(numEnvironments);
+		//kprintfln!("removing: {}")(numEnvironments);
 		if (numEnvironments == 1) {
 			head = null;
 			tail = null;

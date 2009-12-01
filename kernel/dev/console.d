@@ -72,6 +72,10 @@ public:
 		videoInfo.ypos = 0;
 	}
 
+	long getGlobalY() {
+		return videoInfo.globalY;
+	}
+
 	// This method will return the current location of the cursor
 	void getPosition(out int x, out int y) {
 		x = videoInfo.xpos;
@@ -84,6 +88,9 @@ public:
 		if (y < 0) { y = 0; }
 		if (x >= COLUMNS) { x = COLUMNS - 1; }
 		if (y >= LINES) { y = LINES - 1; }
+
+		long difference = cast(long)y - cast(long)videoInfo.ypos;
+		videoInfo.globalY += difference;
 
 		videoInfo.xpos = x;
 		videoInfo.ypos = y;
@@ -111,6 +118,7 @@ public:
 		if (c == '\n' || c == '\r' || videoInfo.xpos >= COLUMNS) {
 			videoInfo.xpos = 0;
 			videoInfo.ypos++;
+			videoInfo.globalY++;
 
 			if (videoInfo.ypos >= LINES) {
 				scrollDisplay(1);

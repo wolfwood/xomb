@@ -50,13 +50,15 @@ public:
 		}
 
 		// 3a. Initialize Local APIC
-		ErrorVal LAPICInitialized = printToLog("LocalAPIC: initialize()", LocalAPIC.initialize());
+		Log.print("LocalAPIC: initialize()");
+		ErrorVal LAPICInitialized = Log.result(LocalAPIC.initialize());
 		if (LAPICInitialized != ErrorVal.Success) {
 			return ErrorVal.Fail;
 		}
 
 		// 3b. Initialize IOAPIC
-		ErrorVal IOAPICInitialized = printToLog("IOAPIC: initialize()", IOAPIC.initialize());
+		Log.print("IOAPIC: initialize()");
+		ErrorVal IOAPICInitialized = Log.result(IOAPIC.initialize());
 		if (IOAPICInitialized != ErrorVal.Success) {
 			return ErrorVal.Fail;
 		}

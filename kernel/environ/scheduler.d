@@ -23,39 +23,41 @@ static:
 public:
 
 	ErrorVal initialize() {
-		return printToLog("Scheduler: " ~ Config.ReadOption!("SchedulerImplementation") ~ ".initialize()", SchedulerImplementation.initialize());
+		Log.print("Scheduler: " ~ Config.ReadOption!("SchedulerImplementation") ~ ".initialize()");
+		return Log.result(SchedulerImplementation.initialize());
 	}
 
 	Environment* schedule() {
-		printToLog("Scheduler: schedule()");
+		Log.print("Scheduler: schedule()");
 		_current = SchedulerImplementation.schedule(_current);
 
 		if (_current is null) {
-			printFail();
+			Log.result(ErrorVal.Fail);
 			return null;
 		}
 
-		printSuccess();
+		Log.result(ErrorVal.Success);
 		return _current;
 	}
 
 	Environment* newEnvironment() {
-		printToLog("Scheduler: newEnvironment()");
+		Log.print("Scheduler: newEnvironment()");
 		Environment* newEnv = SchedulerImplementation.newEnvironment();
 		if (newEnv is null) {
-			printFail();
+			Log.result(ErrorVal.Fail);
 		}
 		else {
-			printSuccess(); 
+			Log.result(ErrorVal.Success);
 		}
 		return newEnv;
 	}
 
 	ErrorVal removeEnvironment() {
-		printToLog("Scheduler: removeEnvironment()");
+		Log.print("Scheduler: removeEnvironment()");
 		Environment* cur = current;
 		cur.state = Environment.State.Uninitializing;
 		cur.uninitialize();
+		Log.result(ErrorVal.Success);
 		return SchedulerImplementation.removeEnvironment(cur);
 	}
 

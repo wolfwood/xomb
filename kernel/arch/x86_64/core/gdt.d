@@ -55,10 +55,11 @@ static:
 		return ErrorVal.Success;
 	}
 
-	void install() {
+	ErrorVal install() {
 		asm {
 			lgdt [gdtBase];
 		}
+		return ErrorVal.Success;
 	}
 
 

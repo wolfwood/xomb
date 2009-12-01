@@ -34,20 +34,20 @@ public:
 		PageLevel2* pl2 = pl3.getTable(510);
 		pl2.entries[511] = root.entries[511];
 
-		kprintfln!("a")();
+		//kprintfln!("a")();
 
 		ulong addr = cast(ulong)rootPhysAddr;
 		asm {
 			mov RAX, addr;
 			mov CR3, RAX;
 		}
-		kprintfln!("b")();
+		//kprintfln!("b")();
 
 		// Allocate Stack
 		stack = Heap.allocPageNoMap();
 		Paging.mapRegion(null, stack, 4096, cast(void*)0xe00000, true);
 		stack = cast(void*)0xe00000;
-		kprintfln!("c")();
+		//kprintfln!("c")();
 
 		resourceHeap = cast(void*)0xf00000;
 

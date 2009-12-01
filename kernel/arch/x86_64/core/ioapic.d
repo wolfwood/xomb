@@ -137,6 +137,8 @@ private:
 		// it will report one less
 		maxRedirectionEntry++;
 
+		//kprintfln!("Max Redirection Entry: {}")(maxRedirectionEntry);
+
 		// keep track of which IOAPIC unit has control of which pins
 		ioApicStartingPin[ioAPICID] = numPins;
 		for(int i = 0; i < maxRedirectionEntry; i++) {
@@ -217,7 +219,8 @@ private:
 	}
 
 	void setRedirectionTableEntries() {
-		for(int i = 0; i < Info.numEntries; i++) {
+		//kprintfln!("setRedirectionTableEntries() : {}")(Info.numEntries);
+		for(int i = 0; i < Info.numEntries && i < numPins; i++) {
 			// get IOAPIC info and pin info for the specific IO APIC unit
 			int IOAPICID = pinToIOAPIC[i];
 			int IOAPICPin = i - ioApicStartingPin[IOAPICID];
@@ -233,9 +236,12 @@ private:
 				Info.redirectionEntries[i].vector);
 
 			// set IRQ stuff
-			irqToPin[Info.redirectionEntries[i].sourceBusIRQ] = i;
-			irqToIOAPIC[Info.redirectionEntries[i].sourceBusIRQ] = IOAPICID;
+			if (Info.redirectionEntries[i].sourceBusIRQ < 16) {
+				irqToPin[Info.redirectionEntries[i].sourceBusIRQ] = i;
+				irqToIOAPIC[Info.redirectionEntries[i].sourceBusIRQ] = IOAPICID;
+			}
 		}
+		//kprintfln!("setRedirectionTableEntries() done")();
 	}
 
 	void unmaskRedirectionTableEntry(uint ioApicID, uint registerIndex) {

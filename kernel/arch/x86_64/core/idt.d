@@ -66,10 +66,11 @@ public:
 		return ErrorVal.Success;
 	}
 
-	void install() {
+	ErrorVal install() {
 		asm {
 			lidt [idtBase];
 		}
+		return ErrorVal.Success;
 	}
 
 

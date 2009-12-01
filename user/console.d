@@ -39,6 +39,9 @@ struct MetaData {
 	int width;
 	int height;
 
+	// The total number of lines
+	long globalY = 0;
+
 	// The current color
 	ubyte colorAttribute = Color.LightGray;
 }

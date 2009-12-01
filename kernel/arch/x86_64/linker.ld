@@ -39,10 +39,10 @@ SECTIONS
 
 	_eboot = .;
 
-	PROVIDE(_trampoline = .);
-
 	.text_trampoline ALIGN(0x1000) :
 	{
+		PROVIDE(_trampoline = .);
+
 		dsss_objs/O/kernel.arch.x86_64.boot.trampoline.o (.text)
 	}
 
@@ -75,11 +75,11 @@ SECTIONS
 	/* _etext defined */
 	_etext = .; PROVIDE(etext = .);
 
-	_data = .;
-
 	/* data section */
 	.data : AT(ADDR(.data) - kernel_VMA + kernel_LMA)
 	{
+		_data = .;
+
 		data = .;
 		*(.data)
 
@@ -100,12 +100,12 @@ SECTIONS
 	/* _edata defined */
 	_edata = .; PROVIDE (edata = .);
 
-	_bss = .;
-	sbss = .;
 
 	/* static code */
 	.bss : AT(ADDR(.bss) - kernel_VMA + kernel_LMA)
 	{
+		_bss = .;
+		sbss = .;
 		*(.bss)
 		. = ALIGN(4096);
 	}

@@ -80,12 +80,12 @@ struct RamFS{
 	// WILKIE STUFF //
 	Gib userOpen(char[] filename, Access flags) {
 		Gib kernelGib = open(filename, flags);
-		kprintfln!("kernel gib for this file: {}")(kernelGib);
+		//kprintfln!("kernel gib for this file: {}")(kernelGib);
 
 		// Map into userspace gib region
 		Environment* current = Scheduler.current;
 		Gib userGib = current.allocGib();
-		kprintfln!("user gib for this file: {}")(userGib);
+		//kprintfln!("user gib for this file: {}")(userGib);
 
 		VirtualMemory.mapGib(userGib, kernelGib);
 		
@@ -171,13 +171,13 @@ private:
 
 	Gib create(char[] filename) {
 		Gib foo;
-		kprintfln!("createFile: creating {}...")(filename);
+		//kprintfln!("createFile: creating {}...")(filename);
 
 		foo = locate(filename);
 
 		if (foo is null) {
 			if (streq(filename, "/dev/video")) {
-				kprintfln!("createFile: creating video file!!")();
+				//kprintfln!("createFile: creating video file!!")();
 				foo = VirtualMemory.allocGib();
 				videoFile = foo;
 			}
@@ -185,9 +185,9 @@ private:
 				// look up module, attach this module to this file
 				for(uint i; i < System.numModules; i++) {
 					uint len = System.moduleInfo[i].nameLength;
-					kprintfln!("comparing {} {}")(System.moduleInfo[i].name[0..len], filename);
+					//kprintfln!("comparing {} {}")(System.moduleInfo[i].name[0..len], filename);
 					if (streq(System.moduleInfo[i].name[0..len], filename)) {
-						kprintfln!("createFile: creating module file.")();
+						//kprintfln!("createFile: creating module file.")();
 						foo = VirtualMemory.allocGib();
 						modules[i] = foo;
 						break;
@@ -195,7 +195,7 @@ private:
 				}
 			}
 		}
-		kprintfln!("Gib: {}")(foo);
+		//kprintfln!("Gib: {}")(foo);
 
 		// return kernel address for file
 		return foo;
@@ -212,7 +212,7 @@ private:
 			// locate module, return file address
 			for(uint i; i < System.numModules; i++) {
 				uint len = System.moduleInfo[i].nameLength;
-				kprintfln!("comparing {} {}")(System.moduleInfo[i].name[0..len], filename);
+				//kprintfln!("comparing {} {}")(System.moduleInfo[i].name[0..len], filename);
 				if (streq(System.moduleInfo[i].name[0..len], filename)) {
 					ret = modules[i];
 					break;

@@ -8,8 +8,7 @@ module kernel.system.info;
 // import the specific types of information
 public import kernel.system.definitions;
 
-struct System
-{
+struct System {
 static:
 public:
 

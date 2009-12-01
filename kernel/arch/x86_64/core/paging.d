@@ -50,6 +50,8 @@ public:
 		PageLevel3* pl3 = cast(PageLevel3*)Heap.allocPageNoMap();
 		PageLevel2* pl2 = cast(PageLevel2*)Heap.allocPageNoMap();
 
+		//kprintfln!("root: {} pl3: {} pl2: {}")(root, pl3, pl2);
+
 		// Initialize the structure. (Zero it)
 		*root = PageLevel4.init;
 		*pl3 = PageLevel3.init;
@@ -80,6 +82,7 @@ public:
 		// We need to map the kernel
 		kernelAddress = heapAddress;
 
+		//kprintfln!("About to map kernel")();
 		mapRegion(System.kernel.start, System.kernel.length);
 
 		void* bitmapLocation = heapAddress;
@@ -644,7 +647,7 @@ private:
 				ret = cast(PageLevel2*)(0xFFFFFF7F_C0000000 + ((baseAddr + idx) << 12));
 
 				*ret = PageLevel2.init;
-				if (usermode) { kprintfln!("creating pl3 {}")(idx); }
+				//if (usermode) { kprintfln!("creating pl3 {}")(idx); }
 			}
 
 			return ret;
