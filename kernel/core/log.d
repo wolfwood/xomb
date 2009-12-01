@@ -89,6 +89,9 @@ private:
 		int nY;
 		Console.getPosition(x,y);
 		nY = y - cast(int)(gY - yForDepth[logDepth]);
+		if (nY < 0) {
+			return;
+		}
 		Console.setPosition(xAtMessage,nY);
 		Console.setColors(fore, back);
 		kprintfln!("{}")(message);
