@@ -62,15 +62,15 @@ public:
 
 	// This will allocate a page and return a physical address and will
 	// not attempt to map it into virtual memory.
-	void* allocPageNoMap() {
-		return HeapImplementation.allocPage();
+	void* allocPageNoMap(void * virtAddr = null) {
+		return HeapImplementation.allocPage(virtAddr);
 	}
 
 	// This will allocate a page, and return the virtual address while
 	// coordinating with the VirtualMemory module.
-	void* allocPage() {
+	void* allocPage(void * virtAddr = null) {
 		// compute physical address
-		void* address = allocPageNoMap();
+		void* address = allocPageNoMap(virtAddr);
 
 		// map in the region
 		return VirtualMemory.mapKernelPage(address);
