@@ -120,9 +120,9 @@ ErrorVal initialize() {
 	return ErrorVal.Success;
 }
 
-void* allocPage() {
+void* allocPage(void * virtAddr) {
 	// Find a page
-	ulong index = findPage();
+	ulong index = findPage(virtAddr);
 
 	if (index == 0xffffffffffffffffUL) {
 		return null;
@@ -229,7 +229,7 @@ private {
 	}
 
 	// Returns the page index of a free page
-	ulong findPage() {
+	ulong findPage(void * virtAddr) {
 		ulong* curPtr = bitmap;
 		ulong curIndex = 0;
 
