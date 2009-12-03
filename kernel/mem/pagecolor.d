@@ -3,7 +3,7 @@
  *
  * This is the simple page coloring module.  It isnt that exciting.
  * Makes sure that when a virtual page is mapped to a physical one that their color bits match.
- * Uses the bitmap code, b/c bitmap index = PPN
+ * Uses the Bitmap.bitmap code, b/c Bitmap.bitmap index = PPN
  *
  */
 
@@ -15,12 +15,12 @@ import kernel.system.info;
 // Import kernel foo
 import kernel.core.error;
 import kernel.core.log;
-import kernel.core.error;
+import kernel.core.kprintf;
 
 // Import arch foo
 import architecture.vm;
 
-//Import the bitmap stuff
+//Import the Bitmap.bitmap stuff
 import Bitmap = kernel.mem.bitmap;
 
 import kernel.system.definitions;
@@ -31,6 +31,14 @@ ErrorVal initialize() {
 	 //need to determine number of sets for the L2 cache
 	 uint num_sets = System.processorInfo[Cpu.identifier].L2Cache.length;
 	 num_sets = num_sets/(System.processorInfo[Cpu.identifier].L2Cache.associativity * System.processorInfo[Cpu.identifier].L2Cache.blockSize);
+
+	kprintfln!("PageColor: L2 A: {} B: {} C: {}")(
+		System.processorInfo[Cpu.identifier].L2Cache.associativity,
+		System.processorInfo[Cpu.identifier].L2Cache.blockSize,
+		System.processorInfo[Cpu.identifier].L2Cache.length);
+
+
+	 kprintfln!("PageColor: num_sets: {}")(num_sets);
 	 	 
 	 uint set_bits = 0;
 	 uint temp = num_sets;
@@ -51,13 +59,23 @@ ErrorVal initialize() {
 		   page_bits++;
 		   temp = temp/2;
 	}
+	kprintfln!("block bits: {} set bits: {} page bits: {}")(block_bits, set_bits, page_bits);
 
 	color_bits = set_bits + block_bits - page_bits;
-	color_mask = ( (1 << color_bits) << page_bits);
+	color_mask = (((1 << color_bits)-1) << page_bits);
+	kprintfln!("color_mask: {b}")(color_mask);
 	return Bitmap.initialize();
 }
 
-void* allocPage(void * virtAddr) {
+ErrorVal reportCore() {
+	return ErrorVal.Success;
+}
+
+void* allocPage() {
+	return Bitmap.allocPage();
+}
+
+void* allocPage(void* virtAddr) {
 	// Find a page
 	ulong index = findPage(virtAddr);
 
@@ -90,15 +108,8 @@ void virtualStart(void* newAddr) {
 }
 
 private {
-	ulong totalPages;
 	uint color_bits; //defines the #of color_bits
 	ulong color_mask;
-
-	// The total number of pages for the bitmap
-	ulong bitmapPages;
-
-	ulong* bitmap;
-	ulong* bitmapPhys;
 
 	// A helper function to mark off a range of memory
 	void markOffRegion(void* start, ulong length) {
@@ -132,22 +143,23 @@ private {
 		// Go to the specific ulong
 		// Set the corresponding bit
 
-		if (pageIndex >= totalPages) {
+		if (pageIndex >= Bitmap.totalPages) {
 			return;
 		}
 
 		ulong byteNumber = pageIndex / 64;
 		ulong bitNumber = pageIndex % 64;
 
-		bitmap[byteNumber] |= (1 << bitNumber);
+		Bitmap.bitmap[byteNumber] |= (1 << bitNumber);
 	}
 
 	// Returns the page index of a free page
 	ulong findPage(void * virtAddr) {
-		ulong* curPtr = bitmap;
+		ulong* curPtr = Bitmap.bitmap;
 		ulong curIndex = 0;
 		ulong color = cast(ulong) virtAddr & color_mask;
-		ulong color_shift = color >> VirtualMemory.getPageSize();
+		ulong color_shift = color / VirtualMemory.getPageSize();
+		//kprintfln!("findPage: {x} color: {x}:{x} curPtr: {x}")(virtAddr, color, color_shift, curPtr);
 
 		while(true) {
 			// this would mean that there is a 0 in there somewhere
@@ -158,29 +170,27 @@ private {
 
 				for (uint b; b < 64; b++) {
 					if((tmpVal & 0x1) == 0) {
-						if ((subIndex < totalPages) && (subIndex & color_shift == color_shift)) {
+						if ((subIndex < Bitmap.totalPages) && ((subIndex & color_shift) == color_shift)) {
 							// mark it off as used
 							*curPtr |= cast(ulong)(1UL << b);
+							//kprintfln!("found: {} : {}")(subIndex, subIndex & color_shift);
 
 							// return the page index
 							return subIndex;
 						}
-						else {
+						else if (subIndex >= Bitmap.totalPages) {
+							//kprintfln!("foobar")();
 							return 0xffffffffffffffffUL;
 						}
 					}
-					else {
-						tmpVal >>= 1;
-						subIndex++;
-					}
+					tmpVal >>= 1;
+					subIndex++;
 				}
-
-				// Shouldn't get here... the world will end
-				return 0xffffffffffffffffUL;
 			}
 
 			curIndex += 64;
-			if (curIndex >= totalPages) {
+			if (curIndex >= Bitmap.totalPages) {
+				//kprintfln!("foobar2")();
 				return 0xffffffffffffffffUL;
 			}
 			curPtr++;

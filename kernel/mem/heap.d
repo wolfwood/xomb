@@ -56,21 +56,33 @@ public:
 		return HeapImplementation.initialize();
 	}
 
+	// Needs to be called by each core (including boot)
+	ErrorVal reportCore() {
+		return HeapImplementation.reportCore();
+	}
+
 	void virtualStart(void* newAddr) {
 		HeapImplementation.virtualStart = newAddr;
 	}
 
 	// This will allocate a page and return a physical address and will
 	// not attempt to map it into virtual memory.
-	void* allocPageNoMap(void * virtAddr = null) {
+	// This also does not have a virtual address hint
+	void* allocPageNoMap() {
+		return HeapImplementation.allocPage();
+	}
+
+	// This will allocate a page and return a physical address and will
+	// not attempt to map it into virtual memory.
+	void* allocPageNoMap(void* virtAddr) {
 		return HeapImplementation.allocPage(virtAddr);
 	}
 
-	// This will allocate a page, and return the virtual address while
+	// This will allocate a page and return the virtual address while
 	// coordinating with the VirtualMemory module.
-	void* allocPage(void * virtAddr = null) {
+	void* allocPage() {
 		// compute physical address
-		void* address = allocPageNoMap(virtAddr);
+		void* address = allocPageNoMap(null);
 
 		// map in the region
 		return VirtualMemory.mapKernelPage(address);

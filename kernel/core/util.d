@@ -353,6 +353,8 @@ char[] itoa(char[] buf, char base, long d)
 	}
 	else if(base == 'x')
 		divisor = 16;
+	else if(base == 'b')
+		divisor = 2;
 
 	// Divide UD by DIVISOR until UD == 0.
 	do

@@ -126,6 +126,8 @@ private
 			Console.putString(itoa(buf, 'u', i));
 		else if(fmt[0] is 'x' || fmt[0] is 'X')
 			Console.putString(itoa(buf, 'x', i));
+		else if(fmt[0] is 'b' || fmt[0] is 'B')
+			Console.putString(itoa(buf, 'b', i));
 	}
 
 	// Floats are not supported by the kernel, but the interface to this exists anyway.
@@ -188,7 +190,7 @@ private
 
 		static if(isIntType!(T))
 		{
-			static assert(format == "" || format == "x" || format == "X" || format == "u" || format == "U",
+			static assert(format == "" || format == "b" || format == "B" || format == "x" || format == "X" || format == "u" || format == "U",
 					"Invalid integer format specifier '" ~ format ~ "'");
 		}
 

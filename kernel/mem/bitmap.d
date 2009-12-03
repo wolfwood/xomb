@@ -120,6 +120,14 @@ ErrorVal initialize() {
 	return ErrorVal.Success;
 }
 
+ErrorVal reportCore() {
+	return ErrorVal.Success;
+}
+
+void* allocPage() {
+	return allocPage(null);
+}
+
 void* allocPage(void * virtAddr) {
 	// Find a page
 	ulong index = findPage(virtAddr);
@@ -177,7 +185,7 @@ void virtualStart(void* newAddr) {
 	bitmap = cast(ulong*)newAddr;
 }
 
-private {
+package {
 	ulong totalPages;
 
 	// The total number of pages for the bitmap

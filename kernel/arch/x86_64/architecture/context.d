@@ -152,14 +152,14 @@ public:
 			return ErrorVal.Fail;
 		}
 	
-		void* physAddr = Heap.allocPageNoMap();
+		void* physAddr = Heap.allocPageNoMap(virtAddr);
 		if (physAddr is null) { return ErrorVal.Fail; }
 
 		Paging.mapRegion(null, physAddr, 4096, virtAddr, writeable);
 		virtAddr += 4096;
 
 		while (length > 4096) {
-			physAddr = Heap.allocPageNoMap();
+			physAddr = Heap.allocPageNoMap(virtAddr);
 			if (physAddr is null) { return ErrorVal.Fail; }
 			Paging.mapRegion(null, physAddr, 4096, virtAddr, writeable);
 			virtAddr += 4096;
