@@ -20,6 +20,8 @@ const auto DEBUG_APENTRY = false;
 const auto DEBUG_KBD = false;
 const auto DEBUG_SCHEDULER = false;
 
+const auto SMP_MAX_CORES = 4;
+
 struct Config {
 static:
 

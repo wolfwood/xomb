@@ -122,6 +122,8 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	//kprintfln!("L2Cache: assoc: {} blocksize: {} size: {}")(System.processorInfo[Cpu.identifier].L2Cache.associativity, System.processorInfo[Cpu.identifier].L2Cache.blockSize, System.processorInfo[Cpu.identifier].L2Cache.length);
 
+	Scheduler.kmainComplete();
+
 	Scheduler.execute();
 
 	// Run task
