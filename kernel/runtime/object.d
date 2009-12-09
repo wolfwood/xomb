@@ -1,4 +1,5 @@
 
+
 /**
  * Part of the D programming language runtime library.
  * Forms the symbols available to all D programs. Includes
@@ -43,6 +44,8 @@ import kernel.runtime.util;
 	import std.moduleinit;
 //}
 
+import architecture.mutex;
+
 extern(C) Object _d_newclass(ClassInfo ci);
 extern(C) Object _d_allocclass(ClassInfo ci);
 
@@ -83,6 +86,7 @@ struct Monitor
 {
 	void delegate(Object)[] delegates;
 
+
 	/* More stuff goes here defined by internal/monitor.c */
 }
 
@@ -91,6 +95,8 @@ struct Monitor
  */
 class Object
 {
+	static Mutex __mutex;
+
 	/**
 	 * Convert Object to a human readable string.
 	 */
