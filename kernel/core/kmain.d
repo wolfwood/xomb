@@ -13,6 +13,7 @@ import architecture.vm;
 import architecture.syscall;
 import architecture.main;
 import architecture.perfmon;
+import architecture.timing;
 
 // This module contains our powerful kprintf function
 import kernel.core.kprintf;
@@ -74,6 +75,9 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.print("PerfMon: initialize()");
 	Log.result(PerfMon.initialize());
 	PerfMon.registerEvent(0, PerfMon.Event.L2Requests);
+
+	Log.print("Timing: initialize()");
+	Log.result(Timing.initialize());
 
 	// 2b. Paging Initialization
 	Log.print("VirtualMemory: initialize()");
