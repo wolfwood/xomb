@@ -156,6 +156,6 @@ extern(C) void apEntry() {
 	// 2. Core Initialization
 	Multiprocessor.installCore();
 
-	// 2. Schedule
-	for(;;) { }
+	// 3. Schedule
+	Scheduler.idleLoop();
 }

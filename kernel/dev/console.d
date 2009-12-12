@@ -17,7 +17,7 @@ public import user.console;
 import architecture.cpu;
 
 // This is the true interface to the console
-struct Console {
+class Console {
 static:
 public:
 
@@ -83,7 +83,7 @@ public:
 	}
 
 	// This method will set the current location of the cursor to the x and y given.
-	void setPosition(int x, int y) {
+	synchronized void setPosition(int x, int y) {
 		if (x < 0) { x = 0; }
 		if (y < 0) { y = 0; }
 		if (x >= COLUMNS) { x = COLUMNS - 1; }
@@ -97,7 +97,7 @@ public:
 	}
 
 	// This method will post the character to the screen at the current location.
-	void putChar(char c) {
+	synchronized void putChar(char c) {
 		if (c == '\t') {
 			// Insert a tab.
 			videoInfo.xpos += TABSTOP;
