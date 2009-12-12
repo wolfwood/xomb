@@ -51,8 +51,8 @@ public:
 	// void exit(ulong retval)
 	SyscallError exit(ExitArgs* params) {
 		Scheduler.removeEnvironment();
-		Scheduler.schedule();
-		Scheduler.execute();
+
+		Scheduler.idleLoop();
 
 		return SyscallError.OK;
 	}
@@ -75,5 +75,6 @@ public:
 		//kprintfln!("returning {}")(ret);
 		return SyscallError.OK;
 	}
+
 }
 

@@ -84,10 +84,11 @@ public:
 		_current[Cpu.identifier] = cur;
 	}
 
-	void apSchedule(){
+	void idleLoop(){
 		while(_bspInitComplete == false){}
 		
-		schedule();
+		while(schedule() == null){}
+
 		execute();
 	}
 
