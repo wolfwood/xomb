@@ -75,6 +75,9 @@ public:
 	//	kprintfln!("Installed Core {}")(curCoreId);
 
 		curCoreId++;
+		if (curCoreId != 1) {
+			System.numProcessors++;
+		}
 
 		if (apLock.locked) { apLock.unlock(); }
 	}

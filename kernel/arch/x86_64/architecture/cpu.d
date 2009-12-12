@@ -32,8 +32,7 @@ private {
 	}
 }
 
-struct Cpu
-{
+struct Cpu {
 static:
 public:
 
