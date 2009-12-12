@@ -45,11 +45,11 @@ public:
 
 		// Allocate Stack
 		stack = Heap.allocPageNoMap();
-		Paging.mapRegion(null, stack, 4096, cast(void*)0xe00000, true);
-		stack = cast(void*)0xe00000;
+		Paging.mapRegion(null, stack, 4096, cast(void*)0xf0000000, true);
+		stack = cast(void*)0xf0000000;
 		//kprintfln!("c")();
 
-		resourceHeap = cast(void*)0xf00000;
+		resourceHeap = cast(void*)0xe0000000;
 
 		contextStack = Heap.allocPageNoMap();
 		contextStack = cast(void*)Paging.mapRegion(contextStack, 4096);
@@ -159,7 +159,7 @@ public:
 		Paging.mapRegion(null, physAddr, 4096, virtAddr, writeable);
 		virtAddr += 4096;
 
-		kprintfln!("alloc {} for {}B")(virtAddr, length);
+//		kprintfln!("alloc {} for {}B")(virtAddr, length);
 		while (length > 4096) {
 			physAddr = Heap.allocPageNoMap(virtAddr);
 			if (physAddr is null) { return ErrorVal.Fail; }
@@ -167,7 +167,7 @@ public:
 			virtAddr += 4096;
 			length -= 4096;
 		}
-		kprintfln!("alloc done {} for {}B")(virtAddr, length);
+//		kprintfln!("alloc done {} for {}B")(virtAddr, length);
 
 		return ErrorVal.Success;
 	}
@@ -177,7 +177,6 @@ public:
 	}
 
 	void* install() {
-
 		// Install Page Table
 		ulong addr = cast(ulong)rootPhysAddr;
 		asm {
@@ -189,13 +188,13 @@ public:
 	}
 
 	void execute() {
+		kprintfln!("Installing environment {} {} {}")(stack, rootPhysAddr, root);
 		install();
 		asm {
 			// Get return from install() and set as stack pointer
 			mov RSP, RAX;
 
 			// Context Restore
-
 			add RSP, 16;
 
 			// Go to userspace

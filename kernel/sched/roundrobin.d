@@ -19,6 +19,7 @@ import architecture.mutex;
 struct SchedulerInfo {
 	Environment* next;
 	Environment* prev;
+	uint id;
 }
 
 class RoundRobinScheduler {
@@ -32,10 +33,13 @@ static:
 	synchronized Environment* schedule(Environment* current) {
 		Environment* next;
 		if (current !is null) {
-			current.state = Environment.State.Ready;
+			if (current.state == Environment.State.Running) {
+				current.state = Environment.State.Ready;
+			}
 			next = current.info.next;
 		}
 		else {
+			kprintfln!("current state is null")();
 			next = head;
 		}
 
@@ -43,6 +47,8 @@ static:
 		while(next.state != Environment.State.Ready) {
 			next = next.info.next;
 		}
+
+		kprintfln!("Scheduling {}")(next.info.id);
 
 		next.state = Environment.State.Running;
 		return next;
@@ -61,11 +67,13 @@ static:
 			head.info.next = head;
 			head.info.prev = head;
 			ret = &environments[0];
+			ret.info.id = 0;
 		}
 		else {
 			foreach(uint i, env; environments) {
 				if (env.state == Environment.State.Inactive) {
 					ret = &environments[i];
+					ret.info.id = i;
 					ret.info.next = head;	
 					ret.info.prev = head.info.prev;
 					head.info.prev = ret;
