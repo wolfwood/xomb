@@ -13,13 +13,15 @@ import kernel.environ.info;
 import kernel.core.error;
 import kernel.core.kprintf;
 
+import architecture.mutex;
+
 // Linked List Structure
 struct SchedulerInfo {
 	Environment* next;
 	Environment* prev;
 }
 
-struct RoundRobinScheduler {
+class RoundRobinScheduler {
 static:
 
 	ErrorVal initialize() {
@@ -27,7 +29,7 @@ static:
 	}
 
 	// Return next environment
-	Environment* schedule(Environment* current) {
+	synchronized Environment* schedule(Environment* current) {
 		Environment* next;
 		if (current !is null) {
 			current.state = Environment.State.Ready;
@@ -47,7 +49,7 @@ static:
 	}
 
 	// Set up a new environment
-	Environment* newEnvironment() {
+	synchronized Environment* newEnvironment() {
 		if (numEnvironments == MAX_ENVIRONMENTS) {
 			return null;
 		}
@@ -78,7 +80,7 @@ static:
 		return ret;
 	}
 
-	ErrorVal removeEnvironment(Environment* environment) {
+	synchronized ErrorVal removeEnvironment(Environment* environment) {
 		//kprintfln!("removing: {}")(numEnvironments);
 		if (numEnvironments == 1) {
 			head = null;

@@ -16,6 +16,8 @@ import kernel.core.log;
 import kernel.sched.roundrobin;
 import kernel.config;
 
+import architecture.cpu;
+
 alias RoundRobinScheduler SchedulerImplementation;
 
 struct Scheduler {
@@ -29,7 +31,7 @@ public:
 
 	Environment* schedule() {
 		Log.print("Scheduler: schedule()");
-		_current = SchedulerImplementation.schedule(_current);
+		current = SchedulerImplementation.schedule(current);
 
 		if (_current is null) {
 			Log.result(ErrorVal.Fail);
@@ -37,7 +39,7 @@ public:
 		}
 
 		Log.result(ErrorVal.Success);
-		return _current;
+		return current;
 	}
 
 	Environment* newEnvironment() {
@@ -58,12 +60,15 @@ public:
 		cur.state = Environment.State.Uninitializing;
 		cur.uninitialize();
 		Log.result(ErrorVal.Success);
+
+		current = null;
+
 		return SchedulerImplementation.removeEnvironment(cur);
 	}
 
 	ErrorVal execute() {
-		if (_current !is null) {
-			_current.execute();
+		if (current !is null) {
+			current.execute();
 		}
 
 		// The previous function should NOT return
@@ -72,10 +77,26 @@ public:
 	}
 
 	Environment* current() {
-		return _current;
+		return _current[Cpu.identifier];
 	}
 
+	void current(Environment* cur) {
+		_current[Cpu.identifier] = cur;
+	}
+
+	void apSchedule(){
+		while(_bspInitComplete == false){}
+		
+		schedule();
+		execute();
+	}
+
+	void kmainComplete(){
+		_bspInitComplete = true;
+	}
 private:
 
-	Environment* _current;
+	Environment* _current[SMP_MAX_CORES];
+
+	bool _bspInitComplete;
 }

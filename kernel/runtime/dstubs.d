@@ -72,6 +72,15 @@ private
 	}
 }
 
+/**************************************************/
+void _d_monitorenter(Object h){
+	h.__mutex.lock();
+}
+
+void _d_monitorexit(Object h){
+	h.__mutex.unlock();
+}
+
 /**************************************************
  Random stubs (they'll go somewhere eventually)
 **************************************************/

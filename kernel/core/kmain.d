@@ -134,6 +134,8 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	ulong foobar = PerfMon.pollEvent(0);
 	kprintfln!("L2Requests: {}")(foobar);
 
+	Scheduler.kmainComplete();
+
 	Scheduler.execute();
 
 	// Run task
