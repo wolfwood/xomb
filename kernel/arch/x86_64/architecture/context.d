@@ -147,6 +147,7 @@ public:
 
 	ErrorVal alloc(void* virtAddr, ulong length, bool writeable = true) {
 
+		//kprintfln!("alloc {} for {}B")(virtAddr, length);
 		// check validity of virtAddr
 		if (cast(ulong)virtAddr > 0x00000000fffff000UL) {
 			return ErrorVal.Fail;
@@ -158,6 +159,7 @@ public:
 		Paging.mapRegion(null, physAddr, 4096, virtAddr, writeable);
 		virtAddr += 4096;
 
+		kprintfln!("alloc {} for {}B")(virtAddr, length);
 		while (length > 4096) {
 			physAddr = Heap.allocPageNoMap(virtAddr);
 			if (physAddr is null) { return ErrorVal.Fail; }
@@ -165,6 +167,7 @@ public:
 			virtAddr += 4096;
 			length -= 4096;
 		}
+		kprintfln!("alloc done {} for {}B")(virtAddr, length);
 
 		return ErrorVal.Success;
 	}

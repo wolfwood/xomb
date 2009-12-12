@@ -86,6 +86,30 @@ public:
 		MCE
 	}
 
+	// -- Known Interrupt Types -- //
+
+	enum InterruptType : uint {
+		DivisionByZero,
+		Debug,
+		NMI,
+		Breakpoint,
+		INTO,
+		OutOfBounds,
+		InvalidOpcode,
+		NoCoprocessor,
+		DoubleFault,
+		CoprocessorSegmentOverrun,
+		BadTSS,
+		SegmentNotPresent,
+		StackFault,
+		GeneralProtectionFault,
+		PageFault,
+		UnknownInterrupt,
+		CoprocessorFault,
+		AlignmentCheck,
+		MachineCheck,
+		Syscall = 128,
+	}
 
 	// -- Table Functions -- //
 
@@ -235,6 +259,7 @@ private:
 	InterruptHandler[256] handlers;
 
 	void dispatch(InterruptStack* stack) {
+		kprintfln!("Interrupt: {}")(stack.intNumber);
 		if (handlers[stack.intNumber] !is null) {
 			handlers[stack.intNumber](stack);
 			return;

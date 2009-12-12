@@ -64,6 +64,8 @@ public:
 		Log.print("Cpu: Polling Cache Info");
 		Log.result(getCacheInfo());
 
+		enableFPU();
+
 		return ErrorVal.Success;
 	}
 
@@ -455,6 +457,35 @@ private:
 	void disableInterrupts() {
 		asm {
 			cli;
+		}
+	}
+
+	void enableFPU() {
+		size_t cr4;
+
+		// You can check for the FPU, or assume it
+		asm {
+			mov RAX, CR4;
+			mov cr4, RAX;
+		}
+
+		cr4 |= 0x200;
+
+		asm {
+			mov RAX, cr4;
+			mov CR4, RAX;
+		}
+
+		setFPUWord(0x37f);
+	}
+
+	void setFPUWord(ushort cw) {
+		// You can check for FPU, or assume it
+		ushort oldcw;
+		ushort* oldcw_ptr = &oldcw;
+		asm {
+			fldcw cw;
+			fstcw oldcw_ptr;
 		}
 	}
 

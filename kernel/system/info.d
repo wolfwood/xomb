@@ -32,6 +32,6 @@ public:
 	Disk[10] diskInfo;
 
 	// Information about each processor available.
-	uint numProcessors;
+	uint numProcessors = 1; // Assume at least one.
 	Processor[256] processorInfo;
 }

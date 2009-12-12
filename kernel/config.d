@@ -44,4 +44,4 @@ static:
 	}
 }
 
-public import HeapImplementation = kernel.mem.pagecolor;
+public import HeapImplementation = kernel.mem.binhop;

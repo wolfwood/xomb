@@ -1,13 +1,12 @@
 /*
- * pagecolor.d
+ * binhop.d
  *
- * This is the simple page coloring module.  It isnt that exciting.
- * Makes sure that when a virtual page is mapped to a physical one that their color bits match.
- * Uses the Bitmap.bitmap code, b/c Bitmap.bitmap index = PPN
+ * bin hopping implementation.  basically the same as basic page coloring
+ * but instead of matching virt. address to color, rotates through the colors.
  *
  */
 
-module kernel.mem.pagecolor;
+module kernel.mem.binhop;
 
 // Import system info to get info about RAM
 import kernel.system.info;
@@ -48,7 +47,8 @@ ErrorVal initialize() {
 	 }
 	 
 	 uint block_bits = 0;
-	 temp = System.processorInfo[Cpu.identifier].L2Cache.blockSize;	 while(temp > 1) {
+	 temp = System.processorInfo[Cpu.identifier].L2Cache.blockSize;	 
+	 while(temp > 1) {
 	 	    block_bits++;
 		    temp = temp/2;
 	 }
@@ -64,6 +64,9 @@ ErrorVal initialize() {
 	color_bits = set_bits + block_bits - page_bits;
 	color_mask = (((1 << color_bits)-1) << page_bits);
 	kprintfln!("color_mask: {b}")(color_mask);
+
+	cur_bin = 0;
+
 	return Bitmap.initialize();
 }
 
@@ -110,6 +113,7 @@ void virtualStart(void* newAddr) {
 private {
 	uint color_bits; //defines the #of color_bits
 	ulong color_mask;
+	ulong cur_bin;
 
 	// A helper function to mark off a range of memory
 	void markOffRegion(void* start, ulong length) {
@@ -157,8 +161,8 @@ private {
 	ulong findPage(void * virtAddr) {
 		ulong* curPtr = Bitmap.bitmap;
 		ulong curIndex = 0;
-		ulong color = cast(ulong) virtAddr & color_mask;
-		ulong color_shift = color / VirtualMemory.getPageSize();
+		//ulong color = cast(ulong) virtAddr & color_mask;
+		//ulong color_shift = color / VirtualMemory.getPageSize();
 		//kprintfln!("findPage: {x} color: {x}:{x} curPtr: {x}")(virtAddr, color, color_shift, curPtr);
 
 		while(true) {
@@ -170,10 +174,16 @@ private {
 
 				for (uint b; b < 64; b++) {
 					if((tmpVal & 0x1) == 0) {
-						if ((subIndex < Bitmap.totalPages) && ((subIndex & color_shift) == color_shift)) {
+						if ((subIndex < Bitmap.totalPages) && ((subIndex & cur_bin) == cur_bin)) {
 							// mark it off as used
 							*curPtr |= cast(ulong)(1UL << b);
-							//kprintfln!("found: {} : {}")(subIndex, subIndex & color_shift);
+							kprintfln!("found: {} : {} color: {}")(subIndex, subIndex & cur_bin, cur_bin);
+							kprintfln!("color bits: {}")(color_bits);
+							//increment the cur_bin
+							cur_bin++;
+							if(cur_bin > ((1 << color_bits)-1)) {
+								   cur_bin = 0;
+							}
 
 							// return the page index
 							return subIndex;

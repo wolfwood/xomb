@@ -14,8 +14,7 @@ import kernel.arch.x86_64.core.paging;
 // Normal kernel modules
 import kernel.core.error;
 
-struct VirtualMemory
-{
+struct VirtualMemory {
 static:
 public:
 
