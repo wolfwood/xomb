@@ -130,3 +130,5 @@ module		/boot/testapp
 module		/boot/testc
 #module		/boot/test
 module    /boot/text
+module		/boot/simplyfft
+module		/boot/simplymm

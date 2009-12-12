@@ -95,13 +95,18 @@ private:
 
 	static const uint OS_FLAG = 1 << 17;
 	static const uint USR_FLAG = 1 << 16;
-	static const uint ALL_CORES_FLAG = 3 << 14;
+	static const uint ALL_CORES_FLAG = 0b11 << 14;
 	static const uint UNI_CORE_FLAG = 1 << 14;
+	static const uint ENABLE_FLAG = 1 << 22;
+
+	static const uint MESI_ALL = 0b1111 << 8;
 
 	void registerMSR(uint idx, uint mask) {
 		mask |= OS_FLAG;
 		mask |= USR_FLAG;
 		mask |= ALL_CORES_FLAG;
+		mask |= ENABLE_FLAG;
+		mask |= MESI_ALL;
 		Cpu.writeMSR(IA32_PERFEVTSEL_BASE + idx, mask);
 	}
 

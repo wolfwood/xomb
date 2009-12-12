@@ -80,7 +80,7 @@ void* allocPage(void* virtAddr) {
 	ulong index = findPage(virtAddr);
 
 	if (index == 0xffffffffffffffffUL) {
-		return null;
+		return Bitmap.allocPage(virtAddr);
 	}
 
 	// Return the address

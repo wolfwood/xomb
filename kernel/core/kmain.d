@@ -12,6 +12,7 @@ import architecture.multiprocessor;
 import architecture.vm;
 import architecture.syscall;
 import architecture.main;
+import architecture.perfmon;
 
 // This module contains our powerful kprintf function
 import kernel.core.kprintf;
@@ -70,6 +71,10 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	// Initialize the kernel Heap
 	Heap.initialize();
 
+	Log.print("PerfMon: initialize()");
+	Log.result(PerfMon.initialize());
+	PerfMon.registerEvent(0, PerfMon.Event.L2Requests);
+
 	// 2b. Paging Initialization
 	Log.print("VirtualMemory: initialize()");
    	Log.result(VirtualMemory.initialize());
@@ -121,6 +126,9 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	RamFS.write(video2, foo.ptr, foo.length);
 
 	//kprintfln!("L2Cache: assoc: {} blocksize: {} size: {}")(System.processorInfo[Cpu.identifier].L2Cache.associativity, System.processorInfo[Cpu.identifier].L2Cache.blockSize, System.processorInfo[Cpu.identifier].L2Cache.length);
+
+	ulong foobar = PerfMon.pollEvent(0);
+	kprintfln!("L2Requests: {}")(foobar);
 
 	Scheduler.execute();
 
