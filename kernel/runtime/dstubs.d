@@ -10,6 +10,8 @@ import kernel.runtime.util;
 // for printing out runtime errors
 import kernel.core.kprintf;
 
+import architecture.mutex;
+
 // magical gcc business (BEWARE THE MAGICAL EMPTY FILE!!!)
 version(GNU)
 {
@@ -73,12 +75,22 @@ private
 }
 
 /**************************************************/
+// XXX: Magical.
 void _d_monitorenter(Object h){
-	h.__mutex.lock();
+//	Monitor* mon = cast(Monitor*) (cast(void**)h)[1];
+	Mutex* mon = cast(Mutex*) (cast(size_t*)(h) + 1);
+//	kprintfln!("Monitor m: {}")(mon);
+//	kprintfln!("mon h: {}")(mon);
+//	kprintfln!("val: {}")(*cast(ulong*)mon);
+	if (*(cast(ulong*)mon) == 0) {
+		mon.unlock();
+	}
+	mon.lock();
 }
 
 void _d_monitorexit(Object h){
-	h.__mutex.unlock();
+	Mutex* mon = cast(Mutex*) (cast(size_t*)(h) + 1);
+	mon.unlock();
 }
 
 /**************************************************

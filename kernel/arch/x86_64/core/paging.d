@@ -36,9 +36,8 @@ import kernel.dev.console;
 //      - devices
 //      - misc
 
-struct Paging {
+class Paging {
 static:
-public:
 
 	// The page size we are using
 	const auto PAGESIZE = 4096;
@@ -199,7 +198,7 @@ public:
 	}
 
 	const ulong MAX_USER_GIB = (256 * 512);
-	void* allocUserGib(ulong gibIndex) {
+	synchronized void* allocUserGib(ulong gibIndex) {
 		if (gibIndex > MAX_USER_GIB) {
 			return cast(void*)-1;
 		}
@@ -222,7 +221,7 @@ public:
 		return gibAddr;
 	}
 
-	ErrorVal mapGib(void* gib, void* to) {
+	synchronized ErrorVal mapGib(void* gib, void* to) {
 		// Get the address of the gib, and find its PL3 and PL2
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(gib, indexL1, indexL2, indexL3, indexL4);
@@ -253,7 +252,7 @@ public:
 	ulong nextGib = (256 * 512);
 	const ulong MAX_GIB = (512 * 512);
 	const ulong GIB_SIZE = (512 * 512 * PAGESIZE);
-	void* allocGib() {
+	synchronized void* allocGib() {
 		// Check for maximum
 		if (nextGib >= MAX_GIB) {
 			return cast(void*)-1;
@@ -287,7 +286,7 @@ public:
 
 	// Using heapAddress, this will add a region to the kernel space
 	// It returns the virtual address to this region.
-	void* mapRegion(void* physAddr, ulong regionLength) {
+	synchronized void* mapRegion(void* physAddr, ulong regionLength) {
 		// Sanitize inputs
 
 		// physAddr should be floored to the page boundary
@@ -325,7 +324,7 @@ public:
 		return location;
 	}
 
-	ulong mapRegion(PageLevel4* rootTable, void* physAddr, ulong regionLength, void* virtAddr = null, bool writeable = false) {
+	synchronized ulong mapRegion(PageLevel4* rootTable, void* physAddr, ulong regionLength, void* virtAddr = null, bool writeable = false) {
 		if (virtAddr is null) {
 			virtAddr = physAddr;
 		}

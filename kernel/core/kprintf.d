@@ -9,7 +9,7 @@ import kernel.dev.console;
 // Contains some nice logic and cool templates.
 import kernel.core.util;
 
-
+import architecture.mutex;
 
 
 /* This template will generate code for printing and will do
@@ -55,11 +55,14 @@ import kernel.core.util;
  *
  */
 
+static Mutex lock;
 template kprintf(char[] Format)
 {
 	void kprintf(Args...)(Args args)
 	{
+		lock.lock();
 		mixin(ConvertFormat!(Format, Args));
+		lock.unlock();
 	}
 }
 
@@ -69,12 +72,15 @@ template kprintf(char[] Format)
  * USAGE: See kprintf above.
  *
  */
+
 template kprintfln(char[] Format)
 {
 	void kprintfln(Args...)(Args args)
 	{
+		lock.lock();
 		mixin(ConvertFormat!(Format, Args));
 		Console.putChar('\n');
+		lock.unlock();
 	}
 }
 

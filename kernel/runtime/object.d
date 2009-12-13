@@ -84,8 +84,11 @@ else
  */
 struct Monitor
 {
-	void delegate(Object)[] delegates;
+	void* impl;
+	size_t devt_len;
+	void* devt;
 
+	Mutex mutex;
 
 	/* More stuff goes here defined by internal/monitor.c */
 }
@@ -95,7 +98,6 @@ struct Monitor
  */
 class Object
 {
-	static Mutex __mutex;
 
 	/**
 	 * Convert Object to a human readable string.

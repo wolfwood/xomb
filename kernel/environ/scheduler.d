@@ -82,6 +82,7 @@ public:
 		if (current !is null) {
 			current.execute();
 		}
+		kprintfln!("FAIL")();
 
 		// The previous function should NOT return
 		// So if it does, fail
@@ -89,6 +90,7 @@ public:
 	}
 
 	Environment* current() {
+//		kprintfln!("current: {}")(_current[Cpu.identifier]);
 //		kprintfln!("{} = _current[{}]")(_current[Cpu.identifier].info.id, Cpu.identifier);
 		return _current[Cpu.identifier];
 	}

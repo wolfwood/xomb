@@ -79,7 +79,11 @@ public:
 			System.numProcessors++;
 		}
 
-		if (apLock.locked) { apLock.unlock(); }
+		kprintfln!("Unlocking?")();
+		if (apLock.locked) {
+			kprintfln!("Unlocking")();
+			apLock.unlock();
+		}
 	}
 
 	uint identifier() {
@@ -149,7 +153,6 @@ private:
 
 	void startAP(ubyte apicID) {
 		Log.print("LocalAPIC: Starting AP");
-		//kprintfln!("Starting AP {}")(apicID);
 		apLock.lock();
 
 		ulong p;

@@ -26,6 +26,8 @@ import kernel.mem.heap;
 import kernel.system.info;
 import kernel.system.definitions;
 
+import architecture.syscall;
+
 private {
 	extern(C) {
 		extern ubyte stack;
@@ -40,6 +42,9 @@ public:
 	ErrorVal initialize() {
 		Log.print("Cpu: Verifying");
 		Log.result(verify());
+
+		Log.print("Cpu: Installing Page Table");
+		Log.result(Paging.install());
 
 		Log.print("Cpu: Enabling GDT");
 		Log.result(GDT.install());
@@ -64,6 +69,9 @@ public:
 		Log.result(getCacheInfo());
 
 		enableFPU();
+
+		Log.print("Cpu: Installing System Calls");
+		Log.result(Syscall.initialize);
 
 		return ErrorVal.Success;
 	}

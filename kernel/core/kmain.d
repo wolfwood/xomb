@@ -122,8 +122,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	
 	Loader.loadModules();
 
-	Scheduler.schedule();
-
 	Gib video2 = RamFS.open("/dev/video", Access.Read | Access.Write);
 	RamFS.seek(video2, 4096);
 	const ubyte[] foo = cast(ubyte[])['a', 42, 'b', 42, 'c', 42, '!', 42, '!', 42];
@@ -138,6 +136,10 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	kprintfln!("Date: {} {} {}")(dt.day, dt.month, dt.year);
 
 	Scheduler.kmainComplete();
+//	for(;;){}
+
+	Scheduler.schedule();
+	kprintfln!("schedule has been called")();
 
 	Scheduler.execute();
 
@@ -157,5 +159,6 @@ extern(C) void apEntry() {
 	Multiprocessor.installCore();
 
 	// 3. Schedule
-	Scheduler.idleLoop();
+//	Scheduler.idleLoop();
+	for(;;){}
 }

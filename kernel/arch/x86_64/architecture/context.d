@@ -188,7 +188,6 @@ public:
 	}
 
 	void execute() {
-		kprintfln!("Installing environment {} {} {}")(stack, rootPhysAddr, root);
 		install();
 		asm {
 			// Get return from install() and set as stack pointer

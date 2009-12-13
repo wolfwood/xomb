@@ -32,8 +32,8 @@ struct Mutex {
 private:
 
 	enum Value : int {
-		Locked,
-		Unlocked
+		Unlocked = 1,
+		Locked = 2,
 	}
 
 	Value value = Value.Unlocked;
@@ -42,7 +42,7 @@ private:
 	Value testAndSet(Value* value) {
 		asm {
 			naked;
-			mov RAX, 0;
+			mov RAX, Value.Locked;
 			xchg [RDI], RAX;
 			ret;
 		}
