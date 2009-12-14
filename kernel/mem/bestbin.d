@@ -7,7 +7,7 @@
  *
  */
 
-module kernel.mem.bestbin;
+module kernel.mem.bestbin2;
 
 // Import system info to get info about RAM
 import kernel.system.info;
@@ -65,9 +65,20 @@ ErrorVal initialize() {
 	color_bits = set_bits + block_bits - page_bits;
 	color_mask = (((1 << color_bits)-1) << page_bits);
 
-	createBinTree(color_mask+1);
-	kprintfln!("color_mask: {b}")(color_mask);
-	return Bitmap.initialize();
+		
+	ErrorVal rv = Bitmap.initialize();
+	if(rv != ErrorVal.Success)
+	      return rv;	
+	     
+	//have to do this stuff after initialize b/c that's where Bitmap.totalPages gets defined	
+	uint i, j;
+	for(i=0; i<(1 << color_bits); i++) {
+		 bin_info[i][0] = Bitmap.totalPages/(1 << color_bits);
+		 for(j=1; j<16; j++) {
+		 	  bin_info[i][j] = 0;
+		 }
+	}
+	return rv;
 }
 
 ErrorVal reportCore() {
@@ -113,8 +124,8 @@ void virtualStart(void* newAddr) {
 private {
 	uint color_bits; //defines the #of color_bits
 	ulong color_mask;
-	//3d array. 1st dimension = level in best bin tree, 2nd = node number in level, 3rd = used per address space and total free
-	uint[][][] nodeTree;
+	
+	uint[512][17] bin_info; //cheating, assuming there's no more than 512 colors, and 16 processors
 	ulong treeHeight;
 
 	// A helper function to mark off a range of memory
@@ -162,39 +173,30 @@ private {
 	// Returns the page index of a free page
 	ulong findPage(void * virtAddr) {
 	        //loop to find the best bin
-		uint i;
-		ulong nodeID=0;
-		for(i=0; i<treeHeight-1; i++) {
-			 nodeTree[i][nodeID][Cpu.identifier]++; //increment used
-			 nodeTree[i][nodeID][System.numProcessors]--; //decrement free
-			 
-			 if(nodeTree[i+1][nodeID*2][Cpu.identifier] < nodeTree[i][nodeID*2+1][Cpu.identifier]) {
-			        //go left
-				nodeID=nodeID*2;
+		uint i, j;
+		
+		uint best_index=0;
+		
+		for(i=1; i<(1 << color_bits); i++) {
+			 //compare the used values
+			 if(bin_info[i][Cpu.identifier+1] < bin_info[best_index][Cpu.identifier+1]) {
+			 	
+				//make sure  there is a free page in this bin
+				if(bin_info[i][0] > 0)
+					best_index = i;
 			 }
-			 else if (nodeTree[i+1][nodeID*2][Cpu.identifier] > nodeTree[i][nodeID*2+1][Cpu.identifier]) {
-			      //go right
-			      nodeID=nodeID*2+1;
-			 }
-
-			 //used is the same, look at free
-			 else if (nodeTree[i+1][nodeID*2][System.numProcessors]	 > nodeTree[i+1][nodeID*2+1][System.numProcessors]) {
-			      //go left
-			      nodeID=nodeID*2;
+			 else if(bin_info[i][Cpu.identifier+1] == bin_info[best_index][Cpu.identifier+1]) {
+			      if(bin_info[i][0] < bin_info[best_index][0]
+			      		best_index=i;
 			 }
 			 
-			 //more free to the right, or a tie, just go right
-			 else {
-			      nodeID=nodeID*2;
-			 }
+			 	 	 
 		}
 
-		//update values for the last level
-		nodeTree[treeHeight][nodeID][Cpu.identifier]++;
-		nodeTree[treeHeight][nodeID][System.numProcessors]--;
-		
-		//nodeID represents the bin number (color)
-		
+		//decrement free, and increment used
+		kprintfln!("The best index is {} which has used: {} and free: {}")(best_index, bin_info[best_index][Cpu.identifier+1], bin_info[best_index][0]);
+		bin_info[best_index][0]--;
+		bin_info[best_index][Cpu.identifier+1]++;			
 		ulong* curPtr = Bitmap.bitmap;
 		ulong curIndex = 0;
 		//ulong color = cast(ulong) virtAddr & color_mask;
@@ -210,10 +212,10 @@ private {
 
 				for (uint b; b < 64; b++) {
 					if((tmpVal & 0x1) == 0) {
-						if ((subIndex < Bitmap.totalPages) && ((subIndex & nodeID) == nodeID)) {
+						if ((subIndex < Bitmap.totalPages) && ((subIndex & best_index) == best_index)) {
 							// mark it off as used
 							*curPtr |= cast(ulong)(1UL << b);
-							//kprintfln!("found: {} : {}")(subIndex, subIndex & color_shift);
+							kprintfln!("found: {} : {}")(subIndex, subIndex & best_index);
 
 							// return the page index
 							return subIndex;
@@ -239,38 +241,4 @@ private {
 		return 0xffffffffffffffffUL;
 	}
 	
-	void createBinTree(ulong binNum) {
-	     //find the height of the tree
-	     	     ulong temp = binNum;
-
-	     
-	     while(temp > 1) {
-	     		temp=temp/2;
-			treeHeight++;
-	     }
-	    
-	     nodeTree[].length = treeHeight;
-     	     populateTree(treeHeight, 0, 0, (1 << color_bits));
-	}
-	
-	void populateTree(ulong height, uint level, uint node, ulong totalBins) {
-	     //set the used and free counts to the number of bins
-	   
-	     uint i;
-	     kprintfln!("Num processors: {}")(System.numProcessors);
-	     for(i=0; i<System.numProcessors; i++) {
-	     	      nodeTree[level][node][i] = 0;
-		      }
-             
-	     kprintfln!("level={}, node={}, value={}")(level, node, System.numProcessors);
-	     nodeTree[level][node][System.numProcessors] = totalBins;
-
-	     if(level == height) 
-	     	  return;
-	     else {
-	     	  //recurse on left and right children
-		  populateTree(height, level+1, node*2, totalBins/2);
-		  populateTree(height, level+1, node*2 + 1, totalBins/2);
-	     }	     
-	}
 }
