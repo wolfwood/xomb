@@ -32,15 +32,12 @@ public:
 	}
 
 	Environment* schedule() {
-		Log.print("Scheduler: schedule()");
 		current = SchedulerImplementation.schedule(current);
 
 		if (current is null) {
-			Log.result(ErrorVal.Fail);
 			return null;
 		}
 
-		Log.result(ErrorVal.Success);
 		return current;
 	}
 
@@ -57,17 +54,9 @@ public:
 	}
 
 	ErrorVal removeEnvironment() {
-		Log.print("Scheduler: removeEnvironment()");
-		ulong _perfCounterEnd = PerfMon.pollEvent(0);
-		_perfCounter = _perfCounterEnd - _perfCounter;
-		Time curtime;
-		Timing.currentTime(curtime);
-		kprintfln!("at {}:{}:{}")(curtime.hours, curtime.minutes, curtime.seconds);
-		kprintfln!("Performance Monitor Result: {}")(_perfCounter);
 		Environment* cur = current;
 		cur.state = Environment.State.Uninitializing;
 		cur.uninitialize();
-		Log.result(ErrorVal.Success);
 
 		current = null;
 
@@ -75,28 +64,21 @@ public:
 	}
 
 	ErrorVal execute() {
-		_perfCounter = PerfMon.pollEvent(0);
-		Timing.currentTime(_last);
-		kprintfln!("at {}:{}:{}")(_last.hours, _last.minutes, _last.seconds);
-		kprintfln!("execute {}")(current.info.id);
 		if (current !is null) {
 			current.execute();
 		}
-		kprintfln!("FAIL")();
 
 		// The previous function should NOT return
 		// So if it does, fail
+		kprintfln!("FAIL")();
 		return ErrorVal.Fail;
 	}
 
 	Environment* current() {
-//		kprintfln!("current: {}")(_current[Cpu.identifier]);
-//		kprintfln!("{} = _current[{}]")(_current[Cpu.identifier].info.id, Cpu.identifier);
 		return _current[Cpu.identifier];
 	}
 
 	void current(Environment* cur) {
-//		kprintfln!("_current[{}] = {}")(Cpu.identifier, _current[Cpu.identifier].info.id);
 		_current[Cpu.identifier] = cur;
 	}
 
@@ -116,7 +98,4 @@ private:
 	Environment* _current[SMP_MAX_CORES];
 
 	bool _bspInitComplete;
-	ulong _perfCounter;
-
-	Time _last;
 }

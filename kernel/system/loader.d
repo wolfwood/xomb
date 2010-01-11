@@ -74,7 +74,6 @@ static:
 				return ErrorVal.Fail;
 			}
 			else {
-				kprintfln!("environ: {} {}")(environ.info.id, moduleAddr);
 				// Load executable
 				environ.virtualStart = virtAddress;
 				environ.length = System.moduleInfo[index].length - Elf.getoffset(moduleAddr);
@@ -92,14 +91,11 @@ static:
 
 				for(uint i; i < numSegments; i++) {
 					curSegment = Elf.segment(moduleAddr, i);
-					kprintfln!("segment {} {} {}")(i, curSegment.offset, curSegment.length); 
 					environ.allocSegment(curSegment);
 
 					// Copy segment
 					memcpy(curSegment.virtAddress, moduleAddr + curSegment.offset, curSegment.length);
 				}
-
-				//kprintfln!("Success (Environment Loaded)")();
 			}
 		}
 

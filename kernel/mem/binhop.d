@@ -177,8 +177,8 @@ private {
 						if ((subIndex < Bitmap.totalPages) && ((subIndex & cur_bin) == cur_bin)) {
 							// mark it off as used
 							*curPtr |= cast(ulong)(1UL << b);
-							kprintfln!("found: {} : {} color: {}")(subIndex, subIndex & cur_bin, cur_bin);
-							kprintfln!("color bits: {}")(color_bits);
+							//kprintfln!("found: {} : {} color: {}")(subIndex, subIndex & cur_bin, cur_bin);
+							//kprintfln!("color bits: {}")(color_bits);
 							//increment the cur_bin
 							cur_bin++;
 							if(cur_bin > ((1 << color_bits)-1)) {

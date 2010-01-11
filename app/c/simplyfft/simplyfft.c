@@ -30,6 +30,7 @@
 /*           routine so references to data[1] will really access data[0].    */
 /*---------------------------------------------------------------------------*/
 
+void perfPoll(int);
 double sin(double);
 
 static void fft_1d(double *data, int nn, int isign)
@@ -99,7 +100,7 @@ static void fft_1d(double *data, int nn, int isign)
 }
 
 // Should be a power of two
-#define INPUTSIZE 128
+#define INPUTSIZE (1024*1024)
 
 // some (very literal) sin implementation
 // it is not a very good one
@@ -122,7 +123,8 @@ double sin(double x) {
 }
 
 void main() {
-	double input[INPUTSIZE];
+	double* input;
+	input = (double*)malloc(sizeof(double) * INPUTSIZE);
 
 	srand(0);
 	int i;
@@ -130,5 +132,10 @@ void main() {
 		input[i] = (double)rand();
 	}
 
-	fft_1d(input, INPUTSIZE>>1, 1);
+	perfPoll(0);
+	for(i = 0; i < 200; i++) {
+		fft_1d(input, INPUTSIZE>>1, 1);
+	}
+	perfPoll(0);
+	for(;;) {}
 }

@@ -10,7 +10,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MATRIX_DIM 512
+#define MATRIX_DIM 2048
+
+struct bigint {
+	int a;
+	int b;
+};
+
+void perfPoll(int);
 
 void main() {
 	int** Y;
@@ -29,6 +36,9 @@ void main() {
 		B[i] = (int*)malloc(sizeof(int)*MATRIX_DIM);
 	}
 
+	struct bigint bi;
+	perfPoll(0);
+
 	for (i=0; i < MATRIX_DIM; i++) {
 		for (j=0; j < MATRIX_DIM; j++) {
 			for (k=0; k < MATRIX_DIM; k++) {
@@ -36,4 +46,7 @@ void main() {
 			}
 		}
 	}
+
+	perfPoll(0);
+	for(;;){}
 }

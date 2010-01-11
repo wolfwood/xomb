@@ -25,16 +25,41 @@ public:
 		// Make a new root pagetable
 		rootPhysAddr = Heap.allocPageNoMap();
 		root = cast(PageLevel4*)(Paging.mapRegion(rootPhysAddr, 4096));
-		*root = *Paging.kernelPageTable;
+		*root = PageLevel4.init;
+		// Map in kernel pages
+		for (size_t idx = 256; idx < 512; idx++) {
+			root.entries[idx].pml = Paging.kernelPageTable.entries[idx].pml;
+		}
 		root.entries[511].pml = cast(ulong)rootPhysAddr;
 		root.entries[511].present = 1;
 		root.entries[511].rw = 1;
-		PageLevel3* pl3 = root.getTable(510);
-		pl3.entries[511] = root.entries[511];
-		PageLevel2* pl2 = pl3.getTable(510);
-		pl2.entries[511] = root.entries[511];
 
-		//kprintfln!("a")();
+		// Create Level 3 and Level 2 for page trick
+		void* pl3addr = Heap.allocPageNoMap();
+		PageLevel3* pl3 = cast(PageLevel3*)(Paging.mapRegion(pl3addr, 4096));
+		*pl3 = PageLevel3.init;
+		void* pl2addr = Heap.allocPageNoMap();
+		PageLevel2* pl2 = cast(PageLevel2*)(Paging.mapRegion(pl2addr, 4096));
+		*pl2 = PageLevel2.init;
+
+		// Map entries 511 to the PML4
+		root.entries[511].pml = cast(ulong)rootPhysAddr;
+		root.entries[511].present = 1;
+		root.entries[511].rw = 1;
+		pl3.entries[511].pml = cast(ulong)rootPhysAddr;
+		pl3.entries[511].present = 1;
+		pl3.entries[511].rw = 1;
+		pl2.entries[511].pml = cast(ulong)rootPhysAddr;
+		pl2.entries[511].present = 1;
+		pl2.entries[511].rw = 1;
+
+		// Map entry 510 to the next level
+		root.entries[510].pml = cast(ulong)pl3addr;
+		root.entries[510].present = 1;
+		root.entries[510].rw = 1;
+		pl3.entries[510].pml = cast(ulong)pl2addr;
+		pl3.entries[510].present = 1;
+		pl3.entries[510].rw = 1;
 
 		ulong addr = cast(ulong)rootPhysAddr;
 		asm {
@@ -147,7 +172,7 @@ public:
 
 	ErrorVal alloc(void* virtAddr, ulong length, bool writeable = true) {
 
-		//kprintfln!("alloc {} for {}B")(virtAddr, length);
+//		kprintfln!("alloc start {} for {}B")(virtAddr, length);
 		// check validity of virtAddr
 		if (cast(ulong)virtAddr > 0x00000000fffff000UL) {
 			return ErrorVal.Fail;
@@ -156,10 +181,10 @@ public:
 		void* physAddr = Heap.allocPageNoMap(virtAddr);
 		if (physAddr is null) { return ErrorVal.Fail; }
 
+//		kprintfln!("alloc {} for {}B")(virtAddr, length);
 		Paging.mapRegion(null, physAddr, 4096, virtAddr, writeable);
 		virtAddr += 4096;
 
-//		kprintfln!("alloc {} for {}B")(virtAddr, length);
 		while (length > 4096) {
 			physAddr = Heap.allocPageNoMap(virtAddr);
 			if (physAddr is null) { return ErrorVal.Fail; }

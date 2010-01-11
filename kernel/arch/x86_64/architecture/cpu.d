@@ -30,7 +30,7 @@ import architecture.syscall;
 
 private {
 	extern(C) {
-		extern ubyte stack;
+		extern ubyte _stack;
 	}
 }
 
@@ -40,6 +40,8 @@ public:
 
 	// This module will conform to the interface
 	ErrorVal initialize() {
+		LocalAPIC.reportCore();
+
 		Log.print("Cpu: Verifying");
 		Log.result(verify());
 
@@ -259,8 +261,12 @@ public:
 		 return ErrorVal.Success;
 	}
 
+	void* stack() {
+		return _stacks[identifier];
+	}
+
 private:
-	
+
 	/*
 	added by pmcclory.
 	      loops through the bytes of the given register (should be set by a call to CPUID with EAX set to 0x2).
@@ -536,38 +542,43 @@ private:
 	}
 
 	uint getBX() {
-	     asm {
-	     	 naked;
-		 mov EAX, EBX;
-		 ret;
-	     }
+		asm {
+			naked;
+			mov EAX, EBX;
+			ret;
+		}
 	}
 
 	uint getCX() {
-	     asm {
-	     	 naked;
-		 mov EAX, ECX;
-		 ret;
-	     }
+		asm {
+			naked;
+			mov EAX, ECX;
+			ret;
+		}
 	}
 
 	uint getDX() {
-	     asm {
-	     	 naked;
-		 mov EAX, EDX;
-		 ret;
-	     }
+		asm {
+			naked;
+			mov EAX, EDX;
+			ret;
+		}
 	}
+
+	private void* _stacks[256];
 
 	// Will create and install a new kernel stack
 	// Note: You have to preserve the current stack
 	ErrorVal installStack() {
+		kprintfln!("id: {}")(identifier);
 		ubyte* stackSpace = cast(ubyte*)Heap.allocPage();
-		ubyte* currentStack = cast(ubyte*)(&stack-4096);
+		ubyte* currentStack = cast(ubyte*)(&_stack-4096);
 
-		//kprintfln!("currentStack: {x} stackSpace: {x}")(currentStack, stackSpace);
+		kprintfln!("currentStack: {x} stackSpace: {x} id: {}")(currentStack, stackSpace, identifier);
 		
 		stackSpace[0..4096] = currentStack[0..4096];
+
+		_stacks[identifier] = cast(void*)stackSpace + 4096;
 
 		asm {
 			// Retrieve stack pointer, place in RAX

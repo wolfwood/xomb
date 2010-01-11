@@ -15,11 +15,13 @@ import kernel.core.error;
 public import user.console;
 
 import architecture.cpu;
+import architecture.mutex;
 
 // This is the true interface to the console
 class Console {
 static:
 public:
+	Mutex consoleLock;
 
 	// The number of columns and lines on the screen.
 	const uint COLUMNS = 80;
@@ -84,6 +86,7 @@ public:
 
 	// This method will set the current location of the cursor to the x and y given.
 	synchronized void setPosition(int x, int y) {
+		consoleLock.lock();
 		if (x < 0) { x = 0; }
 		if (y < 0) { y = 0; }
 		if (x >= COLUMNS) { x = COLUMNS - 1; }
@@ -94,10 +97,12 @@ public:
 
 		videoInfo.xpos = x;
 		videoInfo.ypos = y;
+		consoleLock.unlock();
 	}
 
 	// This method will post the character to the screen at the current location.
 	synchronized void putChar(char c) {
+		consoleLock.lock();
 		if (c == '\t') {
 			// Insert a tab.
 			videoInfo.xpos += TABSTOP;
@@ -121,9 +126,12 @@ public:
 			videoInfo.globalY++;
 
 			if (videoInfo.ypos >= LINES) {
+				consoleLock.unlock();
 				scrollDisplay(1);
+				consoleLock.lock();
 			}
 		}
+		consoleLock.unlock();
 	}
 
 	// This mehtod will post a string to the screen at the current location.
@@ -155,9 +163,11 @@ public:
 
 	// This function will scroll the entire screen.
 	void scrollDisplay(uint numLines) {
+		consoleLock.lock();
 		// obviously, scrolling all lines results in a cleared display. Use the faster function.
 		if (numLines >= LINES) {
 			clearScreen();
+			consoleLock.unlock();
 			return;
 		}
 
@@ -188,6 +198,7 @@ public:
 		if (videoInfo.ypos < 0) {
 			videoInfo.ypos = 0;
 		}
+		consoleLock.unlock();
 	}
 
 	void* physicalLocation() {

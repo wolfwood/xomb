@@ -43,6 +43,8 @@ import kernel.filesystem.ramfs;
 // console device
 import kernel.dev.console;
 
+import kernel.core.syscall;
+
 
 // The main function for the kernel.
 // This will receive data from the boot loader.
@@ -74,7 +76,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	Log.print("PerfMon: initialize()");
 	Log.result(PerfMon.initialize());
-	PerfMon.registerEvent(0, PerfMon.Event.L2Requests);
+	PerfMon.registerEvent(0, PerfMon.Event.L2Misses);
 
 	Log.print("Timing: initialize()");
 	Log.result(Timing.initialize());
@@ -127,21 +129,13 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	const ubyte[] foo = cast(ubyte[])['a', 42, 'b', 42, 'c', 42, '!', 42, '!', 42];
 	RamFS.write(video2, foo.ptr, foo.length);
 
-	//kprintfln!("L2Cache: assoc: {} blocksize: {} size: {}")(System.processorInfo[Cpu.identifier].L2Cache.associativity, System.processorInfo[Cpu.identifier].L2Cache.blockSize, System.processorInfo[Cpu.identifier].L2Cache.length);
-
-	ulong foobar = PerfMon.pollEvent(0);
-	kprintfln!("L2Requests: {}")(foobar);
 	Date dt;
 	Timing.currentDate(dt);
 	kprintfln!("Date: {} {} {}")(dt.day, dt.month, dt.year);
 
 	Scheduler.kmainComplete();
-//	for(;;){}
 
-	Scheduler.schedule();
-	kprintfln!("schedule has been called")();
-
-	Scheduler.execute();
+	Scheduler.idleLoop();
 
 	// Run task
 	assert(false, "Something is VERY VERY WRONG. Scheduler.execute returned. :(");
@@ -159,6 +153,6 @@ extern(C) void apEntry() {
 	Multiprocessor.installCore();
 
 	// 3. Schedule
-//	Scheduler.idleLoop();
+	Scheduler.idleLoop();
 	for(;;){}
 }

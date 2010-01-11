@@ -259,7 +259,7 @@ private:
 	InterruptHandler[256] handlers;
 
 	void dispatch(InterruptStack* stack) {
-		kprintfln!("Interrupt: {} @ {}")(stack.intNumber, stack.rip);
+		kprintfln!("Interrupt: {} @ {x}")(stack.intNumber, stack.rip);
 		if (handlers[stack.intNumber] !is null) {
 			handlers[stack.intNumber](stack);
 			return;

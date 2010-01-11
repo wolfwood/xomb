@@ -17,7 +17,8 @@ static:
 public:
 
 	enum Event {
-		L2CacheLinesOut,
+		L2Evictions,
+		L2Misses,
 		L2Requests,
 		L2ReadRequests,
 		L2WriteRequests,
@@ -57,8 +58,11 @@ public:
 		uint mask = 0;
 
 		switch (evt) {
-			case Event.L2CacheLinesOut:
+			case Event.L2Evictions:
 				mask = L2_LINES_OUT;
+				break;
+			case Event.L2Misses:
+				mask = L2_LINES_IN;
 				break;
 			case Event.L2Requests:
 				mask = L2_RQSTS;
@@ -154,7 +158,9 @@ private:
 	// Events:
 
 	static const uint L2_LINES_OUT = 0x26;
+	static const uint L2_LINES_IN = 0x24;
 	static const uint L2_M_LINES_OUT = 0x27;
+	static const uint L2_M_LINES_IN = 0x25;
 	static const uint L2_IFETCH = 0x28;
 	static const uint L2_LD = 0x29;
 	static const uint L2_ST = 0x2a;

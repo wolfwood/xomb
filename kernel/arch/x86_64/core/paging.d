@@ -27,6 +27,7 @@ import kernel.system.info;
 // We need to restart the console driver
 import kernel.dev.console;
 
+import architecture.mutex;
 // Kernel Memory Map:
 //
 // [0xFFFF800000000000]
@@ -125,7 +126,7 @@ static:
 
 		kprintfln!("CR2 {}")(addr);
 
-		while (addr is null) {
+		while (addr < cast(void*)10000) {
 		}
 
 		ulong indexL4, indexL3, indexL2, indexL1;
@@ -197,12 +198,15 @@ static:
 		indexLevel4 = vAddr & 0x1ff;
 	}
 
+	Mutex pagingLock;
+
 	const ulong MAX_USER_GIB = (256 * 512);
 	synchronized void* allocUserGib(ulong gibIndex) {
 		if (gibIndex > MAX_USER_GIB) {
 			return cast(void*)-1;
 		}
 
+		pagingLock.lock();
 		// Calculate address
 		void* gibAddr = cast(void*)(GIB_SIZE * gibIndex); 
 
@@ -218,15 +222,19 @@ static:
 		}
 
 		// Return this gib address
+		pagingLock.unlock();
 		return gibAddr;
 	}
 
 	synchronized ErrorVal mapGib(void* gib, void* to) {
+		pagingLock.lock();
+
 		// Get the address of the gib, and find its PL3 and PL2
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(gib, indexL1, indexL2, indexL3, indexL4);
 		PageLevel3* pl3 = root.getTable(indexL4);
 		if (pl3 is null) {
+			pagingLock.unlock();
 			return ErrorVal.Fail;
 		}
 
@@ -235,16 +243,19 @@ static:
 
 		PageLevel3* pl3_to = root.getTable(indexL4_to);
 		if (pl3_to is null) {
+			pagingLock.unlock();
 			return ErrorVal.Fail;
 		}
 		PageLevel2* pl2_to = pl3_to.getTable(indexL3_to);
 		if (pl2_to is null) {
+			pagingLock.unlock();
 			return ErrorVal.Fail;
 		}
 
 		pl3.entries[indexL3].pml = pl3_to.entries[indexL3_to].pml;
 		pl3.entries[indexL3].us = 1;
 
+		pagingLock.unlock();
 		return ErrorVal.Success;
 	}
 
@@ -254,7 +265,9 @@ static:
 	const ulong GIB_SIZE = (512 * 512 * PAGESIZE);
 	synchronized void* allocGib() {
 		// Check for maximum
+		pagingLock.lock();
 		if (nextGib >= MAX_GIB) {
+			pagingLock.unlock();
 			return cast(void*)-1;
 		}
 
@@ -276,6 +289,7 @@ static:
 		}
 
 		// Return the address of the gib
+		pagingLock.unlock();
 		return gibAddr;
 	}
 
@@ -291,6 +305,7 @@ static:
 
 		// physAddr should be floored to the page boundary
 		// regionLength should be ceilinged to the page boundary
+		pagingLock.lock();
 		ulong curPhysAddr = cast(ulong)physAddr;
 		regionLength += (curPhysAddr % PAGESIZE);
 		curPhysAddr -= (curPhysAddr % PAGESIZE);
@@ -321,6 +336,7 @@ static:
 		}
 
 		// Return the position of this region
+		pagingLock.unlock();
 		return location;
 	}
 
@@ -330,6 +346,7 @@ static:
 		}
 		// Sanitize inputs
 
+		pagingLock.lock();
 		// physAddr should be floored to the page boundary
 		// regionLength should be ceilinged to the page boundary
 		ulong curPhysAddr = cast(ulong)physAddr;
@@ -351,6 +368,7 @@ static:
 		void* endAddr = cast(void*)curPhysAddr;
 
 		heapMap!(false, false)(physAddr, endAddr, virtAddr, writeable);
+		pagingLock.unlock();
 
 		return regionLength;
 	}

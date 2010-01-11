@@ -15,7 +15,7 @@ extern _ebss
 
 ; extern to the load.s
 extern start64
-extern stack
+extern _stack
 
 ; define the starting point for this module
 global start
@@ -89,7 +89,7 @@ start32:
 	; lidt [pIDT32]
 
 	; establish a stack for 32 bit code
-	mov esp, (stack-KERNEL_VMA_BASE) + STACK_SIZE
+	mov esp, (_stack-KERNEL_VMA_BASE) + STACK_SIZE
 
 	; enable paging to activate long mode
 	mov eax, cr0

@@ -1,13 +1,11 @@
 /*
- * pagecolor.d
+ * private.d
  *
- * This is the simple page coloring module.  It isnt that exciting.
- * Makes sure that when a virtual page is mapped to a physical one that their color bits match.
- * Uses the Bitmap.bitmap code, b/c Bitmap.bitmap index = PPN
+ * private L2 cache (sorta).
  *
  */
 
-module kernel.mem.bestbin;
+module kernel.mem.private_cache;
 
 // Import system info to get info about RAM
 import kernel.system.info;
@@ -25,7 +23,6 @@ import Bitmap = kernel.mem.bitmap;
 
 import kernel.system.definitions;
 import architecture.cpu;
-
 
 ErrorVal initialize() {
 
@@ -64,22 +61,8 @@ ErrorVal initialize() {
 
 	color_bits = set_bits + block_bits - page_bits;
 	color_mask = (((1 << color_bits)-1) << page_bits);
-
-		
-	ErrorVal rv = Bitmap.initialize();
-	if(rv != ErrorVal.Success)
-	      return rv;	
-	     
-	//have to do this stuff after initialize b/c that's where Bitmap.totalPages gets defined	
-	uint i, j;
-	for(i=0; i<(1 << color_bits); i++) {
-		kprintfln!("{}")(i);
-		 bin_info[i][0] = Bitmap.totalPages/(1 << color_bits);
-		 for(j=1; j<16; j++) {
-		 	  bin_info[i][j] = 0;
-		 }
-	}
-	return rv;
+	kprintfln!("color_mask: {b}")(color_mask);
+	return Bitmap.initialize();
 }
 
 ErrorVal reportCore() {
@@ -125,9 +108,6 @@ void virtualStart(void* newAddr) {
 private {
 	uint color_bits; //defines the #of color_bits
 	ulong color_mask;
-	
-	uint[17][1024] bin_info; //cheating, assuming there's no more than 512 colors, and 16 processors
-	ulong treeHeight;
 
 	// A helper function to mark off a range of memory
 	void markOffRegion(void* start, ulong length) {
@@ -173,35 +153,12 @@ private {
 
 	// Returns the page index of a free page
 	ulong findPage(void * virtAddr) {
-	        //loop to find the best bin
-		uint i, j;
-		
-		uint best_index=0;
-		
-		for(i=1; i<(1 << color_bits); i++) {
-			 //compare the used values
-			 if(bin_info[i][Cpu.identifier+1] < bin_info[best_index][Cpu.identifier+1]) {
-			 	
-				//make sure  there is a free page in this bin
-				if(bin_info[i][0] > 0)
-					best_index = i;
-			 }
-			 else if(bin_info[i][Cpu.identifier+1] == bin_info[best_index][Cpu.identifier+1]) {
-			      if(bin_info[i][0] < bin_info[best_index][0])
-			      		best_index=i;
-			 }
-			 
-			 	 	 
-		}
-
-		//decrement free, and increment used
-		//kprintfln!("The best index is {} which has used: {} and free: {}")(best_index, bin_info[best_index][Cpu.identifier+1], bin_info[best_index][0]);
-		bin_info[best_index][0]--;
-		bin_info[best_index][Cpu.identifier+1]++;			
 		ulong* curPtr = Bitmap.bitmap;
 		ulong curIndex = 0;
-		//ulong color = cast(ulong) virtAddr & color_mask;
-		//ulong color_shift = color / VirtualMemory.getPageSize();
+		
+		ulong offset = (1 << color_bits)/System.numProcessors;
+		//kprintfln!("num Processors: {}, offset: {}")(System.numProcessors, offset);
+		ulong mask = (1 << color_bits) -1;
 		//kprintfln!("findPage: {x} color: {x}:{x} curPtr: {x}")(virtAddr, color, color_shift, curPtr);
 
 		while(true) {
@@ -213,10 +170,12 @@ private {
 
 				for (uint b; b < 64; b++) {
 					if((tmpVal & 0x1) == 0) {
-						if ((subIndex < Bitmap.totalPages) && ((subIndex & best_index) == best_index)) {
+						if ((subIndex < Bitmap.totalPages) && ((subIndex & mask) >= (Cpu.identifier * offset) ) && ((subIndex & mask) < (Cpu.identifier * offset + offset ))) {
+						uint temp = subIndex & mask;
+						//kprintfln!("CPU: {} Page_color: {}")(Cpu.identifier, temp);
 							// mark it off as used
 							*curPtr |= cast(ulong)(1UL << b);
-							//kprintfln!("found: {} : {}")(subIndex, subIndex & best_index);
+							//kprintfln!("found: {} : {}")(subIndex, subIndex & color_shift);
 
 							// return the page index
 							return subIndex;

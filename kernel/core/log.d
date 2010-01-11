@@ -14,6 +14,8 @@ import kernel.core.error;
 //helps us print to the screen
 import kernel.core.kprintf;
 
+import architecture.mutex;
+
 struct Log {
 static:
 public:
@@ -45,10 +47,12 @@ public:
 	}
 
 private:
+	Mutex logLock;
 
 	//this function does most of the work
 	//it just prints a string
 	void printToLog(char[] message) {
+		logLock.lock();
 		Console.resetColors();
 		//there are 14 characters in our print string, so we need
 		//to subtract them from the number of columns and the message
@@ -69,6 +73,7 @@ private:
 		kprintf!(" .. ")();
 		Console.resetColors();
 		kprintf!("]\n")();
+		logLock.unlock();
 	}
 
 	uint logDepth;
@@ -84,17 +89,20 @@ private:
 	}
 
 	void printStatus(char[] message, Color fore, Color back) {
+		logLock.lock();
 		long gY = Console.getGlobalY();
 		int x,y;
 		int nY;
 		Console.getPosition(x,y);
 		nY = y - cast(int)(gY - yForDepth[logDepth]);
 		if (nY < 0) {
+			logLock.unlock();
 			return;
 		}
 		Console.setPosition(xAtMessage,nY);
 		Console.setColors(fore, back);
 		kprintfln!("{}")(message);
 		Console.setPosition(x,y);
+		logLock.unlock();
 	}
 }

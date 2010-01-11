@@ -10,15 +10,17 @@ module architecture.mutex;
 struct Mutex {
 	void lock() {
 		// Test and Test-and-set implementation:
-		while (value == Value.Locked || testAndSet(&value) == Value.Locked) {
-			asm {
-				// The following should compile into a 'PAUSE' instruction
-				// This will hint to the processor that this is a spinlock
-				// This is for performance and power saving
-				rep;
-				nop;
+		do {
+			while (value == Value.Locked) {
+				asm {
+					// The following should compile into a 'PAUSE' instruction
+					// This will hint to the processor that this is a spinlock
+					// This is for performance and power saving
+					rep;
+					nop;
+				}
 			}
-		}
+		} while (testAndSet(&value) != Value.Unlocked);
 	}
 
 	bool locked() {
@@ -29,14 +31,18 @@ struct Mutex {
 		value = Value.Unlocked;
 	}
 
-private:
-
-	enum Value : int {
-		Unlocked = 1,
-		Locked = 2,
+	bool hasLock() {
+		return value == Value.Locked;
 	}
 
 	Value value = Value.Unlocked;
+
+private:
+
+	enum Value : long {
+		Locked = 0,
+		Unlocked = 1,
+	}
 
 	// RDI is the register that holds the first argument
 	Value testAndSet(Value* value) {
@@ -48,3 +54,5 @@ private:
 		}
 	}
 }
+
+static assert (Mutex.sizeof == 8, "Mutex is not 8 bytes");

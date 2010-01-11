@@ -8,8 +8,6 @@ import user.keyboard;
 
 import user.ramfs;
 
-extern(C):
-
 // Errors
 enum SyscallError : ulong
 {
@@ -25,7 +23,8 @@ enum SyscallID : ulong
 	AllocPage,
 	Exit,
 	Fork,
-	Open
+	Open,
+	PerfPoll,
 }
 
 // Names of system calls
@@ -36,7 +35,8 @@ alias Tuple!
 	"allocPage",		// allocPage()
 	"exit",				// exit()
 	"fork",				// fork()
-	"open"        // open()
+	"open",		        // open()
+	"perfPoll"			// perfPoll()
 ) SyscallNames;
 
 
@@ -47,8 +47,9 @@ alias Tuple!
 	void,			// requestConsole
 	int,			// allocPage
 	void,			// exit
-	int,				// fork
-	Gib     // open
+	int,			// fork
+	Gib, 		    // open
+	void			// perfPoll
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -72,6 +73,10 @@ struct ForkArgs {
 
 struct OpenArgs {
 	char[] path;
+}
+
+struct PerfPollArgs {
+	uint event;
 }
 
 // XXX: This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason
@@ -102,4 +107,5 @@ SyscallRetTypes[ID].stringof ~ ` ` ~ SyscallNames[ID] ~ `(Tuple!` ~ typeof(mixin
 }
 
 mixin(Reduce!(Cat, Map!(MakeSyscall, Range!(SyscallID.max + 1))));
+
 

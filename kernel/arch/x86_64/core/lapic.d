@@ -69,15 +69,14 @@ public:
 
 		EOI();
 
-		logicalIDToAPICId[curCoreId] = getLocalAPICId();
-		APICIdToLogicalID[getLocalAPICId()] = curCoreId;
+		if (curCoreId == 0) {
+			logicalIDToAPICId[0] = getLocalAPICId();
+			APICIdToLogicalID[getLocalAPICId()] = 0;
+
+			curCoreId++;
+		}
 
 	//	kprintfln!("Installed Core {}")(curCoreId);
-
-		curCoreId++;
-		if (curCoreId != 1) {
-			System.numProcessors++;
-		}
 
 		kprintfln!("Unlocking?")();
 		if (apLock.locked) {
@@ -86,12 +85,22 @@ public:
 		}
 	}
 
-	uint identifier() {
+	ErrorVal reportCore() {
 		if (curCoreId == 0) {
-			// We have not initialized the LAPIC, therefore
-			// the boot processor is calling this function.
-			return 0;
+			// This will get reported once the LocalAPIC has been
+			// initialized above.
+			return ErrorVal.Success;
 		}
+
+		logicalIDToAPICId[curCoreId] = getLocalAPICId();
+		APICIdToLogicalID[getLocalAPICId()] = curCoreId;
+
+		curCoreId++;
+
+		return ErrorVal.Success;
+	}
+
+	uint identifier() {
 		return APICIdToLogicalID[getLocalAPICId()];
 	}
 
@@ -99,8 +108,8 @@ private:
 
 	uint curCoreId = 0;
 
-	uint[256] logicalIDToAPICId;
-	uint[256] APICIdToLogicalID;
+	uint[256] logicalIDToAPICId = 0;
+	uint[256] APICIdToLogicalID = 0;
 
 	void initLocalApic(void* localAPICAddr) {
 		//kprintfln!("register space: {x}")(localAPICAddr);
@@ -138,6 +147,9 @@ private:
 	}
 
 	uint getLocalAPICId() {
+		if (apicRegisters is null) {
+			return 0;
+		}
 		return apicRegisters.localApicId >> 24;
 	}
 
