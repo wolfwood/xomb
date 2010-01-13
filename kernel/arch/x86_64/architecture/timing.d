@@ -15,6 +15,22 @@ struct Time {
 	uint seconds;
 	uint minutes;
 	uint hours;
+
+	void opSubAssign(Time b) {
+		ulong total = inSeconds();
+		ulong total_b = b.inSeconds();
+		total -= total_b;
+
+		seconds = total % 60;
+		total /= 60;
+		minutes = total % 60;
+		total /= 60;
+		hours = cast(uint)total;
+	}
+
+	ulong inSeconds() {
+		return cast(ulong)seconds + (cast(ulong)minutes * 60L) + (cast(ulong)hours * 60L * 60L);
+	}
 }
 
 struct Date {
@@ -28,6 +44,22 @@ static:
 
 	ErrorVal initialize() {
 		return ErrorVal.Success;
+	}
+
+	void sleep(uint seconds) {
+		Time curTime;
+		currentTime(curTime);
+
+		Time newTime;
+		for(;;) {
+			currentTime(newTime);
+			// get difference
+			newTime -= curTime;
+
+			if (newTime.inSeconds == seconds) {
+				return;
+			}
+		}
 	}
 
 	void currentDate(out Date dt) {
