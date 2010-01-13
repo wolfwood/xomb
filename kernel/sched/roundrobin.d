@@ -48,7 +48,6 @@ static:
 		if (next is null) {
 			//kprintfln!("Cannot find environment ready (list empty)")();
 			schedLock.unlock();
-			for(;;){}
 			return null;
 		}
 
@@ -58,7 +57,6 @@ static:
 			if (next is orig) {
 				//kprintfln!("Cannot find environment ready (none in Ready state)")();
 				schedLock.unlock();
-				for(;;){}
 				return null;
 			}
 		}
@@ -67,6 +65,10 @@ static:
 		schedLock.unlock();
 		//kprintfln!("Environment Scheduled {} {} {}")(Cpu.identifier, next, next.info.id);
 		return next;
+	}
+
+	uint length() {
+		return numEnvironments;
 	}
 
 	// Set up a new environment

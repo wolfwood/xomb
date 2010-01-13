@@ -41,6 +41,11 @@ public:
 		return current;
 	}
 
+	// number of environments
+	uint length() {
+		return SchedulerImplementation.length();
+	}
+
 	Environment* newEnvironment() {
 		Log.print("Scheduler: newEnvironment()");
 		Environment* newEnv = SchedulerImplementation.newEnvironment();
@@ -85,7 +90,15 @@ public:
 	void idleLoop(){
 		while(_bspInitComplete == false){}
 		
-		while(schedule() == null){}
+		while(schedule() == null && length() > 0){}
+
+		if (length() == 0) {
+			// Shut down this core as we shut down the system.
+			// We have nothing left to run, and nothing is running.
+			// So, nothing will ever run.
+			kprintfln!("SHUTTING DOWN CORE {}")(Cpu.identifier);
+			for(;;){}
+		}
 
 		execute();
 	}
