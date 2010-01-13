@@ -64,13 +64,14 @@ static:
 
 		dt.day = day;
 		dt.month = month;
+		dt.year = year;
 
 		// Convert from BCD to decimal
 		dt.day = (((dt.day & 0xf0) >> 4) * 10) + (dt.day & 0xf);
 		dt.month = (((dt.month & 0xf0) >> 4) * 10) + (dt.month & 0xf);
 		dt.year = (((dt.year & 0xf0) >> 4) * 10) + (dt.year & 0xf);
 		// XXX: OMG YEAR 2100 BUG HERE
-		dt.year = year + 2000;
+		dt.year = dt.year + 2000;
 	}
 
 	void currentTime(out Time tm) {
