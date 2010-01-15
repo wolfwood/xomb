@@ -56,7 +56,7 @@ static:
 			// get difference
 			newTime -= curTime;
 
-			if (newTime.inSeconds == seconds) {
+			if (newTime.inSeconds >= seconds) {
 				return;
 			}
 		}
