@@ -44,4 +44,5 @@ static:
 	}
 }
 
-public import HeapImplementation = kernel.mem.pagecolor;
+public import HeapImplementation = kernel.mem.bitmap;
+public import PageAllocatorImplementation = kernel.mem.bitmap;

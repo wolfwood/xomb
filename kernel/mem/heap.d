@@ -1,7 +1,7 @@
 /*
  * heap.d
  *
- * This module implements the kernel heap page allocator.
+ * This module implements the kernel heap to allocate dynamic memory.
  *
  */
 
@@ -19,25 +19,12 @@ import kernel.core.kprintf;
 import kernel.core.log;
 import kernel.core.error;
 
+// The Heap needs a Gib.
+import kernel.mem.giballocator;
+import kernel.mem.gib;
+
 // Import the configurable allocator
 import kernel.config : HeapImplementation;
-
-/*
-
-   The Heap will be placed in virtual space directly after the virtual space
-   taken up by the kernel (kernel.virtualStart + kernel.length).
-
-   The Architecture initialization will be responsible for reporting the
-   length and virtual address of the kernel. The architecture will need to
-   allot space for the bitmap and have a direct mapping to RAM for the Heap
-   to initialize.
-
-   The Heap can be asked its location via the 'start' and 'virtualStart'
-   functions. When VirtualMemory is initialized, it will need to make
-   sure a mapping exists for Heap.start .. Heap.start + Heap.length to
-   map to Heap.virtualStart. 
-
-*/
 
 struct Heap {
 static:
@@ -45,79 +32,23 @@ public:
 
 	// Needs to be called by the architecture
 	ErrorVal initialize() {
-		// We do not want to reinitialize this module.
-		if (initialized) {
-			return ErrorVal.Fail;
-		}
-
-		// The module has been initialized.
-		initialized = true;
-
-		return HeapImplementation.initialize();
+		_gib = GibAllocator.alloc((1024*128)+2, 0);
+		return ErrorVal.Success;
 	}
 
 	// Needs to be called by each core (including boot)
 	ErrorVal reportCore() {
-		return HeapImplementation.reportCore();
-	}
-
-	void virtualStart(void* newAddr) {
-		HeapImplementation.virtualStart = newAddr;
-	}
-
-	// This will allocate a page and return a physical address and will
-	// not attempt to map it into virtual memory.
-	// This also does not have a virtual address hint
-	void* allocPageNoMap() {
-		return HeapImplementation.allocPage();
-	}
-
-	// This will allocate a page and return a physical address and will
-	// not attempt to map it into virtual memory.
-	void* allocPageNoMap(void* virtAddr) {
-		return HeapImplementation.allocPage(virtAddr);
-	}
-
-	// This will allocate a page and return the virtual address while
-	// coordinating with the VirtualMemory module.
-	void* allocPage() {
-		// compute physical address
-		void* address = allocPageNoMap(null);
-
-		// map in the region
-		return VirtualMemory.mapKernelPage(address);
-	}
-
-	void* allocRegion(ulong regionLength) {
-		void* ret = allocPage();
-
-		while (regionLength > VirtualMemory.getPageSize) {
-			allocPage();
-			regionLength -= VirtualMemory.getPageSize();
-		}
-
-		return ret;
-	}
-
-	// This will free an allocated page, if it is allowed.
-	ErrorVal freePage(void* address) {
-		return HeapImplementation.freePage(address);
+		return ErrorVal.Success;
 	}
 
 	uint length() {
-		return HeapImplementation.length();
-	}
-
-	ubyte* start() {
-		return HeapImplementation.start();
-	}
-
-	ubyte* virtualStart() {
-		return HeapImplementation.virtualStart();
+		return 0;
 	}
 
 private:
 
+	Gib _gib;
+
 	// Whether or not this module has been initialized
-	bool initialized;
+	bool _initialized;
 }

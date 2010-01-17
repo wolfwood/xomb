@@ -58,9 +58,7 @@ private:
 		//to subtract them from the number of columns and the message
 		//length in order to print things out correctly
 		uint dots = (logDepth * 2) + 1;
-		kprintf!("  ")();
-		kprintf!("{}")(hr[0..dots]);
-		kprintf!("  {} {} [")(message, hr[0..66-message.length-dots]);
+		kprintf!("  {}  {} {} [")(hr[0..dots], message, hr[0..66-message.length-dots]);
 
 		int x, y;
 

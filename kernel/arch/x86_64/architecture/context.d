@@ -16,14 +16,14 @@ import kernel.core.kprintf;
 
 import kernel.filesystem.ramfs;
 
-import kernel.mem.heap;
+import kernel.mem.pageallocator;
 
 struct Context {
 public:
 
 	ErrorVal initialize() {
 		// Make a new root pagetable
-		rootPhysAddr = Heap.allocPageNoMap();
+		rootPhysAddr = PageAllocator.allocPage();
 		root = cast(PageLevel4*)(Paging.mapRegion(rootPhysAddr, 4096));
 		*root = PageLevel4.init;
 		// Map in kernel pages
@@ -35,10 +35,10 @@ public:
 		root.entries[511].rw = 1;
 
 		// Create Level 3 and Level 2 for page trick
-		void* pl3addr = Heap.allocPageNoMap();
+		void* pl3addr = PageAllocator.allocPage();
 		PageLevel3* pl3 = cast(PageLevel3*)(Paging.mapRegion(pl3addr, 4096));
 		*pl3 = PageLevel3.init;
-		void* pl2addr = Heap.allocPageNoMap();
+		void* pl2addr = PageAllocator.allocPage();
 		PageLevel2* pl2 = cast(PageLevel2*)(Paging.mapRegion(pl2addr, 4096));
 		*pl2 = PageLevel2.init;
 
@@ -69,14 +69,14 @@ public:
 		//kprintfln!("b")();
 
 		// Allocate Stack
-		stack = Heap.allocPageNoMap();
+		stack = PageAllocator.allocPage();
 		Paging.mapRegion(null, stack, 4096, cast(void*)0xf0000000, true);
 		stack = cast(void*)0xf0000000;
 		//kprintfln!("c")();
 
 		resourceHeap = cast(void*)0xe0000000;
 
-		contextStack = Heap.allocPageNoMap();
+		contextStack = PageAllocator.allocPage();
 		contextStack = cast(void*)Paging.mapRegion(contextStack, 4096);
 
 		// The first gib is the code and heap
@@ -134,10 +134,10 @@ public:
 		return ErrorVal.Success;
 	}
 
-	Gib allocGib() {
-		return Paging.allocUserGib(nextGib);
-		nextGib++;
-	}
+	//Gib allocGib() {
+	//	return Paging.allocUserGib(nextGib);
+	//	nextGib++;
+	//}
 
 	ErrorVal map(void* physAddr, ulong length) {
 		Paging.mapRegion(null, physAddr, length, cast(void*)0x100000);
@@ -178,7 +178,7 @@ public:
 			return ErrorVal.Fail;
 		}
 	
-		void* physAddr = Heap.allocPageNoMap(virtAddr);
+		void* physAddr = PageAllocator.allocPage(virtAddr);
 		if (physAddr is null) { return ErrorVal.Fail; }
 
 //		kprintfln!("alloc {} for {}B")(virtAddr, length);
@@ -186,7 +186,7 @@ public:
 		virtAddr += 4096;
 
 		while (length > 4096) {
-			physAddr = Heap.allocPageNoMap(virtAddr);
+			physAddr = PageAllocator.allocPage(virtAddr);
 			if (physAddr is null) { return ErrorVal.Fail; }
 			Paging.mapRegion(null, physAddr, 4096, virtAddr, writeable);
 			virtAddr += 4096;

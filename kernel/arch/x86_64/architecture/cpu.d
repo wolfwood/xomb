@@ -20,13 +20,14 @@ import kernel.core.log;
 import kernel.core.kprintf;
 
 // For heap allocation
-import kernel.mem.heap;
+import kernel.mem.pageallocator;
 
 //For System info struct?
 import kernel.system.info;
 import kernel.system.definitions;
 
 import architecture.syscall;
+import architecture.vm;
 
 private {
 	extern(C) {
@@ -571,7 +572,8 @@ private:
 	// Note: You have to preserve the current stack
 	ErrorVal installStack() {
 		kprintfln!("id: {}")(identifier);
-		ubyte* stackSpace = cast(ubyte*)Heap.allocPage();
+		ubyte* stackSpace = cast(ubyte*)PageAllocator.allocPage();
+		stackSpace = cast(ubyte*)VirtualMemory.mapKernelPage(stackSpace);
 		ubyte* currentStack = cast(ubyte*)(&_stack-4096);
 
 		kprintfln!("currentStack: {x} stackSpace: {x} id: {}")(currentStack, stackSpace, identifier);

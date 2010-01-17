@@ -36,6 +36,9 @@ import kernel.core.log;
 
 // kernel heap
 import kernel.mem.heap;
+import kernel.mem.pageallocator;
+import kernel.mem.gib;
+import kernel.mem.giballocator;
 
 // kernel-side ramfs
 import kernel.filesystem.ramfs;
@@ -72,14 +75,11 @@ extern(C) void kmain(int bootLoaderID, void *data) {
    	Log.result(Architecture.initialize());
 
 	// Initialize the kernel Heap
-	Heap.initialize();
-
-	Log.print("PerfMon: initialize()");
-	Log.result(PerfMon.initialize());
-	PerfMon.registerEvent(0, PerfMon.Event.L2Misses);
-
-	Log.print("Timing: initialize()");
-	Log.result(Timing.initialize());
+	kprintfln!("alloc: {}")(PageAllocator.allocPage());
+	kprintfln!("alloc: {}")(PageAllocator.allocPage());
+	kprintfln!("alloc: {}")(PageAllocator.allocPage());
+	kprintfln!("alloc: {}")(PageAllocator.allocPage());
+	kprintfln!("alloc: {}")(PageAllocator.allocPage());
 
 	// 2b. Paging Initialization
 	Log.print("VirtualMemory: initialize()");
@@ -89,17 +89,40 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.print("VirtualMemory: install()");
 	Log.result(VirtualMemory.install());
 
+	Log.print("Timing: initialize()");
+	Log.result(Timing.initialize());
+
+	Log.print("PerfMon: initialize()");
+	Log.result(PerfMon.initialize());
+	PerfMon.registerEvent(0, PerfMon.Event.L2Misses);
+
 	// 3. Processor Initialization
 	Log.print("Cpu: initialize()");
 	Log.result(Cpu.initialize());
 
+	// The kernel is located at Gib #128K
+	Gib foo = GibAllocator.alloc((1024 * 128) + 10, 0);
+	static const ubyte[] fooarr = [10];
+	static const ubyte[] fooarr2 = [11];
+	foo.write(fooarr);
+	foo.write(fooarr2);
+	foo.seek(-2);
+	ubyte f,g;
+	foo.read(f);
+	foo.read(g);
+	kprintfln!("READ: {} {}")(f,g);
+	foo.seek(4096);
+	foo.write(fooarr);
+	kprintfln!("done")();
+
+	PageAllocator.initialize();
 	// 3b. RamFS Initialization
-	Log.print("RamFS: initialize()");
-	Log.result(RamFS.initialize());
+//	Log.print("RamFS: initialize()");
+//	Log.result(RamFS.initialize());
 
 	// 3c. Console Initialization
-	Log.print("Console: initialize()");
-	Log.result(Console.initialize());
+//	Log.print("Console: initialize()");
+//	Log.result(Console.initialize());
 
 	// 4. Timer Initialization
 	// LATER
@@ -110,7 +133,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	// 6. Multiprocessor Initialization
 	Log.print("Multiprocessor: initialize()");
 	Log.result(Multiprocessor.initialize());
-	//kprintfln!("Number of Cores: {}")(Multiprocessor.cpuCount);
+	kprintfln!("Number of Cores: {}")(Multiprocessor.cpuCount);
 
 	// 7. Syscall Initialization
 	Log.print("Syscall: initialize()");
@@ -123,11 +146,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Scheduler.initialize();
 	
 	Loader.loadModules();
-
-	Gib video2 = RamFS.open("/dev/video", Access.Read | Access.Write);
-	RamFS.seek(video2, 4096);
-	const ubyte[] foo = cast(ubyte[])['a', 42, 'b', 42, 'c', 42, '!', 42, '!', 42];
-	RamFS.write(video2, foo.ptr, foo.length);
 
 	Date dt;
 	Timing.currentDate(dt);

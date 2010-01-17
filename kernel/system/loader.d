@@ -24,8 +24,6 @@ import kernel.core.log;
 
 import architecture.vm;
 
-extern(C) void* memcpy(void*, void*, size_t); 
-
 struct Loader {
 static:
 

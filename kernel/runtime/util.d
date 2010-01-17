@@ -75,30 +75,24 @@ extern(C) void* memcpy(void* dest, void* src, size_t count)
 	//	return dest;
 	//}
 	//else
-	{
 		ubyte* d = cast(ubyte*)dest;
 		ubyte* s = cast(ubyte*)src;
 
-		for(size_t i = count; count; count--, d++, s++)
+		for(size_t i = count; i > 0; i--) {
 			*d = *s;
+			d++;
+			s++;
+		}
 
 		return dest;
-	}
 }
 
 /**
 Memcpy and memmove only really have differences at the user level, where they have slightly
-different semantics.  Here, they're pretty much the same.
+different semantics.  Here, they're the same.
 */
-extern(C) void* memmove(void* dest, void* src, size_t count)
-{
-	ubyte* d = cast(ubyte*)dest;
-	ubyte* s = cast(ubyte*)src;
-
-	for(size_t i = count; count; count--, d++, s++)
-	  *d = *s;
-
-	return dest;
+extern(C) void* memmove(void* dest, void* src, size_t count) {
+	return memcpy(dest, src, count);
 }
 
 /**

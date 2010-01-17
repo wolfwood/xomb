@@ -85,9 +85,9 @@ public:
 		return SyscallError.OK;
 	}
 
-	SyscallError open(out Gib ret, OpenArgs* params){
-		return SyscallError.OK;
-	}
+//	SyscallError open(out Gib ret, OpenArgs* params){
+//		return SyscallError.OK;
+//	}
 
 	SyscallError perfPoll(PerfPollArgs* params) {
 		static ulong[256] value;

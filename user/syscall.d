@@ -23,7 +23,7 @@ enum SyscallID : ulong
 	AllocPage,
 	Exit,
 	Fork,
-	Open,
+//	Open,
 	PerfPoll,
 }
 
@@ -35,7 +35,7 @@ alias Tuple!
 	"allocPage",		// allocPage()
 	"exit",				// exit()
 	"fork",				// fork()
-	"open",		        // open()
+//	"open",		        // open()
 	"perfPoll"			// perfPoll()
 ) SyscallNames;
 
@@ -48,7 +48,7 @@ alias Tuple!
 	int,			// allocPage
 	void,			// exit
 	int,			// fork
-	Gib, 		    // open
+//	Gib, 		    // open
 	void			// perfPoll
 ) SyscallRetTypes;
 

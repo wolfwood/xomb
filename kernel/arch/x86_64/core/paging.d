@@ -13,6 +13,7 @@ import kernel.core.error;
 import kernel.core.kprintf;
 
 // Import the heap allocator, so we can allocate memory
+import kernel.mem.pageallocator;
 import kernel.mem.heap;
 
 // Import some arch-dependent modules
@@ -46,9 +47,9 @@ static:
 	// This function will initialize paging and install a core page table.
 	ErrorVal initialize() {
 		// Create a new page table.
-		root = cast(PageLevel4*)Heap.allocPageNoMap();
-		PageLevel3* pl3 = cast(PageLevel3*)Heap.allocPageNoMap();
-		PageLevel2* pl2 = cast(PageLevel2*)Heap.allocPageNoMap();
+		root = cast(PageLevel4*)PageAllocator.allocPage();
+		PageLevel3* pl3 = cast(PageLevel3*)PageAllocator.allocPage();
+		PageLevel2* pl2 = cast(PageLevel2*)PageAllocator.allocPage();
 
 		//kprintfln!("root: {} pl3: {} pl2: {}")(root, pl3, pl2);
 
@@ -87,9 +88,6 @@ static:
 
 		void* bitmapLocation = heapAddress;
 		
-		// Map Heap bitmap
-		mapRegion(Heap.start, Heap.length);
-
 		// The first gib for the kernel
 		nextGib++;
 
@@ -102,9 +100,6 @@ static:
 		// Save the physical address for later
 		rootPhysical = cast(void*)root;
 
-		// Tell the heap where the end of the kernel's virtual space should be
-		Heap.virtualStart = bitmapLocation;
-
 		// This is the virtual address for the page table
 		root = cast(PageLevel4*)0xFFFFFFFF_FFFFF000;
 
@@ -113,7 +108,7 @@ static:
 	}
 
 	void faultHandler(InterruptStack* stack) {
-		kprintfln!("Page Fault")();
+//		kprintfln!("Page Fault")();
 
 		ulong cr2;
 
@@ -124,7 +119,7 @@ static:
 
 		void* addr = cast(void*)cr2;
 
-		kprintfln!("CR2 {}")(addr);
+//		kprintfln!("CR2 {}")(addr);
 
 		while (addr < cast(void*)10000) {
 		}
@@ -141,14 +136,15 @@ static:
 			PageLevel2* pl2 = pl3.getTable(indexL3);
 			if (pl2 is null) {
 				// NOT AVAILABLE (FOR SOME REASON)
+				kprintfln!("CR2 {}")(addr);
 			}
 			else {
-				kprintfln!("Gib Available")();
+//				kprintfln!("Gib Available")();
 
 				// Allocate Page
 
-				kprintfln!("Allocating a page")();
-				void* page = Heap.allocPageNoMap();
+//				kprintfln!("Allocating a page")();
+				void* page = PageAllocator.allocPage();
 
 				mapRegion(null, page, PAGESIZE, addr, true);
 			}
@@ -263,33 +259,33 @@ static:
 	ulong nextGib = (256 * 512);
 	const ulong MAX_GIB = (512 * 512);
 	const ulong GIB_SIZE = (512 * 512 * PAGESIZE);
-	synchronized void* allocGib() {
-		// Check for maximum
-		pagingLock.lock();
-		if (nextGib >= MAX_GIB) {
-			pagingLock.unlock();
-			return cast(void*)-1;
+
+	ubyte* gibAddress(uint gibIndex) {
+		// Find initial address of gib
+		ubyte* gibAddr = cast(ubyte*)0x0;
+		gibAddr += (GIB_SIZE * cast(ulong)gibIndex);
+
+		// Make Canonical
+		if (cast(ulong)gibAddr >= 0x800000000000UL) {
+			gibAddr = cast(ubyte*)(cast(ulong)gibAddr | 0xffff000000000000UL);
 		}
 
-		// Calculate address
-		void* gibAddr = cast(void*)(GIB_SIZE * nextGib); 
+		return gibAddr;
+	}
 
-		// Create PML2 for this gib (sets present bits and allocates tables)
+	ubyte* allocGib(uint gibIndex, uint flags) {
+		// Get initial address of gib
+		ubyte* gibAddr = gibAddress(gibIndex);
+
+		// Find page translation
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(gibAddr, indexL1, indexL2, indexL3, indexL4);
-		PageLevel3* pl3 = root.getOrCreateTable(indexL4, false);
-		PageLevel2* pl2 = pl3.getOrCreateTable(indexL3, false);
 
-		// Advance gib count
-		nextGib++;
-
-		// This is to ensure canonical addressing (high memory vs low)
-		if (cast(ulong)gibAddr >= 0x800000000000) {
-			gibAddr = cast(void*)(cast(ulong)gibAddr | 0xffff000000000000);
-		}
-
-		// Return the address of the gib
-		pagingLock.unlock();
+		// Allocate paging structures
+		PageLevel3* pl3 = root.getTable(indexL4);
+		PageLevel2* pl2 = pl3.getOrCreateTable(indexL3);
+		
+		// pl2 is your gib structure.
 		return gibAddr;
 	}
 
@@ -428,7 +424,7 @@ private:
 						pl3 = cast(PageLevel3*)(root.entries[indexL4].address << 12);
 					}
 					else {
-						pl3 = cast(PageLevel3*)Heap.allocPageNoMap();
+						pl3 = cast(PageLevel3*)PageAllocator.allocPage();
 						*pl3 = PageLevel3.init;
 						root.entries[indexL4].pml = cast(ulong)pl3;
 						root.entries[indexL4].present = 1;
@@ -451,7 +447,7 @@ private:
 							pl2 = cast(PageLevel2*)(pl3.entries[indexL3].address << 12);
 						}
 						else {
-							pl2 = cast(PageLevel2*)Heap.allocPageNoMap();
+							pl2 = cast(PageLevel2*)PageAllocator.allocPage();
 							*pl2 = PageLevel2.init;
 							pl3.entries[indexL3].pml = cast(ulong)pl2;
 							pl3.entries[indexL3].present = 1;
@@ -474,7 +470,7 @@ private:
 								pl1 = cast(PageLevel1*)(pl2.entries[indexL2].address << 12);
 							}
 							else {
-								pl1 = cast(PageLevel1*)Heap.allocPageNoMap();
+								pl1 = cast(PageLevel1*)PageAllocator.allocPage();
 								*pl1 = PageLevel1.init;
 								pl2.entries[indexL2].pml = cast(ulong)pl1;
 								pl2.entries[indexL2].present = 1;
@@ -612,7 +608,7 @@ private:
 
 			if (ret is null) {
 				// Create Table
-				ret = cast(PageLevel3*)Heap.allocPageNoMap();
+				ret = cast(PageLevel3*)PageAllocator.allocPage();
 
 				// Set table entry
 				entries[idx].pml = cast(ulong)ret;
@@ -649,7 +645,7 @@ private:
 
 			if (ret is null) {
 				// Create Table
-				ret = cast(PageLevel2*)Heap.allocPageNoMap();
+				ret = cast(PageLevel2*)PageAllocator.allocPage();
 
 				// Set table entry
 				entries[idx].pml = cast(ulong)ret;
@@ -694,7 +690,7 @@ private:
 			if (ret is null) {
 				// Create Table
 //				if (usermode) { kprintfln!("creating pl2 {}?")(idx); }
-				ret = cast(PageLevel1*)Heap.allocPageNoMap();
+				ret = cast(PageLevel1*)PageAllocator.allocPage();
 
 				// Set table entry
 				entries[idx].pml = cast(ulong)ret;

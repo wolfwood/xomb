@@ -11,10 +11,17 @@ module kernel.mem.bitmap;
 // Import system info to get info about RAM
 import kernel.system.info;
 
+// Import the Gib allocator
+import kernel.mem.giballocator;
+import kernel.mem.gib;
+
+// Import the parent allocator
+import kernel.mem.pageallocator;
+
 // Import kernel foo
 import kernel.core.error;
 import kernel.core.log;
-import kernel.core.error;
+import kernel.core.kprintf;
 
 // Import arch foo
 import architecture.vm;
@@ -24,15 +31,8 @@ ErrorVal initialize() {
 	// Calculate the number of pages.
 	totalPages = System.memory.length / VirtualMemory.getPageSize();
 
-	// Find the first free page, and set up the bitmap.
-
-	// First, start out with the address at the end of the kernel
-	bitmap = cast(ulong*)(System.kernel.start + System.kernel.length);
-
-	// Align the bitmap address to the page size (ceiling)
-	ulong padding = cast(ulong)bitmap % VirtualMemory.getPageSize();
-	if (padding != 0) { padding = VirtualMemory.getPageSize() - padding; }
-	bitmap += padding;
+	// Get a gib for the page allocator
+	bitmapGib = GibAllocator.alloc((1024*128) + 1, 0);
 
 	// Calculate how much we need for the bitmap.
 	// 8 bits per byte, 8 bytes for ulong.
@@ -42,9 +42,16 @@ ErrorVal initialize() {
 	if ((totalPages % 64) > 0) { bitmapPages++; }
 
 	ulong bitmapSize = bitmapPages * VirtualMemory.getPageSize();
-	ulong* bitmapEdge = bitmap + (bitmapSize >> 3);
+	// Zero out bitmap initially
+	for (size_t i = 0; i < bitmapSize; i++) {
+		bitmapGib.write(cast(ubyte)0);
+	}	
+	bitmapGib.rewind();
+	kprintfln!("BITMAP CREATED")();
 
-	//kprintfln!("bitmap: {x} for {x} pages : totalpages {x}")(bitmap, bitmapPages, totalPages);
+	//ulong* bitmapEdge = bitmap + (bitmapSize >> 3);
+
+/*	//kprintfln!("bitmap: {x} for {x} pages : totalpages {x}")(bitmap, bitmapPages, totalPages);
 
 	// Now, check to see if the bitmap can fit here
 	bool bitmapOk = false;
@@ -86,7 +93,7 @@ ErrorVal initialize() {
 		if (i == System.numModules) {
 			bitmapOk = true;
 		}
-	}
+	}*/
 	//kprintfln!("Bitmap location: {x}")(bitmap);
 
 	// Set up the bitmap for the regions used by the system.
@@ -94,8 +101,8 @@ ErrorVal initialize() {
 	// The kernel...
 	markOffRegion(System.kernel.start, System.kernel.length);
 
-	// The bitmap...
-	markOffRegion(cast(void*)bitmap, bitmapSize);
+	// The initial page allocation (before the data structures were created)...
+	markOffRegion(cast(void*)PageAllocator._start, (cast(ulong)PageAllocator._curpos - cast(ulong)PageAllocator._start));
 
 	// Each other region
 	for(uint i; i < System.numRegions; i++) {
@@ -110,12 +117,12 @@ ErrorVal initialize() {
 	}
 
 	// Virtual Address for the heap is relative to the kernel
-	bitmapPhys = bitmap;
+//	bitmapPhys = bitmap;
 	//	kprintfln!("findPage: {x}")(allocPageNoMap());
 	//kprintfln!("findPage: {x}")(findPage());
 	//		kprintfln!("findPage: {x}")(findPage());
 	//		kprintfln!("findPage: {x}")(findPage());
-	//kprintfln!("Success : {x}")(bitmap);
+	kprintfln!("Success : ")();
 	// It succeeded!
 	return ErrorVal.Success;
 }
@@ -163,7 +170,7 @@ ErrorVal freePage(void* address) {
 	ulong subIndex = pageIndex % 64;
 
 	// Reset the bit
-	bitmap[ptrIndex] &= ~(1 << subIndex);
+	(cast(ulong*)bitmapGib.ptr)[ptrIndex] &= ~(1 << subIndex);
 
 	// All is well
 	return ErrorVal.Success;
@@ -174,15 +181,14 @@ uint length() {
 }
 
 ubyte* start() {
-	return cast(ubyte*)bitmapPhys;
+	return cast(ubyte*)null;
 }
 
 ubyte* virtualStart() {
-	return cast(ubyte*)bitmap;
+	return cast(ubyte*)bitmapGib.ptr;
 }
 
 void virtualStart(void* newAddr) {
-	bitmap = cast(ulong*)newAddr;
 }
 
 package {
@@ -191,8 +197,9 @@ package {
 	// The total number of pages for the bitmap
 	ulong bitmapPages;
 
-	ulong* bitmap;
-	ulong* bitmapPhys;
+//	ulong* bitmapPhys;
+
+	Gib bitmapGib;
 
 	// A helper function to mark off a range of memory
 	void markOffRegion(void* start, ulong length) {
@@ -233,12 +240,12 @@ package {
 		ulong byteNumber = pageIndex / 64;
 		ulong bitNumber = pageIndex % 64;
 
-		bitmap[byteNumber] |= (1 << bitNumber);
+		(cast(ulong*)bitmapGib.ptr)[byteNumber] |= (1 << bitNumber);
 	}
 
 	// Returns the page index of a free page
 	ulong findPage(void * virtAddr) {
-		ulong* curPtr = bitmap;
+		ulong* curPtr = cast(ulong*)bitmapGib.ptr;
 		ulong curIndex = 0;
 
 		while(true) {

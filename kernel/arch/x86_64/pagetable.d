@@ -12,14 +12,14 @@ import kernel.arch.x86_64.core.paging;
 import kernel.core.error;
 import kernel.core.kprintf;
 
-import kernel.mem.heap;
+import kernel.mem.pageallocator;
 
 struct PageTable {
 public:
 
 	ErrorVal initialize() {
 		// Make a new root pagetable
-		rootPhysAddr = Heap.allocPageNoMap();
+		rootPhysAddr = PageAllocator.allocPageNoMap();
 		root = cast(PageLevel3*)(Paging.mapRegion(rootPhysAddr, 4096));
 		*root = PageLevel3.init;
 
@@ -32,11 +32,11 @@ public:
 		Paging.kernelPageTable.entries[0].us = 1;
 
 		// Allocate Stack
-		stack = Heap.allocPageNoMap();
+		stack = PageAllocator.allocPageNoMap();
 		Paging.mapRegion(null, stack, 4096, cast(void*)0x80000000);
 		stack = cast(void*)0x80000000;
 
-		contextStack = Heap.allocPageNoMap();
+		contextStack = PageAllocator.allocPageNoMap();
 		contextStack = cast(void*)Paging.mapRegion(contextStack, 4096);
 
 		return ErrorVal.Success;
@@ -86,12 +86,12 @@ public:
 	}
 
 	ErrorVal alloc(void* virtAddr, ulong length) {
-		void* physAddr = Heap.allocPageNoMap();
+		void* physAddr = PageAllocator.allocPageNoMap();
 		Paging.mapRegion(null, physAddr, 4096, virtAddr);
 		virtAddr += 4096;
 
 		while (length > 4096) {
-			physAddr = Heap.allocPageNoMap();
+			physAddr = PageAllocator.allocPageNoMap();
 			kprintfln!("mapping: {x} -> {x}")(physAddr, virtAddr);
 			Paging.mapRegion(null, physAddr, 4096, virtAddr);
 			virtAddr += 4096;

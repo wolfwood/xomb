@@ -39,14 +39,18 @@ public:
 
 	// This will init the console driver
 	ErrorVal initialize() {
+		/+
 		info.width = COLUMNS;
 		info.height = LINES;
 
-		Gib video = RamFS.open("/dev/video", Access.Create | Access.Read | Access.Write);
+		/*Gib video = RamFS.open("/dev/video", Access.Create | Access.Read | Access.Write);
 		MetaData* videoMetaData = cast(MetaData*)video;
 		*videoMetaData = info;
 		RamFS.seek(video, RamFS.metadataLength);
-		RamFS.mapRegion(video, cast(void*)0xB8000, 1028*1028);
+		RamFS.mapRegion(video, cast(void*)0xB8000, 1028*1028);*/
+
+		MetaData* videoMetaData = &info;
+		ubyte* video = videoMemoryLocation;
 
 		videoMemoryLocation = cast(ubyte*)video;
 		videoInfo = videoMetaData;
@@ -58,7 +62,7 @@ public:
 		Cpu.ioOut!(ushort, "0x3D5")(temp >> 8);
 		Cpu.ioOut!(ushort, "0x3D4")(15);
 		Cpu.ioOut!(ushort, "0x3D5")(temp);
-
++/
 		return ErrorVal.Success;
 	}
 
@@ -85,7 +89,7 @@ public:
 	}
 
 	// This method will set the current location of the cursor to the x and y given.
-	synchronized void setPosition(int x, int y) {
+	void setPosition(int x, int y) {
 		consoleLock.lock();
 		if (x < 0) { x = 0; }
 		if (y < 0) { y = 0; }
@@ -101,7 +105,7 @@ public:
 	}
 
 	// This method will post the character to the screen at the current location.
-	synchronized void putChar(char c) {
+	void putChar(char c) {
 		consoleLock.lock();
 		if (c == '\t') {
 			// Insert a tab.

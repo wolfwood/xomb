@@ -71,9 +71,9 @@ struct Environment {
 		return context.mapRegion(physAddr, length);
 	}
 
-	Gib allocGib() {
-		return context.allocGib();
-	}
+//	Gib allocGib() {
+//		return context.allocGib();
+//	}
 
 	void execute() {
 		context.execute();

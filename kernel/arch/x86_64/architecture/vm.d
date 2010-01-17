@@ -27,9 +27,8 @@ public:
 		return Paging.install();
 	}
 
-	// Allocs a new gib
-	synchronized void* allocGib() {
-		return Paging.allocGib();
+	ubyte* allocGib(uint gibIndex, uint flags) {
+		return Paging.allocGib(gibIndex, flags);
 	}
 
 	// This function will take the "gib" specified and map it to the gib determined by "to".
@@ -47,48 +46,41 @@ public:
 	}
 
 	// This function will translate a virtual address to a physical address.
-	synchronized void* translate(void* address)
-	{
+	synchronized void* translate(void* address) {
 		return Paging.translateAddress(address);
 	}
 
 	// This function will map a region to the region space starting at
 	// physAdd across a length of regionLength.
-	synchronized void* mapRegion(void* physAddr, ulong regionLength)
-	{
+	synchronized void* mapRegion(void* physAddr, ulong regionLength) {
 		return Paging.mapRegion(physAddr, regionLength);
 	}
 
 	//
-	synchronized void* mapKernelPage(void* physAddr)
-	{
+	synchronized void* mapKernelPage(void* physAddr) {
 		return Paging.mapRegion(physAddr, 4096);
 	}
 
 	// This function will map a single page at the specified physical address
 	// to the specifed virtual address.
-	synchronized ErrorVal mapPage(void* physAddr, void* virtAddr)
-	{
+	synchronized ErrorVal mapPage(void* physAddr, void* virtAddr) {
 		return ErrorVal.Success;
 	}
 
 	// This function will map a range of data located at the physical
 	// address across a range of a specifed length to the virtual
 	// region starting at virtual address.
-	synchronized ErrorVal mapRange(void* physAddr, ulong rangeLength, void* virtAddr)
-	{
+	synchronized ErrorVal mapRange(void* physAddr, ulong rangeLength, void* virtAddr) {
 		return ErrorVal.Success;
 	}
 
 	// This function will unmap a page at the virtual address specified.
-	synchronized ErrorVal unmapPage(void* virtAddr)
-	{
+	synchronized ErrorVal unmapPage(void* virtAddr) {
 		return ErrorVal.Success;
 	}
 
 	// This function will unmap a range of data. Give the length in bytes.
-	synchronized ErrorVal unmapRange(void* virtAddr, ulong rangeLength)
-	{
+	synchronized ErrorVal unmapRange(void* virtAddr, ulong rangeLength) {
 		return ErrorVal.Success;
 	}
 
