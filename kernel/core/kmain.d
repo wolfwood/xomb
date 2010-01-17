@@ -121,8 +121,8 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 //	Log.result(RamFS.initialize());
 
 	// 3c. Console Initialization
-//	Log.print("Console: initialize()");
-//	Log.result(Console.initialize());
+	Log.print("Console: initialize()");
+	Log.result(Console.initialize());
 
 	// 4. Timer Initialization
 	// LATER

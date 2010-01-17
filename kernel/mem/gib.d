@@ -7,7 +7,10 @@
 
 module kernel.mem.gib;
 
+import architecture.vm;
+
 import kernel.core.kprintf;
+import kernel.core.error;
 import kernel.core.templates;
 
 struct Gib {
@@ -25,6 +28,10 @@ struct Gib {
 	// Will move the pointer to the beginning of the region.
 	void rewind() {
 		_curpos = _start;
+	}
+
+	ErrorVal map(ubyte* start, ulong length) {
+		return VirtualMemory.mapRegion(_curpos, start, length);
 	}
 
 	// Will read from the current position the data requested.

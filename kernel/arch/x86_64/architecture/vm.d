@@ -31,9 +31,9 @@ public:
 		return Paging.allocGib(gibIndex, flags);
 	}
 
-	// This function will take the "gib" specified and map it to the gib determined by "to".
-	synchronized ErrorVal mapGib(void* gib, void* to) {
-		return Paging.mapGib(gib, to);
+	// This function will take the "gibSrc" specified and map it to the gib determined by "gibDest".
+	synchronized ErrorVal mapGib(void* gibSrc, void* gibDest) {
+		return Paging.mapGib(gibSrc, gibDest);
 	}
 
 	synchronized ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {

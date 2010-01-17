@@ -6,7 +6,8 @@ module kernel.dev.console;
 import kernel.system.info;
 
 // For Gibs
-import kernel.filesystem.ramfs;
+import kernel.mem.giballocator;
+import kernel.mem.gib;
 
 // Errors
 import kernel.core.error;
@@ -39,20 +40,17 @@ public:
 
 	// This will init the console driver
 	ErrorVal initialize() {
-		/+
 		info.width = COLUMNS;
 		info.height = LINES;
 
-		/*Gib video = RamFS.open("/dev/video", Access.Create | Access.Read | Access.Write);
-		MetaData* videoMetaData = cast(MetaData*)video;
+		Gib video = GibAllocator.alloc((1024*128)+3, 0);
+//		Gib video = RamFS.open("/dev/video", Access.Create | Access.Read | Access.Write);
+		MetaData* videoMetaData = cast(MetaData*)video.ptr;
 		*videoMetaData = info;
-		RamFS.seek(video, RamFS.metadataLength);
-		RamFS.mapRegion(video, cast(void*)0xB8000, 1028*1028);*/
+		video.seek(4096);
+		video.map(cast(ubyte*)0xB8000, 1024*1024);
 
-		MetaData* videoMetaData = &info;
-		ubyte* video = videoMemoryLocation;
-
-		videoMemoryLocation = cast(ubyte*)video;
+		videoMemoryLocation = cast(ubyte*)video.ptr + 4096;
 		videoInfo = videoMetaData;
 
 		uint temp = LINES * COLUMNS;
@@ -62,7 +60,7 @@ public:
 		Cpu.ioOut!(ushort, "0x3D5")(temp >> 8);
 		Cpu.ioOut!(ushort, "0x3D4")(15);
 		Cpu.ioOut!(ushort, "0x3D5")(temp);
-+/
+
 		return ErrorVal.Success;
 	}
 
