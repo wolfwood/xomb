@@ -100,22 +100,10 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.print("Cpu: initialize()");
 	Log.result(Cpu.initialize());
 
-	// The kernel is located at Gib #128K
-	Gib foo = GibAllocator.alloc((1024 * 128) + 10, 0);
-	static const ubyte[] fooarr = [10];
-	static const ubyte[] fooarr2 = [11];
-	foo.write(fooarr);
-	foo.write(fooarr2);
-	foo.seek(-2);
-	ubyte f,g;
-	foo.read(f);
-	foo.read(g);
-	kprintfln!("READ: {} {}")(f,g);
-	foo.seek(4096);
-	foo.write(fooarr);
-	kprintfln!("done")();
+	// 3a. Initialize the Page Allocator
+	Log.print("PageAllocator: initialize()");
+	Log.result(PageAllocator.initialize());
 
-	PageAllocator.initialize();
 	// 3b. RamFS Initialization
 //	Log.print("RamFS: initialize()");
 //	Log.result(RamFS.initialize());
