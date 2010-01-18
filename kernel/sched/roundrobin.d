@@ -32,7 +32,6 @@ static:
 
 	// Return next environment
 	synchronized Environment* schedule(Environment* current) {
-
 		Environment* next;
 		if (current !is null) {
 			if (current.state == Environment.State.Running) {
@@ -69,7 +68,6 @@ static:
 
 	// Set up a new environment
 	synchronized Environment* newEnvironment() {
-
 		if (numEnvironments == MAX_ENVIRONMENTS) {
 			return null;
 		}
@@ -105,10 +103,7 @@ static:
 	}
 
 	synchronized ErrorVal removeEnvironment(Environment* environment) {
-//			kprintfln!("Removing... {}")(environment);
-
 		if (numEnvironments == 0 || environment is null) {
-			for(;;){}
 			return ErrorVal.Fail;
 		}
 
