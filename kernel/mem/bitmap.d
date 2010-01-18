@@ -32,7 +32,7 @@ ErrorVal initialize() {
 	totalPages = System.memory.length / VirtualMemory.getPageSize();
 
 	// Get a gib for the page allocator
-	bitmapGib = GibAllocator.alloc((1024*128) + 1, 0);
+	bitmapGib = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
 
 	// Calculate how much we need for the bitmap.
 	// 8 bits per byte, 8 bytes for ulong.

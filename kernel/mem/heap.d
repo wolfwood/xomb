@@ -32,7 +32,7 @@ public:
 
 	// Needs to be called by the architecture
 	ErrorVal initialize() {
-		_gib = GibAllocator.alloc((1024*128)+2, 0);
+		_gib = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
 		return ErrorVal.Success;
 	}
 

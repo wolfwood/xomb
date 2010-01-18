@@ -15,16 +15,28 @@ import kernel.core.error;
 import kernel.core.kprintf;
 import kernel.core.log;
 
+enum Access : uint {
+	Read = 1,
+	Write = 2,
+	Kernel = 128,
+}
+
 struct GibAllocator {
 static:
 public:
 
-	Gib alloc(uint gibIndex, uint flags) {
+	Gib alloc(uint flags) {
 		Gib ret;
+		uint gibIndex = 0;
+		if (flags & Access.Kernel != 0) {
+			// kernel gib
+			gibIndex = nextFreeKernelGib;
+			nextFreeKernelGib++;
+		}
 		ubyte* gibAddr = VirtualMemory.allocGib(gibIndex, flags);
 		ret._start = gibAddr;
 		ret._curpos = gibAddr;
-		kprintfln!("Gib address: {}")(gibAddr);
+		kprintfln!("Gib (kernel) address: {} at {}")(gibAddr, gibIndex);
 		return ret;
 	}
 
@@ -39,5 +51,11 @@ public:
 
 private:
 	const auto KERNEL_START = 1024UL * 128UL;
+	const auto MAX_GIBS = 256UL * 1024UL;
 	const auto GIB_SIZE = 1024UL * 1024UL * 1024UL;
+	
+	// Must take into account the first gib is always the kernel executable
+	uint nextFreeKernelGib = KERNEL_START + 1;
+	ulong[(MAX_GIBS+64)/64] gibBitmap;
+
 }

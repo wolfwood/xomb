@@ -41,7 +41,7 @@ public:
 		info.width = COLUMNS;
 		info.height = LINES;
 
-		Gib video = GibAllocator.alloc((1024*128)+3, 0);
+		Gib video = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
 //		Gib video = RamFS.open("/dev/video", Access.Create | Access.Read | Access.Write);
 		MetaData* videoMetaData = cast(MetaData*)video.ptr;
 		*videoMetaData = info;

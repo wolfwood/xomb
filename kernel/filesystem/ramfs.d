@@ -12,53 +12,61 @@ import kernel.environ.scheduler;
 
 import architecture.vm;
 
+import kernel.mem.giballocator;
+import kernel.mem.gib;
+
 import user.ramfs;
 
-enum Access : uint {
-	Create = 1,
-	Read = 2,
-	Write = 4,
-	Append = 8
-}
+class RamFS {
+static:
+	ErrorVal initialize() {
+		// Make root
+		rootDir = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
 
-int strcmp(char[] s1, char[] s2) {
-	if (s1.length != s2.length) {
-		return s1.length - s2.length;
+		return ErrorVal.Fail;
 	}
 
-	foreach(uint i, ch; s1) {
-		if (s2[i] != ch) {
-			return s2[i] - ch;
-		}
+	void mkdir(Gib curDir) {
+		// Check curDir permissions
+		// ...
+
+		// Create new directory Gib
+		Gib newDir = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
+
+		// form this new directory
+		// ...
+
+		// link curDir to this new directory
+		// ...
+
+		// close kernel Gib
+		// ...
+
 	}
 
-	return 0;
-}
-
-bool streq(char[] s1, uint len, char[] s2) {
-	if (len != s2.length) {
-		return false;
+	ErrorVal destroy() {
+		return ErrorVal.Fail;
 	}
 
-	foreach(uint i, ch; s2) {
-		if (s1[i] != ch) {
-			return false;
-		}
+	ErrorVal create() {
+		// Create a new Gib
+		// ...
+
+		return ErrorVal.Fail;
 	}
 
-	return true;
-}
-
-bool streq(char[] s1, char[] s2) {
-	if (s1.length != s2.length) {
-		return false;
+	ErrorVal open() {
+		return ErrorVal.Fail;
 	}
 
-	foreach(uint i, ch; s1) {
-		if (s2[i] != ch) {
-			return false;
-		}
+	ErrorVal close() {
+		return ErrorVal.Fail;
 	}
 
-	return true;
+	ErrorVal link() {
+		return ErrorVal.Fail;
+	}
+
+private:
+	Gib rootDir;
 }
