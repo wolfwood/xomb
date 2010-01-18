@@ -22,10 +22,7 @@ import architecture.mutex;
 import architecture.cpu;
 import architecture.timing;
 	
-Mutex allocPageLock;
-Mutex perfLock;
-
-struct SyscallImplementations {
+class SyscallImplementations {
 static:
 public:
 
@@ -42,20 +39,17 @@ public:
 		return SyscallError.OK;
 	}
 
-	SyscallError allocPage(out int ret, AllocPageArgs* params) {
-		allocPageLock.lock();
+	synchronized SyscallError allocPage(out int ret, AllocPageArgs* params) {
 		Environment* current = Scheduler.current();
 
 		if (current.alloc(params.virtualAddress, 4096, true) == ErrorVal.Fail) {
 			ret = -1;
 			kprintfln!("allocPage({}): FAIL")(params.virtualAddress);
-			allocPageLock.unlock();
 			return SyscallError.Failcopter;
 		}	
 
 		ret = 0;
 
-		allocPageLock.unlock();
 		return SyscallError.OK;
 	}
 
@@ -89,13 +83,11 @@ public:
 //		return SyscallError.OK;
 //	}
 
-	SyscallError perfPoll(PerfPollArgs* params) {
+	synchronized SyscallError perfPoll(PerfPollArgs* params) {
 		static ulong[256] value;
 		static ulong numTimes = 0;
 		static ulong overall;
 
-		perfLock.lock();
-		
 		numTimes++;
 		bool firstTime = false;
 
@@ -116,7 +108,6 @@ public:
 			overall += value[3];
 		}
 
-		perfLock.unlock();
 		return SyscallError.OK;
 	}
 
