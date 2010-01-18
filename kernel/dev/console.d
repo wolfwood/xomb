@@ -22,8 +22,6 @@ import architecture.mutex;
 class Console {
 static:
 public:
-	Mutex consoleLock;
-
 	// The number of columns and lines on the screen.
 	const uint COLUMNS = 80;
 	const uint LINES = 25;
@@ -87,8 +85,7 @@ public:
 	}
 
 	// This method will set the current location of the cursor to the x and y given.
-	void setPosition(int x, int y) {
-		consoleLock.lock();
+	synchronized void setPosition(int x, int y) {
 		if (x < 0) { x = 0; }
 		if (y < 0) { y = 0; }
 		if (x >= COLUMNS) { x = COLUMNS - 1; }
@@ -99,12 +96,10 @@ public:
 
 		videoInfo.xpos = x;
 		videoInfo.ypos = y;
-		consoleLock.unlock();
 	}
 
 	// This method will post the character to the screen at the current location.
-	void putChar(char c) {
-		consoleLock.lock();
+	synchronized void putChar(char c) {
 		if (c == '\t') {
 			// Insert a tab.
 			videoInfo.xpos += TABSTOP;
@@ -128,12 +123,9 @@ public:
 			videoInfo.globalY++;
 
 			if (videoInfo.ypos >= LINES) {
-				consoleLock.unlock();
-				scrollDisplay(1);
-				consoleLock.lock();
+				_scrollDisplay(1);
 			}
 		}
-		consoleLock.unlock();
 	}
 
 	// This mehtod will post a string to the screen at the current location.
@@ -163,13 +155,37 @@ public:
 		videoInfo.colorAttribute = (foreColor & 0x0f) | (backColor << 4);
 	}
 
+	synchronized void scrollDisplay(uint numLines) {
+		_scrollDisplay(numLines);
+	}
+
+	void* physicalLocation() {
+		return videoMemoryPhysLocation;
+	}
+
+	uint width() {
+		return COLUMNS;
+	}
+
+	uint height() {
+		return LINES;
+	}
+
+private:
+
+	MetaData info;
+
+	MetaData* videoInfo = &info;
+
+	// Where the video memory lives (can be changed)
+	ubyte* videoMemoryLocation = cast(ubyte*)0xB8000UL;
+	const ubyte* videoMemoryPhysLocation = cast(ubyte*)0xB8000UL;
+
 	// This function will scroll the entire screen.
-	void scrollDisplay(uint numLines) {
-		consoleLock.lock();
+	void _scrollDisplay(uint numLines) {
 		// obviously, scrolling all lines results in a cleared display. Use the faster function.
 		if (numLines >= LINES) {
 			clearScreen();
-			consoleLock.unlock();
 			return;
 		}
 
@@ -200,28 +216,5 @@ public:
 		if (videoInfo.ypos < 0) {
 			videoInfo.ypos = 0;
 		}
-		consoleLock.unlock();
 	}
-
-	void* physicalLocation() {
-		return videoMemoryPhysLocation;
-	}
-
-	uint width() {
-		return COLUMNS;
-	}
-
-	uint height() {
-		return LINES;
-	}
-
-private:
-
-	MetaData info;
-
-	MetaData* videoInfo = &info;
-
-	// Where the video memory lives (can be changed)
-	ubyte* videoMemoryLocation = cast(ubyte*)0xB8000UL;
-	const ubyte* videoMemoryPhysLocation = cast(ubyte*)0xB8000UL;
 }

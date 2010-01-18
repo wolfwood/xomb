@@ -39,9 +39,9 @@ struct Mutex {
 
 private:
 
-	enum Value : long {
-		Locked = 0,
-		Unlocked = 1,
+	enum Value : int {
+		Locked = 1,
+		Unlocked = 0,
 	}
 
 	// RDI is the register that holds the first argument
@@ -49,10 +49,10 @@ private:
 		asm {
 			naked;
 			mov RAX, Value.Locked;
-			xchg [RDI], RAX;
+			xchg [RDI], EAX;
 			ret;
 		}
 	}
 }
 
-static assert (Mutex.sizeof == 8, "Mutex is not 8 bytes");
+static assert (Mutex.sizeof == 4, "Mutex is not 4 bytes");

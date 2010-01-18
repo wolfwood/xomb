@@ -32,7 +32,6 @@ static:
 
 	// Return next environment
 	synchronized Environment* schedule(Environment* current) {
-		schedLock.lock();
 
 		Environment* next;
 		if (current !is null) {
@@ -47,7 +46,6 @@ static:
 
 		if (next is null) {
 			//kprintfln!("Cannot find environment ready (list empty)")();
-			schedLock.unlock();
 			return null;
 		}
 
@@ -56,13 +54,11 @@ static:
 			next = next.info.next;
 			if (next is orig) {
 				//kprintfln!("Cannot find environment ready (none in Ready state)")();
-				schedLock.unlock();
 				return null;
 			}
 		}
 
 		next.state = Environment.State.Running;
-		schedLock.unlock();
 		//kprintfln!("Environment Scheduled {} {} {}")(Cpu.identifier, next, next.info.id);
 		return next;
 	}
@@ -73,10 +69,8 @@ static:
 
 	// Set up a new environment
 	synchronized Environment* newEnvironment() {
-		schedLock.lock();
 
 		if (numEnvironments == MAX_ENVIRONMENTS) {
-			schedLock.unlock();
 			return null;
 		}
 
@@ -107,16 +101,13 @@ static:
 			numEnvironments++;
 			ret.state = Environment.State.Initializing;
 		}
-		schedLock.unlock();
 		return ret;
 	}
 
 	synchronized ErrorVal removeEnvironment(Environment* environment) {
-		schedLock.lock();
 //			kprintfln!("Removing... {}")(environment);
 
 		if (numEnvironments == 0 || environment is null) {
-			schedLock.unlock();
 			for(;;){}
 			return ErrorVal.Fail;
 		}
@@ -127,7 +118,6 @@ static:
 			head = null;
 			tail = null;
 			kprintfln!("No More Environments")();
-			schedLock.unlock();
 			return ErrorVal.Success;
 		}
 		else {
@@ -140,13 +130,10 @@ static:
 				tail = tail.info.prev;
 			}
 		}
-		schedLock.unlock();
 		return ErrorVal.Success;
 	}
 
 protected:
-	Mutex schedLock;
-
 	const uint MAX_ENVIRONMENTS = 512;
 
 	Environment[MAX_ENVIRONMENTS] environments;
