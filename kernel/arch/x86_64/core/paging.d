@@ -273,7 +273,7 @@ static:
 		return gibAddr;
 	}
 
-	ubyte* allocGib(uint gibIndex, uint flags) {
+	ubyte* allocGib(ref ubyte* location, uint gibIndex, uint flags) {
 		// Get initial address of gib
 		ubyte* gibAddr = gibAddress(gibIndex);
 
@@ -282,10 +282,26 @@ static:
 		translateAddress(gibAddr, indexL1, indexL2, indexL3, indexL4);
 
 		// Allocate paging structures
-		PageLevel3* pl3 = root.getTable(indexL4);
+		PageLevel3* pl3 = root.getOrCreateTable(indexL4);
 		PageLevel2* pl2 = pl3.getOrCreateTable(indexL3);
+
+		// Physical address of gib
+		location = pl3.entries[indexL3].location;
 		
 		// pl2 is your gib structure.
+		return gibAddr;
+	}
+
+	ubyte* openGib(ubyte* location, uint gibIndex, uint flags) {
+		ubyte* gibAddr = gibAddress(gibIndex);
+
+		// Find page translation
+		ulong indexL4, indexL3, indexL2, indexL1;
+		translateAddress(gibAddr, indexL1, indexL2, indexL3, indexL4);
+
+		PageLevel3* pl3 = root.getOrCreateTable(indexL4);
+		pl3.setTable(indexL3, location);
+
 		return gibAddr;
 	}
 
@@ -569,6 +585,10 @@ private:
 			"address", 41,
 			"available", 10,
 			"nx", 1));
+
+		ubyte* location() {
+			return cast(ubyte*)(cast(ulong)address() << 12);
+		}
 	}
 	
 	struct PrimaryField {
@@ -589,6 +609,10 @@ private:
 			"address", 41,
 			"available", 10,
 			"nx", 1));
+
+		ubyte* location() {
+			return cast(ubyte*)(cast(ulong)address() << 12);
+		}
 	}
 
 	struct PageLevel4 {
@@ -601,6 +625,13 @@ private:
 			
 			// Calculate virtual address
 			return cast(PageLevel3*)(0xFFFFFF7F_BFE00000 + (idx << 12));
+		}
+
+		void setTable(uint idx, ubyte* address, bool usermode = false) {
+			entries[idx].pml = cast(ulong)address;
+			entries[idx].present = 1;
+			entries[idx].rw = 1;
+			entries[idx].us = usermode;
 		}
 
 		PageLevel3* getOrCreateTable(uint idx, bool usermode = false) {
@@ -638,6 +669,13 @@ private:
 			baseAddr &= 0x1FF000;
 			baseAddr >>= 3;
 			return cast(PageLevel2*)(0xFFFFFF7F_C0000000 + ((baseAddr + idx) << 12));
+		}
+
+		void setTable(uint idx, ubyte* address, bool usermode = false) {
+			entries[idx].pml = cast(ulong)address;
+			entries[idx].present = 1;
+			entries[idx].rw = 1;
+			entries[idx].us = usermode;
 		}
 
 		PageLevel2* getOrCreateTable(uint idx, bool usermode = false) {
@@ -682,6 +720,13 @@ private:
 			baseAddr &= 0x3FFFF000;
 			baseAddr >>= 3;
 			return cast(PageLevel1*)(0xFFFFFF80_00000000 + ((baseAddr + idx) << 12));
+		}
+
+		void setTable(uint idx, ubyte* address, bool usermode = false) {
+			entries[idx].pml = cast(ulong)address;
+			entries[idx].present = 1;
+			entries[idx].rw = 1;
+			entries[idx].us = usermode;
 		}
 
 		PageLevel1* getOrCreateTable(uint idx, bool usermode = false) {

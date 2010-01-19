@@ -19,6 +19,14 @@ struct Gib {
 		return _start;
 	}
 
+	ubyte* pos() {
+		return _curpos;
+	}
+
+	ubyte* address() {
+		return _gibaddr;
+	}
+
 	// Will move the pointer by the specified amount.
 	// Can be positive or negative.
 	void seek(long amount) {
@@ -94,4 +102,5 @@ struct Gib {
 package:
 	ubyte* _start;
 	ubyte* _curpos;
+	ubyte* _gibaddr;
 }

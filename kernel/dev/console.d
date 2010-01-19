@@ -6,8 +6,9 @@ module kernel.dev.console;
 import kernel.system.info;
 
 // For Gibs
-import kernel.mem.giballocator;
 import kernel.mem.gib;
+import kernel.mem.giballocator;
+import kernel.filesystem.ramfs;
 
 // Errors
 import kernel.core.error;
@@ -41,8 +42,8 @@ public:
 		info.width = COLUMNS;
 		info.height = LINES;
 
-		Gib video = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
-//		Gib video = RamFS.open("/dev/video", Access.Create | Access.Read | Access.Write);
+		Gib video = RamFS.create("devices/video", Access.Kernel | Access.Read | Access.Write);
+
 		MetaData* videoMetaData = cast(MetaData*)video.ptr;
 		*videoMetaData = info;
 		video.seek(4096);

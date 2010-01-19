@@ -104,13 +104,13 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.print("PageAllocator: initialize()");
 	Log.result(PageAllocator.initialize());
 
-	// 3b. Console Initialization
-	Log.print("Console: initialize()");
-	Log.result(Console.initialize());
-
-	// 3c. RamFS Initialization
+	// 3b. RamFS Initialization
 	Log.print("RamFS: initialize()");
 	Log.result(RamFS.initialize());
+
+	// 3c. Console Initialization
+	Log.print("Console: initialize()");
+	Log.result(Console.initialize());
 
 	// 4. Timer Initialization
 	// LATER
