@@ -15,6 +15,7 @@ import kernel.core.kprintf;
 // Import the heap allocator, so we can allocate memory
 import kernel.mem.pageallocator;
 import kernel.mem.heap;
+import kernel.mem.giballocator;
 
 // Import some arch-dependent modules
 import kernel.arch.x86_64.linker;	// want linker info
@@ -121,6 +122,10 @@ static:
 
 //		kprintfln!("CR2 {}")(addr);
 
+		if (stack.rip < 0xf_0000_0000_0000) {
+			kprintfln!("User Mode Page Fault {x}")(stack.rip);
+			kprintfln!("CR2: {}")(addr);
+		}
 		while (addr < cast(void*)10000) {
 		}
 
@@ -142,6 +147,7 @@ static:
 //				kprintfln!("Gib Available")();
 
 				// Allocate Page
+				addr = cast(void*)(cast(ulong)addr & 0xffff_ffff_ffff_f000UL);
 
 //				kprintfln!("Allocating a page")();
 				void* page = PageAllocator.allocPage();
@@ -282,8 +288,9 @@ static:
 		translateAddress(gibAddr, indexL1, indexL2, indexL3, indexL4);
 
 		// Allocate paging structures
-		PageLevel3* pl3 = root.getOrCreateTable(indexL4);
-		PageLevel2* pl2 = pl3.getOrCreateTable(indexL3);
+		bool usermode = (flags & Access.Kernel) == 0;
+		PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
+		PageLevel2* pl2 = pl3.getOrCreateTable(indexL3, usermode);
 
 		// Physical address of gib
 		location = pl3.entries[indexL3].location;
@@ -299,8 +306,10 @@ static:
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(gibAddr, indexL1, indexL2, indexL3, indexL4);
 
-		PageLevel3* pl3 = root.getOrCreateTable(indexL4);
-		pl3.setTable(indexL3, location);
+		bool usermode = (flags & Access.Kernel) == 0;
+		PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
+
+		pl3.setTable(indexL3, location, usermode);
 
 		return gibAddr;
 	}

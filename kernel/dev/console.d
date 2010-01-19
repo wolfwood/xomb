@@ -12,6 +12,7 @@ import kernel.filesystem.ramfs;
 
 // Errors
 import kernel.core.error;
+import kernel.core.kprintf;
 
 // Shared structures for userspace
 public import user.console;
@@ -42,7 +43,7 @@ public:
 		info.width = COLUMNS;
 		info.height = LINES;
 
-		Gib video = RamFS.create("devices/video", Access.Kernel | Access.Read | Access.Write);
+		Gib video = RamFS.create("/devices/video", Access.Kernel | Access.Read | Access.Write);
 
 		MetaData* videoMetaData = cast(MetaData*)video.ptr;
 		*videoMetaData = info;

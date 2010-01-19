@@ -3,53 +3,47 @@ module user.syscall;
 import user.nativecall;
 import user.util;
 
-import user.console;
-import user.keyboard;
-
-import user.ramfs;
-
 // Errors
-enum SyscallError : ulong
-{
+enum SyscallError : ulong {
 	OK = 0,
 	Failcopter
 }
 
 // IDs of the system calls
-enum SyscallID : ulong
-{
+enum SyscallID : ulong {
 	Add = 0,
 	RequestConsole,
 	AllocPage,
 	Exit,
 	Fork,
-//	Open,
 	PerfPoll,
+	Open,
+	Create,
 }
 
 // Names of system calls
-alias Tuple!
-(
+alias Tuple! (
 	"add",				// add()
 	"requestConsole",	// requestConsole()
 	"allocPage",		// allocPage()
 	"exit",				// exit()
 	"fork",				// fork()
-//	"open",		        // open()
-	"perfPoll"			// perfPoll()
+	"perfPoll",			// perfPoll()
+	"open",				// open()
+	"create"			// create()
 ) SyscallNames;
 
 
 // Return types for each system call
-alias Tuple!
-(
+alias Tuple! (
 	int,			// add
 	void,			// requestConsole
 	int,			// allocPage
 	void,			// exit
 	int,			// fork
-//	Gib, 		    // open
-	void			// perfPoll
+	void,			// perfPoll
+	ubyte*,			// open
+	ubyte*			// create
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -73,7 +67,9 @@ struct ForkArgs {
 
 struct OpenArgs {
 	char[] path;
+	uint flags;
 }
+alias OpenArgs CreateArgs;
 
 struct PerfPollArgs {
 	uint event;
@@ -107,5 +103,3 @@ SyscallRetTypes[ID].stringof ~ ` ` ~ SyscallNames[ID] ~ `(Tuple!` ~ typeof(mixin
 }
 
 mixin(Reduce!(Cat, Map!(MakeSyscall, Range!(SyscallID.max + 1))));
-
-

@@ -3,7 +3,6 @@
 module kernel.core.syscall;
 
 import user.syscall;
-import user.console;
 
 import kernel.environ.info;
 import kernel.environ.scheduler;
@@ -11,6 +10,7 @@ import kernel.environ.scheduler;
 import kernel.dev.console;
 
 import kernel.mem.heap;
+import kernel.mem.gib;
 
 import kernel.core.error;
 import kernel.core.kprintf;
@@ -81,9 +81,17 @@ public:
 		return SyscallError.OK;
 	}
 
-//	SyscallError open(out Gib ret, OpenArgs* params){
-//		return SyscallError.OK;
-//	}
+	SyscallError open(out ubyte* ret, OpenArgs* params) {
+		Gib gib = RamFS.open(params.path, params.flags);
+		ret = gib.ptr;
+		return SyscallError.OK;
+	}
+
+	SyscallError create(out ubyte* ret, CreateArgs* params) {
+		Gib gib = RamFS.create(params.path, params.flags);
+		ret = gib.ptr;
+		return SyscallError.OK;
+	}
 
 	SyscallError perfPoll(PerfPollArgs* params) {
 		synchronized {

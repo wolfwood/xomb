@@ -14,8 +14,6 @@ import architecture.vm;
 import kernel.mem.giballocator;
 import kernel.mem.gib;
 
-import user.ramfs;
-
 // The beef of the logic involves this structure
 // Add to directory structure
 // Just use a linked list allocation
@@ -92,7 +90,6 @@ struct Directory {
 		tail = cast(Directory.Entry*)(gib.ptr + header.tailOffset);
 		if (header.headOffset == 0) {
 			// Directory is empty
-			kprintfln!("empty directory")();
 			return null;
 		}
 
@@ -113,13 +110,11 @@ struct Directory {
 					}
 				}
 				if (nameEq) {
-					kprintfln!("FOUND: {} AT {}")(curname, current.ptr);
 					return current;
 				}
 			}
 
 			// Compare curname
-			kprintfln!("found {}")(curname);
 
 			if (current is tail) {
 				// found remains false
@@ -180,10 +175,6 @@ static:
 		sub.alloc();
 		rootDir.link(sub.gib, "devices");
 
-		kprintfln!("LOCATE {}")(locate("devices"));
-		create("devices/video", Access.Kernel | Access.Read | Access.Write);
-		Gib videoFile = GibAllocator.open(locate("devices/video"), Access.Kernel | Access.Read | Access.Write);
-		kprintfln!("LOCATE {}")(locate("devices/video"));
 		return ErrorVal.Success;
 	}
 
@@ -195,7 +186,6 @@ static:
 		ubyte* last;
 
 		void innerLocate(size_t from, size_t to) {
-			kprintfln!("LOCATING {}")(path[from..to]);
 			Directory.Entry* entry = curDir.locate(path[from..to]);
 			curDir.open(entry, Access.Kernel | Access.Read | Access.Write);
 			last = entry.ptr;
@@ -237,7 +227,6 @@ static:
 		if (splitPath(name, path, filename) == ErrorVal.Fail) {
 			return newGib;
 		}
-	kprintfln!("creating a new file {} @ {}")(filename, path);
 
 		ubyte* dirptr = locate(path);
 		Directory dir;
@@ -277,6 +266,7 @@ private:
 				}
 				path = fullpath[0..i];
 				filename = fullpath[i+1..$];
+				break;
 			}
 		}
 		return ErrorVal.Success;

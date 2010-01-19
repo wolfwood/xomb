@@ -74,13 +74,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.print("Architecture: initialize()");
    	Log.result(Architecture.initialize());
 
-	// Initialize the kernel Heap
-	kprintfln!("alloc: {}")(PageAllocator.allocPage());
-	kprintfln!("alloc: {}")(PageAllocator.allocPage());
-	kprintfln!("alloc: {}")(PageAllocator.allocPage());
-	kprintfln!("alloc: {}")(PageAllocator.allocPage());
-	kprintfln!("alloc: {}")(PageAllocator.allocPage());
-
 	// 2b. Paging Initialization
 	Log.print("VirtualMemory: initialize()");
    	Log.result(VirtualMemory.initialize());
@@ -111,6 +104,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	// 3c. Console Initialization
 	Log.print("Console: initialize()");
 	Log.result(Console.initialize());
+	Timing.sleep(3);
 
 	// 4. Timer Initialization
 	// LATER

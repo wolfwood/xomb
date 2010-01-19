@@ -27,7 +27,7 @@ public:
 
 	Gib alloc(uint flags) {
 		Gib ret;
-		uint gibIndex = 0;
+		uint gibIndex = 1;
 		if (flags & Access.Kernel != 0) {
 			// kernel gib
 			gibIndex = nextFreeKernelGib;
@@ -43,7 +43,7 @@ public:
 	Gib open(ubyte* gibaddr, uint flags) {
 		Gib ret;
 		ret._gibaddr = gibaddr;
-		uint gibIndex = 0;
+		uint gibIndex = 1;
 		if (flags & Access.Kernel != 0) {
 			// kernel gib
 			gibIndex = nextFreeKernelGib;
