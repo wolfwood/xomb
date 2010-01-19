@@ -104,7 +104,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	// 3c. Console Initialization
 	Log.print("Console: initialize()");
 	Log.result(Console.initialize());
-	Timing.sleep(3);
 
 	// 4. Timer Initialization
 	// LATER
