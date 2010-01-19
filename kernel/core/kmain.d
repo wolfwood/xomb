@@ -87,7 +87,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	Log.print("PerfMon: initialize()");
 	Log.result(PerfMon.initialize());
-	PerfMon.registerEvent(0, PerfMon.Event.L2Misses);
 
 	// 3. Processor Initialization
 	Log.print("Cpu: initialize()");
