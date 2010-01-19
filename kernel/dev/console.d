@@ -107,6 +107,8 @@ public:
 			videoInfo.xpos += TABSTOP;
 		}
 		else if (c != '\n' && c != '\r') {
+			videoInfo.xpos %= COLUMNS;
+			videoInfo.ypos %= LINES;
 			ubyte* videoAddress = videoMemoryLocation;
 			videoAddress += (videoInfo.xpos + (videoInfo.ypos * COLUMNS)) * 2;
 
