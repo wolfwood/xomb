@@ -11,7 +11,8 @@ import architecture.vm;
 
 import kernel.core.kprintf;
 import kernel.core.error;
-import kernel.core.templates;
+
+import user.templates;
 
 struct Gib {
 
