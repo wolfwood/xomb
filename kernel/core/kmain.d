@@ -46,6 +46,9 @@ import kernel.filesystem.ramfs;
 // console device
 import kernel.dev.console;
 
+// keyboard driver
+import kernel.dev.keyboard;
+
 import kernel.core.syscall;
 
 
@@ -121,6 +124,9 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	Log.print("Multiprocessor: bootCores()");
 	Log.result(Multiprocessor.bootCores());
+
+	Log.print("Keyboard: initialize()");
+	Log.result(Keyboard.initialize());
 
 	// 7. Schedule
 	Scheduler.initialize();

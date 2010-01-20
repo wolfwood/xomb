@@ -27,6 +27,8 @@ void main() {
 
 	Console.putString("What to do...\n");
 
+	Console.putString("\n > ");
+
 	//char[128] str;
 
 //	while(read(fd, str, str.length) == str.length){

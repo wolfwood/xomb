@@ -8,7 +8,6 @@
 
 module kernel.arch.x86_64.core.idt;
 
-// We need the SystemSegmentType enum
 import kernel.arch.x86_64.core.gdt;
 
 import kernel.core.util;	// For BitField!()
@@ -263,7 +262,7 @@ private:
 			handlers[stack.intNumber](stack);
 			return;
 		}
-		kprintfln!("Interrupt: {} @ {x}")(stack.intNumber, stack.rip);
+//		kprintfln!("Interrupt: {} @ {x}")(stack.intNumber, stack.rip);
 
 		// common interrupt handling
 	}

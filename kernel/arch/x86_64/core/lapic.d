@@ -104,6 +104,14 @@ public:
 		return APICIdToLogicalID[getLocalAPICId()];
 	}
 
+	uint id() {
+		return getLocalAPICId();
+	}
+
+	void EOI() {
+		apicRegisters.EOI = 0;
+	}
+
 private:
 
 	uint curCoreId = 0;
@@ -140,10 +148,6 @@ private:
 		}
 	//	bootRange[0..trampolineLength] = trampolineCode[0..trampolineLength];
 		//kprintfln!("Trampoline copied")();
-	}
-
-	void EOI() {
-		apicRegisters.EOI = 0;
 	}
 
 	uint getLocalAPICId() {
