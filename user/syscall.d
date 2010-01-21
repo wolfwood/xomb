@@ -68,6 +68,7 @@ struct ForkArgs {
 struct OpenArgs {
 	char[] path;
 	uint flags;
+	uint index;
 }
 alias OpenArgs CreateArgs;
 

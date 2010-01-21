@@ -82,13 +82,13 @@ public:
 	}
 
 	SyscallError open(out ubyte* ret, OpenArgs* params) {
-		Gib gib = RamFS.open(params.path, params.flags);
+		Gib gib = RamFS.open(params.path, params.flags, params.index);
 		ret = gib.ptr;
 		return SyscallError.OK;
 	}
 
 	SyscallError create(out ubyte* ret, CreateArgs* params) {
-		Gib gib = RamFS.create(params.path, params.flags);
+		Gib gib = RamFS.create(params.path, params.flags, params.index);
 		ret = gib.ptr;
 		return SyscallError.OK;
 	}

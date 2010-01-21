@@ -219,7 +219,7 @@ static:
 		return ErrorVal.Fail;
 	}
 
-	Gib create(char[] name, uint flags) {
+	Gib create(char[] name, uint flags, uint gibIndex = 1) {
 		// Open directory where name should be placed
 		char[] path;
 		char[] filename;
@@ -230,7 +230,7 @@ static:
 
 		ubyte* dirptr = locate(path);
 		Directory dir;
-		dir.gib = GibAllocator.open(dirptr, Access.Kernel | Access.Read | Access.Write);
+		dir.gib = GibAllocator.open(dirptr, Access.Kernel | Access.Read | Access.Write, gibIndex);
 
 		newGib = GibAllocator.alloc(flags);
 		dir.link(newGib, filename);
@@ -238,12 +238,12 @@ static:
 		return newGib;
 	}
 
-	Gib open(char[] name, uint flags) {
+	Gib open(char[] name, uint flags, uint gibIndex = 1) {
 		// Open directory where name should be placed
 		Gib gib;
 		ubyte* gibptr = locate(name);
 		if (gibptr !is null) {
-			gib = GibAllocator.open(gibptr, flags);
+			gib = GibAllocator.open(gibptr, flags, gibIndex);
 		}
 		return gib;
 	}

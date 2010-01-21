@@ -2,6 +2,7 @@ module kernel.dev.keyboard;
 
 // Import the architecture specific keyboard driver
 import architecture.keyboard;
+import architecture.vm;
 
 import kernel.core.error;
 
@@ -20,6 +21,14 @@ static:
 
 	ErrorVal initialize() {
 		_buffer = RamFS.create("/devices/keyboard", Access.Kernel | Access.Read | Access.Write);
+		_writeOffset = cast(ushort*)_buffer.ptr;
+		*_writeOffset = 0;
+		_buffer.seek(2);
+		_readOffset = cast(ushort*)_buffer.pos;
+		*_readOffset = 0;
+		_buffer.seek(2);
+		_buffer.write(cast(ushort)(3 * VirtualMemory.getPageSize()));
+		_maxOffset = ((3 * VirtualMemory.getPageSize()) / 2) - 3;
 		ErrorVal ret = KeyboardImplementation.initialize(&putKey);
 		return ret;
 	}
@@ -27,149 +36,29 @@ static:
 private:
 
 	void putKey(Key nextKey, bool released) {
-		keyState[nextKey] = !released;
-
-		char translated = translateScancode(nextKey);
-		if (translated != '\0' && !released) {
-			// printable
-			Console.putCharUnsafe(translated);
-		}
-
 		if (released) {
 			nextKey = -nextKey;
 		}
+
+		if ((((*_writeOffset)+1) == *_readOffset) || ((*_writeOffset + 1) >= _maxOffset && (*_readOffset == 0))) {
+			// lose this key
+			return;
+		}
+
+		// put in the buffer at the write pointer position
+		_buffer.write(cast(short)nextKey);
+		if ((*_writeOffset + 1) >= _maxOffset) {
+			_buffer.rewind();
+			_buffer.seek(6);
+			*_writeOffset = 0;
+		}
+		else {
+			*_writeOffset = (*_writeOffset) + 1;
+		}
 	}
 
-	static bool keyState[256] = false;
 	Gib _buffer;
-
-	char translateScancode(Key scanCode) {
-		// keyboard scancodes are ordered by their position on the keyboard
-
-		// check for shift state
-		bool up = false;
-		char trans = '\0';
-
-		if (keyState[Key.LeftShift] || keyState[Key.RightShift]) {
-			// up key
-			up = true;
-		}
-
-		if (scanCode >= Key.A && scanCode <= Key.Z) {
-			if (up) {
-				trans = 'A' + (scanCode - Key.A);
-			}
-			else {
-				trans = 'a' + (scanCode - Key.A);
-			}
-		}
-		else if (scanCode >= Key.Num0 && scanCode <= Key.Num9) {
-			if (up) {
-				switch (scanCode) {
-					case Key.Num0:
-						trans = ')';
-						break;
-					case Key.Num1:
-						trans = '!';
-						break;
-					case Key.Num2:
-						trans = '@';
-						break;
-					case Key.Num3:
-						trans = '#';
-						break;
-					case Key.Num4:
-						trans = '$';
-						break;
-					case Key.Num5:
-						trans = '%';
-						break;
-					case Key.Num6:
-						trans = '^';
-						break;
-					case Key.Num7:
-						trans = '&';
-						break;
-					case Key.Num8:
-						trans = '*';
-						break;
-					default:
-					case Key.Num9:
-						trans = '(';
-						break;
-				}
-			}
-			else {
-				trans = '0' + (scanCode - Key.Num0);
-			}
-		}
-		else if (scanCode == Key.Space) {
-			trans = ' ';
-		}
-		else if (scanCode == Key.Tab) {
-			trans = '\t';
-		}
-		else if (scanCode == Key.Quote) {
-			if (up) trans = '~'; else trans = '`';
-		}
-		else if (scanCode == Key.LeftBracket) {
-			if (up) trans = '{'; else trans = '[';
-		}
-		else if (scanCode == Key.RightBracket) {
-			if (up) trans = '}'; else trans = ']';
-		}
-		else if (scanCode == Key.Minus) {
-			if (up) trans = '_'; else trans = '-';
-		}
-		else if (scanCode == Key.Equals) {
-			if (up) trans = '+'; else trans = '=';
-		}
-		else if (scanCode == Key.Comma) {
-			if (up) trans = '<'; else trans = ',';
-		}
-		else if (scanCode == Key.Period) {
-			if (up) trans = '_'; else trans = '.';
-		}
-		else if (scanCode == Key.Semicolon) {
-			if (up) trans = ':'; else trans = ';';
-		}
-		else if (scanCode == Key.Apostrophe) {
-			if (up) trans = '"'; else trans = '\'';
-		}
-		else if (scanCode == Key.Slash) {
-			if (up) trans = '|'; else trans = '\\';
-		}
-		else if (scanCode == Key.Backslash) {
-			if (up) trans = '?'; else trans = '/';
-		}
-		else if (scanCode == Key.Return) {
-			trans = '\n';
-		}
-		else if (scanCode >= Key.Keypad0 && scanCode <= Key.Keypad9) {
-			if (!(up)) {
-				trans = '0' + (scanCode - Key.Keypad0);
-			}
-		}
-		else if (scanCode == Key.KeypadAsterisk) {
-			trans = '*';
-		}
-		else if (scanCode == Key.KeypadMinus) {
-			trans = '-';
-		}
-		else if (scanCode == Key.KeypadBackslash) {
-			trans = '/';
-		}
-		else if (scanCode == Key.KeypadPlus) {
-			trans = '+';
-		}
-		else if (scanCode == Key.KeypadReturn) {
-			trans = '\n';
-		}
-		else if (scanCode == Key.KeypadPeriod) {
-			trans = '.';
-		}
-
-		return trans;
-	}
-
+	ushort* _writeOffset;
+	ushort* _readOffset;
+	ushort _maxOffset;
 }

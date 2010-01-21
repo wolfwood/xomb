@@ -60,6 +60,16 @@ static:
 		}
 	}
 
+	void getPosition(out uint x, out uint y) {
+		x = videoInfo.xpos;
+		y = videoInfo.ypos;
+	}
+
+	void setPosition(uint x, uint y) {
+		videoInfo.xpos = x;
+		videoInfo.ypos = y;
+	}
+
 	void clear() {
 		ubyte* ptr = cast(ubyte*)videoBuffer;
 

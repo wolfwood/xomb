@@ -44,7 +44,7 @@ enum Key : short {
 	Quote,		// `
 	Minus,		// -
 	Equals,		// =
-	Slash,		// \
+	Slash,		// /
 	Backspace,
 	Space,
 	Tab,		// \t
@@ -89,7 +89,7 @@ enum Key : short {
 	Apostrophe,	// '
 	Comma,		// ,
 	Period,		// .
-	Backslash,	// /
+	Backslash,	// \
 
 
 	LeftMeta,
@@ -107,7 +107,7 @@ enum Key : short {
 	Left,
 	Right,
 	Down,
-	KeypadBackslash,
+	KeypadSlash,
 	KeypadReturn,
 
 	Next,

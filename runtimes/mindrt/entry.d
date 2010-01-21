@@ -12,6 +12,8 @@ int main(char[][]);
 
 extern(C) ubyte _bss;
 extern(C) ubyte _ebss;
+extern(C) ubyte _edata;
+extern(C) ubyte _end;
 
 extern(C) void _start() {
 	// Zero the bss 
@@ -20,8 +22,8 @@ extern(C) void _start() {
 		pushq 0;
 	}
 
-	ubyte* startBSS = &_bss;
-	ubyte* endBSS = &_ebss;
+	ubyte* startBSS = &_edata;
+	ubyte* endBSS = &_end;
 
 	for( ; startBSS != endBSS; startBSS++) {
 		*startBSS = 0x00;

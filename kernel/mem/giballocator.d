@@ -25,9 +25,8 @@ struct GibAllocator {
 static:
 public:
 
-	Gib alloc(uint flags) {
+	Gib alloc(uint flags, uint gibIndex = 1) {
 		Gib ret;
-		uint gibIndex = 1;
 		if (flags & Access.Kernel != 0) {
 			// kernel gib
 			gibIndex = nextFreeKernelGib;
@@ -40,10 +39,9 @@ public:
 		return ret;
 	}
 
-	Gib open(ubyte* gibaddr, uint flags) {
+	Gib open(ubyte* gibaddr, uint flags, uint gibIndex = 1) {
 		Gib ret;
 		ret._gibaddr = gibaddr;
-		uint gibIndex = 1;
 		if (flags & Access.Kernel != 0) {
 			// kernel gib
 			gibIndex = nextFreeKernelGib;

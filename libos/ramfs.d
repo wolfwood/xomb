@@ -90,16 +90,21 @@ static:
 
 	Gib open(char[] name, uint flags) {
 		Gib ret;
-		ret._start = user.syscall.open(name, flags);
+		ret._start = user.syscall.open(name, flags, nextGibIndex);
+		nextGibIndex++;
 		ret._curpos = ret._start;
 		return ret;
 	}
 
 	Gib create(char[] name, uint flags) {
 		Gib ret;
-		ret._start = user.syscall.create(name, flags);
+		ret._start = user.syscall.create(name, flags, nextGibIndex);
+		nextGibIndex++;
 		ret._curpos = ret._start;
 		return ret;
 	}
+
+private:
+	uint nextGibIndex = 1;
 }
 

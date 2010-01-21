@@ -250,7 +250,7 @@ private:
 		0x4B: Key.Left,
 		0x50: Key.Down,
 		0x4D: Key.Right,
-		0x35: Key.KeypadBackslash,
+		0x35: Key.KeypadSlash,
 		0x1C: Key.KeypadReturn,
 
 		/*0xff: Key.Application,
