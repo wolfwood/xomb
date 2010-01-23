@@ -8,6 +8,7 @@
 module mindrt.dstubs;
 
 import mindrt.dstatic;
+import mindrt.exception;
 import mindrt.common;
 
 extern(C):
