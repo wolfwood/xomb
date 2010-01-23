@@ -1,6 +1,12 @@
-// This module contains helpful functions found necessary by the runtime and gcc.
-
-// contains: itoa, memcpy, memset, memmove, memcmp, strlen, isnan, toString
+/*
+ * util.d
+ *
+ * This module contains helpful functions found necessary by the runtime and gcc.
+ * contains: itoa, memcpy, memset, memmove, memcmp, strlen, isnan, toString
+ *
+ * License: Public Domain
+ *
+ */
 
 module mindrt.util;
 

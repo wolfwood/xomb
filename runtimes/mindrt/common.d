@@ -3,6 +3,8 @@
  *
  * This module contains any common definitions.
  *
+ * License: Public Domain
+ *
  */
 
 module mindrt.common;

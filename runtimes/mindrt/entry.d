@@ -3,6 +3,8 @@
  *
  * The entry point to an app.
  *
+ * License: Public Domain
+ *
  */
 
 import user.syscall;

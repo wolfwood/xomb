@@ -10,6 +10,8 @@
  *
  * Author: Dave Wilkinson, The Regents of the University of California.
  *
+ * License: Public Domain
+ *
  */
 
 module mindrt.precision;
@@ -60,11 +62,6 @@ module mindrt.precision;
  */
 
 //-------------
-
-/*#include <sys/cdefs.h>
-#include <sys/types.h>
-#include <sys/limits.h>
-#include <sys/syslimits.h>*/
 
 /*
  * Depending on the desired operation, we view a 64 bit integer (a long)

@@ -1,33 +1,31 @@
 /*
  * dinvariant.d
  *
+ * This module implements the runtime calls that will execute invariant blocks
+ * (contracts) within class definitions.
+ *
+ * License: Public Domain
+ *
  */
 
 module mindrt.dinvariant;
 
 extern(C):
 
-/*
- * Placed into the Public Domain
- * written by Walter Bright
- * www.digitalmars.com
- */
-
 void _d_invariant(Object o) {
-	ClassInfo c;
+	// Make sure o is defined.
+	assert(o !is null);
 
-	//printf("__d_invariant(%p)\n", o);
-
-	// BUG: needs to be filename/line of caller, not library routine
-	assert(o !is null); // just do null check, not invariant check
-
-	c = o.classinfo;
+	// Get the main ClassInfo for o
+	ClassInfo c = o.classinfo;
 
 	do {
-		if(c.classInvariant) {
+		// If the class has an invariant defined, execute it
+		if(c.classInvariant !is null) {
 			(*c.classInvariant)(o);
 		}
 
+		// Go up class hierarchy, return the next ClassInfo
 		c = c.base;
 	} while(c)
 }

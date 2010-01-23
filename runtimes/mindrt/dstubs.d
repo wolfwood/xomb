@@ -3,6 +3,8 @@
  *
  * This module stubs out the dynamic parts of the D language.
  *
+ * License: Public Domain
+ *
  */
 
 module mindrt.dstubs;

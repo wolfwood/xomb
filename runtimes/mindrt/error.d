@@ -1,3 +1,12 @@
+/*
+ * error.d
+ *
+ * This module implements the base class for a non recoverable failure.
+ *
+ * License: Public Domain
+ *
+ */
+
 module mindrt.error;
 
 import mindrt.exception;

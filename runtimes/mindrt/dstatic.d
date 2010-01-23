@@ -3,6 +3,8 @@
  *
  * This module implements the static subset of D.
  *
+ * License: Public Domain
+ *
  */
 
 module mindrt.dstatic;

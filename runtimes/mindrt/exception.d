@@ -3,6 +3,8 @@
  *
  * This module implements the Exception base class.
  *
+ * License: Public Domain
+ *
  */
 
 module mindrt.exception;

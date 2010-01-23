@@ -16,8 +16,6 @@ mindrt.a: object.d dinvariant.d dstubs.d util.d dstatic.d error.d exception.d
 	ldc -nodefaultlib -I../. -I. -c util.d -ofdsss_objs/G/runtime.util.o; 
 	ldc -nodefaultlib -I../. -c std/stdarg.d -ofdsss_objs/G/runtime.std.stdarg.o;
 	ldc -nodefaultlib -I../. -c std/moduleinit.d -ofdsss_objs/G/runtime.std.moduleinit.o;
-	ldc -nodefaultlib -I../. -c std/intrinsic.d -ofdsss_objs/G/runtime.std.intrinsic.o;
-	ldc -nodefaultlib -I../. -c std/moduleinit.d -ofdsss_objs/G/runtime.std.moduleinit.o;
 	ldc -nodefaultlib -I../. -c std/typeinfo/ti_AC.d -ofdsss_objs/G/runtime.std.typeinfo.ti_AC.o;
 	ldc -nodefaultlib -I../. -c std/typeinfo/ti_Acdouble.d -ofdsss_objs/G/runtime.std.typeinfo.ti_Acdouble.o;
 	ldc -nodefaultlib -I../. -c std/typeinfo/ti_Acfloat.d -ofdsss_objs/G/runtime.std.typeinfo.ti_Acfloat.o;

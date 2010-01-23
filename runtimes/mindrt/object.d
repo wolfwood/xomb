@@ -3,6 +3,8 @@
  *
  * This module implements the Object class.
  *
+ * License: Public Domain
+ *
  */
 
 module object;
@@ -111,19 +113,29 @@ class ClassInfo : Object {
 								 * (init.length gives size in bytes of class)
 								 */
 	char[] name;				/// class name
+
 	void *[] vtbl;				/// virtual function pointer table
+
 	Interface[] interfaces; 	/// interfaces this class implements
+
 	ClassInfo base; 			/// base class
+
 	void *destructor;
-	void (*classInvariant)(Object);
+
+	void function(Object) classInvariant;
+
 	uint flags;
 	//	1:						// IUnknown
 	//	2:						// has no possible pointers into GC memory
 	//	4:						// has offTi[] member
 	//	8:						// has constructors
+
 	void *deallocator;
+
 	OffsetTypeInfo[] offTi;
+
 	void* defaultConstructor;	// default Constructor
+
 	TypeInfo typeinfo;
 
 	/*************
