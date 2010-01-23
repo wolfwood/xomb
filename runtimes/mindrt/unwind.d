@@ -10,6 +10,10 @@
 
 module mindrt.unwind;
 
+import mindrt.common;
+
+extern(C):
+
 void _d_throw(Object obj) {
 }
 

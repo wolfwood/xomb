@@ -23,6 +23,8 @@ class Exception : Object {
 	}
 }
 
+extern(C):
+
 void onFinalizeError(ClassInfo ci, Exception ex) {
 }
 

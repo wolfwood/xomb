@@ -12,6 +12,8 @@ module mindrt.assocarray;
 
 import mindrt.common;
 
+extern(C):
+
 size_t _aaLen(AA aa) {
 	return 0;
 }
