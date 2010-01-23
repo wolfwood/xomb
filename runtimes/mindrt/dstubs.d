@@ -35,6 +35,7 @@ mixin(Stub!("void _d_monitordelete(Object h, bool det = true)"));
  Lifetime stubs
 **************************************************/
 
+mixin(Stub!("Object _d_allocclass(ClassInfo ci)"));
 mixin(Stub!("Object _d_newclass(ClassInfo ci)"));
 mixin(Stub!("void _d_delinterface(void** p)"));
 mixin(Stub!("void _d_delclass(Object* p)"));
@@ -86,6 +87,7 @@ mixin(Stub!("bool onCollectResource( Object obj )"));
 mixin(Stub!("void onFinalizeError( ClassInfo info, Exception ex )"));
 mixin(Stub!("void onOutOfMemoryError()"));
 mixin(Stub!("void onUnicodeError( char[] msg, size_t idx )"));
+mixin(Stub!("void _d_throw_exception(Object e)"));
 
 /**************************************************
  DEH and Unwind stubs
@@ -165,10 +167,3 @@ mixin(Stub!("int _aApplyRdc2(dchar[] aa, array_dg2_t dg)"));
 mixin(Stub!("int _aApplyRdw2(dchar[] aa, array_dg2_t dg)"));
 mixin(Stub!("char[] _adSortChar(char[] a)"));
 mixin(Stub!("wchar[] _adSortWchar(wchar[] a)"));
-
-/**************************************************
- Other stubs
-**************************************************/
-
-mixin(Stub!("Object _d_allocclass(ClassInfo ci)"));
-mixin(Stub!("void _d_throw_exception(Object e)"));
