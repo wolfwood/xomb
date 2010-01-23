@@ -1,7 +1,7 @@
 /*
  * exception.d
  *
- * This module implements the Exception base class.
+ * This module implements the Exception base class and the runtime functions.
  *
  * License: Public Domain
  *
@@ -23,3 +23,14 @@ class Exception : Object {
 	}
 }
 
+void onFinalizeError(ClassInfo ci, Exception ex) {
+}
+
+void onOutOfMemoryError() {
+}
+
+void onUnicodeError(char[] msg, size_t idx) {
+}
+
+void _d_throw_exception(Object e) {
+}
