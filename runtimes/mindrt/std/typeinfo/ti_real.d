@@ -3,7 +3,7 @@
 
 module std.typeinfo.ti_real;
 
-import util;
+import mindrt.util;
 //private import std.math;
 
 class TypeInfo_e : TypeInfo

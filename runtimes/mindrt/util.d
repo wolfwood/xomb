@@ -2,7 +2,7 @@
 
 // contains: itoa, memcpy, memset, memmove, memcmp, strlen, isnan, toString
 
-module util;
+module mindrt.util;
 
 version(LDC)
 {

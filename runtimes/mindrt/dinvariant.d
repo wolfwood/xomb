@@ -1,3 +1,11 @@
+/*
+ * dinvariant.d
+ *
+ */
+
+module mindrt.dinvariant;
+
+extern(C):
 
 /*
  * Placed into the Public Domain
@@ -5,8 +13,7 @@
  * www.digitalmars.com
  */
 
-extern(C) void _d_invariant(Object o)
-{
+void _d_invariant(Object o) {
 	ClassInfo c;
 
 	//printf("__d_invariant(%p)\n", o);
@@ -16,10 +23,8 @@ extern(C) void _d_invariant(Object o)
 
 	c = o.classinfo;
 
-	do
-	{
-		if(c.classInvariant)
-		{
+	do {
+		if(c.classInvariant) {
 			(*c.classInvariant)(o);
 		}
 

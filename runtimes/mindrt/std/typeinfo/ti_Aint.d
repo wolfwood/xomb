@@ -1,7 +1,7 @@
 
 module std.typeinfo.ti_Aint;
 
-import util;
+import mindrt.util;
 
 // int[]
 

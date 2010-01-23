@@ -36,7 +36,7 @@
 module object;
 
 // Imports necessary routines used by the runtime
-import util;
+import mindrt.util;
 
 //version(LDC)
 //{

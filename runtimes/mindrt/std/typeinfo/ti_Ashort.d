@@ -1,7 +1,7 @@
 
 module std.typeinfo.ti_Ashort;
 
-import util;
+import mindrt.util;
 
 // short[]
 

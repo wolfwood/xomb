@@ -1,6 +1,6 @@
 
 module std.typeinfo.ti_Ag;
-import util;
+import mindrt.util;
 
 // byte[]
 

@@ -3,7 +3,7 @@
 
 module std.typeinfo.ti_float;
 
-import util;
+import mindrt.util;
 //private import std.math;
 
 class TypeInfo_f : TypeInfo

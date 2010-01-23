@@ -1,7 +1,7 @@
 
 module std.typeinfo.ti_Along;
 
-import util;
+import mindrt.util;
 
 // long[]
 
