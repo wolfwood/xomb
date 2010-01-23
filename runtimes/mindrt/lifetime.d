@@ -11,6 +11,7 @@ module mindrt.lifetime;
 
 import mindrt.common;
 import mindrt.exception;
+import mindrt.gc;
 
 extern(C):
 
@@ -28,16 +29,22 @@ void _d_delinterface(void** p) {
 void _d_delclass(Object* p) {
 }
 
+// Description: Will allocate a new array of type ti with the length
+//  given, and will initialize it to the default value.
 Array _d_newarrayT(TypeInfo ti, size_t length) {
 	Array r;
 	return r;
 }
 
+// Description: Will allocate a new array of type ti with the length
+//  given, and will initialize it to a given value.
 Array _d_newarrayiT(TypeInfo ti, size_t length) {
 	Array r;
 	return r;
 }
 
+// Description: Will allocate a uninitialized array of type ti with
+//  the length given.
 Array _d_newarrayvT(TypeInfo ti, size_t length) {
 	Array r;
 	return r;
@@ -51,10 +58,15 @@ void[] _d_newarraymiTp(TypeInfo ti, int ndims, size_t* pdim) {
 	return null;
 }
 
+// Description: Will delete an array.
 void _d_delarray(Array* p) {
 }
 
+// Description: Will simply remove the memory pointed to a p.
 void _d_delmemory(void** p) {
+	if (p !is null) {
+		gc_free(p);
+	}
 }
 
 void _d_callfinalizer(void* p) {

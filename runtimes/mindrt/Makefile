@@ -7,12 +7,17 @@ mindrt.a: object.d dinvariant.d dstubs.d util.d dstatic.d error.d exception.d
 	mkdir -p dsss_objs;
 	mkdir -p dsss_objs/G;
 	mkdir -p dsss_objs/O;
+	mkdir -p dsss_objs/dynamic;
 	ldc -nodefaultlib -I../. -c object.d -ofdsss_objs/G/runtime.object.o; 
 	ldc -nodefaultlib -I../. -c dinvariant.d -ofdsss_objs/G/runtime.dinvariant.o;
 	ldc -nodefaultlib -I../. -c dstubs.d -ofdsss_objs/G/runtime.dstubs.o; 
 	ldc -nodefaultlib -I../. -c dstatic.d -ofdsss_objs/G/runtime.dstatic.o; 
 	ldc -nodefaultlib -I../. -c error.d -ofdsss_objs/G/runtime.error.o; 
 	ldc -nodefaultlib -I../. -c exception.d -ofdsss_objs/G/runtime.exception.o; 
+	ldc -nodefaultlib -I../. -c array.d -ofdsss_objs/dynamic/runtime.array.o;
+	ldc -nodefaultlib -I../. -c assocarray.d -ofdsss_objs/dynamic/runtime.assocarray.o;
+	ldc -nodefaultlib -I../. -c lifetime.d -ofdsss_objs/dynamic/runtime.lifetime.o;
+	ldc -nodefaultlib -I../. -c gc.d -ofdsss_objs/dynamic/runtime.gc.o;
 	ldc -nodefaultlib -I../. -I. -c util.d -ofdsss_objs/G/runtime.util.o; 
 	ldc -nodefaultlib -I../. -c std/stdarg.d -ofdsss_objs/G/runtime.std.stdarg.o;
 	ldc -nodefaultlib -I../. -c std/moduleinit.d -ofdsss_objs/G/runtime.std.moduleinit.o;

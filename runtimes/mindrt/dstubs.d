@@ -84,10 +84,10 @@ mixin(Stub!("bool onCollectResource( Object obj )"));
  Exception stubs
 **************************************************/
 
-mixin(Stub!("void onFinalizeError( ClassInfo info, Exception ex )"));
+/*mixin(Stub!("void onFinalizeError( ClassInfo info, Exception ex )"));
 mixin(Stub!("void onOutOfMemoryError()"));
 mixin(Stub!("void onUnicodeError( char[] msg, size_t idx )"));
-mixin(Stub!("void _d_throw_exception(Object e)"));
+mixin(Stub!("void _d_throw_exception(Object e)"));*/
 
 /**************************************************
  DEH and Unwind stubs
