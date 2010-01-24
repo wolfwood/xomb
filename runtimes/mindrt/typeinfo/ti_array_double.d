@@ -9,7 +9,7 @@
 
 module mindrt.typeinfo.ti_array_double;
 
-private import mindrt.typeinfo.ti_double;
+import mindrt.typeinfo.ti_double;
 
 class TypeInfo_Ad : TypeInfo {
 	char[] toString() {
@@ -89,17 +89,5 @@ class TypeInfo_Ad : TypeInfo {
 
 	TypeInfo next() {
 		return typeid(double);
-	}
-}
-
-// idouble[]
-
-class TypeInfo_Ap : TypeInfo_Ad {
-	char[] toString() {
-		return "idouble[]";
-	}
-
-	TypeInfo next() {
-		return typeid(idouble);
 	}
 }

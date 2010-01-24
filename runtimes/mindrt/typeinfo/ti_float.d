@@ -45,7 +45,7 @@ class TypeInfo_f : TypeInfo {
 		return (cast(float *)&r)[0 .. 1];
 	}
 
-private:
+package:
 	static int _equals(float f1, float f2) {
 		return f1 == f2 || (isnan(f1) && isnan(f2));
 	}

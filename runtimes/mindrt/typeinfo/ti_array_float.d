@@ -91,15 +91,3 @@ class TypeInfo_Af : TypeInfo {
 		return typeid(float);
 	}
 }
-
-// ifloat[]
-
-class TypeInfo_Ao : TypeInfo_Af {
-	char[] toString() {
-		return "ifloat[]";
-	}
-
-	TypeInfo next() {
-		return typeid(ifloat);
-	}
-}

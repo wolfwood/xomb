@@ -93,15 +93,3 @@ class TypeInfo_Ae : TypeInfo {
 		return typeid(real);
 	}
 }
-
-// ireal[]
-
-class TypeInfo_Aj : TypeInfo_Ae {
-	char[] toString() {
-		return "ireal[]";
-	}
-
-	TypeInfo next() {
-		return typeid(ireal);
-	}
-}

@@ -7,7 +7,7 @@
  *
  */
 
-module std.typeinfo.ti_double;
+module mindrt.typeinfo.ti_double;
 
 import mindrt.util;
 
@@ -47,7 +47,7 @@ class TypeInfo_d : TypeInfo {
 		return (cast(double *)&r)[0 .. 1];
 	}
 
-private:
+package:
 	static int _equals(double f1, double f2) {
 		return f1 == f2 ||
 			(isnan(f1) && isnan(f2));
