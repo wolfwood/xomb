@@ -24,6 +24,10 @@ mindrt.a: object.d dinvariant.d dstubs.d util.d dstatic.d error.d exception.d
 	ldc -nodefaultlib -I../. -c typeinfo/ti_array_cdouble.d -ofdsss_objs/G/runtime.std.typeinfo.ti_array_cdouble.o;
 	ldc -nodefaultlib -I../. -c typeinfo/ti_array_cfloat.d -ofdsss_objs/G/runtime.std.typeinfo.ti_array_cfloat.o;
 	ldc -nodefaultlib -I../. -c typeinfo/ti_array_byte.d -ofdsss_objs/G/runtime.std.typeinfo.ti_array_byte.o;
+	ldc -nodefaultlib -I../. -c typeinfo/ti_array_ubyte.d -ofdsss_objs/G/runtime.std.typeinfo.ti_array_ubyte.o;
+	ldc -nodefaultlib -I../. -c typeinfo/ti_array_bool.d -ofdsss_objs/G/runtime.std.typeinfo.ti_array_bool.o;
+	ldc -nodefaultlib -I../. -c typeinfo/ti_array_char.d -ofdsss_objs/G/runtime.std.typeinfo.ti_array_char.o;
+	ldc -nodefaultlib -I../. -c typeinfo/ti_array_void.d -ofdsss_objs/G/runtime.std.typeinfo.ti_array_void.o;
 	ldc -nodefaultlib -I../. -c typeinfo/ti_array_int.d -ofdsss_objs/G/runtime.std.typeinfo.ti_array_int.o;
 	ldc -nodefaultlib -I../. -c typeinfo/ti_array_long.d -ofdsss_objs/G/runtime.std.typeinfo.ti_array_long.o;
 	ldc -nodefaultlib -I../. -c typeinfo/ti_array_real.d -ofdsss_objs/G/runtime.std.typeinfo.ti_array_real.o;

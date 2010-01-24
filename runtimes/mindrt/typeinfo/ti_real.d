@@ -18,24 +18,6 @@ class TypeInfo_e : TypeInfo {
 		return (cast(uint *)p)[0] + (cast(uint *)p)[1] + (cast(ushort *)p)[4];
 	}
 
-	static int _equals(real f1, real f2) {
-		return f1 == f2 || (isnan(f1) && isnan(f2));
-	}
-
-	static int _compare(real d1, real d2) {
-		// if either are NaN
-		if (d1 !<>= d2) {
-			if (isnan(d1)) {
-				if (isnan(d2)) {
-					return 0;
-				}
-				return -1;
-			}
-			return 1;
-		}
-		return (d1 == d2) ? 0 : ((d1 < d2) ? -1 : 1);
-	}
-
 	int equals(void *p1, void *p2) {
 		return _equals(*cast(real *)p1, *cast(real *)p2);
 	}
@@ -60,5 +42,24 @@ class TypeInfo_e : TypeInfo {
 		static real r;
 
 		return (cast(real *)&r)[0 .. 1];
+	}
+
+private:
+	static int _equals(real f1, real f2) {
+		return f1 == f2 || (isnan(f1) && isnan(f2));
+	}
+
+	static int _compare(real d1, real d2) {
+		// if either are NaN
+		if (d1 !<>= d2) {
+			if (isnan(d1)) {
+				if (isnan(d2)) {
+					return 0;
+				}
+				return -1;
+			}
+			return 1;
+		}
+		return (d1 == d2) ? 0 : ((d1 < d2) ? -1 : 1);
 	}
 }
