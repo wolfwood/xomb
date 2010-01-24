@@ -16,7 +16,7 @@ import mindrt.dstubs;
 import mindrt.exception;
 import mindrt.error;
 
-import std.moduleinit;
+//import std.moduleinit;
 
 // Based in part on object.d provided with Phobos. The original copyright is as follows:
 

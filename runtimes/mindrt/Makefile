@@ -19,8 +19,7 @@ mindrt.a: object.d dinvariant.d dstubs.d util.d dstatic.d error.d exception.d
 	ldc -nodefaultlib -I../. -c lifetime.d -ofdsss_objs/dynamic/runtime.lifetime.o;
 	ldc -nodefaultlib -I../. -c gc.d -ofdsss_objs/dynamic/runtime.gc.o;
 	ldc -nodefaultlib -I../. -I. -c util.d -ofdsss_objs/G/runtime.util.o; 
-	ldc -nodefaultlib -I../. -c std/stdarg.d -ofdsss_objs/G/runtime.std.stdarg.o;
-	ldc -nodefaultlib -I../. -c std/moduleinit.d -ofdsss_objs/G/runtime.std.moduleinit.o;
+	ldc -nodefaultlib -I../. -c vararg.d -ofdsss_objs/G/runtime.vararg.o;
 	ldc -nodefaultlib -I../. -c typeinfo/ti_array_object.d -ofdsss_objs/G/runtime.std.typeinfo.ti_array_object.o;
 	ldc -nodefaultlib -I../. -c typeinfo/ti_array_cdouble.d -ofdsss_objs/G/runtime.std.typeinfo.ti_array_cdouble.o;
 	ldc -nodefaultlib -I../. -c typeinfo/ti_array_cfloat.d -ofdsss_objs/G/runtime.std.typeinfo.ti_array_cfloat.o;
