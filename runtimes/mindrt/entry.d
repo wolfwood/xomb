@@ -3,6 +3,8 @@
  *
  * The entry point to an app.
  *
+ * License: Public Domain
+ *
  */
 
 import user.syscall;
@@ -14,6 +16,7 @@ int main(char[][]);
 
 //extern(C) ubyte _bss;
 //extern(C) ubyte _ebss;
+
 extern(C) ubyte _edata;
 extern(C) ubyte _end;
 
@@ -26,9 +29,6 @@ extern(C) void _start() {
 
 	ubyte* startBSS = &_edata;
 	ubyte* endBSS = &_end;
-
-	//dispUlong(cast(ulong)startBSS);
-	//dispUlong(cast(ulong)endBSS);
 
 	for( ; startBSS != endBSS; startBSS++) {
 		*startBSS = 0x00;

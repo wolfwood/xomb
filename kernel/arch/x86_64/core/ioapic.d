@@ -9,6 +9,7 @@ module kernel.arch.x86_64.core.ioapic;
 
 // We need to know how to initialize the pins
 import kernel.arch.x86_64.core.info;
+import kernel.arch.x86_64.core.lapic;
 
 // for mapping the register space
 import kernel.arch.x86_64.core.paging;
@@ -50,7 +51,7 @@ public:
 		return ErrorVal.Success;
 	}
 
-	ErrorVal unmaskIRQ(uint irq) {
+	ErrorVal unmaskIRQ(uint irq, uint core) {
 
 		// no good (no irqs above 15)
 		if (irq > 15) { return ErrorVal.Fail; }
@@ -91,7 +92,7 @@ public:
 		uint IOAPICID = pinToIOAPIC[pin];
 		uint IOAPICPin = pin - ioApicStartingPin[IOAPICID];
 
-		unmaskRedirectionTableEntry(IOAPICID, IOAPICPin);
+		maskRedirectionTableEntry(IOAPICID, IOAPICPin);
 
 		return ErrorVal.Success;
 	}
@@ -193,6 +194,7 @@ private:
 			Info.DeliveryMode deliveryMode,
 			ubyte interruptVector) {
 
+//		destinationField = 1;
 		int valuehi = destinationField;
 		valuehi <<= 24;
 
@@ -212,6 +214,8 @@ private:
 
 		valuelo <<= 8;
 		valuelo |= interruptVector;
+
+		valuelo |= (1 << 16);
 
 		writeRegister(ioApicID, cast(Register)(Register.REDTBL0HI + (registerIndex*2)), valuehi);
 		writeRegister(ioApicID, cast(Register)(Register.REDTBL0LO + (registerIndex*2)), valuelo);

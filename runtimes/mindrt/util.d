@@ -1,19 +1,22 @@
-// This module contains helpful functions found necessary by the runtime and gcc.
+/*
+ * util.d
+ *
+ * This module contains helpful functions found necessary by the runtime and gcc.
+ * contains: itoa, memcpy, memset, memmove, memcmp, strlen, isnan, toString
+ *
+ * License: Public Domain
+ *
+ */
 
-// contains: itoa, memcpy, memset, memmove, memcmp, strlen, isnan, toString
+module mindrt.util;
 
-module util;
-
-version(LDC)
-{
+version(LDC) {
 	private import ldc.intrinsics;
 
-	version(LLVM64)
-	{
+	version(LLVM64) {
 		alias llvm_memcpy_i64 llvm_memcpy;
 	}
-	else
-	{
+	else {
 		alias llvm_memcpy_i32 llvm_memcpy;
 	}
 }

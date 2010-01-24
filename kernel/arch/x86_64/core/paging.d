@@ -15,6 +15,7 @@ import kernel.core.kprintf;
 // Import the heap allocator, so we can allocate memory
 import kernel.mem.pageallocator;
 import kernel.mem.heap;
+import kernel.mem.giballocator;
 
 // Import some arch-dependent modules
 import kernel.arch.x86_64.linker;	// want linker info
@@ -121,6 +122,10 @@ static:
 
 //		kprintfln!("CR2 {}")(addr);
 
+		if (stack.rip < 0xf_0000_0000_0000) {
+			kprintfln!("User Mode Page Fault {x}")(stack.rip);
+			kprintfln!("CR2: {}")(addr);
+		}
 		while (addr < cast(void*)10000) {
 		}
 
@@ -142,6 +147,7 @@ static:
 //				kprintfln!("Gib Available")();
 
 				// Allocate Page
+				addr = cast(void*)(cast(ulong)addr & 0xffff_ffff_ffff_f000UL);
 
 //				kprintfln!("Allocating a page")();
 				void* page = PageAllocator.allocPage();
@@ -273,7 +279,7 @@ static:
 		return gibAddr;
 	}
 
-	ubyte* allocGib(uint gibIndex, uint flags) {
+	ubyte* allocGib(ref ubyte* location, uint gibIndex, uint flags) {
 		// Get initial address of gib
 		ubyte* gibAddr = gibAddress(gibIndex);
 
@@ -282,10 +288,29 @@ static:
 		translateAddress(gibAddr, indexL1, indexL2, indexL3, indexL4);
 
 		// Allocate paging structures
-		PageLevel3* pl3 = root.getTable(indexL4);
-		PageLevel2* pl2 = pl3.getOrCreateTable(indexL3);
+		bool usermode = (flags & Access.Kernel) == 0;
+		PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
+		PageLevel2* pl2 = pl3.getOrCreateTable(indexL3, usermode);
+
+		// Physical address of gib
+		location = pl3.entries[indexL3].location;
 		
 		// pl2 is your gib structure.
+		return gibAddr;
+	}
+
+	ubyte* openGib(ubyte* location, uint gibIndex, uint flags) {
+		ubyte* gibAddr = gibAddress(gibIndex);
+
+		// Find page translation
+		ulong indexL4, indexL3, indexL2, indexL1;
+		translateAddress(gibAddr, indexL1, indexL2, indexL3, indexL4);
+
+		bool usermode = (flags & Access.Kernel) == 0;
+		PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
+
+		pl3.setTable(indexL3, location, usermode);
+
 		return gibAddr;
 	}
 
@@ -569,6 +594,10 @@ private:
 			"address", 41,
 			"available", 10,
 			"nx", 1));
+
+		ubyte* location() {
+			return cast(ubyte*)(cast(ulong)address() << 12);
+		}
 	}
 	
 	struct PrimaryField {
@@ -589,6 +618,10 @@ private:
 			"address", 41,
 			"available", 10,
 			"nx", 1));
+
+		ubyte* location() {
+			return cast(ubyte*)(cast(ulong)address() << 12);
+		}
 	}
 
 	struct PageLevel4 {
@@ -601,6 +634,13 @@ private:
 			
 			// Calculate virtual address
 			return cast(PageLevel3*)(0xFFFFFF7F_BFE00000 + (idx << 12));
+		}
+
+		void setTable(uint idx, ubyte* address, bool usermode = false) {
+			entries[idx].pml = cast(ulong)address;
+			entries[idx].present = 1;
+			entries[idx].rw = 1;
+			entries[idx].us = usermode;
 		}
 
 		PageLevel3* getOrCreateTable(uint idx, bool usermode = false) {
@@ -638,6 +678,13 @@ private:
 			baseAddr &= 0x1FF000;
 			baseAddr >>= 3;
 			return cast(PageLevel2*)(0xFFFFFF7F_C0000000 + ((baseAddr + idx) << 12));
+		}
+
+		void setTable(uint idx, ubyte* address, bool usermode = false) {
+			entries[idx].pml = cast(ulong)address;
+			entries[idx].present = 1;
+			entries[idx].rw = 1;
+			entries[idx].us = usermode;
 		}
 
 		PageLevel2* getOrCreateTable(uint idx, bool usermode = false) {
@@ -682,6 +729,13 @@ private:
 			baseAddr &= 0x3FFFF000;
 			baseAddr >>= 3;
 			return cast(PageLevel1*)(0xFFFFFF80_00000000 + ((baseAddr + idx) << 12));
+		}
+
+		void setTable(uint idx, ubyte* address, bool usermode = false) {
+			entries[idx].pml = cast(ulong)address;
+			entries[idx].present = 1;
+			entries[idx].rw = 1;
+			entries[idx].us = usermode;
 		}
 
 		PageLevel1* getOrCreateTable(uint idx, bool usermode = false) {

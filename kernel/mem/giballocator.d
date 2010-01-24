@@ -25,27 +25,35 @@ struct GibAllocator {
 static:
 public:
 
-	Gib alloc(uint flags) {
+	Gib alloc(uint flags, uint gibIndex = 1) {
 		Gib ret;
-		uint gibIndex = 0;
 		if (flags & Access.Kernel != 0) {
 			// kernel gib
 			gibIndex = nextFreeKernelGib;
 			nextFreeKernelGib++;
 		}
-		ubyte* gibAddr = VirtualMemory.allocGib(gibIndex, flags);
+		ubyte* gibAddr = VirtualMemory.allocGib(ret._gibaddr, gibIndex, flags);
 		ret._start = gibAddr;
 		ret._curpos = gibAddr;
-		kprintfln!("Gib (kernel) address: {} at {}")(gibAddr, gibIndex);
+		kprintfln!("Gib (kernel) address: {} at {} AT {}")(gibAddr, gibIndex, ret._gibaddr);
 		return ret;
 	}
 
-	Gib open(uint gibIndex, uint flags) {
+	Gib open(ubyte* gibaddr, uint flags, uint gibIndex = 1) {
 		Gib ret;
+		ret._gibaddr = gibaddr;
+		if (flags & Access.Kernel != 0) {
+			// kernel gib
+			gibIndex = nextFreeKernelGib;
+			nextFreeKernelGib++;
+		}
+		ubyte* gibAddr = VirtualMemory.openGib(gibaddr, gibIndex, flags);
+		ret._start = gibAddr;
+		ret._curpos = gibAddr;
 		return ret;
 	}
 
-	ErrorVal free(uint gibIndex) {	
+	ErrorVal free(ubyte* gibaddr) {	
 		return ErrorVal.Success;
 	}
 

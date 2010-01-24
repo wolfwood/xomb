@@ -12,6 +12,9 @@ import user.ramfs;
 
 //import libos.console;
 import libos.ramfs;
+import libos.keyboard;
+
+import user.keycodes;
 
 import libos.libdeepmajik.threadscheduler;
 

@@ -11,12 +11,21 @@ import architecture.vm;
 
 import kernel.core.kprintf;
 import kernel.core.error;
-import kernel.core.templates;
+
+import user.templates;
 
 struct Gib {
 
 	ubyte* ptr() {
 		return _start;
+	}
+
+	ubyte* pos() {
+		return _curpos;
+	}
+
+	ubyte* address() {
+		return _gibaddr;
 	}
 
 	// Will move the pointer by the specified amount.
@@ -94,4 +103,5 @@ struct Gib {
 package:
 	ubyte* _start;
 	ubyte* _curpos;
+	ubyte* _gibaddr;
 }

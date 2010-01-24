@@ -95,6 +95,21 @@ void _d_monitorexit(Object h){
 	mon.unlock();
 }
 
+// XXX: Also magical.
+
+struct D_CRITICAL_SECTION {
+	D_CRITICAL_SECTION* next;
+	Mutex mtx;
+}
+
+void _d_criticalenter(D_CRITICAL_SECTION* dcs) {
+	dcs.mtx.lock();
+}
+
+void _d_criticalexit(D_CRITICAL_SECTION* dcs) {
+	dcs.mtx.unlock();
+}
+
 /**************************************************
  Random stubs (they'll go somewhere eventually)
 **************************************************/

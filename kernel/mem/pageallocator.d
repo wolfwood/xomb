@@ -48,12 +48,10 @@ public:
 					ubyte* regionAddr = cast(ubyte*)System.moduleInfo[i].start;
 					ubyte* regionEdge = cast(ubyte*)(cast(ulong)(regionAddr + System.moduleInfo[i].length) / cast(ulong)VirtualMemory.getPageSize());
 					regionEdge = cast(ubyte*)((cast(ulong)regionEdge + 1) * cast(ulong)(VirtualMemory.getPageSize()));
-				kprintfln!("regionEdge: {}")(regionEdge);
 					if (_start < regionEdge) {
 						_start = regionEdge;
 					}
 				}
-				kprintfln!("start: {}")(_start);
 				_curpos = _start;
 			}
 

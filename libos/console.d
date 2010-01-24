@@ -1,8 +1,9 @@
 module libos.libconsole;
 
-import user.syscall;
-public import user.console;
-import user.ramfs;
+private import user.syscall;
+
+import user.console;
+import libos.ramfs;
 
 struct Console {
 static:
@@ -15,9 +16,9 @@ static:
 
 	void initialize() {
 
-		video = open("/dev/video"); 
+		video = RamFS.open("/devices/video", 0); 
 
-		videoBuffer = cast(ubyte*)video;
+		videoBuffer = video.ptr;
 
 		// Get video info
 		videoInfo = cast(MetaData*)videoBuffer;
@@ -57,6 +58,16 @@ static:
 		foreach(c; string) {
 			putChar(c);
 		}
+	}
+
+	void getPosition(out uint x, out uint y) {
+		x = videoInfo.xpos;
+		y = videoInfo.ypos;
+	}
+
+	void setPosition(uint x, uint y) {
+		videoInfo.xpos = x;
+		videoInfo.ypos = y;
 	}
 
 	void clear() {

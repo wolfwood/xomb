@@ -6,11 +6,13 @@ module kernel.dev.console;
 import kernel.system.info;
 
 // For Gibs
-import kernel.mem.giballocator;
 import kernel.mem.gib;
+import kernel.mem.giballocator;
+import kernel.filesystem.ramfs;
 
 // Errors
 import kernel.core.error;
+import kernel.core.kprintf;
 
 // Shared structures for userspace
 public import user.console;
@@ -41,8 +43,8 @@ public:
 		info.width = COLUMNS;
 		info.height = LINES;
 
-		Gib video = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
-//		Gib video = RamFS.open("/dev/video", Access.Create | Access.Read | Access.Write);
+		Gib video = RamFS.create("/devices/video", Access.Kernel | Access.Read | Access.Write);
+
 		MetaData* videoMetaData = cast(MetaData*)video.ptr;
 		*videoMetaData = info;
 		video.seek(4096);
@@ -100,38 +102,13 @@ public:
 
 	// This method will post the character to the screen at the current location.
 	synchronized void putChar(char c) {
-		if (c == '\t') {
-			// Insert a tab.
-			videoInfo.xpos += TABSTOP;
-		}
-		else if (c != '\n' && c != '\r') {
-			ubyte* videoAddress = videoMemoryLocation;
-			videoAddress += (videoInfo.xpos + (videoInfo.ypos * COLUMNS)) * 2;
-
-			// Set the current piece of video memory to the character to print.
-			*(videoAddress) = c & 0xFF;
-			*(videoAddress + 1) = videoInfo.colorAttribute;
-
-			// increase the cursor position
-			videoInfo.xpos++;
-		}
-
-		// if you have reached the end of the line, or printing a newline, increase the y position
-		if (c == '\n' || c == '\r' || videoInfo.xpos >= COLUMNS) {
-			videoInfo.xpos = 0;
-			videoInfo.ypos++;
-			videoInfo.globalY++;
-
-			if (videoInfo.ypos >= LINES) {
-				_scrollDisplay(1);
-			}
-		}
+		_putChar(c);
 	}
 
 	// This mehtod will post a string to the screen at the current location.
-	void putString(char[] s) {
+	synchronized void putString(char[] s) {
 		foreach(c; s) {
-			putChar(c);
+			_putChar(c);
 		}
 	}
 
@@ -171,6 +148,16 @@ public:
 		return LINES;
 	}
 
+	void putCharUnsafe(char foo) {
+		_putChar(foo);
+	}
+
+	void putStringUnsafe(char[] foo) {
+		foreach(c; foo) {
+			_putChar(c);
+		}
+	}
+
 private:
 
 	MetaData info;
@@ -180,6 +167,38 @@ private:
 	// Where the video memory lives (can be changed)
 	ubyte* videoMemoryLocation = cast(ubyte*)0xB8000UL;
 	const ubyte* videoMemoryPhysLocation = cast(ubyte*)0xB8000UL;
+
+	void _putChar(char c) {
+		if (c == '\t') {
+			// Insert a tab.
+			videoInfo.xpos += TABSTOP;
+		}
+		else if (c != '\n' && c != '\r') {
+			//videoInfo.xpos %= COLUMNS;
+			//videoInfo.ypos %= LINES;
+			ubyte* videoAddress = videoMemoryLocation;
+			videoAddress += (videoInfo.xpos + (videoInfo.ypos * COLUMNS)) * 2;
+
+			// Set the current piece of video memory to the character to print.
+			*(videoAddress) = c & 0xFF;
+			*(videoAddress + 1) = videoInfo.colorAttribute;
+
+			// increase the cursor position
+			videoInfo.xpos++;
+		}
+
+		// if you have reached the end of the line, or printing a newline, increase the y position
+		if (c == '\n' || c == '\r' || videoInfo.xpos >= COLUMNS) {
+			videoInfo.xpos = 0;
+			videoInfo.ypos++;
+			videoInfo.globalY++;
+
+			if (videoInfo.ypos >= LINES) {
+				_scrollDisplay(1);
+			}
+		}
+	}
+
 
 	// This function will scroll the entire screen.
 	void _scrollDisplay(uint numLines) {

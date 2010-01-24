@@ -3,7 +3,6 @@
 module kernel.core.syscall;
 
 import user.syscall;
-import user.console;
 
 import kernel.environ.info;
 import kernel.environ.scheduler;
@@ -11,6 +10,7 @@ import kernel.environ.scheduler;
 import kernel.dev.console;
 
 import kernel.mem.heap;
+import kernel.mem.gib;
 
 import kernel.core.error;
 import kernel.core.kprintf;
@@ -39,18 +39,20 @@ public:
 		return SyscallError.OK;
 	}
 
-	synchronized SyscallError allocPage(out int ret, AllocPageArgs* params) {
-		Environment* current = Scheduler.current();
+	SyscallError allocPage(out int ret, AllocPageArgs* params) {
+		synchronized {
+			Environment* current = Scheduler.current();
 
-		if (current.alloc(params.virtualAddress, 4096, true) == ErrorVal.Fail) {
-			ret = -1;
-			kprintfln!("allocPage({}): FAIL")(params.virtualAddress);
-			return SyscallError.Failcopter;
-		}	
+			if (current.alloc(params.virtualAddress, 4096, true) == ErrorVal.Fail) {
+				ret = -1;
+				kprintfln!("allocPage({}): FAIL")(params.virtualAddress);
+				return SyscallError.Failcopter;
+			}	
 
-		ret = 0;
+			ret = 0;
 
-		return SyscallError.OK;
+			return SyscallError.OK;
+		}
 	}
 
 	// void exit(ulong retval)
@@ -79,36 +81,46 @@ public:
 		return SyscallError.OK;
 	}
 
-//	SyscallError open(out Gib ret, OpenArgs* params){
-//		return SyscallError.OK;
-//	}
-
-	synchronized SyscallError perfPoll(PerfPollArgs* params) {
-		static ulong[256] value;
-		static ulong numTimes = 0;
-		static ulong overall;
-
-		numTimes++;
-		bool firstTime = false;
-
-		//params.value = PerfMon.pollEvent(params.event) - params.value;
-		if (numTimes == 1) {
-			firstTime = true;
-		}
-
-		value[Cpu.identifier] = PerfMon.pollEvent(params.event) - value[Cpu.identifier];
-		
-		if (numTimes == 1) {
-			overall = PerfMon.pollEvent(params.event);
-		}
-		else if (numTimes == 8) {
-			overall = value[0];
-			overall += value[1];
-			overall += value[2];
-			overall += value[3];
-		}
-
+	SyscallError open(out ubyte* ret, OpenArgs* params) {
+		Gib gib = RamFS.open(params.path, params.flags, params.index);
+		ret = gib.ptr;
 		return SyscallError.OK;
+	}
+
+	SyscallError create(out ubyte* ret, CreateArgs* params) {
+		Gib gib = RamFS.create(params.path, params.flags, params.index);
+		ret = gib.ptr;
+		return SyscallError.OK;
+	}
+
+	SyscallError perfPoll(PerfPollArgs* params) {
+		synchronized {
+			static ulong[256] value;
+			static ulong numTimes = 0;
+			static ulong overall;
+
+			numTimes++;
+			bool firstTime = false;
+
+			//params.value = PerfMon.pollEvent(params.event) - params.value;
+			if (numTimes == 1) {
+				firstTime = true;
+			}
+
+			value[Cpu.identifier] = PerfMon.pollEvent(params.event) - value[Cpu.identifier];
+
+			if (numTimes == 1) {
+				overall = PerfMon.pollEvent(params.event);
+			}
+			else if (numTimes == 8) {
+				overall = value[0];
+				overall += value[1];
+				overall += value[2];
+				overall += value[3];
+			}
+
+			return SyscallError.OK;
+		}
 	}
 
 	synchronized SyscallError log(LogArgs* params){

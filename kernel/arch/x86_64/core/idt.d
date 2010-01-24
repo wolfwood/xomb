@@ -8,7 +8,6 @@
 
 module kernel.arch.x86_64.core.idt;
 
-// We need the SystemSegmentType enum
 import kernel.arch.x86_64.core.gdt;
 
 import kernel.core.util;	// For BitField!()
@@ -19,14 +18,14 @@ import kernel.core.kprintf;	// For printing the stack dump
 // upon receiving an interrupt on this architecture.
 align(1) struct InterruptStack {
 	// Registers
-	long r15, r14, r13, r12, r11, r10, r9, r8;
-	long rbp, rdi, rsi, rdx, rcx, rbx, rax;
+	ulong r15, r14, r13, r12, r11, r10, r9, r8;
+	ulong rbp, rdi, rsi, rdx, rcx, rbx, rax;
 
 	// Data pushed by the isr
-	long intNumber, errorCode;
+	ulong intNumber, errorCode;
 
 	// Pushed by the processor
-	long rip, cs, rflags, rsp, ss;
+	ulong rip, cs, rflags, rsp, ss;
 
 	// This function will dump the stack information to
 	// the screen. Useful for debugging.
@@ -263,7 +262,7 @@ private:
 			handlers[stack.intNumber](stack);
 			return;
 		}
-		kprintfln!("Interrupt: {} @ {x}")(stack.intNumber, stack.rip);
+//		kprintfln!("Interrupt: {} @ {x}")(stack.intNumber, stack.rip);
 
 		// common interrupt handling
 	}

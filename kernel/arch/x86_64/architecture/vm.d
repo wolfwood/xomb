@@ -27,8 +27,12 @@ public:
 		return Paging.install();
 	}
 
-	ubyte* allocGib(uint gibIndex, uint flags) {
-		return Paging.allocGib(gibIndex, flags);
+	ubyte* allocGib(out ubyte* location, uint gibIndex, uint flags) {
+		return Paging.allocGib(location, gibIndex, flags);
+	}
+
+	ubyte* openGib(ubyte* address, uint gibIndex, uint flags) {
+		return Paging.openGib(address, gibIndex, flags);
 	}
 
 	// This function will take the "gibSrc" specified and map it to the gib determined by "gibDest".

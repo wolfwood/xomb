@@ -162,7 +162,7 @@ public:
 
 					IOInterruptEntry* ioentry = cast(IOInterruptEntry*)curAddr;
 					Info.redirectionEntries[Info.numEntries].sourceBusIRQ = ioentry.sourceBusIRQ;
-					Info.redirectionEntries[Info.numEntries].vector = ioentry.destinationIOAPICIntin;
+					Info.redirectionEntries[Info.numEntries].vector = ioentry.destinationIOAPICIntin + 32;
 
 					switch (ioentry.po)
 					{
@@ -203,7 +203,7 @@ public:
 					switch (intType)
 					{
 						case 0: // It is an INT (common)
-							Info.redirectionEntries[Info.numEntries].deliveryMode = Info.DeliveryMode.Fixed;
+							Info.redirectionEntries[Info.numEntries].deliveryMode = Info.DeliveryMode.LowestPriority;
 							break;
 						case 1: // It is a NMI
 							Info.redirectionEntries[Info.numEntries].deliveryMode = Info.DeliveryMode.NonMaskedInterrupt;

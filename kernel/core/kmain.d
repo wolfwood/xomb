@@ -46,6 +46,9 @@ import kernel.filesystem.ramfs;
 // console device
 import kernel.dev.console;
 
+// keyboard driver
+import kernel.dev.keyboard;
+
 import kernel.core.syscall;
 
 
@@ -74,13 +77,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.print("Architecture: initialize()");
    	Log.result(Architecture.initialize());
 
-	// Initialize the kernel Heap
-	kprintfln!("alloc: {}")(PageAllocator.allocPage());
-	kprintfln!("alloc: {}")(PageAllocator.allocPage());
-	kprintfln!("alloc: {}")(PageAllocator.allocPage());
-	kprintfln!("alloc: {}")(PageAllocator.allocPage());
-	kprintfln!("alloc: {}")(PageAllocator.allocPage());
-
 	// 2b. Paging Initialization
 	Log.print("VirtualMemory: initialize()");
    	Log.result(VirtualMemory.initialize());
@@ -94,7 +90,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	Log.print("PerfMon: initialize()");
 	Log.result(PerfMon.initialize());
-	PerfMon.registerEvent(0, PerfMon.Event.L2Misses);
 
 	// 3. Processor Initialization
 	Log.print("Cpu: initialize()");
@@ -104,13 +99,13 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.print("PageAllocator: initialize()");
 	Log.result(PageAllocator.initialize());
 
-	// 3b. Console Initialization
-	Log.print("Console: initialize()");
-	Log.result(Console.initialize());
-
-	// 3c. RamFS Initialization
+	// 3b. RamFS Initialization
 	Log.print("RamFS: initialize()");
 	Log.result(RamFS.initialize());
+
+	// 3c. Console Initialization
+	Log.print("Console: initialize()");
+	Log.result(Console.initialize());
 
 	// 4. Timer Initialization
 	// LATER
@@ -129,6 +124,9 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	Log.print("Multiprocessor: bootCores()");
 	Log.result(Multiprocessor.bootCores());
+
+	Log.print("Keyboard: initialize()");
+	Log.result(Keyboard.initialize());
 
 	// 7. Schedule
 	Scheduler.initialize();
