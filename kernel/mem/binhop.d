@@ -154,12 +154,12 @@ private {
 		ulong byteNumber = pageIndex / 64;
 		ulong bitNumber = pageIndex % 64;
 
-		Bitmap.bitmap[byteNumber] |= (1 << bitNumber);
+		(cast(ulong*)bitmapGib.ptr)[byteNumber] |= (1 << bitNumber);
 	}
 
 	// Returns the page index of a free page
 	ulong findPage(void * virtAddr) {
-		ulong* curPtr = Bitmap.bitmap;
+		ulong* curPtr = (cast(ulong*)bitmapGib.ptr);
 		ulong curIndex = 0;
 		//ulong color = cast(ulong) virtAddr & color_mask;
 		//ulong color_shift = color / VirtualMemory.getPageSize();

@@ -25,6 +25,8 @@ enum SyscallID : ulong
 	Fork,
 //	Open,
 	PerfPoll,
+	Log,
+	Disp
 }
 
 // Names of system calls
@@ -36,7 +38,9 @@ alias Tuple!
 	"exit",				// exit()
 	"fork",				// fork()
 //	"open",		        // open()
-	"perfPoll"			// perfPoll()
+	"perfPoll",			// perfPoll()
+	"log",
+	"dispUlong"
 ) SyscallNames;
 
 
@@ -49,7 +53,9 @@ alias Tuple!
 	void,			// exit
 	int,			// fork
 //	Gib, 		    // open
-	void			// perfPoll
+	void,     // perfPoll
+	void,     // log
+	void      // dispUlong
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -78,6 +84,16 @@ struct OpenArgs {
 struct PerfPollArgs {
 	uint event;
 }
+
+struct LogArgs {
+	char[] string;
+}
+
+
+struct DispUlongArgs {
+	ulong val;
+}
+
 
 // XXX: This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason
 template SyscallName(uint ID) {

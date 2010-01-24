@@ -10,29 +10,44 @@ import user.syscall;
 import user.console;
 import user.ramfs;
 
-import libos.console;
+//import libos.console;
 import libos.ramfs;
 
+import libos.libdeepmajik.threadscheduler;
+
 void main() {
+	log("-- ohai");
 
-	Console.initialize();
-	Console.backcolor = Color.Black; 
-	Console.forecolor = Color.Green;
+	threadYield();
 
-	Console.putString("\nWelcome to XOmB\n");
-	Console.putString("---------------\n\n");
+	XombThread* t1 = threadCreate(&thang1);
+	XombThread* t2 = threadCreate(&thang2);
 
-	Console.backcolor = Color.Black; 
-	Console.forecolor = Color.Red;
+	t1.schedule();
+	t2.schedule();
 
-	Console.putString("What to do...\n");
+	for(ulong i = 0; i < 10; i++){
+		dispUlong(i);
+		threadYield();
+	}
 
-	//char[128] str;
+	log("Winnar!");
 
-//	while(read(fd, str, str.length) == str.length){
-//		Console.putString(str);
-//	}
+	//for(;;) {}
 
-	for(;;) {}
+}
 
+void thang1(){
+	for(ulong i = 100; i < 120; i++){
+		dispUlong(i);
+		threadYield();
+	}
+}
+
+
+void thang2(){
+	for(ulong i = 200; i < 230; i++){
+		dispUlong(i);
+		threadYield();
+	}
 }

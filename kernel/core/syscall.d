@@ -111,5 +111,18 @@ public:
 		return SyscallError.OK;
 	}
 
+	synchronized SyscallError log(LogArgs* params){
+
+		kprintfln!("{}")(params.string);
+
+		return SyscallError.OK;
+	}
+
+	synchronized SyscallError dispUlong(DispUlongArgs* params){
+
+		kprintfln!("{}")(params.val);
+
+		return SyscallError.OK;
+	}
 }
 
