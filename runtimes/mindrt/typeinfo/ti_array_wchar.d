@@ -9,16 +9,6 @@
 
 module mindrt.typeinfo.ti_array_wchar;
 
-import mindrt.typeinfo.ti_array_ushort;
+import mindrt.typeinfo.ti_array;
 
-import mindrt.util;
-
-class TypeInfo_Au : TypeInfo_At {
-	char[] toString() {
-		return "wchar[]";
-	}
-
-	TypeInfo next() {
-		return typeid(wchar);
-	}
-}
+class TypeInfo_Au : ArrayInfo!("wchar") { }
