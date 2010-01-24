@@ -1,68 +1,74 @@
-
-// creal
+/*
+ * ti_creal.d
+ *
+ * This module implements the TypeInfo for the creal type.
+ *
+ * License: Public Domain
+ *
+ */
 
 module mindrt.typeinfo.ti_creal;
 
-class TypeInfo_c : TypeInfo
-{
-    char[] toString() { return "creal"; }
+class TypeInfo_c : TypeInfo {
+	char[] toString() {
+		return "creal";
+	}
 
-    hash_t getHash(void *p)
-    {
-	return (cast(uint *)p)[0] + (cast(uint *)p)[1] +
-	       (cast(uint *)p)[2] + (cast(uint *)p)[3] +
-	       (cast(uint *)p)[4];
-    }
+	hash_t getHash(void *p) {
+		return (cast(uint *)p)[0] + (cast(uint *)p)[1] +
+			(cast(uint *)p)[2] + (cast(uint *)p)[3] +
+			(cast(uint *)p)[4];
+	}
 
-    static int _equals(creal f1, creal f2)
-    {
-	return f1 == f2;
-    }
+	static int _equals(creal f1, creal f2) {
+		return f1 == f2;
+	}
 
-    static int _compare(creal f1, creal f2)
-    {   int result;
+	static int _compare(creal f1, creal f2) {
+		int result;
 
-	if (f1.re < f2.re)
-	    result = -1;
-	else if (f1.re > f2.re)
-	    result = 1;
-	else if (f1.im < f2.im)
-	    result = -1;
-	else if (f1.im > f2.im)
-	    result = 1;
-	else
-	    result = 0;
-        return result;
-    }
+		if (f1.re < f2.re) {
+			result = -1;
+		}
+		else if (f1.re > f2.re) {
+			result = 1;
+		}
+		else if (f1.im < f2.im) {
+			result = -1;
+		}
+		else if (f1.im > f2.im) {
+			result = 1;
+		}
+		else {
+			result = 0;
+		}
 
-    int equals(void *p1, void *p2)
-    {
-	return _equals(*cast(creal *)p1, *cast(creal *)p2);
-    }
+		return result;
+	}
 
-    int compare(void *p1, void *p2)
-    {
-	return _compare(*cast(creal *)p1, *cast(creal *)p2);
-    }
+	int equals(void *p1, void *p2) {
+		return _equals(*cast(creal *)p1, *cast(creal *)p2);
+	}
 
-    size_t tsize()
-    {
-	return creal.sizeof;
-    }
+	int compare(void *p1, void *p2) {
+		return _compare(*cast(creal *)p1, *cast(creal *)p2);
+	}
 
-    void swap(void *p1, void *p2)
-    {
-	creal t;
+	size_t tsize() {
+		return creal.sizeof;
+	}
 
-	t = *cast(creal *)p1;
-	*cast(creal *)p1 = *cast(creal *)p2;
-	*cast(creal *)p2 = t;
-    }
+	void swap(void *p1, void *p2) {
+		creal t;
 
-    void[] init()
-    {	static creal r;
+		t = *cast(creal *)p1;
+		*cast(creal *)p1 = *cast(creal *)p2;
+		*cast(creal *)p2 = t;
+	}
 
-	return (cast(creal *)&r)[0 .. 1];
-    }
+	void[] init() {
+		static creal r;
+
+		return (cast(creal *)&r)[0 .. 1];
+	}
 }
-

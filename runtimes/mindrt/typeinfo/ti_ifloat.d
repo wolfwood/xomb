@@ -1,12 +1,18 @@
-
-// ifloat
+/*
+ * ti_ifloat.d
+ *
+ * This module implements the TypeInfo for the ifloat type.
+ *
+ * License: Public Domain
+ *
+ */
 
 module mindrt.typeinfo.ti_ifloat;
 
-private import mindrt.typeinfo.ti_float;
+import mindrt.typeinfo.ti_float;
 
-class TypeInfo_o : TypeInfo_f
-{
-    char[] toString() { return "ifloat"; }
+class TypeInfo_o : TypeInfo_f {
+    char[] toString() {
+		return "ifloat";
+	}
 }
-
