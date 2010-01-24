@@ -44,7 +44,7 @@ class TypeInfo_e : TypeInfo {
 		return (cast(real *)&r)[0 .. 1];
 	}
 
-private:
+package:
 	static int _equals(real f1, real f2) {
 		return f1 == f2 || (isnan(f1) && isnan(f2));
 	}
