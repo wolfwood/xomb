@@ -29,4 +29,35 @@ class PCI : PCIImplementation {
 
 		return true;
 	}
+
+	// Description: Will read a uint from PCI.
+	uint read32(uint address) {
+		return read!(uint)(address);
+	}
+
+	// Description: Will read a ushort from PCI.
+	ushort read16(uint address) {
+		return read!(ushort)(address);
+	}
+
+	// Description: Will read a ubyte from PCI.
+	ubyte read8(uint address) {
+		return read!(ubyte)(address);
+	}
+
+	// Description: Will write a uint to PCI.
+	void write32(uint address, uint value) {
+		write(address, value);
+	}
+
+	// Description: Will write a ushort to PCI.
+	void write16(uint address, ushort value) {
+		write(address, value);
+	}
+
+	// Description: Will write a ubyte to PCI.
+	void write8(uint address, ubyte value) {
+		write(address, value);
+	}
+
 }
