@@ -392,6 +392,7 @@ static:
 	void scanBus(ushort bus) {
 		// There are a maximum of 32 slots due to the address field layout
 		PCIDevice current;
+		kprintfln!("Scanning PCI Bus {}")(bus);
 
 		void printDevice() {
 			kprintfln!("PCI Device ID: {} Vendor ID: {}")(current.deviceID, current.vendorID);
