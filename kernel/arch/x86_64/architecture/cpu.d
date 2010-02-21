@@ -139,7 +139,8 @@ public:
 		const char[] ioInMixinW = `
 		asm {
 			naked;
-			in AX, ` ~ port ~ `;
+			mov DX, ` ~ port ~ `;
+			in AX, DX;
 			ret;
 		}`;
 	}
@@ -148,7 +149,8 @@ public:
 		const char[] ioInMixinL = `
 		asm {
 			naked;
-			in EAX, ` ~ port ~ `;
+			mov EDX, ` ~ port ~ `;
+			in EAX, DX;
 			ret;
 		}`;
 	}
