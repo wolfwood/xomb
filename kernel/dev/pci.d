@@ -15,13 +15,14 @@ import kernel.core.kprintf;
 	// PCI Configuration
 	// ------------------------
 	// Address Field:
-	//  /------------------- Enable Bit	[31]
-	//  | /----------------- Reserved	[30-24]
-	//  | |    /------------ Bus #		[23-16]
-	//  | |    |    /------- Device # 	[15-11]
-	//  | |    |    |    /-- Register #	[07-02]
-	//  | |    |    |    |
-	// [.|....|....|....|....|00]
+	//  /-------------------- Enable Bit	[31]
+	//  | /------------------ Reserved		[30-24]
+	//  | |    /------------- Bus #			[23-16]
+	//  | |    |    /-------- Device # 		[15-11]
+	//  | |    |    |    /--- Function #	[10-08]
+	//  | |    |    |    | /- Register #	[07-02]
+	//  | |    |    |    | |
+	// [.|....|....|....|.|..|00]
 	//
 	// This field selects a device and can be set
 	// via port 0xcf8 and used to direct where
