@@ -9,8 +9,11 @@ module architecture.pci;
 
 import architecture.cpu;
 
-class PCIImplementation {
+import kernel.core.kprintf;
+
+class PCIConfiguration {
 static:
+protected:
 
 	T read(T)(uint address) {
 		synchronized {
@@ -19,6 +22,7 @@ static:
 			// get offset
 			ushort offset = cast(ushort)(address & 0x3);
 
+//			return cast(T)(Cpu.ioIn!(uint)(0xcfc) >> (cast(uint)offset * 8));
 			return Cpu.ioIn!(T)(0xcfc + offset);
 		}
 	}
@@ -38,6 +42,6 @@ private:
 
 	void _setAddress(uint address) {
 		// write out address
-		Cpu.ioOut!(uint, "0xcf8")(address);
+		Cpu.ioOut!(uint, "0xcf8")(address & ~0x3);
 	}
 }

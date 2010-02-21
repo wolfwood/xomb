@@ -183,8 +183,10 @@ public:
 	}
 
 	T ioIn(T)(uint port) {
+		// The argument is passed as RDI 
 		asm {
-			mov EDX, port;
+			naked;
+			mov EDX, EDI;
 		}
 
 		static if (is(T == ubyte) || is(T == byte)) {
@@ -204,6 +206,11 @@ public:
 		}
 		else {
 			static assert (false, "Cannot determine data type.");
+		}
+
+		// EAX is the return value, so this is correct
+		asm {
+			ret;
 		}
 	}
 
