@@ -48,7 +48,7 @@ static:
 		return Cpu.ioIn!(ubyte, "0xcfc")();
 	}
 
-	// Description: Will write to PCI.
+	// Description: Will write a uint to PCI.
 	synchronized
 	void write32(uint address, uint value) {
 		_setAddress(address);
@@ -60,7 +60,7 @@ static:
 		Cpu.ioOut!(uint)(0xcfc + offset, value);
 	}
 
-	// Description: Will write to PCI.
+	// Description: Will write a ushort to PCI.
 	synchronized
 	void write16(uint address, ushort value) {
 		_setAddress(address);
@@ -72,7 +72,7 @@ static:
 		Cpu.ioOut!(ushort)(0xcfc + offset, value);
 	}
 
-	// Description: Will write to PCI.
+	// Description: Will write a ubyte to PCI.
 	synchronized
 	void write8(uint address, ubyte value) {
 		_setAddress(address);
