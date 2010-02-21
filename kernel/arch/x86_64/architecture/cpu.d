@@ -130,7 +130,8 @@ public:
 		const char[] ioInMixinB = `
 		asm {
 			naked;
-			in AL, ` ~ port ~ `;
+			mov DX, ` ~ port ~ `;
+			in AL, DX;
 			ret;
 		}`;
 	}
