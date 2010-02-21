@@ -11,17 +11,17 @@ class PCIImplementation {
 static:
 
 	// Description: Will read a uint from PCI.
-	uint read32(ushort bus, ushort slot, ushort func, ushort offset) {
+	uint read32(uint address, ubyte offset) {
 		return 0;
 	}
 
 	// Description: Will read a ushort from PCI.
-	ushort read16(ushort bus, ushort slot, ushort func, ushort offset) {
+	ushort read16(uint address, ubyte offset) {
 		return 0;
 	}
 
 	// Description: Will read a ubyte from PCI.
-	ubyte read8(ushort bus, ushort slot, ushort func, ushort offset) {
+	ubyte read8(uint address, ubyte offset) {
 		return 0;
 	}
 
