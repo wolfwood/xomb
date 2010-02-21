@@ -17,9 +17,9 @@ static:
 			_setAddress(address);
 
 			// get offset
-			ushort offset = cast(ushort)(address & 0xff);
+			ushort offset = cast(ushort)(address & 0x3);
 
-			return Cpu.ioIn!(T, "0xcfc")();
+			return Cpu.ioIn!(T)(0xcfc + offset);
 		}
 	}
 
@@ -28,7 +28,7 @@ static:
 			_setAddress(address);
 
 			// get offset
-			ushort offset = cast(ushort)(address & 0xff);
+			ushort offset = cast(ushort)(address & 0x3);
 
 			Cpu.ioOut!(T)(0xcfc + offset, value);
 		}

@@ -182,6 +182,30 @@ public:
 		}`;
 	}
 
+	T ioIn(T)(uint port) {
+		asm {
+			mov EDX, port;
+		}
+
+		static if (is(T == ubyte) || is(T == byte)) {
+			asm {
+				in AL, DX;
+			}
+		}
+		else static if (is(T == ushort) || is(T == short)) {
+			asm {
+				in AX, DX;
+			}
+		}
+		else static if (is(T == uint) || is(T == int)) {
+			asm {
+				in EAX, DX;
+			}
+		}
+		else {
+			static assert (false, "Cannot determine data type.");
+		}
+	}
 
 	T ioIn(T, char[] port)() {
 		static if (is(T == ubyte) || is(T == byte)) {
