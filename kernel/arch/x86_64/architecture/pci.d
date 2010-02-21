@@ -26,6 +26,14 @@ static:
 	}
 
 	// Description: Will write to PCI.
-	void write() {
+	void write(uint address, ubyte offset, ubyte value) {
+	}
+
+	// Description: Will write to PCI.
+	void write(uint address, ubyte offset, ushort value) {
+	}
+
+	// Description: Will write to PCI.
+	void write(uint address, ubyte offset, uint value) {
 	}
 }
