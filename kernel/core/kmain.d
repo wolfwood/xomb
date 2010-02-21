@@ -49,6 +49,9 @@ import kernel.dev.console;
 // keyboard driver
 import kernel.dev.keyboard;
 
+// PCI
+import kernel.dev.pci;
+
 import kernel.core.syscall;
 
 

@@ -7,7 +7,9 @@
 
 module kernel.dev.pci;
 
-class PCI {
+import architecture.pci;
+
+class PCI : PCIImplementation {
 	// Description: This function will verify a bus and slot exist.
 	bool verify(ushort bus, ushort slot) {
 		ushort vendor = read(bus, slot, 0, 0);
