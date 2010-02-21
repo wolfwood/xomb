@@ -20,32 +20,14 @@ static:
 
 		_keyProc = keyProc;
 
-/*		status = Cpu.ioIn!(ubyte, "0x64")();
-		while((status & 0x1) == 1) {
-			Cpu.ioIn!(ubyte, "0x60")();
-			status = Cpu.ioIn!(ubyte, "0x64")();
-		}
-*/
 		ubyte ack;
 
 		// write the command byte to enable keyboard interrupts without translation
-//		Cpu.ioOut!(byte, "0x60")(0x01);
-		
 		status = Cpu.ioIn!(ubyte, "0x64")();
 		while((status & 0x1) == 1) {
 			Cpu.ioIn!(ubyte, "0x60")();
 			status = Cpu.ioIn!(ubyte, "0x64")();
 		}
-
-		// read P1 (input port)
-		//Cpu.ioOut!(ubyte, "64h")(0xC0);
-		//ubyte P1 = Cpu.ioIn!(ubyte, "60h")();
-		//kdebugfln!(DEBUG_KBD, "Keyboard - P1: {}")(P1);
-
-		// read P2 (output port)
-		//Cpu.ioOut!(ubyte, "64h")(0xD0);
-		//ubyte P2 = Cpu.ioIn!(ubyte, "60h")();
-		//kdebugfln!(DEBUG_KBD, "Keyboard - P2: {}")(P2);
 
 		// schematics of P1
 		// ----------------------
@@ -83,19 +65,8 @@ static:
 			Cpu.ioIn!(ubyte, "0x60")();
 			status = Cpu.ioIn!(ubyte, "0x64")();
 		}
-/*		Cpu.ioOut!(ubyte, "0x64")(0xAE);
-		status = Cpu.ioIn!(ubyte, "0x64")();
-		while((status & 0x1) == 1) {
-			Cpu.ioIn!(ubyte, "0x60")();
-			status = Cpu.ioIn!(ubyte, "0x64")();
-		}*/
-		Cpu.ioOut!(ubyte, "0x60")(0xF4);
 
-/*		status = Cpu.ioIn!(ubyte, "0x64")();
-		while((status & 0x1) == 1) {
-			Cpu.ioIn!(ubyte, "0x60")();
-			status = Cpu.ioIn!(ubyte, "0x64")();
-		}*/
+		Cpu.ioOut!(ubyte, "0x60")(0xF4);
 
 		return ErrorVal.Success;
 	}
