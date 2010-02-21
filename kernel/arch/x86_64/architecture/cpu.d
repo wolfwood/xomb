@@ -109,6 +109,32 @@ public:
 		}`;
 	}
 
+	void ioOut(T)(int port, int data) {
+		asm {
+			mov EAX, data;
+			mov EDX, port;
+		}
+
+		static if (is(T == ubyte) || is(T == byte)) {
+			asm {
+				out DX, AL;
+			}
+		}
+		else static if (is(T == ushort) || is(T == short)) {
+			asm {
+				out DX, AX;
+			}
+		}
+		else static if (is(T == uint) || is(T == int)) {
+			asm {
+				out DX, EAX;
+			}
+		}
+		else {
+			static assert (false, "Cannot determine data type.");
+		}
+	}
+
 	void ioOut(T, char[] port)(int data) {
 		//static assert (port[$-1] == 'h', "Cannot reduce port number");
 
