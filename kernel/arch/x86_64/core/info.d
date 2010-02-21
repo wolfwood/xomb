@@ -9,37 +9,31 @@
 
 module kernel.arch.x86_64.core.info;
 
-struct Info
-{
+struct Info {
 static:
 public:
 
-	enum DestinationMode
-	{
+	enum DestinationMode {
 		Physical,
 		Logical
 	}
 
-	enum InputPinPolarity
-	{
+	enum InputPinPolarity {
 		HighActive,
 		LowActive
 	}
 
-	enum TriggerMode
-	{
+	enum TriggerMode {
 		EdgeTriggered,
 		LevelTriggered
 	}
 
-	enum InterruptType
-	{
+	enum InterruptType {
 		Unmasked,
 		Masked
 	}
 
-	enum DeliveryMode
-	{
+	enum DeliveryMode {
 		Fixed,
 		LowestPriority,
 		SystemManagementInterrupt,
@@ -49,8 +43,7 @@ public:
 	}
 
 	// For redirection entries
-	struct RedirectionEntry
-	{
+	struct RedirectionEntry {
 		ubyte destination = 0xFF;
 		InterruptType interruptType;
 		TriggerMode triggerMode;
@@ -65,8 +58,7 @@ public:
 	uint numEntries;
 
 	// For the IO APICs
-	struct IOAPICInfo
-	{
+	struct IOAPICInfo {
 		// The ID, used when refering to the IO APIC
 		ubyte ID;
 
@@ -84,8 +76,7 @@ public:
 	uint numIOAPICs;
 
 	// For the processors
-	struct LAPICInfo
-	{
+	struct LAPICInfo {
 		// The ID used to refer to the LAPIC
 		ubyte ID;
 
@@ -103,5 +94,4 @@ public:
 	uint numLAPICs;
 
 private:
-
 }
