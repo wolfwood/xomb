@@ -1,4 +1,4 @@
-module kernel.user.nativecall; // implements the native syscall function
+module user.nativecall; // implements the native syscall function
 
 extern(C) int nativeSyscall(uint ID, void* ret, void* params)
 {
