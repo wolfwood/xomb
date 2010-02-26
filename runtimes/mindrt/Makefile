@@ -10,6 +10,7 @@ mindrt.a: object.d dinvariant.d dstubs.d util.d dstatic.d error.d exception.d
 	mkdir -p dsss_objs/dynamic;
 	ldc -nodefaultlib -I../. -c object.d -ofdsss_objs/G/runtime.object.o; 
 	ldc -nodefaultlib -I../. -c dinvariant.d -ofdsss_objs/G/runtime.dinvariant.o;
+	ldc -nodefaultlib -I../. -c moduleinit.d -ofdsss_objs/G/runtime.moduleinit.o; 
 	ldc -nodefaultlib -I../. -c dstubs.d -ofdsss_objs/G/runtime.dstubs.o; 
 	ldc -nodefaultlib -I../. -c dstatic.d -ofdsss_objs/G/runtime.dstatic.o; 
 	ldc -nodefaultlib -I../. -c error.d -ofdsss_objs/G/runtime.error.o; 
