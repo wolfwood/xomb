@@ -97,6 +97,9 @@ class Object {
 	int opEquals(Object o) {
 		return cast(int)(this is o);
 	}
+
+	void dispose() {
+	}
 }
 
 // Description: This is the information stored for an interface.
