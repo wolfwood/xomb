@@ -1,4 +1,4 @@
-module kernel.core.templates;
+module user.templates;
 
 // Contains many templates and other magical functions
 
