@@ -12,6 +12,13 @@ import architecture.pci;
 import kernel.core.error;
 import kernel.core.kprintf;
 
+import kernel.system.info;
+import kernel.system.definitions;
+
+import kernel.mem.gib;
+import kernel.mem.giballocator;
+import kernel.filesystem.ramfs;
+
 	// PCI Configuration
 	// ------------------------
 	// Address Field:
@@ -82,28 +89,8 @@ struct PCIDevice {
 		return read8(PCI.Offset.CacheLineSize);
 	}
 
-	uint baseAddress0() {
-		return read32(PCI.Offset.BaseAddress0);
-	}
-
-	uint baseAddress1() {
-		return read32(PCI.Offset.BaseAddress1);
-	}
-
-	uint baseAddress2() {
-		return read32(PCI.Offset.BaseAddress2);
-	}
-
-	uint baseAddress3() {
-		return read32(PCI.Offset.BaseAddress3);
-	}
-
-	uint baseAddress4() {
-		return read32(PCI.Offset.BaseAddress4);
-	}
-
-	uint baseAddress5() {
-		return read32(PCI.Offset.BaseAddress5);
+	uint baseAddress(uint i) {
+		return read32(PCI.Offset.BaseAddress0 + (4 * i));
 	}
 
 	ushort subsystemID() {
@@ -140,6 +127,14 @@ struct PCIDevice {
 
 package:
 	uint _address;
+
+	struct IOEntry {
+		bool isIO;
+		ubyte* address;
+		bool prefetchable;
+	}
+
+	IOEntry[6] _entries;
 
 private:
 
@@ -209,12 +204,8 @@ struct PCIBridge {
 		return read8(PCI.Offset.CacheLineSize);
 	}
 
-	uint baseAddress0() {
-		return read32(PCI.Offset.BaseAddress0);
-	}
-
-	uint baseAddress1() {
-		return read32(PCI.Offset.BaseAddress1);
+	uint baseAddress(uint i) {
+		return read32(PCI.Offset.BaseAddress0 + (4 * i));
 	}
 
 	ubyte secondaryLatencyTimer() {
@@ -400,6 +391,126 @@ static:
 				(current.address, current.deviceID, current.vendorID);
 		}
 
+		void vga_w(ubyte* base, ushort reg, ubyte val) {
+			*(base + reg) = val;
+		}
+
+		void loadDevice(uint deviceIndex) {
+			Device* dev = &System.deviceInfo[deviceIndex];
+
+			if (dev.bus.pci.deviceID == 0x1111 && dev.bus.pci.vendorID == 0x1234) {
+				// Bochs Video
+				ubyte* addr = dev.bus.pci._entries[0].address;
+				addr --;
+				kprintfln!("Video card found: Cirrus Logic")();
+				// Do foo (for practice :))
+
+				Gib device = RamFS.create("/devices/vga", Access.Kernel | Access.Read | Access.Write);
+
+				device.map(addr, 1024*1024);
+				addr = device.ptr;
+
+				static const ushort VGA_GFX_D = 0x3cf;
+				static const ushort VGA_GFX_I = 0x3ce;
+				static const ushort CL_GR2F = 0x2f;
+				static const ushort CL_GR33 = 0x33;
+				static const ushort VGA_CRT_IC = 0x3d4;
+				static const ushort VGA_CRT_DC = 0x3d5;
+				static const ushort VGA_CRTC_H_TOTAL = 0x00;
+				static const ushort VGA_CRTC_H_DISP = 0x01;
+				static const ushort VGA_CRTC_H_BLANK_START = 0x02;
+				static const ushort VGA_CRTC_H_BLANK_END = 0x03;
+				static const ushort VGA_CRTC_H_SYNC_START = 0x04;
+				static const ushort VGA_CRTC_H_SYNC_END = 0x05;
+				static const ushort VGA_CRTC_V_TOTAL = 0x06;
+				static const ushort VGA_CRTC_OVERFLOW = 0x07;
+				static const ushort VGA_CRTC_PRESET_ROW = 0x08;
+				static const ushort VGA_CRTC_MAX_SCAN = 0x09;
+				static const ushort VGA_CRTC_CURSOR_START = 0x0a;
+				static const ushort VGA_CRTC_CURSOR_END = 0x0b;
+				static const ushort VGA_CRTC_START_HI = 0x0c;
+				static const ushort VGA_CRTC_START_LO = 0x0d;
+				static const ushort VGA_CRTC_CURSOR_HI = 0x0e;
+				static const ushort VGA_CRTC_CURSOR_LO = 0x0f;
+				static const ushort VGA_CRTC_V_SYNC_START = 0x10;
+				static const ushort VGA_CRTC_V_SYNC_END = 0x11;
+				static const ushort VGA_CRTC_V_DISP_END = 0x12;
+				static const ushort VGA_CRTC_OFFSET = 0x13;
+				static const ushort VGA_CRTC_UNDERLINE = 0x14;
+				static const ushort VGA_CRTC_V_BLANK_START = 0x15;
+				static const ushort VGA_CRTC_V_BLANK_END = 0x16;
+				static const ushort VGA_CRTC_MODE = 0x17;
+				static const ushort VGA_CRTC_LINE_COMPARE = 0x18;
+
+				// init
+				vga_w(addr, VGA_GFX_I, CL_GR2F);
+				vga_w(addr, VGA_GFX_D, 0x0);
+
+				vga_w(addr, VGA_GFX_I, CL_GR33);
+				vga_w(addr, VGA_GFX_D, 0x0);
+
+				// given
+				uint xres = 1280; // resolution
+				uint yres = 1024;
+
+				uint lm = 8; // left margin
+				uint rm = 8; // right margin
+				uint bm = 8; // bottom margin
+				uint tm = 8; // top margin
+
+				uint hsynclen = 8; // hsynclen
+				uint vsynclen = 8; // vsynclen
+
+				// computed
+				uint htotal = ((lm + xres + rm + hsynclen) / 8) - 5;
+				uint hdispend = (xres / 8) - 1;
+				uint hsyncstart = ((xres + rm) / 8) + 1;
+				uint hsyncend = ((xres + rm + hsynclen) / 8) + 1;
+
+				uint div = 1;
+				if (yres >= 1024) {
+					div = 2;
+				}
+
+				uint vtotal = ((yres + tm + bm + vsynclen) / div) - 2;
+				uint vdispend = yres - 1;
+				uint vsyncstart = ((yres + bm) / div) - 1;
+				uint vsyncend = ((yres + bm + vsynclen) / div) - 1;
+
+				vga_w(addr, VGA_CRT_IC, VGA_CRTC_H_TOTAL);
+				vga_w(addr, VGA_CRT_DC, cast(ubyte)htotal);
+			}
+		}
+
+		void foundDevice() {
+			printDevice();
+
+			// Find out the ioentries for this device
+			for (int i; i < 6; i++) {
+				uint baseAddress = current.baseAddress(i);
+				if ((baseAddress & 0x1) == 0x1) {
+					// IO Space
+					current._entries[i].isIO = true;
+					current._entries[i].prefetchable = false;
+					current._entries[i].address = cast(ubyte*)(baseAddress & (~0x03));
+				}
+				else {
+					// Memory Space
+					current._entries[i].isIO = false;
+					current._entries[i].prefetchable = ((baseAddress >> 3) & 0x1) == 0x1;
+					current._entries[i].address = cast(ubyte*)(baseAddress & (~0x0f));
+				}
+//				kprintfln!("{}: isIO: {} address: {}")(i,current._entries[i].isIO, current._entries[i].address);
+			}
+
+			System.deviceInfo[System.numDevices].type = Device.BusType.PCI;
+			System.deviceInfo[System.numDevices].bus.pci = current;
+			kprintfln!("Assigned Device ID {} isIO: {} address: {}")(System.numDevices, current._entries[0].isIO, current._entries[0].address);
+			System.numDevices++;
+
+			loadDevice(System.numDevices-1);
+		}
+
 		void checkForBridge() {
 			if ((current.headerType & 0x7f) == 0x1) {
 				// Is a PCI-PCI Bridge
@@ -408,7 +519,8 @@ static:
 				scanBus(curBridge.secondaryBusNumber);
 			}
 			else {
-				printDevice();
+				// Found a device
+				foundDevice();
 			}
 		}
 
@@ -417,6 +529,7 @@ static:
 			current._address = address(bus, device, 0);
 			if (current.vendorID != 0xffff) {
 				// Check the header
+				kprintfln!("device: {}, function: {}")(device, 0);
 				checkForBridge();
 
 				bool hasFunctions = true;
@@ -435,6 +548,7 @@ static:
 					for (uint func = 1; func < 8; func++) {
 						current._address = address(bus, device, func);
 						if (current.vendorID != 0xffff) {
+							kprintfln!("device: {}, function: {}")(device, func);
 							checkForBridge();
 						}
 					}
