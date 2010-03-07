@@ -1157,6 +1157,6 @@ void _d_array_slice_copy(void* dst, size_t dstlen, void* src, size_t srclen)
 
 mixin(Stub!("Object _d_allocclass(ClassInfo ci)"));
 mixin(Stub!("void _d_throw_exception(Object e)"));
-mixin(Stub!("ubyte[] _d_appendarraycT(TypeInfo ti, void* array, void* element)"));
+mixin(Stub!("ubyte[] _d_arrayappendcT(TypeInfo ti, void* array, void* element)"));
 
 }
