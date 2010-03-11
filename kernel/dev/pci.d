@@ -410,7 +410,7 @@ static:
 
 				Gib device = RamFS.create("/devices/vga", Access.Kernel | Access.Read | Access.Write);
 
-				device.map(addr, 1024*1024);
+				device.map(addr, 1024*1024*5);
 				addr = device.ptr;
 
 				static const ushort VGA_GFX_D = 0x3cf;
@@ -507,7 +507,7 @@ static:
 				vga_w(addr, VGA_SEQ_D, 0x00);
 
 				vga_w(addr, VGA_SEQ_I, VGA_SEQ_MEMORY_MODE);
-				vga_w(addr, VGA_SEQ_D, 0x0a);
+				vga_w(addr, VGA_SEQ_D, 0x02);
 
 				// mode
 				vga_w(addr, VGA_GFX_I, VGA_GFX_MODE);
@@ -515,7 +515,7 @@ static:
 
 				// misc (memory mapped address, graphics mode = 1)
 				vga_w(addr, VGA_GFX_I, VGA_GFX_MISC);
-				vga_w(addr, VGA_GFX_D, 0x01);
+				vga_w(addr, VGA_GFX_D, 0x05);
 
 				// Color (involve all planes)
 				vga_w(addr, VGA_GFX_I, VGA_GFX_COMPARE_MASK);
@@ -736,6 +736,21 @@ static:
 				// pixel panning
 				vga_w(addr, VGA_ATT_IW, CL_AR33);
 				vga_w(addr, VGA_ATT_W, 0);
+
+				uint* ffaddr = cast(uint*)0xa0000;
+				Gib g = RamFS.create("/devices/vga1", Access.Kernel|Access.Read|Access.Write);
+				g.map(cast(ubyte*)ffaddr, 1024*1024);
+				ffaddr = cast(uint*)g.ptr;
+				for (uint i; i < 10000; i++) {
+					*ffaddr = 0xffffffff;
+					ffaddr++;
+				}
+
+				uint* faddr = cast(uint*)addr;
+				for (uint i; i < 10000; i++) {
+					*faddr = 0xffffffff;	
+					faddr++;
+				}
 			}
 		}
 
