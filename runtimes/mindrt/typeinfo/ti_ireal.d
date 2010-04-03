@@ -1,12 +1,19 @@
-
-// ireal
+/*
+ * ti_ireal.d
+ *
+ * This module implements the TypeInfo for the ireal type.
+ *
+ * License: Public Domain
+ *
+ */
 
 module mindrt.typeinfo.ti_ireal;
 
-private import mindrt.typeinfo.ti_real;
+import mindrt.typeinfo.ti_real;
 
-class TypeInfo_j : TypeInfo_e
-{
-    char[] toString() { return "ireal"; }
+class TypeInfo_j : TypeInfo_e {
+    char[] toString() {
+		return "ireal";
+	}
 }
 

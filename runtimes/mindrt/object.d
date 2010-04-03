@@ -16,7 +16,7 @@ import mindrt.dstubs;
 import mindrt.exception;
 import mindrt.error;
 
-import std.moduleinit;
+//import std.moduleinit;
 
 // Based in part on object.d provided with Phobos. The original copyright is as follows:
 
@@ -96,6 +96,9 @@ class Object {
 	// Returns: 0 if not equal.
 	int opEquals(Object o) {
 		return cast(int)(this is o);
+	}
+
+	void dispose() {
 	}
 }
 

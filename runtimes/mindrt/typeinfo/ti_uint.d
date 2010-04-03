@@ -1,43 +1,47 @@
-
-// uint
+/*
+ * ti_uint.d
+ *
+ * This module implements the TypeInfo for the uint type.
+ *
+ * License: Public Domain
+ *
+ */
 
 module mindrt.typeinfo.ti_uint;
 
-class TypeInfo_k : TypeInfo
-{
-    char[] toString() { return "uint"; }
+class TypeInfo_k : TypeInfo {
+	char[] toString() {
+		return "uint";
+	}
 
-    hash_t getHash(void *p)
-    {
-	return *cast(uint *)p;
-    }
+	hash_t getHash(void *p) {
+		return *cast(uint *)p;
+	}
 
-    int equals(void *p1, void *p2)
-    {
-	return *cast(uint *)p1 == *cast(uint *)p2;
-    }
+	int equals(void *p1, void *p2) {
+		return *cast(uint *)p1 == *cast(uint *)p2;
+	}
 
-    int compare(void *p1, void *p2)
-    {
-	if (*cast(uint*) p1 < *cast(uint*) p2)
-	    return -1;
-	else if (*cast(uint*) p1 > *cast(uint*) p2)
-	    return 1;
-	return 0;
-    }
+	int compare(void *p1, void *p2) {
+		if (*cast(uint*) p1 < *cast(uint*) p2) {
+			return -1;
+		}
+		else if (*cast(uint*) p1 > *cast(uint*) p2) {
+			return 1;
+		}
 
-    size_t tsize()
-    {
-	return uint.sizeof;
-    }
+		return 0;
+	}
 
-    void swap(void *p1, void *p2)
-    {
-	int t;
+	size_t tsize() {
+		return uint.sizeof;
+	}
 
-	t = *cast(uint *)p1;
-	*cast(uint *)p1 = *cast(uint *)p2;
-	*cast(uint *)p2 = t;
-    }
+	void swap(void *p1, void *p2) {
+		int t;
+
+		t = *cast(uint *)p1;
+		*cast(uint *)p1 = *cast(uint *)p2;
+		*cast(uint *)p2 = t;
+	}
 }
-
