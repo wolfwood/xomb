@@ -132,7 +132,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.result(Keyboard.initialize());
 
 	Log.print("PCI: initialize()");
-	Log.result(PCI.initialize());
+	//Log.result(PCI.initialize());
 
 	// 7. Schedule
 	Scheduler.initialize();

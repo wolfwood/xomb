@@ -72,6 +72,9 @@ struct Monitor {
 // Description: The base class inherited by all classes.
 class Object {
 
+	void dispose() {
+	}
+
 	// Description: Returns a string representing this object.
 	char[] toString() {
 		return this.classinfo.name;
@@ -183,7 +186,7 @@ class ClassInfo : Object {
 	}
 }
 
-class ModuleInfo : Object {
+/*class ModuleInfo : Object {
     char[] name;
     ModuleInfo[] importedModules;
     ClassInfo[] localClasses;
@@ -198,7 +201,48 @@ class ModuleInfo : Object {
 
     // Return collection of all modules in the program.
     static int opApply(int delegate(ref ModuleInfo));
+}*/
+
+class ModuleInfo {
+    char[]          name;
+    ModuleInfo[]    importedModules;
+    ClassInfo[]     localClasses;
+    uint            flags;
+
+    void function() ctor;       // module static constructor (order dependent)
+    void function() dtor;       // module static destructor
+    void function() unitTest;   // module unit tests
+
+    void* xgetMembers;          // module getMembers() function
+
+    void function() ictor;      // module static constructor (order independent)
+
+    static int opApply( int delegate( ref ModuleInfo ) dg ) {
+        int ret = 0;
+
+        foreach( m; _moduleinfo_array ) {
+            ret = dg( m );
+            if( ret )
+                break;
+        }
+        return ret;
+    }
 }
+
+// this gets initialized in _moduleCtor()
+extern (C) ModuleInfo[] _moduleinfo_array;
+
+// This linked list is created by a compiler generated function inserted
+// into the .ctor list by the compiler.
+struct ModuleReference {
+    ModuleReference* next;
+    ModuleInfo       mod;
+}
+extern (C) ModuleReference* _Dmodule_ref;   // start of linked list
+
+// this list is built from the linked list above
+ModuleInfo[] _moduleinfo_dtors;
+uint         _moduleinfo_dtors_i;
 
 /**
  * Array of pairs giving the offset and type information for each

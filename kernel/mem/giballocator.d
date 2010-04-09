@@ -47,9 +47,9 @@ public:
 			gibIndex = nextFreeKernelGib;
 			nextFreeKernelGib++;
 		}
-		ubyte* gibAddr = VirtualMemory.openGib(gibaddr, gibIndex, flags);
-		ret._start = gibAddr;
-		ret._curpos = gibAddr;
+		ubyte* newAddr = VirtualMemory.openGib(gibaddr, gibIndex, flags);
+		ret._start = newAddr;
+		ret._curpos = newAddr;
 		return ret;
 	}
 
