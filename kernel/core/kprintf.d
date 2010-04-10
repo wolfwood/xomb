@@ -160,6 +160,15 @@ private
 		Console.putString(itoa(buf, 'x', cast(ulong)p));
 	}
 
+	void printBoolean(bool b, char[] fmt) {
+		if (b) {
+			Console.putString("true");
+		}
+		else {
+			Console.putString("false");
+		}
+	}
+
 	// The core template that will parse the format to find the string until a format specifier and return the length.
 	template ExtractString(char[] format)
 	{
@@ -267,6 +276,9 @@ private
 			const char[] MakePrintOther = "printPointer(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
 		else static if(isArrayType!(T))
 			const char[] MakePrintOther = "printArray(args[" ~ idx.stringof ~ "], true, false);\n";
+		else static if(is(T == bool)) {
+			const char[] MakePrintOther = "printBoolean(args[" ~ idx.stringof ~ "], \"" ~ fmt ~ "\");\n";
+		}
 		else
 			static assert(false, "I don't know how to handle argument " ~ idx.stringof ~ " of type '" ~ T.stringof ~ "'.");
 	}

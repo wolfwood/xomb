@@ -4,6 +4,8 @@
 
 module kernel.system.definitions;
 
+import kernel.dev.pci;
+
 // This structure keeps track of information pertaining to onboard memory.
 struct Memory {
 	// The size of the RAM.
@@ -81,5 +83,16 @@ struct Cache {
 	uint linesPerSector;
 }
 
+struct Device {
+	enum BusType {
+		PCI,
+	}
 
+	BusType type;
 
+	union Bus {
+		PCIDevice pci;
+	}
+
+	Bus bus;
+}

@@ -1,4 +1,4 @@
-module libos.libconsole;
+module libos.console;
 
 private import user.syscall;
 

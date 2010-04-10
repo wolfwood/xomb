@@ -94,8 +94,37 @@ bool streq(char[] stra, char[] strb) {
 }
 
 void interpret(char[] str) {
+	char[] argument;
+	foreach(size_t i, c; str) {
+		if (c == ' ') {
+			argument = str[i+1..$];
+			str = str[0..i];
+		}
+	}
+
 	if (streq(str, "clear")) {
 		Console.clear();
+	}
+	else if (streq(str, "ls")) {
+		// Open current directory
+		Directory d = Directory.open(workingDirectory);
+
+		// Print current directory
+		Console.putString("Listing ");
+		Console.putString(workingDirectory);
+		Console.putString(":\n");
+
+		Console.putString(".\n");
+
+		// Print items in directory
+		foreach(f;d) {
+			Console.putString(f);
+			Console.putString("\n");
+		}
+	}
+	else if (streq(str, "cd")) {
+		// Change directory
+		workingDirectory = argument;
 	}
 	else {
 		Console.putString("Unknown Command: ");
@@ -103,3 +132,5 @@ void interpret(char[] str) {
 		Console.putString(".\n");
 	}
 }
+
+char[] workingDirectory = "/";

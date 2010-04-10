@@ -34,4 +34,7 @@ public:
 	// Information about each processor available.
 	uint numProcessors = 1; // Assume at least one.
 	Processor[256] processorInfo;
+
+	uint numDevices;
+	Device[256] deviceInfo;
 }

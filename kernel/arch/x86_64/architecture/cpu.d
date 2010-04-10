@@ -109,6 +109,32 @@ public:
 		}`;
 	}
 
+	void ioOut(T)(int port, int data) {
+		asm {
+			mov EAX, data;
+			mov EDX, port;
+		}
+
+		static if (is(T == ubyte) || is(T == byte)) {
+			asm {
+				out DX, AL;
+			}
+		}
+		else static if (is(T == ushort) || is(T == short)) {
+			asm {
+				out DX, AX;
+			}
+		}
+		else static if (is(T == uint) || is(T == int)) {
+			asm {
+				out DX, EAX;
+			}
+		}
+		else {
+			static assert (false, "Cannot determine data type.");
+		}
+	}
+
 	void ioOut(T, char[] port)(int data) {
 		//static assert (port[$-1] == 'h', "Cannot reduce port number");
 
@@ -130,7 +156,8 @@ public:
 		const char[] ioInMixinB = `
 		asm {
 			naked;
-			in AL, ` ~ port ~ `;
+			mov DX, ` ~ port ~ `;
+			in AL, DX;
 			ret;
 		}`;
 	}
@@ -139,7 +166,8 @@ public:
 		const char[] ioInMixinW = `
 		asm {
 			naked;
-			in AX, ` ~ port ~ `;
+			mov DX, ` ~ port ~ `;
+			in AX, DX;
 			ret;
 		}`;
 	}
@@ -148,11 +176,43 @@ public:
 		const char[] ioInMixinL = `
 		asm {
 			naked;
-			in EAX, ` ~ port ~ `;
+			mov EDX, ` ~ port ~ `;
+			in EAX, DX;
 			ret;
 		}`;
 	}
 
+	T ioIn(T)(uint port) {
+		// The argument is passed as RDI 
+		asm {
+			naked;
+			mov EDX, EDI;
+		}
+
+		static if (is(T == ubyte) || is(T == byte)) {
+			asm {
+				in AL, DX;
+			}
+		}
+		else static if (is(T == ushort) || is(T == short)) {
+			asm {
+				in AX, DX;
+			}
+		}
+		else static if (is(T == uint) || is(T == int)) {
+			asm {
+				in EAX, DX;
+			}
+		}
+		else {
+			static assert (false, "Cannot determine data type.");
+		}
+
+		// EAX is the return value, so this is correct
+		asm {
+			ret;
+		}
+	}
 
 	T ioIn(T, char[] port)() {
 		static if (is(T == ubyte) || is(T == byte)) {

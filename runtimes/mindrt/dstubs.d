@@ -167,3 +167,4 @@ mixin(Stub!("int _aApplyRdc2(dchar[] aa, array_dg2_t dg)"));
 mixin(Stub!("int _aApplyRdw2(dchar[] aa, array_dg2_t dg)"));
 mixin(Stub!("char[] _adSortChar(char[] a)"));
 mixin(Stub!("wchar[] _adSortWchar(wchar[] a)"));
+mixin(Stub!("void _d_arrayappendcT(TypeInfo ti, void* array, void* element)"));
