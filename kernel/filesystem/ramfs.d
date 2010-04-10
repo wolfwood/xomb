@@ -183,6 +183,11 @@ static:
 		size_t pos = 0;
 		Directory curDir = rootDir;
 
+		if (path.length == 1 && path[0] == '/') {
+			// Root directory
+			return rootDir.address();
+		}
+
 		ubyte* last;
 
 		void innerLocate(size_t from, size_t to) {

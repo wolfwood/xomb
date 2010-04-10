@@ -3,3 +3,5 @@ megs: 512
 ata1-slave:  type=cdrom, path="./xomb.iso", status=inserted
 boot: cdrom
 cpu: count=4, reset_on_triple_fault=0
+ne2k: ioaddr=0x300, irq=9, mac=b0:c4:20:00:00:00, ethmod=linux, ethdev=eth0
+i440fxsupport: enabled=1, slot1=pcivga, slot2=ne2k
