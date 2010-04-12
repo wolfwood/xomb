@@ -126,8 +126,6 @@ static:
 			kprintfln!("User Mode Page Fault {x}")(stack.rip);
 			kprintfln!("CR2: {}")(addr);
 		}
-		while (addr < cast(void*)10000) {
-		}
 
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(addr, indexL1, indexL2, indexL3, indexL4);

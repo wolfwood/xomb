@@ -101,8 +101,6 @@ class Object {
 		return cast(int)(this is o);
 	}
 
-	void dispose() {
-	}
 }
 
 // Description: This is the information stored for an interface.
@@ -241,7 +239,6 @@ struct ModuleReference {
     ModuleReference* next;
     ModuleInfo       mod;
 }
-extern (C) ModuleReference* _Dmodule_ref;   // start of linked list
 
 // this list is built from the linked list above
 ModuleInfo[] _moduleinfo_dtors;

@@ -122,6 +122,10 @@ void interpret(char[] str) {
 			Console.putString("\n");
 		}
 	}
+	else if (streq(str, "fault")) {
+		ubyte* foo = cast(ubyte*)0x0;
+		*foo = 2;
+	}
 	else if (streq(str, "cd")) {
 		// Change directory
 		workingDirectory = argument;
