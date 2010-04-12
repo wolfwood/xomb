@@ -129,9 +129,6 @@ static:
 			kprintfln!("CR2: {}")(addr);
 			user = true;
 		}
-		while (addr < cast(void*)10000) {
-			kprintfln!("loop of fail")();
-		}
 
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(addr, indexL1, indexL2, indexL3, indexL4);

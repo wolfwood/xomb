@@ -641,6 +641,7 @@ private:
 		stackSpace[0..4096] = currentStack[0..4096];
 
 		_stacks[identifier] = cast(void*)stackSpace + 4096;
+		TSS.table.RSP0 = cast(void*)stackSpace + 4096;
 
 		asm {
 			// Retrieve stack pointer, place in RAX

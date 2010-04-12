@@ -7,123 +7,75 @@
 
 module kernel.arch.x86_64.core.gdt;
 
+import kernel.arch.x86_64.core.descriptor;
+import kernel.arch.x86_64.core.paging;
+
+import architecture.cpu;
+import architecture.vm;
+
+import kernel.core.kprintf;
+
 // Import BitField!()
 import kernel.core.util;
 
 // Import ErrorVal
 import kernel.core.error;
 
+// Import the page allocator
+import kernel.mem.pageallocator;
+
 struct GDT {
 static:
 
-	// This list provides the types allowed for a system segment descriptor
-	enum SystemSegmentType {
-		LocalDescriptorTable	= 0b0010,
-		AvailableTSS			= 0b1001,
-		BusyTSS					= 0b1011,
-		CallGate				= 0b1100,
-		InterruptGate			= 0b1110,
-		TrapGate				= 0b1111
-	}
-
 	// this function will set up the GDT
 	ErrorVal initialize() {
-		// The limit is the size of the table minus 1
-		gdtBase.limit	= (SegmentDescriptor.sizeof * entries.length) - 1;
-		gdtBase.base	= cast(ulong)entries.ptr;
-
-		// Define the table:
-
-		// Two null descriptors must be defined
-		setNull(0);
-		setNull(1);
-
-		// Set up the code and data segment permissions for the kernel
-		// This corresponds with CS_KERNEL
-		setCodeSegment(2, false, 0, true);
-		setDataSegment(3, true, 0);
-		setDataSegment(4, true, 0);
-
-		// Segments 6 and 7 are for the TSS, and will be installed within
-		// that module
-
-		// Set up the code and data segment for the user
-		// Corresponds with CS_USER
-		setDataSegment(8, true, 3);
-		setCodeSegment(9, true, 3, true);
-
 		return ErrorVal.Success;
 	}
 
 	ErrorVal install() {
+		// Create a new GDT structure
+		GlobalDescriptorTable* gdt = cast(GlobalDescriptorTable*)PageAllocator.allocPage();
+		gdt = cast(GlobalDescriptorTable*)Paging.mapRegion(cast(ubyte*)gdt, VirtualMemory.pagesize);
+		*gdt = GlobalDescriptorTable.init;
+		tables[Cpu.identifier] = gdt;
+		initializeTable(Cpu.identifier);
+		GDTBase gdtBase = tables[Cpu.identifier].gdtBase;
 		asm {
 			lgdt [gdtBase];
 		}
 		return ErrorVal.Success;
 	}
 
-
 	// -- The following functions mutate the entries of the GDT -- //
+package:
 
+	void initializeTable(uint table) {
+		// The limit is the size of the table minus 1
+		tables[table].gdtBase.limit	= (SegmentDescriptor.sizeof * tables[table].entries.length) - 1;
+		tables[table].gdtBase.base	= cast(ulong)tables[table].entries.ptr;
 
-	// This will clear out an entry, which is necessary for the first entry
-	void setNull(uint index) {
-		entries[index].value = 0;
+		// Define the table:
+
+		// Two null descriptors must be defined
+		tables[table].setNull(0);
+		tables[table].setNull(1);
+
+		// Set up the code and data segment permissions for the kernel
+		// This corresponds with CS_KERNEL
+		tables[table].setCodeSegment(2, false, 0, true);
+		tables[table].setDataSegment(3, true, 0);
+		tables[table].setDataSegment(4, true, 0);
+
+		// Segments 6 and 7 are for the TSS, and will be installed within
+		// that module
+
+		// Set up the code and data segment for the user
+		// Corresponds with CS_USER
+		tables[table].setDataSegment(8, true, 3);
+		tables[table].setCodeSegment(9, true, 3, true);
 	}
-
-	// This will define an entry for a code segment
-	void setCodeSegment(uint index, bool conforming, ubyte DPL, bool present) {
-		entries[index].codeSegment = CodeSegmentDescriptor.init;
-
-		with(entries[index].codeSegment) {
-			c = conforming;
-			dpl = DPL;
-			p = present;
-			l = true;
-			d = false;
-		}
-	}
-
-	// This will define an entry for a data segment
-	void setDataSegment(uint index, bool present, ubyte DPL) {
-		entries[index].dataSegment = DataSegmentDescriptor.init;
-
-		with(entries[index].dataSegment) {
-			p = present;
-			dpl = DPL;
-		}
-	}
-
-	// This will define a system segment, which will be used to define the TSS
-	void setSystemSegment(uint index, uint limit, ulong base, SystemSegmentType segType, ubyte DPL, bool present, bool avail, bool granularity) {
-		entries[index].systemSegmentLo = SystemSegmentDescriptor.init;
-		entries[index+1].systemSegmentHi = SystemSegmentExtension.init;
-
-		with(entries[index].systemSegmentLo) {
-			baseLo = (base & 0xffff);
-			baseMidLo = (base >> 16) & 0xff;
-			baseMidHi = (base >> 24) & 0xff;
-
-			limitLo = limit & 0xffff;
-			limitHi = (limit >> 16) & 0xf;
-
-			type = segType;
-			dpl = DPL;
-			p = present;
-			avl = avail;
-			g = granularity;
-		}
-
-		with(entries[index+1].systemSegmentHi) {
-			baseHi = (base >> 32) & 0xffffffff;
-		}
-	}
-
-private:
-
 
 	// -- Descriptors -- //
-
 
 	// This structure is the one pointed to by the hardware's GDTR register.
 	// It is loaded via the LGDT instruction
@@ -207,16 +159,71 @@ private:
 	// compile check for correctness
 	static assert(SegmentDescriptor.sizeof == 8);
 
-
 	// -- The GDT Table -- //
-
 
 	// The GDT Table itself is defined here as an array of
 	// descriptors and the base data structure.
 
-	// The base data structure, which will be loaded via LGDT
-	GDTBase gdtBase;
+	struct GlobalDescriptorTable {
+		GDTBase gdtBase;
+		SegmentDescriptor[64] entries;
 
-	// These are the complete set of entries within the GDT
-	SegmentDescriptor[64] entries;
+		// This will clear out an entry, which is necessary for the first entry
+		void setNull(uint index) {
+			entries[index].value = 0;
+		}
+
+		// This will define an entry for a code segment
+		void setCodeSegment(uint index, bool conforming, ubyte DPL, bool present) {
+			entries[index].codeSegment = CodeSegmentDescriptor.init;
+
+			with(entries[index].codeSegment) {
+				c = conforming;
+				dpl = DPL;
+				p = present;
+				l = true;
+				d = false;
+			}
+		}
+
+		// This will define an entry for a data segment
+		void setDataSegment(uint index, bool present, ubyte DPL) {
+			entries[index].dataSegment = DataSegmentDescriptor.init;
+
+			with(entries[index].dataSegment) {
+				p = present;
+				dpl = DPL;
+			}
+		}
+
+		// This will define a system segment, which will be used to define the TSS
+		void setSystemSegment(uint index, uint limit, ulong base, SystemSegmentType segType, ubyte DPL, bool present, bool avail, bool granularity) {
+			entries[index].systemSegmentLo = SystemSegmentDescriptor.init;
+			entries[index+1].systemSegmentHi = SystemSegmentExtension.init;
+
+			with(entries[index].systemSegmentLo) {
+				baseLo = (base & 0xffff);
+				baseMidLo = (base >> 16) & 0xff;
+				baseMidHi = (base >> 24) & 0xff;
+
+				limitLo = limit & 0xffff;
+				limitHi = (limit >> 16) & 0xf;
+
+				type = segType;
+				dpl = DPL;
+				p = present;
+				avl = avail;
+				g = granularity;
+			}
+
+			with(entries[index+1].systemSegmentHi) {
+				baseHi = (base >> 32) & 0xffffffff;
+			}
+		}
+
+	}
+
+	// -- Tables -- //
+
+	GlobalDescriptorTable* [256] tables; // indexed by Cpu.identifier
 }
