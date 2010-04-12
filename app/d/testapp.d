@@ -104,8 +104,20 @@ void interpret(char[] str) {
 
 	if (streq(str, "clear")) {
 		Console.clear();
-	}
-	else if (streq(str, "ls")) {
+	}else	if (streq(str, "exit")) {
+		exit(0);
+	}else	if (streq(str, "test")) {
+		ulong va = 40*1024*1024;
+		for(int i = 0; i < 32*1024; i++){
+			if((i % 1024) == 0){
+				Console.putString(".*.");
+			}
+			allocPage(cast(void*)va);
+			char[] arr = cast(char[])(cast(char*)va)[0..4096];
+			arr[0] = 'a';
+			arr[2] = 'b';
+		}
+	}	else if (streq(str, "ls")) {
 		// Open current directory
 		Directory d = Directory.open(workingDirectory);
 

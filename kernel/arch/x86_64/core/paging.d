@@ -122,37 +122,66 @@ static:
 
 //		kprintfln!("CR2 {}")(addr);
 
+		bool user = false;
+
 		if (stack.rip < 0xf_0000_0000_0000) {
 			kprintfln!("User Mode Page Fault {x}")(stack.rip);
 			kprintfln!("CR2: {}")(addr);
+			user = true;
 		}
 		while (addr < cast(void*)10000) {
+			kprintfln!("loop of fail")();
 		}
 
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(addr, indexL1, indexL2, indexL3, indexL4);
 
+		if(user){kprintfln!("{} {} {} {}")(indexL1, indexL2, indexL3, indexL4);}
+
 		// check for gib status
 		PageLevel3* pl3 = root.getTable(indexL4);
+		if(user){kprintfln!("decoded l4 {}")(pl3);}
+
 		if (pl3 is null) {
 			// NOT AVAILABLE
+				if(user){kprintfln!("l3 MIA")();}
 		}
 		else {
 			PageLevel2* pl2 = pl3.getTable(indexL3);
+				if(user){kprintfln!("decoded l3 {}")(pl2);}
 			if (pl2 is null) {
 				// NOT AVAILABLE (FOR SOME REASON)
 				kprintfln!("CR2 {}")(addr);
 			}
 			else {
-//				kprintfln!("Gib Available")();
+				if(user){kprintfln!("pre-decode l2 {}")(pl2);}
+				if(user){kprintfln!("pre-decode l2 {}")(pl2.entries[indexL2].location());}
 
-				// Allocate Page
-				addr = cast(void*)(cast(ulong)addr & 0xffff_ffff_ffff_f000UL);
+				PageLevel1* pl1 = pl2.getTable(indexL2);
 
-//				kprintfln!("Allocating a page")();
-				void* page = PageAllocator.allocPage();
+				if(user){kprintfln!("decoded l2")();}
 
-				mapRegion(null, page, PAGESIZE, addr, true);
+				if( (pl1 is null) || (pl1.entries[indexL1].avl != 1) ){
+				//if( (pl1 is null) || !user || (pl1.entries[indexL1].rw == 1) ){
+					//kprintfln!("Gib Available")();
+					if(user){kprintfln!("allocing")();}
+
+					// Allocate Page
+					addr = cast(void*)(cast(ulong)addr & 0xffff_ffff_ffff_f000UL);
+
+					// kprintfln!("Allocating a page")();
+					void* page = PageAllocator.allocPage();
+
+					mapRegion(null, page, PAGESIZE, addr, true);
+				}else{
+					kprintfln!("PCM fault {} {}")(addr, indexL1);
+					pl1.entries[indexL1].rw = 1;
+					pl1.entries[indexL1].avl = 0;
+					
+					/*asm{
+						invlpg addr;
+						}*/
+				}
 			}
 		}
 	}
@@ -526,6 +555,11 @@ private:
 							pl1.entries[indexL1].pat = 1;
 							static if (!kernelLevel) {
 								pl1.entries[indexL1].us = 1;
+
+								if(pl1.entries[indexL1].pml >= 128*1024*1024){
+									pl1.entries[indexL1].rw = 0;
+									pl1.entries[indexL1].avl = 1;
+								}
 							}
 
 							physAddr += PAGESIZE;
@@ -591,8 +625,8 @@ private:
 			"ign", 1,
 			"mbz", 2,
 			"avl", 3,
-			"address", 41,
-			"available", 10,
+			"address", 40,
+			"available", 11,
 			"nx", 1));
 
 		ubyte* location() {
@@ -615,8 +649,8 @@ private:
 			"pat", 1,
 			"g", 1,
 			"avl", 3,
-			"address", 41,
-			"available", 10,
+			"address", 40,
+			"available", 11,
 			"nx", 1));
 
 		ubyte* location() {
@@ -718,12 +752,12 @@ private:
 		SecondaryField[512] entries;
 
 		PageLevel1* getTable(uint idx) {
-//			kprintfln!("getting pl2 {}?")(idx);
+			//kprintfln!("getting pl2 {}?")(idx);
 			if (entries[idx].present == 0) {
-//				kprintfln!("no pl2 {}!")(idx);
+				//kprintfln!("no pl2 {}!")(idx);
 				return null;
 			}
-//			kprintfln!("getting pl2 {}!")(idx);
+			//kprintfln!("getting pl2 {}!")(idx);
 
 			ulong baseAddr = cast(ulong)this;
 			baseAddr &= 0x3FFFF000;
