@@ -44,11 +44,11 @@ struct Environment {
 
 	SchedulerInfo info;
 
-	ErrorVal initialize() {
+	ErrorVal initialize(char[] argv) {
 		// Create a page table for this environment
 		context.initialize();
 
-		context.preamble(entry);
+		context.preamble(entry, argv);
 
 		state = State.Ready;
 

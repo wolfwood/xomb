@@ -98,7 +98,7 @@ public:
 		return ErrorVal.Success;
 	}
 
-	ErrorVal preamble(void* entry) {
+	ErrorVal preamble(void* entry, char[] argv) {
 		ulong* stackSpace = cast(ulong*)(contextStack + 4096);
 
 		// Push Things to Stack
@@ -107,11 +107,32 @@ public:
 		stackSpace--;
 		*stackSpace = ((8 << 3) | 3);
 
+		// start messing with user stack.
+		// create temp array on the top of the user stack
+		char[] temp;
+		temp = cast(char[])(cast(char*)((cast(ulong)stack) + 4096 - argv.length - 1))[0..argv.length + 1];
+
+		temp[$-1] = '\0';
+		
+		kprintf!("{}")(argv);
+
 		// RSP (user stack)
 		stackSpace--;
-		*stackSpace = (cast(ulong)stack) + 4096;
+		// room for array, null teminator (for C), and array refeerence 
+		// all 8 byte aligned, for no apparent raisin
+		*stackSpace = ((cast(ulong)stack) + 4096 - argv.length - 1 - 16) & 0xFFFFFFF8;
 
-		// FLAGS
+		//set top of stack to array of argv
+		*(cast(char[]*)(*stackSpace)) = temp;
+
+		// copy argv to stack
+		for(int i = 0; i < argv.length; i++){
+			temp[i] = argv[i];
+		}
+
+		// continue with context stack
+
+		// Flags
 		stackSpace--;
 		*stackSpace = ((1 << 9) | (3 << 12));
 
