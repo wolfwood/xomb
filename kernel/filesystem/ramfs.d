@@ -16,10 +16,10 @@ import kernel.mem.gib;
 
 // The beef of the logic involves this structure
 // Add to directory structure
-// Just use a linked list allocation
+// Just use a binded list allocation
 
 // The first item in the directory is the Directory.Header
-// Followed by a linked list of Directory.Entry objects
+// Followed by a binded list of Directory.Entry objects
 
 struct Directory {
 	void alloc() {
@@ -34,7 +34,8 @@ struct Directory {
 		return gib.address;
 	}
 
-	ErrorVal link(ref Gib foo, char[] name) {
+	// Create a soft link
+	ErrorVal link(char[] name, char[] path) {
 		Directory.Header* header;
 		header = cast(Directory.Header*)gib.ptr; 
 
@@ -51,10 +52,59 @@ struct Directory {
 		else {
 			// Go to next spot
 			Directory.Entry* entry = cast(Directory.Entry*)(gib.ptr + header.tailOffset);
-			newEntry = cast(Directory.Entry*)(cast(ulong)(entry + 1) + entry.length);
+			newEntry = cast(Directory.Entry*)(cast(ulong)(entry + 1) + entry.length + entry.linklen);
 		}
 
 		newEntry.length = name.length;
+		newEntry.linklen = path.length;
+		newEntry.ptr = null;
+
+		nameptr = cast(char*)(newEntry + 1);
+		foreach (c; name) {
+			*nameptr = c;
+			nameptr++;
+		}	
+
+		foreach (c; path) {
+			*nameptr = c;
+			nameptr++;
+		}
+
+		if (header.tailOffset == 0) {
+			// Place in directory
+			header.headOffset = cast(ulong)newEntry - cast(ulong)gib.ptr;
+			header.tailOffset = header.headOffset;
+		}
+		else {
+			Directory.Entry* entry = cast(Directory.Entry*)(gib.ptr + header.tailOffset);
+			header.tailOffset += Directory.Entry.sizeof + entry.length + entry.linklen;
+		}
+		return ErrorVal.Success;
+	}
+
+	// Create a hard link (unreferenced!)
+	ErrorVal bind(ref Gib foo, char[] name) {
+		Directory.Header* header;
+		header = cast(Directory.Header*)gib.ptr; 
+
+		Directory.Entry* newEntry;
+
+		char* nameptr;
+
+		// Add after tail (if exists)
+		if (header.tailOffset == 0) {
+			// Empty Directory
+			// Go to the first spot
+			newEntry = cast(Directory.Entry*)(header + 1);
+		}
+		else {
+			// Go to next spot
+			Directory.Entry* entry = cast(Directory.Entry*)(gib.ptr + header.tailOffset);
+			newEntry = cast(Directory.Entry*)(cast(ulong)(entry + 1) + entry.length + entry.linklen);
+		}
+
+		newEntry.length = name.length;
+		newEntry.linklen = 0;
 		newEntry.ptr = foo.address;
 
 		nameptr = cast(char*)(newEntry + 1);
@@ -121,7 +171,7 @@ struct Directory {
 				break;	
 			}
 
-			current = cast(Directory.Entry*)(nameptr + current.length);
+			current = cast(Directory.Entry*)(nameptr + current.length + current.linklen);
 		}
 
 		return null;
@@ -136,7 +186,8 @@ package:
 	}
 
 	struct Entry {
-		uint length;
+		ushort length;
+		ushort linklen;
 		uint flags;
 		ubyte* ptr;
 	}
@@ -152,28 +203,30 @@ static:
 		rootDir.alloc();
 
 		sub.alloc();
-		rootDir.link(sub.gib, "binaries");
+		rootDir.bind(sub.gib, "binaries");
 
 		sub.alloc();
-		rootDir.link(sub.gib, "configuration");
+		rootDir.bind(sub.gib, "configuration");
 
 		sub.alloc();
-		rootDir.link(sub.gib, "kernel");
+		rootDir.bind(sub.gib, "kernel");
 
 		sub.alloc();
-		rootDir.link(sub.gib, "libraries");
+		rootDir.bind(sub.gib, "libraries");
 
 		sub.alloc();
-		rootDir.link(sub.gib, "share");
+		rootDir.bind(sub.gib, "share");
 
 		sub.alloc();
-		rootDir.link(sub.gib, "system");
+		rootDir.bind(sub.gib, "system");
 
 		sub.alloc();
-		rootDir.link(sub.gib, "temp");
+		rootDir.bind(sub.gib, "temp");
 
 		sub.alloc();
-		rootDir.link(sub.gib, "devices");
+		rootDir.bind(sub.gib, "devices");
+
+		rootDir.link("fluff", "/devices");
 
 		return ErrorVal.Success;
 	}
@@ -193,7 +246,24 @@ static:
 		void innerLocate(size_t from, size_t to) {
 			Directory.Entry* entry = curDir.locate(path[from..to]);
 			curDir.open(entry, Access.Kernel | Access.Read | Access.Write);
-			last = entry.ptr;
+			if (entry.linklen > 0) {
+				// soft link
+
+				// Expand out to the actual place
+				// Get link path
+				char* linkptr = cast(char*)(entry + 1);
+				linkptr += entry.length;
+				char[] linkpath = linkptr[0..entry.linklen];
+			
+				ubyte* gibptr = locate(linkpath);
+				if (gibptr !is null) {
+					curDir.gib = GibAllocator.open(gibptr, Access.Kernel | Access.Read | Access.Write);
+				}
+				last = gibptr;
+			}
+			else {
+				last = entry.ptr;
+			}
 		}
 
 		foreach(size_t i, c; path) {
@@ -217,7 +287,7 @@ static:
 		Directory newDir;
 		newDir.alloc();
 
-		return dir.link(newDir.gib, name);
+		return dir.bind(newDir.gib, name);
 	}
 
 	ErrorVal destroy() {
@@ -238,7 +308,7 @@ static:
 		dir.gib = GibAllocator.open(dirptr, Access.Kernel | Access.Read | Access.Write, gibIndex);
 
 		newGib = GibAllocator.alloc(flags);
-		dir.link(newGib, filename);
+		dir.bind(newGib, filename);
 
 		return newGib;
 	}
@@ -258,6 +328,10 @@ static:
 	}
 
 	ErrorVal link() {
+		return ErrorVal.Fail;
+	}
+
+	ErrorVal bind() {
 		return ErrorVal.Fail;
 	}
 

@@ -95,7 +95,7 @@ struct Directory {
 				break;	
 			}
 
-			current = cast(Directory.Entry*)(nameptr + current.length);
+			current = cast(Directory.Entry*)(nameptr + current.length + current.linklen);
 		}
 
 
@@ -144,7 +144,7 @@ struct Directory {
 				break;	
 			}
 
-			current = cast(Directory.Entry*)(nameptr + current.length);
+			current = cast(Directory.Entry*)(nameptr + current.length + current.linklen);
 		}
 
 		return null;
@@ -159,7 +159,8 @@ package:
 	}
 
 	struct Entry {
-		uint length;
+		ushort length;
+		ushort linklen;
 		uint flags;
 		ubyte* ptr;
 	}
