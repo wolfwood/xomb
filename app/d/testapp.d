@@ -108,14 +108,15 @@ void interpret(char[] str) {
 		exit(0);
 	}else	if (streq(str, "test")) {
 		ulong va = 40*1024*1024;
-		for(int i = 0; i < 32*1024; i++){
+		for(ulong i = 0; i < 32*1024; i++){
 			if((i % 1024) == 0){
-				Console.putString(".*.");
+				Console.putString(".");
 			}
-			allocPage(cast(void*)va);
-			char[] arr = cast(char[])(cast(char*)va)[0..4096];
+			allocPage(cast(void*) (va+(i*4096)) );
+			char[] arr = cast(char[])(cast(char*)( va + (i*4096) ))[0..4096];
 			arr[0] = 'a';
 			arr[2] = 'b';
+			arr[1] = arr[0];
 		}
 	}	else if (streq(str, "ls")) {
 		// Open current directory

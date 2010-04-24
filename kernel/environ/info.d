@@ -44,6 +44,12 @@ struct Environment {
 
 	SchedulerInfo info;
 
+	// PCM vars
+	void* clockHand;
+	ulong pcmWrites;
+	ulong swaps;
+	ulong pcmPagesMapped;
+
 	ErrorVal initialize() {
 		// Create a page table for this environment
 		context.initialize();
@@ -51,6 +57,9 @@ struct Environment {
 		context.preamble(entry);
 
 		state = State.Ready;
+		
+		clockHand = cast(void*)0;
+		pcmPagesMapped = swaps = pcmWrites = 0;
 
 		return ErrorVal.Success;
 	}

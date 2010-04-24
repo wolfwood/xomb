@@ -60,6 +60,11 @@ public:
 
 	ErrorVal removeEnvironment() {
 		Environment* cur = current;
+
+		kprintfln!("PCM writes: {}")(cur.pcmWrites);
+		kprintfln!("Page swaps: {}")(cur.swaps);
+		kprintfln!("PCM pages mapped: {}")(cur.pcmPagesMapped);
+
 		cur.state = Environment.State.Uninitializing;
 		cur.uninitialize();
 

@@ -7,6 +7,10 @@
 
 module kernel.arch.x86_64.core.paging;
 
+// for PCM
+import kernel.environ.info;
+import kernel.environ.scheduler;
+
 // Import common kernel stuff
 import kernel.core.util;
 import kernel.core.error;
@@ -38,6 +42,7 @@ import architecture.mutex;
 //   - kheap
 //      - devices
 //      - misc
+
 
 class Paging {
 static:
@@ -108,8 +113,6 @@ static:
 		return ErrorVal.Success;
 	}
 
-	void* clockHand;
-	ulong pcmWrites;
 
 	void faultHandler(InterruptStack* stack) {
 //		kprintfln!("Page Fault")();
@@ -125,6 +128,7 @@ static:
 
 //		kprintfln!("CR2 {}")(addr);
 
+		Environment* env = Scheduler.current;
 		bool user = false;
 
 		if (stack.rip < 0xf_0000_0000_0000) {
@@ -178,7 +182,7 @@ static:
 					}
 
 					// --- walk page-table looking for a non-PCM (clean?), unreferenced page ---
-					void* addr2 = clockHand;
+					void* addr2 = env.clockHand;
 					
 					ulong idx1, idx2, idx3, idx4;
 
@@ -191,7 +195,7 @@ static:
 					PageLevel1* p1;
 
 					while(1){
-						kprintfln!("Clock {} {} {} {}")(idx1, idx2, idx3, idx4);
+						//kprintfln!("Clock {} {} {} {}")(idx1, idx2, idx3, idx4);
 
 						if((idx4 == 0) && (idx3 == 0) && (idx2 == 0) && (idx1 < 256)){
 							idx1 = 256;
@@ -216,12 +220,15 @@ static:
 									}							
 							
 									if(p1.entries[idx1].present && p1.entries[idx1].us &&
-										 (p1.entries[idx1].pml >= 1024*1024UL) && !(p1.entries[idx1].avl == 1)){
+										 (p1.entries[idx1].pml >= 1024*1024UL) && 
+										 !(p1.entries[idx1].avl == 1)){
 										if(!p1.entries[idx1].a){
 											//XXX: count dirty evictions
 											break;
 										}else{
 											p1.entries[idx1].a = false;
+
+											/// invalidate?
 										}
 									}
 									idx1++;
@@ -261,27 +268,44 @@ static:
 						}
 					}
 
-					kprintfln!("Clock selection {} {} {} {}")(idx1, idx2, idx3, idx4);
+					//kprintfln!("Clock selection {} {} {} {}")(idx1, idx2, idx3, idx4);
 					
 					addr2 = createAddress(idx1, idx2, idx3, idx4);
 
-					kprintfln!("addr {}")(addr2);
+					addr = cast(void*)(cast(ulong)addr & 0xffff_ffff_ffff_f000UL);
 
 					// --- swap pages ---
-					ulong* pcm = cast(ulong*)addr;
-					ulong* dram = cast(ulong*)addr2;
+					ubyte[] pcm = (cast(ubyte*)addr)[0..4096];
+					ubyte[] dram = (cast(ubyte*)addr2)[0..4096];
+
 					
-					for(int i = 0; i < (4096/ulong.sizeof); i++){
-						if(*dram != *pcm){
-							*dram ^= *pcm;
-							*pcm  ^= *dram;
-							*dram ^= *pcm;
-							
-							pcmWrites++;
+					for(int i = 0; i < 4096; i++){
+						
+						if(dram[i] != pcm[i]){
+							/*ubyte temp = dram[i];
+							dram[i] = pcm[i];
+							pcm[i] = temp;
+							*/
+							env.pcmWrites++;
+						}
 						}
 
-						pcm++;
-						dram++; 
+					env.swaps++;
+
+					//kprintfln!("addr2 {} addr {} rip {x} rsp {x}")(addr2, addr, stack.rip, stack.rsp);
+					//kprintfln!("{x} {x} {x} {x}")(pl1.entries[indexL1].address, p1.entries[idx1].address, pl1.entries[indexL1].pml, p1.entries[idx1].pml);
+
+					/*ulong temp;
+					temp = pl1.entries[indexL1].address;
+					pl1.entries[indexL1].address = p1.entries[idx1].address;
+					p1.entries[idx1].address = temp;
+					*/
+
+
+					//pl1.entries[indexL1].d = 0;
+
+					asm{
+						invlpg addr;
 					}
 
 					// --- instrument newly-pcm mapping --
@@ -292,9 +316,9 @@ static:
 						invlpg addr2;
 					}
 
-					pl1.entries[indexL1].d = 0;
-
-					clockHand = addr2 + 4096;
+					//kprintfln!("{x} {x} {x} {x}")(pl1.entries[indexL1].address, p1.entries[idx1].address, pl1.entries[indexL1].pml, p1.entries[idx1].pml);
+									
+					env.clockHand = addr2 + 4096;
 				} // end PCM
 			}
 		}
@@ -692,9 +716,10 @@ private:
 							static if (!kernelLevel) {
 								pl1.entries[indexL1].us = 1;
 
-								if(pl1.entries[indexL1].pml >= 128*1024*1024){
+								if(pl1.entries[indexL1].address >= 32*1024){
 									pl1.entries[indexL1].rw = 0;
 									pl1.entries[indexL1].avl = 1;
+									Scheduler.current.pcmPagesMapped++;
 								}
 							}
 
