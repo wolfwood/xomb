@@ -35,7 +35,7 @@ struct Directory {
 	}
 
 	// Create a soft link
-	ErrorVal link(char[] name, char[] path) {
+	ErrorVal link(char[] name, char[] path, uint flags=0) {
 		Directory.Header* header;
 		header = cast(Directory.Header*)gib.ptr; 
 
@@ -58,6 +58,7 @@ struct Directory {
 		newEntry.length = name.length;
 		newEntry.linklen = path.length;
 		newEntry.ptr = null;
+		newEntry.flags = flags | Mode.Softlink;
 
 		nameptr = cast(char*)(newEntry + 1);
 		foreach (c; name) {
@@ -83,7 +84,7 @@ struct Directory {
 	}
 
 	// Create a hard link (unreferenced!)
-	ErrorVal bind(ref Gib foo, char[] name) {
+	ErrorVal bind(ref Gib foo, char[] name, uint flags = 0) {
 		Directory.Header* header;
 		header = cast(Directory.Header*)gib.ptr; 
 
@@ -106,6 +107,7 @@ struct Directory {
 		newEntry.length = name.length;
 		newEntry.linklen = 0;
 		newEntry.ptr = foo.address;
+		newEntry.flags = flags;
 
 		nameptr = cast(char*)(newEntry + 1);
 		foreach (c; name) {
@@ -191,6 +193,12 @@ package:
 		uint flags;
 		ubyte* ptr;
 	}
+
+	enum Mode {
+		ReadOnly = 1,
+		Directory = 2,
+		Softlink = 4,
+	}
 }
 
 class RamFS {
@@ -203,28 +211,28 @@ static:
 		rootDir.alloc();
 
 		sub.alloc();
-		rootDir.bind(sub.gib, "binaries");
+		rootDir.bind(sub.gib, "binaries", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.bind(sub.gib, "configuration");
+		rootDir.bind(sub.gib, "configuration", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.bind(sub.gib, "kernel");
+		rootDir.bind(sub.gib, "kernel", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.bind(sub.gib, "libraries");
+		rootDir.bind(sub.gib, "libraries", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.bind(sub.gib, "share");
+		rootDir.bind(sub.gib, "share", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.bind(sub.gib, "system");
+		rootDir.bind(sub.gib, "system", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.bind(sub.gib, "temp");
+		rootDir.bind(sub.gib, "temp", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.bind(sub.gib, "devices");
+		rootDir.bind(sub.gib, "devices", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		rootDir.link("fluff", "/devices");
 
@@ -327,8 +335,21 @@ static:
 		return ErrorVal.Fail;
 	}
 
-	ErrorVal link() {
-		return ErrorVal.Fail;
+	ErrorVal link(char[] name, char[] linkpath, int flags = 0) {
+		// Open directory where name should be placed
+		char[] path;
+		char[] filename;
+		Gib newGib;
+		if (splitPath(name, path, filename) == ErrorVal.Fail) {
+			return ErrorVal.Fail;
+		}
+
+		ubyte* dirptr = locate(path);
+		Directory dir;
+		dir.gib = GibAllocator.open(dirptr, Access.Kernel | Access.Read | Access.Write);
+
+		dir.link(filename, linkpath, flags);
+		return ErrorVal.Success;
 	}
 
 	ErrorVal bind() {

@@ -13,6 +13,11 @@ import libos.console;
 // The first item in the directory is the Directory.Header
 // Followed by a linked list of Directory.Entry objects
 
+struct DirectoryEntry {
+	char[] name;
+	uint flags;
+}
+
 struct Directory {
 	ubyte* ptr() {
 		return gib.ptr;
@@ -65,7 +70,8 @@ struct Directory {
 		return ret;
 	}
 
-	int opApply(int delegate(ref char[] foo) loopFunc) {
+	int opApply(int delegate(ref DirectoryEntry foo) loopFunc) {
+		DirectoryEntry dirent;
 		Directory.Entry* current;
 		Directory.Entry* tail;
 		Directory.Header* header;
@@ -76,7 +82,6 @@ struct Directory {
 		tail = cast(Directory.Entry*)(gib.ptr + header.tailOffset);
 		if (header.headOffset == 0) {
 			// Directory is empty
-			Console.putString("Directory Empty\n");
 			return 0;
 		}
 
@@ -85,9 +90,47 @@ struct Directory {
 			if (current.length > 128) {
 				current.length = 128;
 			}
-			char[] curname = nameptr[0..current.length];
+			dirent.name = nameptr[0..current.length];
+			dirent.flags = current.flags;
 
-			if (loopFunc(curname) == 1) {
+			if (loopFunc(dirent) == 1) {
+				return 1;
+			}
+
+			if (current is tail) {
+				break;	
+			}
+
+			current = cast(Directory.Entry*)(nameptr + current.length + current.linklen);
+		}
+
+
+		return 0;
+	}
+
+	int opApply(int delegate(ref char[] foo) loopFunc) {
+		DirectoryEntry dirent;
+		Directory.Entry* current;
+		Directory.Entry* tail;
+		Directory.Header* header;
+		char* nameptr;
+
+		header = cast(Directory.Header*)gib.ptr;
+		current = cast(Directory.Entry*)(gib.ptr + header.headOffset);
+		tail = cast(Directory.Entry*)(gib.ptr + header.tailOffset);
+		if (header.headOffset == 0) {
+			// Directory is empty
+			return 0;
+		}
+
+		for(;;) {
+			nameptr = cast(char*)current + Directory.Entry.sizeof;
+			if (current.length > 128) {
+				current.length = 128;
+			}
+			dirent.name = nameptr[0..current.length];
+
+			if (loopFunc(dirent.name) == 1) {
 				return 1;
 			}
 
@@ -163,6 +206,12 @@ package:
 		ushort linklen;
 		uint flags;
 		ubyte* ptr;
+	}
+
+	enum Mode {
+		ReadOnly = 1,
+		Directory = 2,
+		Softlink = 4,
 	}
 }
 

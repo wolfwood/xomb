@@ -19,6 +19,7 @@ enum SyscallID : ulong {
 	PerfPoll,
 	Open,
 	Create,
+	Link,
 }
 
 // Names of system calls
@@ -30,7 +31,8 @@ alias Tuple! (
 	"fork",				// fork()
 	"perfPoll",			// perfPoll()
 	"open",				// open()
-	"create"			// create()
+	"create",			// create()
+	"link"				// link()
 ) SyscallNames;
 
 
@@ -43,7 +45,8 @@ alias Tuple! (
 	int,			// fork
 	void,			// perfPoll
 	ubyte*,			// open
-	ubyte*			// create
+	ubyte*,			// create
+	bool			// link	
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -71,6 +74,12 @@ struct OpenArgs {
 	uint index;
 }
 alias OpenArgs CreateArgs;
+
+struct LinkArgs {
+	char[] path;
+	char[] linkpath;
+	uint flags;
+}
 
 struct PerfPollArgs {
 	uint event;

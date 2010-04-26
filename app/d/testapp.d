@@ -7,10 +7,10 @@
 module testapp;
 
 import user.syscall;
-import user.console;
 import user.ramfs;
 
-import libos.console;
+import console;
+
 import libos.ramfs;
 import libos.keyboard;
 
@@ -29,6 +29,8 @@ void main() {
 	Console.forecolor = Color.Red;
 
 	Console.putString("What to do...\n");
+
+	Console.forecolor = Color.LightGray;
 
 	Console.putString("\n > ");
 
@@ -58,11 +60,11 @@ void main() {
 			}
 			else if (key == Key.Backspace) {
 				if (pos > 0) {
-					uint x,y;
-					Console.getPosition(x,y);
-					Console.setPosition(x-1,y);
+					Point pt;
+					pt = Console.position;
+					Console.position(pt.x-1, pt.y);
 					Console.putChar(' ');
-					Console.setPosition(x-1,y);
+					Console.position(pt.x-1, pt.y);
 					pos--;
 				}
 			}
@@ -99,6 +101,7 @@ void interpret(char[] str) {
 		if (c == ' ') {
 			argument = str[i+1..$];
 			str = str[0..i];
+			break;
 		}
 	}
 
@@ -107,20 +110,48 @@ void interpret(char[] str) {
 	}
 	else if (streq(str, "ls")) {
 		// Open current directory
-		Directory d = Directory.open(workingDirectory);
+		
+		// if there is an argument... we should parse it
+		char[] listDirectory;
+		if (argument.length > 0) {
+			listDirectory = argument;
+			if (argument.length == 1 && argument[0] == '.') {
+				listDirectory = workingDirectory;
+			}
+		}
+		else {
+			listDirectory = workingDirectory;
+		}
+		Directory d = Directory.open(listDirectory);
 
-		// Print current directory
-		Console.putString("Listing ");
-		Console.putString(workingDirectory);
-		Console.putString(":\n");
-
-		Console.putString(".\n");
+		int pos = 0;
 
 		// Print items in directory
-		foreach(f;d) {
+		foreach(DirectoryEntry dirent;d) {
+			char[] f = dirent.name;
+			if ((pos + f.length) >= Console.width()) {
+				Console.putString("\n");
+				pos = 0;
+			}
+			if (dirent.flags & Directory.Mode.Directory) {
+				Console.forecolor = Color.LightBlue;
+			}
+			if (dirent.flags & Directory.Mode.Softlink) {
+				Console.forecolor = Color.LightCyan;
+			}
 			Console.putString(f);
-			Console.putString("\n");
+			Console.forecolor = Color.LightGray;
+			if ((pos + f.length + 2) < Console.width()) {
+				Console.putString("  ");
+			}
+			pos += f.length + 2;
 		}
+		Console.putString("\n");
+	}
+	else if (streq(str, "pwd")) {
+		// Print working directory
+		Console.putString(workingDirectory);
+		Console.putString("\n");
 	}
 	else if (streq(str, "fault")) {
 		ubyte* foo = cast(ubyte*)0x0;
@@ -128,7 +159,43 @@ void interpret(char[] str) {
 	}
 	else if (streq(str, "cd")) {
 		// Change directory
-		workingDirectory = argument;
+		if (argument.length > 0) {
+			int offset = 0;
+			if (argument[argument.length-1] == '/' && argument.length > 1) {
+				argument.length = argument.length - 1;
+			}
+			if (argument[0] != '/') {
+				offset = workingDirectory.length;
+			}
+			if (argument.length == 1 && argument[0] == '.') {
+				argument = workingDirectory;
+				offset = 0;
+			}
+			if (offset > 1) {
+				workingDirectorySpace[offset] = '/';
+				offset++;
+			}
+			if (argument.length == 2 && argument[0] == '.' && argument[1] == '.') {
+				// Go up a directory
+				size_t pos = 0;
+				foreach_reverse(size_t i, c; workingDirectory) {
+					if (c == '/') {
+						pos = i;
+						break;
+					}
+				}
+				if (pos == 0) {
+					pos = 1;
+				}
+				workingDirectory = workingDirectory[0..pos];
+				return;
+			}
+
+			foreach(size_t i, c; argument) {
+				workingDirectorySpace[i+offset] = c;
+			}
+			workingDirectory = workingDirectorySpace[0..argument.length+offset];
+		}
 	}
 	else {
 		Console.putString("Unknown Command: ");
@@ -137,4 +204,5 @@ void interpret(char[] str) {
 	}
 }
 
+char[256] workingDirectorySpace = "/";
 char[] workingDirectory = "/";
