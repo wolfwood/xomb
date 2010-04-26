@@ -212,6 +212,7 @@ package:
 		ReadOnly = 1,
 		Directory = 2,
 		Softlink = 4,
+		Executable = 8,
 	}
 }
 
@@ -312,6 +313,10 @@ static:
 		nextGibIndex++;
 		ret._curpos = ret._start;
 		return ret;
+	}
+
+	bool link(char[] name, char[] linkpath, uint flags) {
+		return user.syscall.link(name, linkpath, flags);
 	}
 
 private:

@@ -198,6 +198,7 @@ package:
 		ReadOnly = 1,
 		Directory = 2,
 		Softlink = 4,
+		Executable = 8,
 	}
 }
 
@@ -235,6 +236,8 @@ static:
 		rootDir.bind(sub.gib, "devices", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		rootDir.link("fluff", "/devices");
+
+		link("/foobar", "/devices");
 
 		return ErrorVal.Success;
 	}
@@ -364,7 +367,12 @@ private:
 				if (i == fullpath.length - 1) {
 					return ErrorVal.Fail;
 				}
-				path = fullpath[0..i];
+				if (i == 0) {
+					path = fullpath[0..1];
+				}
+				else {
+					path = fullpath[0..i];
+				}
 				filename = fullpath[i+1..$];
 				break;
 			}

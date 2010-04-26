@@ -97,18 +97,37 @@ bool streq(char[] stra, char[] strb) {
 
 void interpret(char[] str) {
 	char[] argument;
+	char[][10] arguments;
+	char[] cmd = str;
+	int last = 0;
+	int argc = 0;
 	foreach(size_t i, c; str) {
 		if (c == ' ') {
-			argument = str[i+1..$];
-			str = str[0..i];
-			break;
+			if (argument is null) {
+				argument = str[i+1..$];
+				cmd = str[0..i];
+			}
+
+			if (argc < 10) {
+				arguments[argc] = str[last..i];
+				argc++;
+			}
+			else {
+				break;
+			}
+			last = i + 1;
 		}
 	}
 
-	if (streq(str, "clear")) {
+	if (argc < 10) {
+		arguments[argc] = str[last..$];
+		argc++;
+	}
+
+	if (streq(cmd, "clear")) {
 		Console.clear();
 	}
-	else if (streq(str, "ls")) {
+	else if (streq(cmd, "ls")) {
 		// Open current directory
 		
 		// if there is an argument... we should parse it
@@ -139,6 +158,9 @@ void interpret(char[] str) {
 			if (dirent.flags & Directory.Mode.Softlink) {
 				Console.forecolor = Color.LightCyan;
 			}
+			if (dirent.flags & Directory.Mode.Executable) {
+				Console.forecolor = Color.LightGreen;
+			}
 			Console.putString(f);
 			Console.forecolor = Color.LightGray;
 			if ((pos + f.length + 2) < Console.width()) {
@@ -148,16 +170,25 @@ void interpret(char[] str) {
 		}
 		Console.putString("\n");
 	}
-	else if (streq(str, "pwd")) {
+	else if (streq(cmd, "ln")) {
+		if (argc != 3) {
+			Console.putString("Not the right number of arguments\n");
+		}
+		else {
+			Console.putString("\n");
+			RamFS.link(arguments[1], arguments[2], 0);
+		}
+	}
+	else if (streq(cmd, "pwd")) {
 		// Print working directory
 		Console.putString(workingDirectory);
 		Console.putString("\n");
 	}
-	else if (streq(str, "fault")) {
+	else if (streq(cmd, "fault")) {
 		ubyte* foo = cast(ubyte*)0x0;
 		*foo = 2;
 	}
-	else if (streq(str, "cd")) {
+	else if (streq(cmd, "cd")) {
 		// Change directory
 		if (argument.length > 0) {
 			int offset = 0;
@@ -199,7 +230,7 @@ void interpret(char[] str) {
 	}
 	else {
 		Console.putString("Unknown Command: ");
-		Console.putString(str);
+		Console.putString(cmd);
 		Console.putString(".\n");
 	}
 }
