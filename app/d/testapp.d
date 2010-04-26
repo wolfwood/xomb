@@ -112,8 +112,9 @@ void interpret(char[] str) {
 			if((i % 1024) == 0){
 				Console.putString(".*.");
 			}
+
 			allocPage(cast(void*) va );
-			char[] arr = cast(char[])(cast(char*)( va + (i*4096) ))[0..4096];
+			char[] arr = cast(char[])(cast(char*)( va ))[0..4096];
 			arr[4] = 'a';
 			arr[47] = 'b';
 			arr[246] = arr[4];
@@ -126,6 +127,7 @@ void interpret(char[] str) {
 			va += 4096;
 
 		}
+
 	}	else if (streq(str, "ls")) {
 		// Open current directory
 		Directory d = Directory.open(workingDirectory);
