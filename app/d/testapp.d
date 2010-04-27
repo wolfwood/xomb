@@ -270,7 +270,6 @@ void createArgumentPath(char[] argument) {
 
 	// append to the working directory
 	if (offset > 1) {
-		Console.putString("append to working\n");
 		argumentPathSpace[1 .. offset] = workingDirectorySpace[1 .. offset];
 		argumentPathSpace[offset] = '/';
 		offset++;
