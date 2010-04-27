@@ -44,7 +44,6 @@ static:
 
 			// map the module into this file
 			newGib.length(System.moduleInfo[i].length);
-			newGib.seekAlign();
 			newGib.map(System.moduleInfo[i].start, System.moduleInfo[i].length);
 
 			newGib.close();
@@ -61,8 +60,7 @@ static:
 
 		// Check the module for being a compatible executable
 		Gib modGib = RamFS.open(path, Access.Kernel | Access.Read);
-		modGib.seekAlign();
-		ubyte* moduleAddr = modGib.pos;
+		ubyte* moduleAddr = modGib.ptr;
 
 		if (!Elf.isValid(moduleAddr)) {
 			// Not an executable

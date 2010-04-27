@@ -21,7 +21,7 @@ struct Metadata {
 struct Gib {
 
 	ubyte* ptr() {
-		return _start + Metadata.sizeof;
+		return _start;
 	}
 
 	ubyte* pos() {
@@ -59,7 +59,7 @@ struct Gib {
 
 	// Will move the pointer to the beginning of the region.
 	void rewind() {
-		_curpos = _start + Metadata.sizeof;
+		_curpos = _start;
 	}
 
 	ErrorVal map(ubyte* start, ulong length) {
