@@ -127,6 +127,11 @@ struct Directory {
 		return ErrorVal.Success;
 	}
 
+	void chmod(char[] name, uint flags) {
+		Directory.Entry* entry = locate(name);
+		entry.flags = flags;
+	}
+
 	void open(Directory.Entry* entry, uint flags) {
 		gib = GibAllocator.open(entry.ptr, flags);
 	}
@@ -215,6 +220,9 @@ static:
 		rootDir.bind(sub.gib, "binaries", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
+		rootDir.bind(sub.gib, "boot", Directory.Mode.ReadOnly | Directory.Mode.Directory);
+
+		sub.alloc();
 		rootDir.bind(sub.gib, "configuration", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
@@ -234,10 +242,6 @@ static:
 
 		sub.alloc();
 		rootDir.bind(sub.gib, "devices", Directory.Mode.ReadOnly | Directory.Mode.Directory);
-
-		rootDir.link("fluff", "/devices");
-
-		link("/foobar", "/devices");
 
 		return ErrorVal.Success;
 	}
@@ -352,6 +356,23 @@ static:
 		dir.gib = GibAllocator.open(dirptr, Access.Kernel | Access.Read | Access.Write);
 
 		dir.link(filename, linkpath, flags);
+		return ErrorVal.Success;
+	}
+
+	ErrorVal chmod(char[] name, int flags = 0) {
+		// Open directory where name should be placed
+		char[] path;
+		char[] filename;
+		Gib newGib;
+		if (splitPath(name, path, filename) == ErrorVal.Fail) {
+			return ErrorVal.Fail;
+		}
+
+		ubyte* dirptr = locate(path);
+		Directory dir;
+		dir.gib = GibAllocator.open(dirptr, Access.Kernel | Access.Read | Access.Write);
+
+		dir.chmod(filename, flags);
 		return ErrorVal.Success;
 	}
 

@@ -44,4 +44,6 @@ struct MetaData {
 
 	// The current color
 	ubyte colorAttribute = Color.LightGray;
+
+	ulong videoBufferOffset = 0;
 }

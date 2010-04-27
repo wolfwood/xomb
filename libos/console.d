@@ -24,7 +24,7 @@ static:
 		videoInfo = cast(MetaData*)videoBuffer;
 
 		// Go to actual video buffer
-		videoBuffer += 4096;
+		videoBuffer += videoInfo.videoBufferOffset;
 	}
 
 	void putChar(char c) {

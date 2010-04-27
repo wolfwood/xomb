@@ -216,6 +216,10 @@ package:
 	}
 }
 
+struct Metadata {
+	ulong length;
+}
+
 struct Gib {
 
 	ubyte* ptr() {
@@ -232,6 +236,13 @@ struct Gib {
 
 	void rewind() {
 		_curpos = _start;
+	}
+
+	ulong length() {
+		return _metadata.length;
+	}
+
+	void close() {
 	}
 
 	// Will read from the current position the data requested.
@@ -294,6 +305,7 @@ struct Gib {
 package:
 	ubyte* _start;
 	ubyte* _curpos;
+	Metadata* _metadata;
 }
 
 class RamFS {
@@ -303,7 +315,8 @@ static:
 		Gib ret;
 		ret._start = user.syscall.open(name, flags, nextGibIndex);
 		nextGibIndex++;
-		ret._curpos = ret._start;
+		ret.rewind();
+		ret._metadata = cast(Metadata*)(ret._start - Metadata.sizeof);
 		return ret;
 	}
 
@@ -311,7 +324,8 @@ static:
 		Gib ret;
 		ret._start = user.syscall.create(name, flags, nextGibIndex);
 		nextGibIndex++;
-		ret._curpos = ret._start;
+		ret.rewind();
+		ret._metadata = cast(Metadata*)(ret._start - Metadata.sizeof);
 		return ret;
 	}
 

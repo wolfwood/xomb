@@ -14,10 +14,14 @@ import kernel.core.error;
 
 import user.templates;
 
+struct Metadata {
+	ulong length;
+}
+
 struct Gib {
 
 	ubyte* ptr() {
-		return _start;
+		return _start + Metadata.sizeof;
 	}
 
 	ubyte* pos() {
@@ -28,6 +32,25 @@ struct Gib {
 		return _gibaddr;
 	}
 
+	ulong length() {
+		// Grab length from metadata page
+		return _metadata.length;
+	}
+
+	// Update length atomically
+	// TODO: Atomic update
+	void length(ulong val) {
+		_metadata.length = val;
+	}
+
+	// Will move the pointer to the next page
+	void seekAlign() {
+		ulong pos = cast(ulong)_curpos;
+		pos = pos & ~(cast(ulong)VirtualMemory.pagesize()-1);
+		pos = pos + VirtualMemory.pagesize();
+		_curpos = cast(ubyte*)pos;
+	}
+
 	// Will move the pointer by the specified amount.
 	// Can be positive or negative.
 	void seek(long amount) {
@@ -36,7 +59,7 @@ struct Gib {
 
 	// Will move the pointer to the beginning of the region.
 	void rewind() {
-		_curpos = _start;
+		_curpos = _start + Metadata.sizeof;
 	}
 
 	ErrorVal map(ubyte* start, ulong length) {
@@ -100,8 +123,14 @@ struct Gib {
 		return i1;
 	}
 
+	// Close the gib
+	ErrorVal close() {
+		return ErrorVal.Fail;
+	}
+
 package:
 	ubyte* _start;
 	ubyte* _curpos;
 	ubyte* _gibaddr;
+	Metadata* _metadata;
 }

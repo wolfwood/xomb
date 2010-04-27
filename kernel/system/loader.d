@@ -18,9 +18,13 @@ import kernel.core.error;
 import kernel.core.kprintf;
 
 import kernel.mem.heap;
+import kernel.mem.gib;
+import kernel.mem.giballocator;
 
 import kernel.core.util;
 import kernel.core.log;
+
+import kernel.filesystem.ramfs;
 
 import architecture.vm;
 
@@ -30,72 +34,87 @@ static:
 	// This function will load all modules.
 	ErrorVal loadModules() {
 		for(uint i = 0; i < System.numModules; i++) {
-			// Map in module
 
-			System.moduleInfo[i].virtualStart = cast(ubyte*)VirtualMemory.mapRegion(System.moduleInfo[i].start, System.moduleInfo[i].length);
-			Log.print("Loader: loadFromModule()");
-			Log.result(loadFromModule(i));
+			// Put module on file system
+
+			kprintfln!("Creating {}")(System.moduleInfo[i].name);
+			// Create the file
+			Gib newGib = RamFS.create(System.moduleInfo[i].name, 
+				Access.Kernel | Access.Read | Access.Write);
+
+			// map the module into this file
+			newGib.length(System.moduleInfo[i].length);
+			newGib.seekAlign();
+			newGib.map(System.moduleInfo[i].start, System.moduleInfo[i].length);
+
+			newGib.close();
+
+			kprintfln!("Loading {}")(System.moduleInfo[i].name);
+			Log.print("Loader: load()");
+			Log.result(load(System.moduleInfo[i].name));
 		}	
 		return ErrorVal.Success;
 	}
 
 	// This function will load an executable from a module, if it can.
-	ErrorVal loadFromModule(uint index) {
-
-		// check bounds
-		if (index >= System.moduleInfo.length) {
-			return ErrorVal.Fail;
-		}
-
-		if (index >= System.numModules) {
-			return ErrorVal.Fail;
-		}
+	ErrorVal load(char[] path) {
 
 		// Check the module for being a compatible executable
-		ubyte* moduleAddr = System.moduleInfo[index].virtualStart;
-		if (Elf.isValid(moduleAddr)) {
-			void* entryAddress = Elf.getentry(moduleAddr);
-			void* physAddress = Elf.getphysaddr(moduleAddr);
-			void* virtAddress = Elf.getvirtaddr(moduleAddr);
-			//kprintfln!("ELF Module : {}\n  Entry: {x} p: {x} v: {x}")(index, entryAddress, physAddress, virtAddress);
+		Gib modGib = RamFS.open(path, Access.Kernel | Access.Read);
+		modGib.seekAlign();
+		ubyte* moduleAddr = modGib.pos;
 
-			Segment curSegment;
+		if (!Elf.isValid(moduleAddr)) {
+			// Not an executable
+			modGib.close();
+			return ErrorVal.Fail;
+		}
 
-			uint numSegments = Elf.segmentCount(moduleAddr);
+		// Add executable flag
+		RamFS.chmod(path, Directory.Mode.ReadOnly | Directory.Mode.Executable); 
 
+		void* entryAddress = Elf.getentry(moduleAddr);
+		void* physAddress = Elf.getphysaddr(moduleAddr);
+		void* virtAddress = Elf.getvirtaddr(moduleAddr);
+		//kprintfln!("ELF Module : {}\n  Entry: {x} p: {x} v: {x}")(index, entryAddress, physAddress, virtAddress);
 
-			// Create an environment through the scheduler
-			Environment* environ = Scheduler.newEnvironment();
+		Segment curSegment;
 
-			if (environ is null) {
-				kprintfln!("No more environments!")();
-				return ErrorVal.Fail;
-			}
-			else {
-				// Load executable
-				environ.virtualStart = virtAddress;
-				environ.length = System.moduleInfo[index].length - Elf.getoffset(moduleAddr);
+		uint numSegments = Elf.segmentCount(moduleAddr);
 
-				//kprintfln!("Initializing this environment")();
-				//environ.start = System.moduleInfo[index].start;
-				environ.start = physAddress;
-				//environ.virtualStart = moduleAddr;
+		// Create an environment through the scheduler
+		Environment* environ = Scheduler.newEnvironment();
 
-				environ.entry = entryAddress;
+		if (environ is null) {
+			kprintfln!("No more environments!")();
+			return ErrorVal.Fail;
+		}
+		else {
+			// Load executable
+			environ.virtualStart = virtAddress;
+			environ.length = modGib.length() - Elf.getoffset(moduleAddr);
 
-				//kprintfln!("Initialize this environment")();
-				environ.initialize();
-				//kprintfln!("Loading this environment")();
+			//kprintfln!("Initializing this environment")();
+			//environ.start = System.moduleInfo[index].start;
+			environ.start = physAddress;
+			//environ.virtualStart = moduleAddr;
 
-				for(uint i; i < numSegments; i++) {
-					curSegment = Elf.segment(moduleAddr, i);
-					environ.allocSegment(curSegment);
+			environ.entry = entryAddress;
 
-					// Copy segment
-					memcpy(curSegment.virtAddress, moduleAddr + curSegment.offset, curSegment.length);
-				}
+			//kprintfln!("Initialize this environment")();
+			environ.initialize();
+			//kprintfln!("Loading this environment")();
+
+			for(uint i; i < numSegments; i++) {
+				curSegment = Elf.segment(moduleAddr, i);
+				environ.allocSegment(curSegment);
+
+				// Copy segment
+				memcpy(curSegment.virtAddress, moduleAddr + curSegment.offset, curSegment.length);
 			}
 		}
+		
+		modGib.close();
 
 		return ErrorVal.Success;
 	}	

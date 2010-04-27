@@ -18,6 +18,7 @@ import kernel.core.log;
 enum Access : uint {
 	Read = 1,
 	Write = 2,
+	Execute = 4,
 	Kernel = 128,
 }
 
@@ -34,7 +35,8 @@ public:
 		}
 		ubyte* gibAddr = VirtualMemory.allocGib(ret._gibaddr, gibIndex, flags);
 		ret._start = gibAddr;
-		ret._curpos = gibAddr;
+		ret._metadata = cast(Metadata*)gibAddr;
+		ret.rewind();
 		kprintfln!("Gib (kernel) address: {} at {} AT {}")(gibAddr, gibIndex, ret._gibaddr);
 		return ret;
 	}
@@ -49,7 +51,8 @@ public:
 		}
 		ubyte* newAddr = VirtualMemory.openGib(gibaddr, gibIndex, flags);
 		ret._start = newAddr;
-		ret._curpos = newAddr;
+		ret._metadata = cast(Metadata*)newAddr;
+		ret.rewind();
 		return ret;
 	}
 

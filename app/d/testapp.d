@@ -133,9 +133,12 @@ void interpret(char[] str) {
 		// if there is an argument... we should parse it
 		char[] listDirectory;
 		if (argument.length > 0) {
-			listDirectory = argument;
 			if (argument.length == 1 && argument[0] == '.') {
 				listDirectory = workingDirectory;
+			}
+			else {
+				createArgumentPath(argument);
+				listDirectory = argumentPath;
 			}
 		}
 		else {
@@ -168,14 +171,15 @@ void interpret(char[] str) {
 			}
 			pos += f.length + 2;
 		}
-		Console.putString("\n");
+		if (pos != 0) {
+			Console.putString("\n");
+		}
 	}
 	else if (streq(cmd, "ln")) {
 		if (argc != 3) {
 			Console.putString("Not the right number of arguments\n");
 		}
 		else {
-			Console.putString("\n");
 			RamFS.link(arguments[1], arguments[2], 0);
 		}
 	}
@@ -184,6 +188,28 @@ void interpret(char[] str) {
 		Console.putString(workingDirectory);
 		Console.putString("\n");
 	}
+	else if (streq(cmd, "cat")) {
+		// Open the file in the argument and print it to the screen
+
+		if (argument.length > 0) {
+			createArgumentPath(argument);
+
+			// Open this file
+			Gib g = RamFS.open(argumentPath, 0);
+
+			// Write out the stuff in this file
+			char[1] foo;
+			int i;
+			char* fooptr = cast(char*)g.ptr;
+			for (i=0; i<g.length; i++) {
+				foo[0] = *fooptr;
+				fooptr++;
+				Console.putString(foo);
+			}
+
+			g.close();
+		}
+	}
 	else if (streq(cmd, "fault")) {
 		ubyte* foo = cast(ubyte*)0x0;
 		*foo = 2;
@@ -191,21 +217,7 @@ void interpret(char[] str) {
 	else if (streq(cmd, "cd")) {
 		// Change directory
 		if (argument.length > 0) {
-			int offset = 0;
-			if (argument[argument.length-1] == '/' && argument.length > 1) {
-				argument.length = argument.length - 1;
-			}
-			if (argument[0] != '/') {
-				offset = workingDirectory.length;
-			}
-			if (argument.length == 1 && argument[0] == '.') {
-				argument = workingDirectory;
-				offset = 0;
-			}
-			if (offset > 1) {
-				workingDirectorySpace[offset] = '/';
-				offset++;
-			}
+			// Directory Up?
 			if (argument.length == 2 && argument[0] == '.' && argument[1] == '.') {
 				// Go up a directory
 				size_t pos = 0;
@@ -222,10 +234,10 @@ void interpret(char[] str) {
 				return;
 			}
 
-			foreach(size_t i, c; argument) {
-				workingDirectorySpace[i+offset] = c;
-			}
-			workingDirectory = workingDirectorySpace[0..argument.length+offset];
+			createArgumentPath(argument);
+
+			workingDirectorySpace[0 .. argumentPath.length] = argumentPathSpace[0 .. argumentPath.length];
+			workingDirectory = workingDirectorySpace[0 .. argumentPath.length];
 		}
 	}
 	else {
@@ -234,6 +246,45 @@ void interpret(char[] str) {
 		Console.putString(".\n");
 	}
 }
+
+void createArgumentPath(char[] argument) {
+	int offset = 0;
+
+	// Remove trailing slash
+	if (argument[argument.length-1] == '/' && argument.length > 1) {
+		argument.length = argument.length - 1;
+	}
+
+	// Determine if it is a relative path
+	if (argument[0] != '/') {
+		// Relative path
+		offset = workingDirectory.length;
+		argumentPathSpace[0] = '/';
+	}
+
+	// Determine if it is the '.'
+	if (argument.length == 1 && argument[0] == '.') {
+		argument = workingDirectory;
+		offset = 0;
+	}
+
+	// append to the working directory
+	if (offset > 1) {
+		Console.putString("append to working\n");
+		argumentPathSpace[1 .. offset] = workingDirectorySpace[1 .. offset];
+		argumentPathSpace[offset] = '/';
+		offset++;
+	}
+
+	// Append the argument
+	foreach(size_t i, c; argument) {
+		argumentPathSpace[i+offset] = c;
+	}
+	argumentPath = argumentPathSpace[0..argument.length+offset];
+}
+
+char[256] argumentPathSpace = "/";
+char[] argumentPath = "/";
 
 char[256] workingDirectorySpace = "/";
 char[] workingDirectory = "/";
