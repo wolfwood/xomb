@@ -78,9 +78,7 @@ public:
 
 	//	kprintfln!("Installed Core {}")(curCoreId);
 
-		kprintfln!("Unlocking?")();
 		if (apLock.locked) {
-			kprintfln!("Unlocking")();
 			apLock.unlock();
 		}
 	}

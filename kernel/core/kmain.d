@@ -142,7 +142,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	Date dt;
 	Timing.currentDate(dt);
-	kprintfln!("Date: {} {} {}")(dt.day, dt.month, dt.year);
+	//kprintfln!("Date: {} {} {}")(dt.day, dt.month, dt.year);
 
 	Scheduler.kmainComplete();
 

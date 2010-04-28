@@ -37,7 +37,7 @@ public:
 		ret._start = gibAddr + VirtualMemory.pagesize();
 		ret._metadata = cast(Metadata*)(ret._start - Metadata.sizeof);
 		ret.rewind();
-		kprintfln!("Gib (kernel) address: {} at {} AT {}")(gibAddr, gibIndex, ret._gibaddr);
+		//kprintfln!("Gib (kernel) address: {} at {} AT {}")(gibAddr, gibIndex, ret._gibaddr);
 		return ret;
 	}
 

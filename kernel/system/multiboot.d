@@ -161,8 +161,6 @@ ErrorVal verifyBootInformation(int id, void *data) {
 			}
 			System.moduleInfo[i].nameSpace[0 .. len] = (cast(char *)(mod.string))[0 .. len];
 			System.moduleInfo[i].name = System.moduleInfo[i].nameSpace[0 .. len];
-			kprintfln!("module: {}")(System.moduleInfo[i].nameSpace[0..len]);
-			kprintfln!("module: {}")(System.moduleInfo[i].name);
 
 			//kprintfln!("module {}: start:{} length:{} name:{}")(i, System.moduleInfo[i].start, System.moduleInfo[i].length, System.moduleInfo[i].name[0..len]);
 			System.numModules++;

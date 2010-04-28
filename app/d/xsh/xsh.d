@@ -1,10 +1,10 @@
-/* testapp.d
+/* xsh.d
 
-   Example application to be used with XOmB
+   XOmB Native Shell
 
 */
 
-module testapp;
+module xsh;
 
 import user.syscall;
 import user.ramfs;
@@ -23,16 +23,12 @@ void main() {
 	Console.forecolor = Color.Green;
 
 	Console.putString("\nWelcome to XOmB\n");
-	Console.putString("---------------\n\n");
+	Console.putString(  "-=-=-=-=-=-=-=-\n\n");
 
 	Console.backcolor = Color.Black; 
-	Console.forecolor = Color.Red;
-
-	Console.putString("What to do...\n");
-
 	Console.forecolor = Color.LightGray;
 
-	Console.putString("\n > ");
+	printPrompt();
 
 	Keyboard.initialize();
 	
@@ -53,7 +49,7 @@ void main() {
 				}
 
 				// print prompt
-				Console.putString(" > ");
+				printPrompt();
 
 				// go back to start
 				pos = 0;
@@ -93,6 +89,12 @@ bool streq(char[] stra, char[] strb) {
 	}
 
 	return true;
+}
+
+void printPrompt() {
+	Console.putString("root@localhost:");
+	Console.putString(workingDirectory);
+	Console.putString("$ ");
 }
 
 void interpret(char[] str) {
@@ -144,6 +146,19 @@ void interpret(char[] str) {
 		else {
 			listDirectory = workingDirectory;
 		}
+
+		uint flags;
+		if (exists(listDirectory, flags)) {
+			if ((flags & Directory.Mode.Directory) == 0) {
+				Console.putString("xsh: ls: Not a directory.\n");
+				return;
+			}
+		}
+		else {
+			Console.putString("xsh: ls: Directory not found.\n");
+			return;
+		}
+
 		Directory d = Directory.open(listDirectory);
 
 		int pos = 0;
@@ -174,10 +189,12 @@ void interpret(char[] str) {
 		if (pos != 0) {
 			Console.putString("\n");
 		}
+
+		d.close();
 	}
 	else if (streq(cmd, "ln")) {
 		if (argc != 3) {
-			Console.putString("Not the right number of arguments\n");
+			Console.putString("xsh: ln: Not the right number of arguments.\n");
 		}
 		else {
 			RamFS.link(arguments[1], arguments[2], 0);
@@ -194,20 +211,32 @@ void interpret(char[] str) {
 		if (argument.length > 0) {
 			createArgumentPath(argument);
 
-			// Open this file
-			Gib g = RamFS.open(argumentPath, 0);
+			uint flags;
+			if (exists(argumentPath, flags)) {
+				if ((flags & Directory.Mode.Directory) == 0) {
+					// Open this file
+					Gib g = RamFS.open(argumentPath, 0);
 
-			// Write out the stuff in this file
-			char[1] foo;
-			int i;
-			char* fooptr = cast(char*)g.ptr;
-			for (i=0; i<g.length; i++) {
-				foo[0] = *fooptr;
-				fooptr++;
-				Console.putString(foo);
+					// Write out the stuff in this file
+					char[1] foo;
+					int i;
+					char* fooptr = cast(char*)g.ptr;
+					for (i=0; i<g.length; i++) {
+						foo[0] = *fooptr;
+						fooptr++;
+						Console.putString(foo);
+					}
+
+					g.close();
+					return;
+				}
+				else {
+					Console.putString("xsh: cat: File is a directory.\n");
+				}
 			}
-
-			g.close();
+			else {
+				Console.putString("xsh: cat: File not found.\n");
+			}
 		}
 	}
 	else if (streq(cmd, "fault")) {
@@ -236,15 +265,64 @@ void interpret(char[] str) {
 
 			createArgumentPath(argument);
 
-			workingDirectorySpace[0 .. argumentPath.length] = argumentPathSpace[0 .. argumentPath.length];
-			workingDirectory = workingDirectorySpace[0 .. argumentPath.length];
+			// Determine if the directory is indeed a directory
+			if (argumentPath.length != 1) {
+				uint flags;
+				if (exists(argumentPath, flags)) {
+					if (flags & Directory.Mode.Directory) {
+						// Is a directory, set working directory
+						workingDirectorySpace[0 .. argumentPath.length] = argumentPathSpace[0 .. argumentPath.length];
+						workingDirectory = workingDirectorySpace[0 .. argumentPath.length];
+					}
+					else {
+						Console.putString("xsh: cd: Not a directory.\n");
+						return;
+					}
+				}
+				else {
+					Console.putString("xsh: cd: Path does not exist.\n");
+					return;
+				}
+			}			
 		}
 	}
 	else {
-		Console.putString("Unknown Command: ");
+		Console.putString("xsh: Unknown Command: ");
 		Console.putString(cmd);
 		Console.putString(".\n");
 	}
+}
+
+bool exists(char[] path, out uint flags) {
+	if (streq(path, "/")) {
+		flags = Directory.Mode.Directory;
+		return true;
+	}
+
+	size_t pos = path.length-1;
+	foreach_reverse(size_t i, c; path) {
+		if (c == '/') {
+			pos = i;
+			break;
+		}
+	}
+	char[] dirpath = "/";
+	if (pos != 0) {
+		dirpath = path[0..pos];
+	}
+	Directory d = Directory.open(dirpath);
+	char[] cmpName = path[pos+1..$];
+	bool found = false;
+	foreach(DirectoryEntry dirent; d) {
+		if (streq(cmpName, dirent.name)) {
+			// Found the item
+			found = true;
+			flags = dirent.flags;
+			break;
+		}
+	}
+	d.close();
+	return found;
 }
 
 void createArgumentPath(char[] argument) {

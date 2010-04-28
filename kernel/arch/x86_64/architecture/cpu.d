@@ -631,13 +631,10 @@ private:
 	// Will create and install a new kernel stack
 	// Note: You have to preserve the current stack
 	ErrorVal installStack() {
-		kprintfln!("id: {}")(identifier);
 		ubyte* stackSpace = cast(ubyte*)PageAllocator.allocPage();
 		stackSpace = cast(ubyte*)VirtualMemory.mapKernelPage(stackSpace);
 		ubyte* currentStack = cast(ubyte*)(&_stack-4096);
 
-		kprintfln!("currentStack: {x} stackSpace: {x} id: {}")(currentStack, stackSpace, identifier);
-		
 		stackSpace[0..4096] = currentStack[0..4096];
 
 		_stacks[identifier] = cast(void*)stackSpace + 4096;

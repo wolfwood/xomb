@@ -23,6 +23,10 @@ struct Directory {
 		return gib.ptr;
 	}
 
+	void close() {
+		gib.close();
+	}
+
 	bool link(ref Gib foo, char[] name) {
 		Directory.Header* header;
 		header = cast(Directory.Header*)gib.ptr; 
