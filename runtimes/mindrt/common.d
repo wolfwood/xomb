@@ -12,6 +12,7 @@ module mindrt.common;
 extern(C):
 
 package {
+
 	struct Array {
 		size_t length;
 		byte* data;

@@ -40,14 +40,14 @@ public:
 		if (!_initialized) {
 			if (_start is null) {
 				_start = System.kernel.start + System.kernel.length;
-				_start = cast(ubyte*)(cast(ulong)_start / cast(ulong)VirtualMemory.getPageSize());
-				_start = cast(ubyte*)((cast(ulong)_start+1) * cast(ulong)(VirtualMemory.getPageSize()));
+				_start = cast(ubyte*)(cast(ulong)_start / cast(ulong)VirtualMemory.pagesize());
+				_start = cast(ubyte*)((cast(ulong)_start+1) * cast(ulong)(VirtualMemory.pagesize()));
 				// Make _start appear AFTER all modules.
 				for(size_t i = 0; i < System.numModules; i++) {
 					// Get the bounds of the module on a page alignment.
 					ubyte* regionAddr = cast(ubyte*)System.moduleInfo[i].start;
-					ubyte* regionEdge = cast(ubyte*)(cast(ulong)(regionAddr + System.moduleInfo[i].length) / cast(ulong)VirtualMemory.getPageSize());
-					regionEdge = cast(ubyte*)((cast(ulong)regionEdge + 1) * cast(ulong)(VirtualMemory.getPageSize()));
+					ubyte* regionEdge = cast(ubyte*)(cast(ulong)(regionAddr + System.moduleInfo[i].length) / cast(ulong)VirtualMemory.pagesize());
+					regionEdge = cast(ubyte*)((cast(ulong)regionEdge + 1) * cast(ulong)(VirtualMemory.pagesize()));
 					if (_start < regionEdge) {
 						_start = regionEdge;
 					}
@@ -57,7 +57,7 @@ public:
 
 			// Simply allocate the next page
 			ubyte* ret = _curpos;
-			_curpos += VirtualMemory.getPageSize();
+			_curpos += VirtualMemory.pagesize();
 			return ret;
 		}
 		return PageAllocatorImplementation.allocPage();

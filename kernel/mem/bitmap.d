@@ -29,7 +29,7 @@ import architecture.vm;
 ErrorVal initialize() {
 
 	// Calculate the number of pages.
-	totalPages = System.memory.length / VirtualMemory.getPageSize();
+	totalPages = System.memory.length / VirtualMemory.pagesize();
 
 	// Get a gib for the page allocator
 	bitmapGib = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
@@ -41,7 +41,7 @@ ErrorVal initialize() {
 	bitmapPages = totalPages / 64;
 	if ((totalPages % 64) > 0) { bitmapPages++; }
 
-	ulong bitmapSize = bitmapPages * VirtualMemory.getPageSize();
+	ulong bitmapSize = bitmapPages * VirtualMemory.pagesize();
 	// Zero out bitmap initially
 	for (size_t i = 0; i < bitmapSize; i++) {
 		bitmapGib.write(cast(ubyte)0);
@@ -66,7 +66,7 @@ ErrorVal initialize() {
 				//kprintfln!("Region Overlaps! Moving Heap")();
 				bitmap = regionEdge;
 				// align to page size
-				bitmap = cast(ulong*)(cast(ubyte*)bitmap + VirtualMemory.getPageSize() - (cast(ulong)bitmap % VirtualMemory.getPageSize()));
+				bitmap = cast(ulong*)(cast(ubyte*)bitmap + VirtualMemory.pagesize() - (cast(ulong)bitmap % VirtualMemory.pagesize()));
 				bitmapEdge = bitmap + (bitmapSize >> 3);
 				break;
 			}
@@ -84,7 +84,7 @@ ErrorVal initialize() {
 				//kprintfln!("Module Overlaps! Moving Heap")();
 				bitmap = regionEdge;
 				// align to page size
-				bitmap = cast(ulong*)(cast(ubyte*)bitmap + VirtualMemory.getPageSize() - (cast(ulong)bitmap % VirtualMemory.getPageSize()));
+				bitmap = cast(ulong*)(cast(ubyte*)bitmap + VirtualMemory.pagesize() - (cast(ulong)bitmap % VirtualMemory.pagesize()));
 				bitmapEdge = bitmap + (bitmapSize >> 3);
 				//kprintfln!("(NEW) Bitmap location: {x}")(bitmap);
 				break;
@@ -144,7 +144,7 @@ void* allocPage(void * virtAddr) {
 	}
 
 	// Return the address
-	return cast(void*)(index * VirtualMemory.getPageSize());
+	return cast(void*)(index * VirtualMemory.pagesize());
 }
 
 ErrorVal freePage(void* address) {
@@ -152,13 +152,13 @@ ErrorVal freePage(void* address) {
 	ulong pageIndex = cast(ulong)address;
 
 	// Is this address a valid result of allocPage?
-	if ((pageIndex % VirtualMemory.getPageSize()) > 0) {
+	if ((pageIndex % VirtualMemory.pagesize()) > 0) {
 		// Should be aligned, otherwise, what to do here is ambiguious.
 		return ErrorVal.Fail;
 	}
 
 	// Get the page index
-	pageIndex /= VirtualMemory.getPageSize();
+	pageIndex /= VirtualMemory.pagesize();
 
 	// Is this a valid page?
 	if (pageIndex >= totalPages) {
@@ -177,7 +177,7 @@ ErrorVal freePage(void* address) {
 }
 
 uint length() {
-	return bitmapPages * VirtualMemory.getPageSize();
+	return bitmapPages * VirtualMemory.pagesize();
 }
 
 ubyte* start() {
@@ -211,17 +211,17 @@ package {
 		// Get the logical range
 		startAddr = cast(ulong)start;
 		endAddr = startAddr + length;
-		startAddr -= startAddr % VirtualMemory.getPageSize();
-		if ((endAddr % VirtualMemory.getPageSize())>0) {
-			endAddr += VirtualMemory.getPageSize() - (endAddr % VirtualMemory.getPageSize());
+		startAddr -= startAddr % VirtualMemory.pagesize();
+		if ((endAddr % VirtualMemory.pagesize())>0) {
+			endAddr += VirtualMemory.pagesize() - (endAddr % VirtualMemory.pagesize());
 		}
 
 		// startAddr is the start address of the region aligned to a page
 		// endAddr is the end address of the region aligned to a page
 
 		// Now, we will get the page indices and mark off each page
-		ulong pageIndex = startAddr / VirtualMemory.getPageSize();
-		ulong maxIndex = (endAddr - startAddr) / VirtualMemory.getPageSize();
+		ulong pageIndex = startAddr / VirtualMemory.pagesize();
+		ulong maxIndex = (endAddr - startAddr) / VirtualMemory.pagesize();
 		maxIndex += pageIndex;
 
 		for(; pageIndex<maxIndex; pageIndex++) {

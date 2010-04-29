@@ -93,6 +93,11 @@ public:
 		return SyscallError.OK;
 	}
 
+	SyscallError link(out bool ret, LinkArgs* params) {
+		ret = RamFS.link(params.path, params.linkpath, params.flags) == ErrorVal.Success;
+		return SyscallError.OK;
+	}
+
 	SyscallError perfPoll(PerfPollArgs* params) {
 		synchronized {
 			static ulong[256] value;
