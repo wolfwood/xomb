@@ -114,7 +114,7 @@ static:
 			environ.entry = entryAddress;
 
 			//kprintfln!("Initialize this environment")();
-			environ.initialize(cast(char[])System.moduleInfo[index].name.ptr[0..System.moduleInfo[index].nameLength]);
+			environ.initialize(path /*cast(char[])System.moduleInfo[index].name.ptr[0..System.moduleInfo[index].nameLength]*/);
 			//kprintfln!("Loading this environment")();
 
 			for(uint i; i < numSegments; i++) {

@@ -12,7 +12,7 @@ import user.syscall;
 import libos.libdeepmajik.threadscheduler;
 
 // Will be linked to the user's main function
-int main(); //char[][]);
+int main(char[][]);
 
 //extern(C) ubyte _bss;
 //extern(C) ubyte _ebss;
@@ -48,11 +48,11 @@ extern(C) void start(char[] argv) {
 	}
 
 
-	//main();
+	main(null);
 
-	XombThread* mainThread = threadCreate(&main);
+	//XombThread* mainThread = threadCreate(&main);
 
-	mainThread.schedule();
+	//mainThread.schedule();
 
-	_enterThreadScheduler();
+	//_enterThreadScheduler();
 }
