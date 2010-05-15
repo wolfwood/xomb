@@ -113,7 +113,9 @@ static:
 		return ErrorVal.Success;
 	}
 
-	const int COUNT_PCM = 1;
+	const ulong PCM_PAGE_START = 32*1024;
+	const int COUNT_PCM = 0, DEBUG = 0;
+
 
 	void debugHandler(InterruptStack* stack) {
 		Environment* env = Scheduler.current();
@@ -141,21 +143,26 @@ static:
 				if( (pl1 is null) || (pl1.entries[indexL1].avl == 1) ){
 					kprintfln!("pl1 failwalk")();
 				}else{
-					pl1.entries[indexL1].avl = 1;
-					pl1.entries[indexL1].rw = 0;
-
 					void* addr = env.clockHand;
 					asm{
-						invlpg addr;
-						//xor R11, R11;
+						mov R11, addr;
+						invlpg [R11];
+
+						// instead of turning off, set break point to 0
 						mov R11, 0;
 						mov DR0, R11;
 					}
+
+					pl1.entries[indexL1].avl = 1;
+					pl1.entries[indexL1].rw = 0;
 				}
 			}
 		}
 	}
-	
+
+	static if(DEBUG){
+		ulong dramReffed, dramSwapped, pcm, faults;
+	}
 
 	void faultHandler(InterruptStack* stack) {
 //		kprintfln!("Page Fault")();
@@ -210,7 +217,8 @@ static:
 					// Allocate Page
 					addr = cast(void*)(cast(ulong)addr & 0xffff_ffff_ffff_f000UL);
 
-					// kprintfln!("Allocating a page")();
+
+					if(user){kprintfln!("Allocating a page -------------------------------------------------------------------------------------------")();}
 					void* page = PageAllocator.allocPage();
 
 					mapRegion(null, page, PAGESIZE, addr, true);
@@ -244,7 +252,7 @@ static:
 							}
 						}
 
-						env.clockHand = addr; //cast(void*)(cast(ulong)addr & 0xffff_ffff_ffff_f000UL);
+						env.clockHand = cast(void*)(cr2 & 0xffff_ffff_ffff_f000UL);
 
 						env.swaps++;
 
@@ -252,19 +260,12 @@ static:
 						pl1.entries[indexL1].avl = 0;
 
 						asm{
-							invlpg addr;
+							mov R11, addr;
+							invlpg [R11];
 						}
 
 					}else {
 						//kprintfln!("PCM fault {} {}")(addr, indexL1);
-
-						// --- fix faulting mapping ---
-						pl1.entries[indexL1].rw = 1;
-						pl1.entries[indexL1].avl = 0;
-					
-						asm{
-							invlpg addr;
-						}
 
 						// --- walk page-table looking for a non-PCM (clean?), unreferenced page ---
 						void* addr2 = env.clockHand;
@@ -279,9 +280,23 @@ static:
 						PageLevel2* p2;
 						PageLevel1* p1;
 
+
+						//ulong i1, i2, i3, i4;
+						//translateAddress(cast(void*)stack.rsp, i1, i2, i3, i4);
+
+						static if(DEBUG){
+							faults++;
+						}
+
 						while(1){
 							//kprintfln!("Clock {} {} {} {}")(idx1, idx2, idx3, idx4);
-
+							static if(DEBUG){							
+								if((idx4 == 0) && (idx3 == 0) && (idx2 == 0) && (idx1 == 0)){
+									kprintfln!("{} {} {} {}")(dramReffed, dramSwapped, pcm, faults);
+									dramReffed = dramSwapped = pcm = faults = 0;
+								}
+							}
+							
 							if((idx4 == 0) && (idx3 == 0) && (idx2 == 0) && (idx1 < 256)){
 								idx1 = 256;
 							}
@@ -292,7 +307,7 @@ static:
 									new3 = false;
 								}							
 							
-								if(p3.entries[idx3].present && p3.entries[idx3].us /* && ((idx4 != 0) || (idx3 != 5 && idx3 != 6) )*/){
+								if(p3.entries[idx3].present && p3.entries[idx3].us){ //  && ((idx4 != 0) || (idx3 != 5 ))){ //&& idx3 != 6) )){
 									if(new2){
 										p2 = p3.getTable(idx3);
 										new2 = false;
@@ -305,51 +320,88 @@ static:
 										}
 							
 										if(p1.entries[idx1].present && p1.entries[idx1].us &&
-											 (p1.entries[idx1].pml >= 1024*1024UL) && 
-											 !(p1.entries[idx1].avl == 1)){
-											if(!p1.entries[idx1].a){
-												//XXX: count dirty evictions
-												break;
-											}else{
-												p1.entries[idx1].a = false;
+											 (p1.entries[idx1].pml >= 1024*1024UL)){
+											
+											
+											if(p1.entries[idx1].avl == 0){
+												
+												//if(i1 != idx1 || i2 != idx2 || i3 != idx3 || i4 != idx4){
+												if(!p1.entries[idx1].a){
+													//XXX: count dirty evictions
+													//kprintf!(".")();
+													static if(DEBUG){						
+														dramSwapped++;
+													}
 
-												/// invalidate?
+													break;
+												}else{
+													/// invalidate?
+													addr2 = createAddress(idx1, idx2, idx3, idx4);
+													asm{
+														mov R11, addr2;
+														invlpg [R11];
+													}
+													
+													p1.entries[idx1].a = 0; //false;
+
+													static if(DEBUG){													
+														dramReffed++;
+													}
+												}
+												//}
+											}/*else if(p1.entries[idx1].avl == 1 && (p1.entries[idx1].rw == 1)){
+												 kprintf!("*X*")();
+												 }*/
+											else{
+												static if(DEBUG){
+													pcm++;
+												}
 											}
 										}
+
 										idx1++;
 									}else{
 										idx2++;
+										idx1 = 0;
 										new1 = true;
 									}
 								}else{
 									idx3++;
+									idx1 = idx2 = 0;
 									new1 = new2 = true;
 								}
 							}else{
 								idx4++;
+								idx1 = idx2 = idx3 = 0;
 								new1 = new2 = new3 = true;
 							}
 
 							if(idx1 >= 512){
 								idx1 = 0;
 								idx2++;
-								//new1 = true;
+								new1 = true;
 							}
 
 							if(idx2 >= 512){
 								idx2 = 0;
 								idx3++;
-								//new2 = true;
+
+								idx1 = 0;
+								new1 = new2 = true;
 							}
 
 							if(idx3 >= 512){
 								idx3 = 0;
 								idx4++;
-								//new3 = true;
+
+								idx1 = idx2 = 0;
+								new1 = new2 = new3 = true;
 							}
 
 							if(idx4 >= 256){
 								idx4 = 0;
+								idx1 = idx2 = idx3 = 0;
+								new1 = new2 = new3 = true;
 							}
 						}
 
@@ -367,10 +419,10 @@ static:
 						for(int i = 0; i < 4096; i++){
 						
 							if(dram[i] != pcm[i]){
-								/*ubyte temp = dram[i];
-									dram[i] = pcm[i];
-									pcm[i] = temp;
-								*/
+								ubyte temp = dram[i];
+								dram[i] = pcm[i];
+								pcm[i] = temp;
+								
 								env.pcmWrites++;
 							}
 						}
@@ -380,26 +432,42 @@ static:
 						//kprintfln!("addr2 {} addr {} rip {x} rsp {x}")(addr2, addr, stack.rip, stack.rsp);
 						//kprintfln!("{x} {x} {x} {x}")(pl1.entries[indexL1].address, p1.entries[idx1].address, pl1.entries[indexL1].pml, p1.entries[idx1].pml);
 
-						/*ulong temp;
-							temp = pl1.entries[indexL1].address;
-							pl1.entries[indexL1].address = p1.entries[idx1].address;
-							p1.entries[idx1].address = temp;
-						*/
+						asm{
+							mov R11, addr;
+							invlpg [R11];
 
+							mov R11, addr2;
+							invlpg [R11];
+
+						}
+
+
+						ulong temp;
+						temp = pl1.entries[indexL1].address;
+						pl1.entries[indexL1].address = p1.entries[idx1].address;
+						p1.entries[idx1].address = temp;
+						
+   					
+						
+						// --- fix faulting mapping ---
+						pl1.entries[indexL1].rw = 1;
+						pl1.entries[indexL1].avl = 0;
 
 						//pl1.entries[indexL1].d = 0;
 
-						asm{
-							invlpg addr;
-						}
+						//asm{
+						//	invlpg addr;
+						//}
 
 						// --- instrument newly-pcm mapping --
 						p1.entries[idx1].rw = 0;
 						p1.entries[idx1].avl = 1;
-						p1.entries[idx1].d = 0;
-						asm{
-							invlpg addr2;
-						}
+						//p1.entries[idx1].d = 0;
+						//asm{
+							
+							//mov R11, CR3;
+							//mov CR3, R11;
+						//}
 
 						//kprintfln!("{x} {x} {x} {x}")(pl1.entries[indexL1].address, p1.entries[idx1].address, pl1.entries[indexL1].pml, p1.entries[idx1].pml);
 									
@@ -802,7 +870,7 @@ private:
 							static if (!kernelLevel) {
 								pl1.entries[indexL1].us = 1;
 
-								if(pl1.entries[indexL1].address >= 32*1024){
+								if(pl1.entries[indexL1].address >= PCM_PAGE_START){
 									pl1.entries[indexL1].rw = 0;
 									pl1.entries[indexL1].avl = 1;
 									Scheduler.current.pcmPagesMapped++;
