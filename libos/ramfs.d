@@ -256,34 +256,27 @@ struct Gib {
 
 			size_t available = this.length() - cast(ulong)(_curpos - _start);
 
-
-			//dispUlong(available);
-
 			static if (IsArray!(T)) {
 				length = buffer.length * ArrayType!(T).sizeof;
 
-				//dispUlong(length);
-
 				// this leaves some data at the end if array isn't aligned
 				if(length > available){
+
 					if(available == 0){
 						return 0;
 					}
 
 					length = available / ArrayType!(T).sizeof;
 
-					buffer.length = length;
+					buffer = buffer[0..length];
 				}
-
-				//dispUlong(length);
 
 				foreach(ref ArrayType!(T) b; buffer) {
 					ArrayType!(T)* ptr = cast(ArrayType!(T)*)_curpos;
 					b = *ptr;
 					_curpos += ArrayType!(T).sizeof;
 				}
-			}
-			else {
+			}else {
 				length = T.sizeof;
 				T* ptr = cast(T*)_curpos;
 

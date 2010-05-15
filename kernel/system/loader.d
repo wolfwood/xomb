@@ -53,7 +53,7 @@ static:
 
 				// Also load it
 				Log.print("Loader: load()");
-				Log.result(load(System.moduleInfo[i].name));
+				Log.result(load(System.moduleInfo[i].name, System.moduleInfo[i].nameAndArgs));
 			}
 		}	
 		return ErrorVal.Success;
@@ -74,7 +74,7 @@ static:
 	}
 
 	// This function will load an executable from a module, if it can.
-	ErrorVal load(char[] path) {
+	ErrorVal load(char[] path, char[] argv) {
 
 		if (!isExecutable(path)) {
 			return ErrorVal.Fail;
@@ -114,7 +114,7 @@ static:
 			environ.entry = entryAddress;
 
 			//kprintfln!("Initialize this environment")();
-			environ.initialize(path /*cast(char[])System.moduleInfo[index].name.ptr[0..System.moduleInfo[index].nameLength]*/);
+			environ.initialize(argv /*cast(char[])System.moduleInfo[index].name.ptr[0..System.moduleInfo[index].nameLength]*/);
 			//kprintfln!("Loading this environment")();
 
 			for(uint i; i < numSegments; i++) {

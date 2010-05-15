@@ -20,6 +20,10 @@ const uint MAX_NUM_FDS = 128;
 fdTableEntry[MAX_NUM_FDS] fdTable;
 
 
+void displayUlong(ulong val){
+	Syscalls.dispUlong(val);
+}
+
 void wconsole(char* ptr, int len){
 	if(!init){
 		Console.initialize();
@@ -35,6 +39,7 @@ int gibRead(int fd, ubyte* buf, uint len){
 	if(!fdTable[fd].valid){
 		return -1;
 	}
+
 
 	ubyte[] data2 = data;
 	int err = fdTable[fd].gib.read(data2);

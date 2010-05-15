@@ -243,6 +243,9 @@ void interpret(char[] str) {
 		ubyte* foo = cast(ubyte*)0x0;
 		*foo = 2;
 	}
+	else if (streq(cmd, "exit")) {
+		exit(0);
+	}
 	else if (streq(cmd, "cd")) {
 		// Change directory
 		if (argument.length > 0) {

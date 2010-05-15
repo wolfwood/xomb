@@ -22,7 +22,7 @@ struct Module {
 	ulong length;
 
 	// The name of the module, if given.
-	char[] name;
+	char[] name, nameAndArgs;
 	char[128] nameSpace;
 
 	// The path to this module on the file system

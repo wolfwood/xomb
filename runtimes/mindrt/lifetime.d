@@ -75,8 +75,13 @@ void _d_callfinalizer(void* p) {
 void rt_finalize(void* p, bool det = true) {
 }
 
-byte[] _d_arraysetlengthT(TypeInfo ti, size_t newlength, Array* p) {
-	return null;
+ubyte[] _d_arraysetlengthT(TypeInfo ti, size_t newlength, ubyte[] array) {
+	if(newlength < array.length){
+		return array[0..newlength];
+	}else{
+		assert(false, "can't grow arrays in kernel\n");
+		return null;
+	}
 }
 
 byte[] _d_arraysetlengthiT(TypeInfo ti, size_t newlength, Array* p) {

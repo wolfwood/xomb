@@ -160,8 +160,17 @@ ErrorVal verifyBootInformation(int id, void *data) {
 				len = System.moduleInfo[i].nameSpace.length;
 			}
 			System.moduleInfo[i].nameSpace[0 .. len] = (cast(char *)(mod.string))[0 .. len];
-			System.moduleInfo[i].name = System.moduleInfo[i].nameSpace[0 .. len];
+			System.moduleInfo[i].nameAndArgs = System.moduleInfo[i].nameSpace[0 .. len];
 
+			uint j;
+			for(j = 0; j < len; j++){
+				if(System.moduleInfo[i].nameSpace[j] == ' '){
+					break;
+				}
+			}
+
+			System.moduleInfo[i].name = System.moduleInfo[i].nameSpace[0 .. j];
+			
 			//kprintfln!("module {}: start:{} length:{} name:{}")(i, System.moduleInfo[i].start, System.moduleInfo[i].length, System.moduleInfo[i].name[0..len]);
 			System.numModules++;
 		}
