@@ -2,6 +2,7 @@ module user.syscall;
 
 import user.nativecall;
 import user.util;
+public import user.environment;
 
 // Errors
 enum SyscallError : ulong {
@@ -11,50 +12,56 @@ enum SyscallError : ulong {
 
 // IDs of the system calls
 enum SyscallID : ulong {
-	Add = 0,
-	RequestConsole,
 	AllocPage,
 	Exit,
-	Fork,
+
 	PerfPoll,
+
 	Open,
 	Create,
-	Link,
+	Close,
+
+	CreateAddressSpace,
+	Schedule,
+	Yield,
 }
 
 // Names of system calls
 alias Tuple! (
-	"add",				// add()
-	"requestConsole",	// requestConsole()
 	"allocPage",		// allocPage()
 	"exit",				// exit()
-	"fork",				// fork()
+
 	"perfPoll",			// perfPoll()
+
 	"open",				// open()
 	"create",			// create()
-	"link"				// link()
+	"close",			// close()
+
+	"createAddressSpace", // createAddressSpace()
+	"schedule",			// schedule()
+	"yield"				// yield()
 ) SyscallNames;
 
 
 // Return types for each system call
 alias Tuple! (
-	int,			// add
-	void,			// requestConsole
 	int,			// allocPage
 	void,			// exit
-	int,			// fork
+
 	void,			// perfPoll
+
 	ubyte*,			// open
 	ubyte*,			// create
-	bool			// link	
+	void,			// close
+
+	AddressSpace,	// createAddressSpace
+	void,			// schedule
+	void			// yield
 ) SyscallRetTypes;
 
 // Parameters to system call
 struct AddArgs {
 	int a, b;
-}
-
-struct RequestConsoleArgs {
 }
 
 struct AllocPageArgs {
@@ -65,20 +72,32 @@ struct ExitArgs {
 	long retVal;
 }
 
-struct ForkArgs {
-}
-
 struct OpenArgs {
-	char[] path;
-	uint flags;
-	uint index;
+	AddressSpace dest;
+	ubyte* address;
+	int mode;
 }
-alias OpenArgs CreateArgs;
 
-struct LinkArgs {
-	char[] path;
-	char[] linkpath;
-	uint flags;
+struct CreateArgs {
+	int mode;
+}
+
+struct CloseArgs {
+	AddressSpace dest;
+	ubyte* location;
+}
+
+struct CreateAddressSpaceArgs {
+}
+
+struct ScheduleArgs {
+	AddressSpace dest;
+	ubyte* entry;
+	ubyte* stack;
+}
+
+struct YieldArgs {
+	AddressSpace dest;
 }
 
 struct PerfPollArgs {

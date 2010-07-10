@@ -126,7 +126,8 @@ hiddenmenu
 title		XOmB
 kernel		/boot/xomb
 #module		/your/module
-module		/binaries/xsh
+#module		/binaries/xsh
+module		/binaries/init
 #module		/boot/testapp
 #module		/boot/testapp
 #module		/boot/testapp

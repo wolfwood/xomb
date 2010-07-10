@@ -3,6 +3,7 @@
 module kernel.core.syscall;
 
 import user.syscall;
+import user.environment;
 
 import kernel.environ.info;
 import kernel.environ.scheduler;
@@ -27,17 +28,6 @@ static:
 public:
 
 	// Syscall Implementations
-
-	// add two numbers, a and b, and return the result
-	// ulong add(long a, long b)
-	SyscallError add(out int ret, AddArgs* params) {
-		ret = params.a + params.b;
-		return SyscallError.OK;
-	}
-
-	SyscallError requestConsole(RequestConsoleArgs* params) {
-		return SyscallError.OK;
-	}
 
 	SyscallError allocPage(out int ret, AllocPageArgs* params) {
 		synchronized {
@@ -77,26 +67,64 @@ public:
 		return SyscallError.OK;
 	}
 
-	SyscallError fork(out int ret, ForkArgs* params) {
-		return SyscallError.OK;
-	}
+	// Memory manipulation system calls
 
+	// ubyte* location = open(AddressSpace dest, ubyte* address, int mode);
 	SyscallError open(out ubyte* ret, OpenArgs* params) {
-		Gib gib = RamFS.open(params.path, params.flags, params.index);
-		ret = gib.ptr;
+		ret = params.address;
+
+		if (params.dest is null) {
+			// We can only map in resources that this process can access.
+			
+			// In which case, we can only map in resources marked as global.
+			// Any exclusive resource must be mapped in my another address
+			// space.
+		}
+		else {
+			// We can only map in resources we own already.
+
+			// Look at the current address space, and decide if that resource
+			// is available. If so, map it in with no more permissions than
+			// the current address space into the given address space.
+		}
+
 		return SyscallError.OK;
 	}
 
+	// ubyte* location = create(int mode);
 	SyscallError create(out ubyte* ret, CreateArgs* params) {
-		Gib gib = RamFS.create(params.path, params.flags, params.index);
-		ret = gib.ptr;
-		return SyscallError.OK;
+		// Create a new resource.
+
+		ret = null;
+
+		return SyscallError.Failcopter;
 	}
 
-	SyscallError link(out bool ret, LinkArgs* params) {
-		ret = RamFS.link(params.path, params.linkpath, params.flags) == ErrorVal.Success;
-		return SyscallError.OK;
+	// close(AddressSpace dest, ubyte* location);
+	SyscallError close(CloseArgs* params) {
+		// Unmap the resource.
+
+		return SyscallError.Failcopter;
 	}
+
+	// Scheduling system calls
+
+	// AddressSpace space = createAddressSpace();
+	SyscallError createAddressSpace(out AddressSpace ret, CreateAddressSpaceArgs* params) {
+		return SyscallError.Failcopter;
+	}
+
+	// schedule(AddressSpace dest, ubyte* entry, ubyte* stack);
+	SyscallError schedule(ScheduleArgs* params) {
+		return SyscallError.Failcopter;
+	}
+
+	// yield(AddressSpace dest);
+	SyscallError yield(YieldArgs* params) {
+		return SyscallError.Failcopter;
+	}
+
+	// Userspace performance monitoring shim
 
 	SyscallError perfPoll(PerfPollArgs* params) {
 		synchronized {
@@ -127,6 +155,5 @@ public:
 			return SyscallError.OK;
 		}
 	}
-
 }
 
