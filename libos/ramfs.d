@@ -316,25 +316,30 @@ class RamFS {
 static:
 
 	Gib open(char[] name, uint flags) {
-		Gib ret;
+		/*Gib ret;
 		ret._start = Syscall.open(name, flags, nextGibIndex);
 		nextGibIndex++;
 		ret.rewind();
 		ret._metadata = cast(Metadata*)(ret._start - Metadata.sizeof);
+		return ret;*/
+		Gib ret;
 		return ret;
 	}
 
 	Gib create(char[] name, uint flags) {
-		Gib ret;
+		/*Gib ret;
 		ret._start = Syscall.create(name, flags, nextGibIndex);
 		nextGibIndex++;
 		ret.rewind();
 		ret._metadata = cast(Metadata*)(ret._start - Metadata.sizeof);
+		return ret;*/
+		Gib ret;
 		return ret;
 	}
 
 	bool link(char[] name, char[] linkpath, uint flags) {
-		return Syscall.link(name, linkpath, flags);
+		return false;
+//		return Syscall.link(name, linkpath, flags);
 	}
 
 private:
