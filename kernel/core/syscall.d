@@ -73,7 +73,7 @@ public:
 	// ubyte* location = open(AddressSpace dest, ubyte* address, int mode);
 	SyscallError open(out bool ret, OpenArgs* params) {
 		// Map in the resource
-		ret = VirtualMemory.openSegment(dest, address, mode);
+		ret = VirtualMemory.openSegment(params.dest, params.address, params.mode);
 
 		return SyscallError.OK;
 	}
@@ -81,7 +81,7 @@ public:
 	// ubyte[] location = create(ulong size, int mode);
 	SyscallError create(out ubyte[] ret, CreateArgs* params) {
 		// Create a new resource.
-		ret = VirtualMemory.createSegment(size, mode);
+		ret = VirtualMemory.createSegment(params.size, params.mode);
 
 		return SyscallError.Failcopter;
 	}

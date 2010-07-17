@@ -2,6 +2,7 @@ module user.syscall;
 
 import user.nativecall;
 import user.util;
+import user.environment;
 
 // Errors
 enum SyscallError : ulong {
@@ -63,12 +64,13 @@ struct OpenArgs {
 }
 
 struct CreateArgs {
+	ulong size;
 	int mode;
 }
 
 struct CloseArgs {
 	ubyte* location;
-]
+}
 
 struct PerfPollArgs {
 	uint event;

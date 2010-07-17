@@ -298,12 +298,12 @@ static:
 		return gibAddr;
 	}
 	
-	bool closeGib(ubyte* location, uint flags) {
+	bool closeGib(ubyte* location) {
 		// Find page translation
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
 
-		PageLevel3* pl3 = root.getTable(indexL4, false);
+		PageLevel3* pl3 = root.getTable(indexL4);
 		if (pl3 is null) {
 			return false;
 		}
