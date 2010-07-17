@@ -16,6 +16,8 @@ import libos.keyboard;
 
 import user.keycodes;
 
+import libos.libdeepmajik.threadscheduler;
+
 void main() {
 
 	Console.initialize();
