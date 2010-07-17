@@ -30,14 +30,6 @@ import kernel.system.info;
 import kernel.dev.console;
 
 import architecture.mutex;
-// Kernel Memory Map:
-//
-// [0xFFFF800000000000]
-//   - kernel
-//   - RAM (page table entry map)
-//   - kheap
-//      - devices
-//      - misc
 
 class Paging {
 static:
@@ -109,8 +101,6 @@ static:
 	}
 
 	void faultHandler(InterruptStack* stack) {
-//		kprintfln!("Page Fault")();
-
 		ulong cr2;
 
 		asm {
@@ -119,8 +109,6 @@ static:
 		}
 
 		void* addr = cast(void*)cr2;
-
-//		kprintfln!("CR2 {}")(addr);
 
 		if (stack.rip < 0xf_0000_0000_0000) {
 			kprintfln!("User Mode Page Fault {x}")(stack.rip);
@@ -277,6 +265,19 @@ static:
 		return gibAddr;
 	}
 
+	bool createGib(ubyte* location, ulong size, uint flags) {
+		// Find page translation
+		ulong indexL4, indexL3, indexL2, indexL1;
+		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
+
+		// Allocate paging structures
+		bool usermode = (flags & Access.Kernel) == 0;
+		PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
+		PageLevel2* pl2 = pl3.getOrCreateTable(indexL3, usermode);
+
+		return true;
+	}
+
 	ubyte* allocGib(ref ubyte* location, uint gibIndex, uint flags) {
 		// Get initial address of gib
 		ubyte* gibAddr = gibAddress(gibIndex);
@@ -292,9 +293,36 @@ static:
 
 		// Physical address of gib
 		location = pl3.entries[indexL3].location;
-		
+
 		// pl2 is your gib structure.
 		return gibAddr;
+	}
+	
+	bool closeGib(ubyte* location, uint flags) {
+		// Find page translation
+		ulong indexL4, indexL3, indexL2, indexL1;
+		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
+
+		PageLevel3* pl3 = root.getTable(indexL4, false);
+		if (pl3 is null) {
+			return false;
+		}
+
+		pl3.setTable(indexL3, null, false);
+		return true;
+	}
+
+	bool openGib(ubyte* location, uint flags) {
+		// Find page translation
+		ulong indexL4, indexL3, indexL2, indexL1;
+		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
+
+		bool usermode = (flags & Access.Kernel) == 0;
+		PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
+
+		pl3.setTable(indexL3, location, usermode);
+
+		return true;
 	}
 
 	ubyte* openGib(ubyte* location, uint gibIndex, uint flags) {

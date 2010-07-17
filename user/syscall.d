@@ -11,51 +11,39 @@ enum SyscallError : ulong {
 
 // IDs of the system calls
 enum SyscallID : ulong {
-	Add = 0,
-	RequestConsole,
 	AllocPage,
 	Exit,
-	Fork,
 	PerfPoll,
 	Open,
 	Create,
-	Link,
 }
 
 // Names of system calls
 alias Tuple! (
-	"add",				// add()
-	"requestConsole",	// requestConsole()
 	"allocPage",		// allocPage()
 	"exit",				// exit()
-	"fork",				// fork()
 	"perfPoll",			// perfPoll()
 	"open",				// open()
 	"create",			// create()
-	"link"				// link()
+	"createAddressSpace", // createAddressSpace()
+	"schedule",			// schedule()
+	"yield"				// yield()
 ) SyscallNames;
 
 
 // Return types for each system call
 alias Tuple! (
-	int,			// add
-	void,			// requestConsole
 	int,			// allocPage
 	void,			// exit
-	int,			// fork
 	void,			// perfPoll
-	ubyte*,			// open
-	ubyte*,			// create
-	bool			// link	
+	bool,			// open
+	ubyte[],		// create
+	AddressSpace,	// createAddressSpace
+	void,			// schedule
+	void			// yield
 ) SyscallRetTypes;
 
 // Parameters to system call
-struct AddArgs {
-	int a, b;
-}
-
-struct RequestConsoleArgs {
-}
 
 struct AllocPageArgs {
 	void* virtualAddress;
@@ -69,20 +57,32 @@ struct ForkArgs {
 }
 
 struct OpenArgs {
-	char[] path;
-	uint flags;
-	uint index;
+	AddressSpace dest;
+	ubyte* address;
+	int mode;
 }
-alias OpenArgs CreateArgs;
 
-struct LinkArgs {
-	char[] path;
-	char[] linkpath;
-	uint flags;
+struct CreateArgs {
+	int mode;
 }
+
+struct CloseArgs {
+	ubyte* location;
+]
 
 struct PerfPollArgs {
 	uint event;
+}
+
+struct CreateAddressSpaceArgs {
+}
+
+struct ScheduleArgs {
+	AddressSpace dest;
+}
+
+struct YieldArgs {
+	AddressSpace dest;
 }
 
 // XXX: This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason

@@ -22,7 +22,8 @@ import architecture.perfmon;
 import architecture.mutex;
 import architecture.cpu;
 import architecture.timing;
-	
+import architecture.vm;
+
 class SyscallImplementations {
 static:
 public:
@@ -70,39 +71,25 @@ public:
 	// Memory manipulation system calls
 
 	// ubyte* location = open(AddressSpace dest, ubyte* address, int mode);
-	SyscallError open(out ubyte* ret, OpenArgs* params) {
-		ret = params.address;
-
-		if (params.dest is null) {
-			// We can only map in resources that this process can access.
-			
-			// In which case, we can only map in resources marked as global.
-			// Any exclusive resource must be mapped in my another address
-			// space.
-		}
-		else {
-			// We can only map in resources we own already.
-
-			// Look at the current address space, and decide if that resource
-			// is available. If so, map it in with no more permissions than
-			// the current address space into the given address space.
-		}
+	SyscallError open(out bool ret, OpenArgs* params) {
+		// Map in the resource
+		ret = VirtualMemory.openSegment(dest, address, mode);
 
 		return SyscallError.OK;
 	}
 
-	// ubyte* location = create(int mode);
-	SyscallError create(out ubyte* ret, CreateArgs* params) {
+	// ubyte[] location = create(ulong size, int mode);
+	SyscallError create(out ubyte[] ret, CreateArgs* params) {
 		// Create a new resource.
-
-		ret = null;
+		ret = VirtualMemory.createSegment(size, mode);
 
 		return SyscallError.Failcopter;
 	}
 
-	// close(AddressSpace dest, ubyte* location);
+	// close(ubyte* location);
 	SyscallError close(CloseArgs* params) {
 		// Unmap the resource.
+		VirtualMemory.closeSegment(params.location);
 
 		return SyscallError.Failcopter;
 	}
@@ -114,7 +101,7 @@ public:
 		return SyscallError.Failcopter;
 	}
 
-	// schedule(AddressSpace dest, ubyte* entry, ubyte* stack);
+	// schedule(AddressSpace dest);
 	SyscallError schedule(ScheduleArgs* params) {
 		return SyscallError.Failcopter;
 	}

@@ -18,6 +18,8 @@ class VirtualMemory {
 static:
 public:
 
+	// -- Initialization -- //
+
 	ErrorVal initialize() {
 		// Install Virtual Memory and Paging
 		return Paging.initialize();
@@ -26,6 +28,44 @@ public:
 	ErrorVal install() {
 		return Paging.install();
 	}
+
+	// -- Segment Handling -- //
+
+	// Create a new segment that will fit the indicated size
+	// into the global address space.
+	ubyte[] createSegment(ulong size, uint flags) {
+		ubyte* location = null;
+
+		Paging.createGib(location, size, flags);
+
+		return location[0 .. size];
+	}
+
+	// Open a segment indicated by location into the
+	// virtual address space of dest.
+	bool openSegment(AddressSpace dest, ubyte* location, uint flags) {
+		if (dest !is null) {
+			// Hmm, we need to open this in another address space.
+			return false;
+		}
+		else {
+			// We should open this in our address space.
+			return Paging.openGib(location, flags);
+		}
+	}
+
+	bool closeSegment(ubyte* location) {
+		return Paging.closeGib(location);
+	}
+
+	// -- Address Spaces -- //
+
+	// Create a virtual address space.
+	AddressSpace createAddressSpace() {
+		return null;
+	}
+
+	// --- OLD --- //
 
 	ubyte* allocGib(out ubyte* location, uint gibIndex, uint flags) {
 		return Paging.allocGib(location, gibIndex, flags);
@@ -87,7 +127,4 @@ public:
 	synchronized ErrorVal unmapRange(void* virtAddr, ulong rangeLength) {
 		return ErrorVal.Success;
 	}
-
-private:
-
 }
