@@ -22,20 +22,21 @@ ubyte* endBSS = &_end;
 
 // Upcall Vector Table
 void function()[2] UVT = [&start, &_enterThreadScheduler];
+ubyte* UVTbase = cast(ubyte*)UVT.ptr;
 
 ubyte[1024] tempStack;
-
 ubyte* tempStackTop = &tempStack[tempStack.length - 8];
+
 
 extern(C) void _start(int thing) {
 	asm{
 		naked;
 
 		//stackless equivalent of "UVT[thing]();"
-		movq RSI, [UVT.ptr];
+		movq RSI, UVTbase;
 		sal RDI, 3;
 		addq RSI, RDI;
-		jmp RSI;
+		jmp [RSI];
 	}
 }
 
