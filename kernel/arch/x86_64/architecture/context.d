@@ -221,6 +221,9 @@ public:
 			// Context Restore
 			add RSP, 16;
 
+			// pass 0 as argument to _start as UVT discriminator
+			mov RDI, 0;
+
 			// Go to userspace
 			iretq;
 		}
