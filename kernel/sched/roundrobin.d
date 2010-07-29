@@ -66,6 +66,13 @@ static:
 		return numEnvironments;
 	}
 
+	synchronized Environment* getEnvironmentById(uint eid) {
+		if(environments[eid].state == Environment.State.Inactive){
+			return null;
+		}else{
+			return &environments[eid];
+		}
+	}
 	// Set up a new environment
 	synchronized Environment* newEnvironment() {
 		if (numEnvironments == MAX_ENVIRONMENTS) {

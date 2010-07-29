@@ -21,6 +21,9 @@ import architecture.perfmon;
 import architecture.mutex;
 import architecture.cpu;
 import architecture.timing;
+
+// temporary h4x
+import kernel.system.loader;
 	
 class SyscallImplementations {
 static:
@@ -68,13 +71,25 @@ public:
 			mov RSP, RAX;
 		}
 
+		exit2();
+
+
+		// You DO NOT return from exit... NEVER
+		return SyscallError.Failcopter;
+	}
+
+	void exit2(){
+		Environment* child = Scheduler.current();
+		Environment* parent = child.parent;
+
 		// Remove the environment from the scheduler
 		ErrorVal ret = Scheduler.removeEnvironment();
 
-		Scheduler.idleLoop();
-
-		// You DO NOT return from exit... NEVER
-		return SyscallError.OK;
+		if(!(parent is null)){
+			parent.context.simpleExecute();
+		}else{
+			Scheduler.idleLoop();
+		}
 	}
 
 	SyscallError fork(out int ret, ForkArgs* params) {
@@ -126,6 +141,90 @@ public:
 
 			return SyscallError.OK;
 		}
+	}
+
+	SyscallError gibOpen(out int ret, GibOpenArgs* params){
+		if(params.flags && OpenFlags.Create){
+			
+		}
+		
+		return SyscallError.OK;
+	}
+
+	SyscallError gibClose(out int ret, GibCloseArgs* params){
+		return SyscallError.OK;
+	}
+
+	char[] path;
+	Environment* child;
+	ulong oldStack;
+
+	SyscallError createEnv(out uint ret, CreateEnvArgs* params){
+		//return SyscallError.OK;
+
+		//Environment* child = Scheduler.newEnvironment();
+
+		path = params.name;
+
+		ulong stackPtr = cast(ulong)Cpu.stack;
+		
+		asm {
+			mov RAX, RSP;
+			mov oldStack, RAX;
+
+			mov RAX, stackPtr;
+			mov RSP, RAX;
+		}
+
+
+		child = Loader.path2env(path);
+
+
+		Scheduler.current.context.install();
+
+		asm {
+			mov RAX, oldStack;
+			mov RSP, RAX;
+		}
+		
+		if(!(child is null)){
+			ret = child.info.id;
+
+			return SyscallError.OK;
+		}else{
+			return SyscallError.Failcopter;
+		}
+	}
+
+	uint daEid;
+
+	SyscallError yield(YieldArgs* params){
+
+		daEid = params.eid;
+
+		// We need to switch to a kernel stack
+		ulong stackPtr = cast(ulong)Cpu.stack;
+		asm {
+			mov RAX, stackPtr;
+			mov RSP, RAX;
+		}
+
+		yield2(daEid);
+
+
+		// never gonna happen?
+		return SyscallError.Failcopter;
+	}
+
+	void yield2(uint eid){
+		//Scheduler.current.context.simpleExecute();
+
+		//return SyscallError.OK;
+
+		Environment* child = Scheduler.getEnvironmentById(eid);
+
+		child.parent = Scheduler.current;
+		child.execute();
 	}
 
 }

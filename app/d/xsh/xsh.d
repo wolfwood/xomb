@@ -241,6 +241,55 @@ void interpret(char[] str) {
 			}
 		}
 	}
+	else if (streq(cmd, "run")) {
+		// Open the file, parse the ELF into a new address space, and execute
+		
+		if (argument.length > 0) {
+			createArgumentPath(argument);
+
+			uint flags;
+			if (exists(argumentPath, flags)) {
+				if ((flags & Directory.Mode.Directory) == 0) {
+					// Open this file
+					//Gib g = RamFS.open(argumentPath, 0);
+
+					// create new address space
+					uint eid = createEnv(argumentPath);
+
+					// create stack gib
+					//Syscall.gibOpen
+
+					// create text gib
+
+
+					// fill text from ELF
+
+
+					// create data gib
+
+
+					// fill text from ELF
+					
+
+					//g.close();
+
+					
+					yieldCPU(eid);
+
+					return;
+				}
+				else {
+					Console.putString("xsh: run: File is a directory.\n");
+				}
+			}
+			else {
+				Console.putString("xsh: run: Executable not found.\n");
+			}
+		}
+	}
+	else if (streq(cmd, "exit")) {
+		exit(0);
+	}
 	else if (streq(cmd, "fault")) {
 		ubyte* foo = cast(ubyte*)0x0;
 		*foo = 2;

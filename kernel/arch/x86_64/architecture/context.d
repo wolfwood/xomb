@@ -212,6 +212,7 @@ public:
 		return contextStackPtr;
 	}
 
+	// first program entry, mimicking traditional _start() -> main()
 	void execute() {
 		install();
 		asm {
@@ -223,6 +224,24 @@ public:
 
 			// pass 0 as argument to _start as UVT discriminator
 			mov RDI, 0;
+
+			// Go to userspace
+			iretq;
+		}
+	}
+
+	// enter thread scheduler
+	void simpleExecute() {
+		install();
+		asm {
+			// Get return from install() and set as stack pointer
+			mov RSP, RAX;
+
+			// Context Restore
+			add RSP, 16;
+
+			// pass 1 as argument to _start as UVT discriminator
+			mov RDI, 1;
 
 			// Go to userspace
 			iretq;

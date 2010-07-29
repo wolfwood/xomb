@@ -9,6 +9,13 @@ enum SyscallError : ulong {
 	Failcopter
 }
 
+enum OpenFlags : uint {
+	ReadOnly = 0,
+	ReadWrite = 1,
+	Executable = 2,
+	Create = 4
+}
+
 // IDs of the system calls
 enum SyscallID : ulong {
 	Add = 0,
@@ -20,6 +27,10 @@ enum SyscallID : ulong {
 	Open,
 	Create,
 	Link,
+	GibOpen,
+	GibClose,
+	CreateEnv,
+	Yield,
 }
 
 // Names of system calls
@@ -29,10 +40,14 @@ alias Tuple! (
 	"allocPage",		// allocPage()
 	"exit",				// exit()
 	"fork",				// fork()
-	"perfPoll",			// perfPoll()
+	"perfPoll",		// perfPoll()
 	"open",				// open()
 	"create",			// create()
-	"link"				// link()
+	"link",				// link()
+	"gibOpen",    // gibOpen()
+	"gibClose",   // gibClose()
+	"createEnv",  // createEnv()
+	"yield"       // yield()
 ) SyscallNames;
 
 
@@ -46,8 +61,31 @@ alias Tuple! (
 	void,			// perfPoll
 	ubyte*,			// open
 	ubyte*,			// create
-	bool			// link	
+	bool,			// link
+	int,      // gibOpen
+	int,      // gibClose
+	uint,   // createEnv
+	void     // yield
 ) SyscallRetTypes;
+
+struct GibOpenArgs {
+	int eid;
+	ubyte* src;
+	ubyte* dest;
+	OpenFlags flags;
+}
+
+struct GibCloseArgs {
+	ubyte* gib;
+}
+
+struct CreateEnvArgs {
+	char[] name;
+}
+
+struct YieldArgs {
+	int eid;
+}
 
 // Parameters to system call
 struct AddArgs {

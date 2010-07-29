@@ -5,7 +5,7 @@
  *
  */
 
-module kernel.core.elf;
+module kernel.system.elf;
 
 import kernel.system.segment;
 

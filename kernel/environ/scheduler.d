@@ -46,6 +46,17 @@ public:
 		return SchedulerImplementation.length();
 	}
 
+	Environment* getEnvironmentById(uint eid) {
+		Environment* env = SchedulerImplementation.getEnvironmentById(eid);
+
+		/*if (env is null) {
+			Log.result(ErrorVal.Fail);
+		} else {
+			Log.result(ErrorVal.Success);
+			}*/
+		return env;
+	}
+
 	Environment* newEnvironment() {
 		Log.print("Scheduler: newEnvironment()");
 		Environment* newEnv = SchedulerImplementation.newEnvironment();

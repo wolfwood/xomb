@@ -230,6 +230,43 @@ void threadExit(){
 		}
 	}
 }
+void yieldCPU(uint eid){
+	asm{
+		naked;
+
+		// save stack ready to ret
+
+		call getCurrentThread;
+		mov R11, RAX;
+
+		pushq RBX;
+		pushq RBP;
+		pushq R12;
+		pushq R13;
+		pushq R14;
+		pushq R15;
+
+		//mov R11, thread;
+		mov [R11+XombThread.rsp.offsetof],RSP;
+
+		// swap root and tail if needed
+		mov R9, schedQueueRoot;
+		mov R8, 0;
+		cmp R8,R9;
+		jne noSwap;
+		mov R9, schedQueueTail;
+		mov schedQueueRoot, R9;
+		mov schedQueueTail, R8;
+	noSwap:
+
+		// stuff old thread onto schedQueueTail
+		mov R9, schedQueueTail;
+		mov [R11+XombThread.next.offsetof],R9;
+		mov schedQueueTail, R11;
+
+		jmp yield;
+	}
+}
 
 // jmp to this function
 void _enterThreadScheduler(){
