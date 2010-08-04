@@ -43,6 +43,7 @@ struct Environment {
 	SchedulerInfo info;
 
 	Environment* parent;
+	bool hasRunYet;
 
 	ErrorVal initialize() {
 		// Create a page table for this environment
@@ -50,6 +51,7 @@ struct Environment {
 
 		context.preamble(entry);
 
+		hasRunYet = false;
 		state = State.Ready;
 
 		return ErrorVal.Success;
@@ -72,7 +74,12 @@ struct Environment {
 	}
 
 	void execute() {
-		context.execute();
+		if(!hasRunYet){
+			hasRunYet = true;
+			context.execute();
+		}else{
+			context.simpleExecute();
+		}
 	}
 }
 

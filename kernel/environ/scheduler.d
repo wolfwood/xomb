@@ -90,6 +90,18 @@ public:
 		return ErrorVal.Fail;
 	}
 
+	ErrorVal executeEnvironment(Environment* env){
+		
+		// XXX: I smell race condition
+		if(env.state == Environment.State.Ready || env.state == Environment.State.Running){
+			current = env;
+
+			env.execute();
+		}
+
+		return ErrorVal.Fail;
+	}
+
 	Environment* current() {
 		return _current[Cpu.identifier];
 	}

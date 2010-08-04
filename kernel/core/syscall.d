@@ -68,7 +68,10 @@ public:
 		ErrorVal ret = Scheduler.removeEnvironment();
 
 		if(!(parent is null)){
-			parent.context.simpleExecute();
+			Scheduler.executeEnvironment(parent);
+
+			// if parent exits, above might return
+			Scheduler.idleLoop();
 		}else{
 			Scheduler.idleLoop();
 		}
@@ -145,9 +148,11 @@ public:
 
 		child = Loader.path2env(params.name);
 
+		// restore current's root page table
 		Scheduler.current.context.install();
 
 		if(!(child is null)){
+			child.parent = Scheduler.current;
 			ret = child.info.id;
 
 			return SyscallError.OK;
@@ -159,10 +164,12 @@ public:
 	SyscallError yield(YieldArgs* params){
 		Environment* child = Scheduler.getEnvironmentById(params.eid);
 
-		child.parent = Scheduler.current;
-		child.execute();
+		Scheduler.executeEnvironment(child);
 
-		// this will never happen
+		// this should only happen if the eid is for an environment that unused or in the process of exiting
+		Scheduler.idleLoop();
+
+		// never happens
 		return SyscallError.OK;
 	}
 
