@@ -72,8 +72,6 @@ static:
 		void* stackPtr = PageAllocator.allocPage();
 		ulong syscallStack = cast(ulong)VirtualMemory.mapKernelPage(stackPtr) + 4096;
 
-		kprintfln!("SyscallStack {x}")(syscallStack);
-
 		asm{
 			pushq RAX;
 			mov RAX, 3;
