@@ -8,6 +8,14 @@ import kernel.core.syscall;
 
 import user.syscall;
 
+import kernel.mem.pageallocator;
+import architecture.vm;
+import kernel.core.kprintf;
+
+const ulong FSBASE_MSR = 0xc000_0100;                                                                                   
+const ulong GSBASE_MSR = 0xc000_0101;  
+
+
 struct Syscall {
 static:
 
@@ -60,6 +68,22 @@ static:
 		// but we're not masking anything (yet).
 		Cpu.writeMSR(SFMASK_MSR, 0);
 
+		// stash a syscall stack in GS.Base
+		void* stackPtr = PageAllocator.allocPage();
+		ulong syscallStack = cast(ulong)VirtualMemory.mapKernelPage(stackPtr) + 4096;
+
+		kprintfln!("SyscallStack {x}")(syscallStack);
+
+		asm{
+			pushq RAX;
+			mov RAX, 3;
+			shl RAX, 3;
+			mov GS, AX;
+			popq RAX;
+		}
+
+		Cpu.writeMSR(GSBASE_MSR, syscallStack);
+
 		return ErrorVal.Success;
 	}
 }
@@ -67,11 +91,55 @@ static:
 
 // alright, so %rdi, %rsi, %rdx are the registers loaded by NativeSyscall()
 //
-
 void syscallHandler() {
 	asm {
 		naked;
 
+		// XXX: use swapgs rather than rdmsr
+		/*
+		// save old RSP
+		mov R9, RSP;
+
+		// calculate new RSP (uses effective address calculation to get value out of GS segment descriptor without and rdmsr)
+		swapgs;
+		mov R8, 0;
+		lea R8, GS:[R8];
+		
+		// new stack
+		mov RSP, R8;
+		*/
+
+		// save regs used by rdmsr
+		mov R8, RAX;
+		mov R9, RCX;
+		mov R10, RDX;
+
+		// zero RAX higher bits, cuz rdmsr doc doesn't mention if it zeros it
+		mov RAX, 0;
+
+		// read the CPU stack address to RDX
+		mov ECX, GSBASE_MSR;
+		rdmsr;
+
+		shl RDX, 32;
+		or RDX, RAX;
+
+		// restore saved registers and stick new stack addr in R8, old stack addr in R9
+		mov RAX, R8;
+		mov RCX, R9;
+
+		mov R8, RDX;
+		mov RDX, R10;
+		mov R9, RSP;
+
+		// set new stack
+		mov RSP, R8;
+
+		// save old stack info where we can get it
+		pushq R9;
+		pushq RBP;
+
+		// vars used by syscall
 		pushq RCX;
 		pushq R11;
 		pushq RAX;
@@ -82,6 +150,11 @@ void syscallHandler() {
 		popq RAX;
 		popq R11;
 		popq RCX;
+
+		// restore stack foo
+		popq RBP;
+		popq R9;
+		mov RSP, R9;
 
 		sysretq;
 	}
