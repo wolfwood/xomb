@@ -213,7 +213,7 @@ public:
 	}
 
 	// first program entry, mimicking traditional _start() -> main()
-	void execute() {
+	void upcallFirstEntry() {
 		install();
 		asm {
 			// Get return from install() and set as stack pointer
@@ -231,7 +231,7 @@ public:
 	}
 
 	// enter thread scheduler
-	void simpleExecute() {
+	void  upcallReentry() {
 		install();
 		asm {
 			// Get return from install() and set as stack pointer

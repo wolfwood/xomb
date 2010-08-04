@@ -76,9 +76,9 @@ struct Environment {
 	void execute() {
 		if(!hasRunYet){
 			hasRunYet = true;
-			context.execute();
+			context.upcallFirstEntry();
 		}else{
-			context.simpleExecute();
+			context.upcallReentry();
 		}
 	}
 }

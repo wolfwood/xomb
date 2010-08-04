@@ -171,7 +171,7 @@ static:
 
 			//kprintfln!("Initialize this environment")();
 			environ.initialize();
-			kprintfln!("Loading this environment")();
+			//kprintfln!("Loading this environment")();
 
 			for(uint i; i < numSegments; i++) {
 				curSegment = Elf.segment(moduleAddr, i);
