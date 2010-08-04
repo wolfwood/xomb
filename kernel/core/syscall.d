@@ -60,28 +60,10 @@ public:
 
 	// void exit(ulong retval)
 	SyscallError exit(ExitArgs* params) {
-		// Use ExitArgs* here... you won't be able to after the asm block
-
-		// ... //
-
-		// We need to switch to a kernel stack
-		ulong stackPtr = cast(ulong)Cpu.stack;
-		asm {
-			mov RAX, stackPtr;
-			mov RSP, RAX;
-		}
-
-		exit2();
-
-
-		// You DO NOT return from exit... NEVER
-		return SyscallError.Failcopter;
-	}
-
-	void exit2(){
 		Environment* child = Scheduler.current();
 		Environment* parent = child.parent;
 
+		// Use ExitArgs* before this line
 		// Remove the environment from the scheduler
 		ErrorVal ret = Scheduler.removeEnvironment();
 
@@ -90,6 +72,9 @@ public:
 		}else{
 			Scheduler.idleLoop();
 		}
+
+		// You DO NOT return from exit... NEVER
+		return SyscallError.Failcopter;
 	}
 
 	SyscallError fork(out int ret, ForkArgs* params) {
@@ -155,38 +140,13 @@ public:
 		return SyscallError.OK;
 	}
 
-	char[] path;
-	Environment* child;
-	ulong oldStack;
-
 	SyscallError createEnv(out uint ret, CreateEnvArgs* params){
-		//return SyscallError.OK;
+		Environment* child;
 
-		//Environment* child = Scheduler.newEnvironment();
-
-		path = params.name;
-
-		ulong stackPtr = cast(ulong)Cpu.stack;
-		
-		asm {
-			mov RAX, RSP;
-			mov oldStack, RAX;
-
-			mov RAX, stackPtr;
-			mov RSP, RAX;
-		}
-
-
-		child = Loader.path2env(path);
-
+		child = Loader.path2env(params.name);
 
 		Scheduler.current.context.install();
 
-		asm {
-			mov RAX, oldStack;
-			mov RSP, RAX;
-		}
-		
 		if(!(child is null)){
 			ret = child.info.id;
 
@@ -196,35 +156,14 @@ public:
 		}
 	}
 
-	uint daEid;
-
 	SyscallError yield(YieldArgs* params){
-
-		daEid = params.eid;
-
-		// We need to switch to a kernel stack
-		ulong stackPtr = cast(ulong)Cpu.stack;
-		asm {
-			mov RAX, stackPtr;
-			mov RSP, RAX;
-		}
-
-		yield2(daEid);
-
-
-		// never gonna happen?
-		return SyscallError.Failcopter;
-	}
-
-	void yield2(uint eid){
-		//Scheduler.current.context.simpleExecute();
-
-		//return SyscallError.OK;
-
-		Environment* child = Scheduler.getEnvironmentById(eid);
+		Environment* child = Scheduler.getEnvironmentById(params.eid);
 
 		child.parent = Scheduler.current;
 		child.execute();
+
+		// this will never happen
+		return SyscallError.OK;
 	}
 
 }
