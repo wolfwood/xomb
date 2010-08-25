@@ -27,8 +27,6 @@ enum SyscallID : ulong {
 	Open,
 	Create,
 	Link,
-	GibOpen,
-	GibClose,
 	CreateEnv,
 	Yield,
 }
@@ -44,8 +42,6 @@ alias Tuple! (
 	"open",				// open()
 	"create",			// create()
 	"link",				// link()
-	"gibOpen",    // gibOpen()
-	"gibClose",   // gibClose()
 	"createEnv",  // createEnv()
 	"yield"       // yield()
 ) SyscallNames;
@@ -62,22 +58,10 @@ alias Tuple! (
 	ubyte*,			// open
 	ubyte*,			// create
 	bool,			// link
-	int,      // gibOpen
-	int,      // gibClose
 	uint,   // createEnv
 	void     // yield
 ) SyscallRetTypes;
 
-struct GibOpenArgs {
-	int eid;
-	ubyte* src;
-	ubyte* dest;
-	OpenFlags flags;
-}
-
-struct GibCloseArgs {
-	ubyte* gib;
-}
 
 struct CreateEnvArgs {
 	char[] name;

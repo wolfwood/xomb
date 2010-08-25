@@ -131,18 +131,6 @@ public:
 		}
 	}
 
-	SyscallError gibOpen(out int ret, GibOpenArgs* params){
-		if(params.flags && OpenFlags.Create){
-			
-		}
-		
-		return SyscallError.OK;
-	}
-
-	SyscallError gibClose(out int ret, GibCloseArgs* params){
-		return SyscallError.OK;
-	}
-
 	SyscallError createEnv(out uint ret, CreateEnvArgs* params){
 		Environment* child;
 
