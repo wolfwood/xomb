@@ -93,7 +93,7 @@ public:
 	ErrorVal executeEnvironment(Environment* env){
 		
 		// XXX: I smell race condition
-		if(env.state == Environment.State.Ready || env.state == Environment.State.Running){
+		if(env !is null && (env.state == Environment.State.Ready || env.state == Environment.State.Running)){
 			current = env;
 
 			env.execute();
