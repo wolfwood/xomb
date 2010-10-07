@@ -56,6 +56,10 @@ public:
 		}
 	}
 
+	bool mapSegment(AddressSpace dest, ubyte* location, ubyte* destination, uint flags) {
+		return false;
+	}
+
 	bool closeSegment(ubyte* location) {
 		return Paging.closeGib(location);
 	}

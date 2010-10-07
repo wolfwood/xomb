@@ -278,6 +278,7 @@ static:
 		return true;
 	}
 
+	// OLD
 	ubyte* allocGib(ref ubyte* location, uint gibIndex, uint flags) {
 		// Get initial address of gib
 		ubyte* gibAddr = gibAddress(gibIndex);

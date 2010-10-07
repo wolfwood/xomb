@@ -17,6 +17,9 @@ import libos.keyboard;
 import user.keycodes;
 
 void main() {
+	for(;;) {
+	}
+
 	Console.initialize();
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.Green;
