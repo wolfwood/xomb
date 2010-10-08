@@ -18,6 +18,8 @@ import kernel.filesystem.ramfs;
 
 import kernel.mem.pageallocator;
 
+import user.environment;
+
 struct Context {
 public:
 
@@ -27,9 +29,10 @@ public:
 		root = cast(PageLevel4*)(Paging.mapRegion(rootPhysAddr, 4096));
 		*root = PageLevel4.init;
 		// Map in kernel pages
-		for (size_t idx = 256; idx < 512; idx++) {
-			root.entries[idx].pml = Paging.kernelPageTable.entries[idx].pml;
-		}
+		root.entries[256].pml = Paging.kernelPageTable.entries[256].pml;
+		root.entries[509].pml = Paging.kernelPageTable.entries[509].pml;
+		root.entries[510].pml = Paging.kernelPageTable.entries[510].pml;
+
 		root.entries[511].pml = cast(ulong)rootPhysAddr;
 		root.entries[511].present = 1;
 		root.entries[511].rw = 1;
@@ -73,6 +76,9 @@ public:
 		Paging.mapRegion(null, stack, 4096, cast(void*)0xf0000000, true);
 		stack = cast(void*)0xf0000000;
 		//kprintfln!("c")();
+
+		// Allocate AddressSpace area
+		Paging.createGib(cast(ubyte*)(255UL << ((9*3) + 12)), 1024*1024*1024, AccessMode.Writable | AccessMode.Kernel);
 
 		resourceHeap = cast(void*)0xe0000000;
 
@@ -212,7 +218,8 @@ public:
 		return contextStackPtr;
 	}
 
-	void execute() {
+	// first program entry, mimicking traditional _start() -> main()
+	void upcallFirstEntry() {
 		install();
 		asm {
 			// Get return from install() and set as stack pointer
@@ -220,6 +227,27 @@ public:
 
 			// Context Restore
 			add RSP, 16;
+
+			// pass 0 as argument to _start as UVT discriminator
+			mov RDI, 0;
+
+			// Go to userspace
+			iretq;
+		}
+	}
+
+	// enter thread scheduler
+	void  upcallReentry() {
+		install();
+		asm {
+			// Get return from install() and set as stack pointer
+			mov RSP, RAX;
+
+			// Context Restore
+			add RSP, 16;
+
+			// pass 1 as argument to _start as UVT discriminator
+			mov RDI, 1;
 
 			// Go to userspace
 			iretq;

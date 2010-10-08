@@ -35,9 +35,7 @@ public:
 
 	// Create a new segment that will fit the indicated size
 	// into the global address space.
-	ubyte[] createSegment(ulong size, uint flags) {
-		ubyte* location = null;
-
+	ubyte[] createSegment(ubyte* location, ulong size, uint flags) {
 		Paging.createGib(location, size, flags);
 
 		return location[0 .. size];
@@ -45,18 +43,13 @@ public:
 
 	// Open a segment indicated by location into the
 	// virtual address space of dest.
-	bool openSegment(AddressSpace dest, ubyte* location, uint flags) {
-		if (dest !is null) {
-			// Hmm, we need to open this in another address space.
-			return false;
-		}
-		else {
-			// We should open this in our address space.
-			return Paging.openGib(location, flags);
-		}
+	bool openSegment(ubyte* location, uint flags) {
+		// We should open this in our address space.
+		return Paging.openGib(location, flags);
 	}
 
 	bool mapSegment(AddressSpace dest, ubyte* location, ubyte* destination, uint flags) {
+		Paging.mapGib(dest, location, destination, flags);
 		return false;
 	}
 
@@ -68,7 +61,7 @@ public:
 
 	// Create a virtual address space.
 	AddressSpace createAddressSpace() {
-		return null;
+		return Paging.createAddressSpace();;;;
 	}
 
 	// --- OLD --- //

@@ -24,6 +24,9 @@ import architecture.cpu;
 import architecture.timing;
 import architecture.vm;
 
+// temporary h4x
+import kernel.system.loader;
+	
 class SyscallImplementations {
 static:
 public:
@@ -48,24 +51,24 @@ public:
 
 	// void exit(ulong retval)
 	SyscallError exit(ExitArgs* params) {
-		// Use ExitArgs* here... you won't be able to after the asm block
+		Environment* child = Scheduler.current();
+		Environment* parent = child.parent;
 
-		// ... //
-
-		// We need to switch to a kernel stack
-		ulong stackPtr = cast(ulong)Cpu.stack;
-		asm {
-			mov RAX, stackPtr;
-			mov RSP, RAX;
-		}
-
+		// Use ExitArgs* before this line
 		// Remove the environment from the scheduler
 		ErrorVal ret = Scheduler.removeEnvironment();
 
-		Scheduler.idleLoop();
+		if(!(parent is null)){
+			Scheduler.executeEnvironment(parent);
+
+			// if parent exits, above might return
+			Scheduler.idleLoop();
+		}else{
+			Scheduler.idleLoop();
+		}
 
 		// You DO NOT return from exit... NEVER
-		return SyscallError.OK;
+		return SyscallError.Failcopter;
 	}
 
 	// Memory manipulation system calls
@@ -73,16 +76,21 @@ public:
 	// ubyte* location = open(AddressSpace dest, ubyte* address, int mode);
 	SyscallError open(out bool ret, OpenArgs* params) {
 		// Map in the resource
-		ret = VirtualMemory.openSegment(params.dest, params.address, params.mode);
+		ret = VirtualMemory.openSegment(params.address, params.mode);
 
 		return SyscallError.OK;
 	}
 
-	// ubyte[] location = create(ulong size, int mode);
+	// ubyte[] location = create(ubyte* location, ulong size, int mode);
 	SyscallError create(out ubyte[] ret, CreateArgs* params) {
 		// Create a new resource.
-		ret = VirtualMemory.createSegment(params.size, params.mode);
+		ret = VirtualMemory.createSegment(params.location, params.size, params.mode);
 
+		return SyscallError.Failcopter;
+	}
+
+	SyscallError map(MapArgs* params) {
+		VirtualMemory.mapSegment(params.dest, params.location, params.destination, params.mode);
 		return SyscallError.Failcopter;
 	}
 
@@ -103,11 +111,6 @@ public:
 
 	// schedule(AddressSpace dest);
 	SyscallError schedule(ScheduleArgs* params) {
-		return SyscallError.Failcopter;
-	}
-
-	// yield(AddressSpace dest);
-	SyscallError yield(YieldArgs* params) {
 		return SyscallError.Failcopter;
 	}
 
@@ -141,6 +144,36 @@ public:
 
 			return SyscallError.OK;
 		}
+	}
+
+	SyscallError createEnv(out uint ret, CreateEnvArgs* params){
+		Environment* child;
+
+		child = Loader.path2env(params.name);
+
+		// restore current's root page table
+		Scheduler.current.context.install();
+
+		if(!(child is null)){
+			child.parent = Scheduler.current;
+			ret = child.info.id;
+
+			return SyscallError.OK;
+		}else{
+			return SyscallError.Failcopter;
+		}
+	}
+
+	SyscallError yield(YieldArgs* params){
+		Environment* child = Scheduler.getEnvironmentById(params.eid);
+
+		Scheduler.executeEnvironment(child);
+
+		// this should only happen if the eid is for an environment that unused or in the process of exiting
+		Scheduler.idleLoop();
+
+		// never happens
+		return SyscallError.OK;
 	}
 }
 

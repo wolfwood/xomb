@@ -31,6 +31,8 @@ import kernel.dev.console;
 
 import architecture.mutex;
 
+import user.environment;
+
 class Paging {
 static:
 
@@ -43,11 +45,13 @@ static:
 		root = cast(PageLevel4*)PageAllocator.allocPage();
 		PageLevel3* pl3 = cast(PageLevel3*)PageAllocator.allocPage();
 		PageLevel2* pl2 = cast(PageLevel2*)PageAllocator.allocPage();
+		PageLevel3* globalRoot = cast(PageLevel3*)PageAllocator.allocPage();
 
 		//kprintfln!("root: {} pl3: {} pl2: {}")(root, pl3, pl2);
 
 		// Initialize the structure. (Zero it)
 		*root = PageLevel4.init;
+		*globalRoot = PageLevel3.init;
 		*pl3 = PageLevel3.init;
 		*pl2 = PageLevel2.init;
 
@@ -69,6 +73,9 @@ static:
 		pl3.entries[510].pml = cast(ulong)pl2;
 		pl3.entries[510].present = 1;
 		pl3.entries[510].rw = 1;
+
+		// Map entry 509 to the global root
+		root.entries[509].pml = cast(ulong)globalRoot;
 
 		// The current position of the kernel space. All gets appended to this address.
 		heapAddress = LinkerScript.kernelVMA;
@@ -214,6 +221,112 @@ static:
 		return gibAddr;
 	}
 
+	AddressSpace createAddressSpace() {
+		// XXX: the place where the address foo is stored is hard coded in context :(
+		// and now it is going to be hardcoded here :(
+
+		// Make a new root pagetable
+		ubyte* rootPhysAddr = cast(ubyte*)PageAllocator.allocPage();
+
+		PageLevel3* pl3 = root.getTable(255);
+		PageLevel2* addressRoot = pl3.getTable(0);
+
+		PageLevel4* addressSpace;
+
+		for(int i = 1; i < 512; i++) {
+			if (addressRoot.getTable(i) is null) {
+				addressRoot.setTable(i, rootPhysAddr, false);
+				addressSpace = cast(PageLevel4*)addressRoot.getTable(i);
+				break;
+			}
+		}
+
+		// Initialize the address space root page table
+		*addressSpace = PageLevel4.init;
+
+		// Map in kernel pages
+		addressSpace.entries[256].pml = root.entries[256].pml;
+		addressSpace.entries[509].pml = root.entries[509].pml;
+
+		addressSpace.entries[511].pml = cast(ulong)rootPhysAddr;
+		addressSpace.entries[511].present = 1;
+		addressSpace.entries[511].rw = 1;
+
+		// Create Level 3 and Level 2 for page trick
+		void* pl3addr = PageAllocator.allocPage();
+		void* pl2addr = PageAllocator.allocPage();
+
+		addressSpace.entries[510].pml = cast(ulong)pl3addr;
+		addressSpace.entries[510].present = 1;
+		addressSpace.entries[510].rw = 1;
+
+		pl3 = addressSpace.getTable(510);
+		*pl3 = PageLevel3.init;
+		
+		// Map entry 510 to the next level
+		pl3.entries[510].pml = cast(ulong)pl2addr;
+		pl3.entries[510].present = 1;
+		pl3.entries[510].rw = 1;
+
+		PageLevel2* pl2 = pl3.getTable(510);
+		*pl2 = PageLevel2.init;
+
+		// Map entries 511 to the PML4
+		pl3.entries[511].pml = cast(ulong)rootPhysAddr;
+		pl3.entries[511].present = 1;
+		pl3.entries[511].rw = 1;
+		pl2.entries[511].pml = cast(ulong)rootPhysAddr;
+		pl2.entries[511].present = 1;
+		pl2.entries[511].rw = 1;
+
+		return cast(AddressSpace)addressSpace;
+	}
+
+	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, uint flags) {
+		// XXX: look for special bit or something, or that the pointer is
+		// within the AddressSpace area...
+		PageLevel4* addressSpace = cast(PageLevel4*)destinationRoot;
+
+		// So. destinationRoot is the virtual address of the destination
+		// root page table within the source (current) page table.
+		// Due to paging trick magic.
+
+		ulong indexL4, indexL3, indexL2, indexL1;
+		translateAddress(cast(ubyte*)destinationRoot, indexL1, indexL2, indexL3, indexL4);
+
+		PageLevel3* pl3 = root.getTable(indexL4);
+		PageLevel2* pl2 = pl3.getTable(indexL3);
+		PageLevel1* pl1 = pl2.getTable(indexL2);
+		ulong addr = pl1.entries[indexL1].address();
+
+		ulong oldRoot = root.entries[511].address();
+
+		// Now, figure out the physical address of the gib root.
+
+		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
+		pl3 = root.getTable(indexL4);
+		ubyte* locationAddr = cast(ubyte*)pl3.entries[indexL3].address();
+
+		// Goto the other address space
+		asm {
+			mov RAX, addr;
+			mov CR3, RAX;
+		}
+
+		// Add an entry into the new address space that shares the gib of the old
+		translateAddress(destination, indexL1, indexL2, indexL3, indexL4);
+		pl3 = root.getOrCreateTable(indexL4, true);
+		pl3.setTable(indexL3, locationAddr, true);
+
+		// Return to our old address space
+		asm {
+			mov RAX, oldRoot;
+			mov CR3, RAX;
+		}
+
+		return ErrorVal.Success;
+	}
+
 	synchronized ErrorVal mapGib(void* gib, void* to) {
 		pagingLock.lock();
 
@@ -270,11 +383,26 @@ static:
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
 
-		// Allocate paging structures
-		bool usermode = (flags & Access.Kernel) == 0;
-		PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
-		PageLevel2* pl2 = pl3.getOrCreateTable(indexL3, usermode);
+		bool usermode = (flags & AccessMode.Kernel) == 0;
+		if (flags & AccessMode.Global) {
+			PageLevel3* globalRoot = root.getTable(509);
 
+			PageLevel2* global_pl3 = globalRoot.getOrCreateTable(indexL4, usermode);
+			PageLevel1* global_pl2 = global_pl3.getOrCreateTable(indexL3, usermode);
+
+			// Now, global_pl2 is the global root of the gib!!!
+
+			// Allocate paging structures
+			PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
+			pl3.setTable(indexL3, cast(ubyte*)global_pl2, usermode);
+		}
+		else {
+			PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
+			PageLevel2* pl2 = pl3.getOrCreateTable(indexL3, usermode);
+		}
+
+		// XXX: Check for errors, maybe handle flags?!
+		// XXX: return false if it is already there
 		return true;
 	}
 

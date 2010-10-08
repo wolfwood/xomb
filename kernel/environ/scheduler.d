@@ -46,6 +46,17 @@ public:
 		return SchedulerImplementation.length();
 	}
 
+	Environment* getEnvironmentById(uint eid) {
+		Environment* env = SchedulerImplementation.getEnvironmentById(eid);
+
+		/*if (env is null) {
+			Log.result(ErrorVal.Fail);
+		} else {
+			Log.result(ErrorVal.Success);
+			}*/
+		return env;
+	}
+
 	Environment* newEnvironment() {
 		Log.print("Scheduler: newEnvironment()");
 		Environment* newEnv = SchedulerImplementation.newEnvironment();
@@ -76,6 +87,18 @@ public:
 		// The previous function should NOT return
 		// So if it does, fail
 		kprintfln!("FAIL")();
+		return ErrorVal.Fail;
+	}
+
+	ErrorVal executeEnvironment(Environment* env){
+		
+		// XXX: I smell race condition
+		if(env !is null && (env.state == Environment.State.Ready || env.state == Environment.State.Running)){
+			current = env;
+
+			env.execute();
+		}
+
 		return ErrorVal.Fail;
 	}
 

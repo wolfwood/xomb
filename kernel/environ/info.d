@@ -11,8 +11,6 @@ import kernel.core.error;
 
 import kernel.system.segment;
 
-import kernel.filesystem.ramfs;
-
 import architecture.context;
 
 import kernel.sched.roundrobin;
@@ -44,12 +42,16 @@ struct Environment {
 
 	SchedulerInfo info;
 
+	Environment* parent;
+	bool hasRunYet;
+
 	ErrorVal initialize() {
 		// Create a page table for this environment
 		context.initialize();
 
 		context.preamble(entry);
 
+		hasRunYet = false;
 		state = State.Ready;
 
 		return ErrorVal.Success;
@@ -71,12 +73,13 @@ struct Environment {
 		return context.mapRegion(physAddr, length);
 	}
 
-//	Gib allocGib() {
-//		return context.allocGib();
-//	}
-
 	void execute() {
-		context.execute();
+		if(!hasRunYet){
+			hasRunYet = true;
+			context.upcallFirstEntry();
+		}else{
+			context.upcallReentry();
+		}
 	}
 }
 

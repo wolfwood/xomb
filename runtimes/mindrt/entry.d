@@ -9,29 +9,77 @@
 
 import user.syscall;
 
+import libos.libdeepmajik.threadscheduler;
+
 // Will be linked to the user's main function
 int main(char[][]);
 
-extern(C) ubyte _bss;
-extern(C) ubyte _ebss;
 extern(C) ubyte _edata;
 extern(C) ubyte _end;
 
-extern(C) void _start() {
-	// Zero the bss 
+ubyte* startBSS = &_edata;
+ubyte* endBSS = &_end;
+
+// Upcall Vector Table
+void function()[2] UVT = [&start, &_enterThreadScheduler];
+ubyte* UVTbase = cast(ubyte*)UVT.ptr;
+
+ubyte[1024] tempStack;
+ubyte* tempStackTop = &tempStack[tempStack.length - 8];
+
+
+extern(C) void _start(int thing) {
+	asm{
+		naked;
+
+		//stackless equivalent of "UVT[thing]();"
+		movq RSI, UVTbase;
+		sal RDI, 3;
+		addq RSI, RDI;
+		jmp [RSI];
+	}
+}
+
+void start(){
+	// Zero the BSS, equivalent to start2()
 
 	asm {
-		pushq 0;
-	}
+		naked;
 
+		// load the addresses of the beginning and end of the BSS
+		mov RDX, startBSS;
+		//mov RDX, [RDX];
+		mov RCX, endBSS;
+		//mov RCX, [RCX];
+
+		// zero, one byte at a time
+	loop:
+		movb [RDX], 0;
+		inc RDX;
+		cmp RCX, RDX;
+		jne loop;
+
+		// now set the stack
+		movq RSP, tempStackTop;
+		
+		call start3;
+	}
+}
+
+void start2(){
 	ubyte* startBSS = &_edata;
 	ubyte* endBSS = &_end;
 
 	for( ; startBSS != endBSS; startBSS++) {
 		*startBSS = 0x00;
 	}
+	start3();
+}
 
-	main(null);
+void start3(){
+	XombThread* mainThread = threadCreate(&main);
 
-	exit(0);
+	mainThread.schedule();
+
+	_enterThreadScheduler();
 }

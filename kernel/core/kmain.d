@@ -163,7 +163,11 @@ extern(C) void apEntry() {
 	// 2. Core Initialization
 	Multiprocessor.installCore();
 
-	// 3. Schedule
+	// 3. Syscall Initialization
+	Log.print("Syscall: initialize()");
+	Log.result(Syscall.initialize());
+
+	// 4. Schedule
 	Scheduler.idleLoop();
 	for(;;){}
 }

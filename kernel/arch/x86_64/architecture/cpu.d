@@ -73,8 +73,8 @@ public:
 
 		enableFPU();
 
-		Log.print("Cpu: Installing System Calls");
-		Log.result(Syscall.initialize);
+		//Log.print("Cpu: Installing System Calls");
+		//Log.result(Syscall.initialize);
 
 		return ErrorVal.Success;
 	}
