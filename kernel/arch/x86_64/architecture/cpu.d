@@ -285,6 +285,11 @@ public:
 	     uint count;
 	     uint i=0;
 	     uint temp;
+
+			 ulong saveRBX;
+
+			 asm{movq saveRBX, RBX;}
+
 	     eax_ret = cpuidAX(0x2);
 		 ebx_ret = getBX();
 		 ecx_ret = getCX();
@@ -319,6 +324,10 @@ public:
 			edx_ret = getDX();
 		    i++;	     	     
 	     } while (i < count);
+
+
+			 asm{movq RBX, saveRBX;}
+
 		 return ErrorVal.Success;
 	}
 
