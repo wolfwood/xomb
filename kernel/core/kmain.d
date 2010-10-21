@@ -54,6 +54,8 @@ import kernel.dev.pci;
 
 import kernel.core.syscall;
 
+// init process
+import kernel.core.initprocess;
 
 // The main function for the kernel.
 // This will receive data from the boot loader.
@@ -136,17 +138,22 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	//Log.result(PCI.initialize());
 
 	// 7. Schedule
-	Scheduler.initialize();
+	//Scheduler.initialize();
 	
-	Loader.loadModules();
+	//Loader.loadModules();
 
 	Date dt;
 	Timing.currentDate(dt);
 	//kprintfln!("Date: {} {} {}")(dt.day, dt.month, dt.year);
 
-	Scheduler.kmainComplete();
+	//Scheduler.kmainComplete();
 
-	Scheduler.idleLoop();
+	//Scheduler.idleLoop();
+
+	Log.print("Init Process: install()");
+	Log.result(InitProcess.install());	
+
+	InitProcess.enterFromBSP();
 
 	// Run task
 	assert(false, "Something is VERY VERY WRONG. Scheduler.execute returned. :(");
@@ -168,6 +175,7 @@ extern(C) void apEntry() {
 	Log.result(Syscall.initialize());
 
 	// 4. Schedule
-	Scheduler.idleLoop();
-	for(;;){}
+	//Scheduler.idleLoop();
+
+	InitProcess.enterFromAP();
 }
