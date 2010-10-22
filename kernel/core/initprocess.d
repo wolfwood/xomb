@@ -58,20 +58,11 @@ struct InitProcess{
 		// XXX: make only data & BSS writable?
 		ubyte[] gibBytes =
 			VirtualMemory.createSegment(cast(ubyte*)oneGB, oneGB,  AccessMode.Writable);
-		ubyte[] moduleBytes =
-			System.moduleInfo[idx].start[0..System.moduleInfo[idx].length];
+		//ubyte[] moduleBytes =
+		//System.moduleInfo[idx].start[0..System.moduleInfo[idx].length];
 
 		//XXX: are modules aligned? just map in pages?
-		// --- cp from module to initBytes ---
-
-		// XXX: allocate pages
-		
-
-
-		//gibBytes[0..System.moduleInfo[idx].length] = moduleBytes[0..System.moduleInfo[idx].length];
-		for(j = 0; j < System.moduleInfo[idx].length; j++){
-			gibBytes[j] = moduleBytes[j];
-		}
+		VirtualMemory.mapRegion(gibBytes.ptr, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
 		
 
 		// gibify keyboard and console
@@ -92,8 +83,33 @@ struct InitProcess{
 
 	void enterFromBSP(){
 		// jump using sysret to 1GB for stackless entry
+		ulong mySS = ((8UL << 3) | 3);
+		ulong myRSP = 0;
+		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
+		ulong myCS = ((9UL << 3) | 3);
+		ulong oneGB = 1024*1024*1024;
 
-		for(;;){}
+		//for(;;){}
+		asm{
+			movq R11, mySS;
+			pushq R11;
+			
+			movq R11, myRSP;
+			pushq R11;
+
+			movq R11, myFLAGS;
+			pushq R11;
+
+			movq R11, myCS;
+			pushq R11;
+
+			movq R11, oneGB;
+			pushq R11;
+
+			movq RDI, 0;
+
+			iretq;
+		}
 	}
 
 	void enterFromAP(){
