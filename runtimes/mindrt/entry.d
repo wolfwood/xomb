@@ -10,6 +10,7 @@
 import user.syscall;
 
 import libos.libdeepmajik.threadscheduler;
+import libos.libdeepmajik.umm;
 
 // Will be linked to the user's main function
 int main(char[][]);
@@ -77,6 +78,9 @@ void start2(){
 }
 
 void start3(){
+	//UsermodeMemoryManager.
+	init();
+
 	XombThread* mainThread = threadCreate(&main);
 
 	mainThread.schedule();

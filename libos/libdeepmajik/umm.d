@@ -2,25 +2,42 @@ module libos.libdeepmajik.umm;
 
 import user.syscall;
 
-extern ubyte _end;
+// AccessMode
+import user.environment;
 
+//struct UserspaceMemoryManager{
+	ubyte[] stacks;
+	ubyte* stackGib = cast(ubyte*)(254UL << ((9*3) + 12));
+	const uint pageSize = 4096;
 
-ubyte* pageStack = cast(ubyte*)0x1000_0000UL;
+	void init(){
+		stacks = create(stackGib, 1024*1024*1024, AccessMode.Writable);
+	}
 
-
-ubyte* getPage(bool spacer = false){
-	pageStack -= 4096;
+	ubyte* getPage(bool spacer = false){
+		//pageStack -= 4096;
 	
-	ubyte* temp = pageStack;
+		//ubyte* temp = pageStack;
 
-	allocPage(cast(ubyte*)pageStack);
+		//allocPage(cast(ubyte*)pageStack);
 	
-	if(spacer){pageStack -= 4096;}
+		//if(spacer){pageStack -= 4096;}
 
-	return temp;
-}
+		//return temp;
 
-void freePage(ubyte* page){
-	// XXX: Actually Free Page
-	return;
-}
+		if(stacks.length < pageSize){return null;}
+
+		ubyte[] stack = stacks[(length - pageSize).. length];
+
+		stacks = stacks[0..(length -pageSize)];
+
+		if(spacer){stacks = stacks[0..(length -pageSize)];}
+
+		return stack.ptr;
+	}
+
+	void freePage(ubyte* page){
+		// XXX: Actually Free Page
+		return;
+	}
+//}
