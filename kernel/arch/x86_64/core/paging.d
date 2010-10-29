@@ -285,7 +285,12 @@ static:
 	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, uint flags) {
 		// XXX: look for special bit or something, or that the pointer is
 		// within the AddressSpace area...
-		PageLevel4* addressSpace = cast(PageLevel4*)destinationRoot;
+		if(destinationRoot is null){
+			PageLevel4* addressSpace = root;
+			destinationRoot = cast(AddressSpace)addressSpace;
+		}else{
+			PageLevel4* addressSpace = cast(PageLevel4*)destinationRoot;
+		}
 
 		// So. destinationRoot is the virtual address of the destination
 		// root page table within the source (current) page table.
@@ -297,15 +302,15 @@ static:
 		PageLevel3* pl3 = root.getTable(indexL4);
 		PageLevel2* pl2 = pl3.getTable(indexL3);
 		PageLevel1* pl1 = pl2.getTable(indexL2);
-		ulong addr = pl1.entries[indexL1].address();
+		ulong addr = cast(ulong)pl1.entries[indexL1].location();
 
-		ulong oldRoot = root.entries[511].address();
+		ulong oldRoot = cast(ulong)root.entries[511].location();
 
 		// Now, figure out the physical address of the gib root.
 
 		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
 		pl3 = root.getTable(indexL4);
-		ubyte* locationAddr = cast(ubyte*)pl3.entries[indexL3].address();
+		ubyte* locationAddr = cast(ubyte*)pl3.entries[indexL3].location();
 
 		// Goto the other address space
 		asm {

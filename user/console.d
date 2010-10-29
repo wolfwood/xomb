@@ -47,3 +47,4 @@ struct MetaData {
 
 	ulong videoBufferOffset = 0;
 }
+

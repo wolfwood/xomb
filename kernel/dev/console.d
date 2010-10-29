@@ -37,12 +37,18 @@ public:
 	void virtualAddress(void* addr) {
 		videoMemoryLocation = cast(ubyte*)addr;
 	}
+	
+	ubyte* virtualAddress() {
+		return videoMemoryLocation - videoInfo.videoBufferOffset;
+	}
 
 	// This will init the console driver
 	ErrorVal initialize() {
 		info.width = COLUMNS;
 		info.height = LINES;
 
+		// OLD WAY
+		/*
 		Gib video = RamFS.create("/devices/video", Access.Kernel | Access.Read | Access.Write);
 
 		MetaData* videoMetaData = cast(MetaData*)video.ptr;
@@ -54,6 +60,25 @@ public:
 
 		videoMemoryLocation = video.ptr + videoMetaData.videoBufferOffset;
 		videoInfo = videoMetaData;
+		*/
+		// NEW WAY
+		
+
+		// XXX:get free gib addy some other way
+		Gib video = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
+
+		MetaData* videoMetaData = cast(MetaData*)video.ptr;
+		*videoMetaData = info;
+		
+		video.seekAlign();
+		videoMetaData.videoBufferOffset = (cast(ulong)video.pos - cast(ulong)video.ptr);
+		video.map(cast(ubyte*)0xB8000, 1024*1024);
+		//VirtualMemory.mapRegion(cast(ubyte*)2*oneGB, cast(ubyte*)0xB8000, 1024*1024);
+		
+		videoMemoryLocation = video.ptr + videoMetaData.videoBufferOffset;
+		videoInfo = videoMetaData;
+
+		// END NEW WAY
 
 		uint temp = LINES * COLUMNS;
 		temp++;

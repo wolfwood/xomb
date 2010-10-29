@@ -19,13 +19,25 @@ import user.keycodes;
 import libos.libdeepmajik.threadscheduler;
 
 void main() {
+
 	// create heap gib?
 
 	// initialize userspace console code
+	Console.initialize(cast(ubyte*)(2UL*1024UL*1024UL*1024UL + 4096));
+
+	// say hello
+	Console.backcolor = Color.Black; 
+	Console.forecolor = Color.Green;
+
+	Console.putString("Welcome to XOmB");
+	Console.putString("\nWelcome to XOmB\n");
+	Console.putString(  "-=-=-=-=-=-=-=-\n\n");
+	
+	Console.backcolor = Color.Black; 
+	Console.forecolor = Color.LightGray;
 
 	// initialize userspace keyboard code
 
-	// say hello
 
 	// create new environment
 
@@ -38,16 +50,8 @@ void main() {
 	// yield to xsh
 	
 	
+	for(;;){}
+ 	
 
-	/*Console.initialize();
-	Console.backcolor = Color.Black; 
-	Console.forecolor = Color.Green;
-
-	Console.putString("\nWelcome to XOmB\n");
-	Console.putString(  "-=-=-=-=-=-=-=-\n\n");
-
-	Console.backcolor = Color.Black; 
-	Console.forecolor = Color.LightGray;
-
-	Console.putString("Done");*/
+	Console.putString("Done");
 }

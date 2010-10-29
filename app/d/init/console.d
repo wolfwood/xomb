@@ -13,8 +13,8 @@ struct Point {
 class Console {
 static:
 
-	void initialize() {
-		SysConsole.Console.initialize();
+	void initialize(ubyte* vidmem) {
+		SysConsole.Console.initialize(vidmem);
 	}
 
 	void resetColor() {

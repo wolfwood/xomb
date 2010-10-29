@@ -10,6 +10,9 @@ module kernel.core.initprocess;
 import kernel.core.error;
 import kernel.core.kprintf;
 
+// console gib
+import kernel.dev.console;
+
 // module definition
 import kernel.system.info;
 
@@ -58,16 +61,12 @@ struct InitProcess{
 		// XXX: make only data & BSS writable?
 		ubyte[] gibBytes =
 			VirtualMemory.createSegment(cast(ubyte*)oneGB, oneGB,  AccessMode.Writable);
-		//ubyte[] moduleBytes =
-		//System.moduleInfo[idx].start[0..System.moduleInfo[idx].length];
 
-		//XXX: are modules aligned? just map in pages?
 		VirtualMemory.mapRegion(gibBytes.ptr, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
 		
 
-		// gibify keyboard and console
-
-		// * map in these gibs
+		// * map in video and keyboard gibs
+		VirtualMemory.mapSegment(null, Console.virtualAddress(), cast(ubyte*)(2*oneGB), AccessMode.Writable);
 
 		// map in other modules
 
