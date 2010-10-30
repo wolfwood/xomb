@@ -29,7 +29,6 @@ void main() {
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.Green;
 
-	Console.putString("Welcome to XOmB");
 	Console.putString("\nWelcome to XOmB\n");
 	Console.putString(  "-=-=-=-=-=-=-=-\n\n");
 	

@@ -66,12 +66,16 @@ public:
 
 		// XXX:get free gib addy some other way
 		Gib video = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
+		//ubyte* freeGib;
+
+		//ubyte[] vid = VirtualMemory.createSegment(freeGib, oneGB, AccessMode.Writable | AccessMode.Kernel);
 
 		MetaData* videoMetaData = cast(MetaData*)video.ptr;
 		*videoMetaData = info;
 		
 		video.seekAlign();
 		videoMetaData.videoBufferOffset = (cast(ulong)video.pos - cast(ulong)video.ptr);
+
 		video.map(cast(ubyte*)0xB8000, 1024*1024);
 		//VirtualMemory.mapRegion(cast(ubyte*)2*oneGB, cast(ubyte*)0xB8000, 1024*1024);
 		
