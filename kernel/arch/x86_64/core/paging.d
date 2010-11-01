@@ -442,45 +442,6 @@ static:
 		return true;
 	}
 
-	// XXX: handle global and different sizes!
-	/*template findFreeSegment(bool upperhalf = true, bool global = false, uint size = 1024*1024*1024){
-		uint dividingLine = 256;
-
-		ubyte* findFreeSegment(){
-			static uint last1 = upperhalf ? dividingLine : 1, last2 = 0;
-			
-			bool foundFree;
-
-			while(!foundFree){
-				PageLevel3* pl3 = root.getTable(last1);
-
-				while(!foundFree && last2 < pl3.entries.length){
-					if(pl3.entries[last2].pml == 0){
-						foundFree = true;
-						addy = createAddress(last1, last2, 0,0);
-					}
-					last2++;
-				}
-
-				if(last2 >= pl3.entries.length){
-					last1++;
-				}
-
-				if(upperHalf){
-					if(last1 >= root.entries.length){
-						last1 = dividingLine;
-					}
-				}else{
-					if(last1 >= dividingLine){
-						last1 = 1;
-					}
-				}
-
-			}
-			
-			return addy;
-		}
-	}*/
 
 	// OLD
 	ubyte* allocGib(ref ubyte* location, uint gibIndex, uint flags) {

@@ -75,26 +75,26 @@ public:
 			bool foundFree;
 			void* addy;
 
-			return cast(ubyte*)Paging.createAddress(0, 0, 0, 257);
-
 			while(!foundFree){
 				PageLevel3* pl3 = Paging.root.getTable(last1);
 
 				if(pl3 is null){
-						addy = Paging.createAddress(last1, 0, 0,0);
-						break;
+					addy = Paging.createAddress(0, 0, 0, last1);
+					last2 = 1;
+					break;
 				}
 
 				while(!foundFree && last2 < pl3.entries.length){
 					if(pl3.entries[last2].pml == 0){
 						foundFree = true;
-						addy = Paging.createAddress(last1, last2, 0,0);
+						addy = Paging.createAddress(0, 0, last2, last1);
 					}
 					last2++;
 				}
 
 				if(last2 >= pl3.entries.length){
 					last1++;
+					last2 = 0;
 				}
 
 				if(upperhalf){
@@ -110,6 +110,8 @@ public:
 
 			}
 			
+			assert(addy !is null, "null gib find fail\n");
+
 			return cast(ubyte*)addy;
 		}
 	}

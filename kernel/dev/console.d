@@ -50,23 +50,6 @@ public:
 		info.width = COLUMNS;
 		info.height = LINES;
 
-		// OLD WAY
-		static if(false){
-		Gib video = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
-
-		MetaData* videoMetaData = cast(MetaData*)video.ptr;
-		*videoMetaData = info;
-
-		video.seekAlign();
-		videoMetaData.videoBufferOffset = (cast(ulong)video.pos - cast(ulong)video.ptr);
-		video.map(cast(ubyte*)0xB8000, 1024*1024);
-
-		videoMemoryLocation = video.ptr + videoMetaData.videoBufferOffset;
-		videoInfo = videoMetaData;
-		
-		// NEW WAY
-		}else{
-
 		// XXX:get free gib addy some other way
 		ubyte* freeGib = VirtualMemory.findFreeSegment();
 		const ulong oneGB = 1024*1024*1024;
@@ -76,19 +59,14 @@ public:
 		MetaData* videoMetaData = cast(MetaData*)vid.ptr;
 		*videoMetaData = info;
 		
-		//video.seekAlign();
-		videoMetaData.videoBufferOffset = VirtualMemory.pagesize * (1+ MetaData.sizeof/VirtualMemory.pagesize);//(cast(ulong)video.pos - cast(ulong)video.ptr);
+		videoMetaData.videoBufferOffset = 
+			VirtualMemory.pagesize * (1+ MetaData.sizeof/VirtualMemory.pagesize);
 
 		videoMemoryLocation = vid.ptr + videoMetaData.videoBufferOffset;
 		videoInfo = videoMetaData;
 
-
-		//video.map(cast(ubyte*)0xB8000, 1024*1024);
 		VirtualMemory.mapRegion(cast(ubyte*)(videoMemoryLocation), cast(ubyte*)0xB8000, 1024*1024);
 		
-		}
-		// END NEW WAY
-
 		uint temp = LINES * COLUMNS;
 		temp++;
 
