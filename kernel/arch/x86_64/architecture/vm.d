@@ -75,7 +75,7 @@ public:
 			bool foundFree;
 			void* addy;
 
-			return cast(ubyte*)Paging.createAddress(257, 0, 0,0);
+			return cast(ubyte*)Paging.createAddress(0, 0, 0, 257);
 
 			while(!foundFree){
 				PageLevel3* pl3 = Paging.root.getTable(last1);

@@ -166,7 +166,12 @@ static:
 											ulong indexLevel4) {
 		ulong vAddr = 0;
 
-		vAddr = indexLevel4 & 0x1ff;
+		if(indexLevel4 >= 256){
+			vAddr = ~vAddr;
+			vAddr <<= 9;
+		}
+
+		vAddr |= indexLevel4 & 0x1ff;
 		vAddr <<= 9;
 
 		vAddr |= indexLevel3 & 0x1ff;

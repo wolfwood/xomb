@@ -23,7 +23,7 @@ void main() {
 	// create heap gib?
 
 	// initialize userspace console code
-	Console.initialize(cast(ubyte*)(2UL*1024UL*1024UL*1024UL + 4096));
+	Console.initialize(cast(ubyte*)(2UL*1024UL*1024UL*1024UL));
 
 	// say hello
 	Console.backcolor = Color.Black; 
