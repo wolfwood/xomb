@@ -139,7 +139,8 @@ static:
 			else {
 //				kprintfln!("Gib Available")();
 
-				// Allocate Page
+				// Allocate Page 
+				// XXX: only if gib is allocate on access!!
 				addr = cast(void*)(cast(ulong)addr & 0xffff_ffff_ffff_f000UL);
 
 //				kprintfln!("Allocating a page")();
@@ -157,6 +158,27 @@ static:
 			mov CR3, RAX;
 		}
 		return ErrorVal.Success;
+	}
+
+	void* createAddress(ulong indexLevel1,
+											ulong indexLevel2,
+											ulong indexLevel3,
+											ulong indexLevel4) {
+		ulong vAddr = 0;
+
+		vAddr = indexLevel4 & 0x1ff;
+		vAddr <<= 9;
+
+		vAddr |= indexLevel3 & 0x1ff;
+		vAddr <<= 9;
+
+		vAddr |= indexLevel2 & 0x1ff;
+		vAddr <<= 9;
+
+		vAddr |= indexLevel1 & 0x1ff;
+		vAddr <<= 12;
+
+		return cast(void*) vAddr;
 	}
 
 	// This function will get the physical address that is mapped from the
@@ -282,21 +304,24 @@ static:
 		return cast(AddressSpace)addressSpace;
 	}
 
-	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, uint flags) {
+	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, AccessMode flags) {
+		PageLevel4* addressSpace;
+
 		// XXX: look for special bit or something, or that the pointer is
 		// within the AddressSpace area...
 		if(destinationRoot is null){
-			PageLevel4* addressSpace = root;
+			addressSpace = root;
 			destinationRoot = cast(AddressSpace)addressSpace;
 		}else{
-			PageLevel4* addressSpace = cast(PageLevel4*)destinationRoot;
+			addressSpace = cast(PageLevel4*)destinationRoot;
 		}
 
 		// So. destinationRoot is the virtual address of the destination
 		// root page table within the source (current) page table.
 		// Due to paging trick magic.
-
+		
 		ulong indexL4, indexL3, indexL2, indexL1;
+				
 		translateAddress(cast(ubyte*)destinationRoot, indexL1, indexL2, indexL3, indexL4);
 
 		PageLevel3* pl3 = root.getTable(indexL4);
@@ -305,7 +330,7 @@ static:
 		ulong addr = cast(ulong)pl1.entries[indexL1].location();
 
 		ulong oldRoot = cast(ulong)root.entries[511].location();
-
+		
 		// Now, figure out the physical address of the gib root.
 
 		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
@@ -383,12 +408,13 @@ static:
 		return gibAddr;
 	}
 
-	bool createGib(ubyte* location, ulong size, uint flags) {
+	bool createGib(ubyte* location, ulong size, AccessMode flags) {
 		// Find page translation
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
 
 		bool usermode = (flags & AccessMode.Kernel) == 0;
+
 		if (flags & AccessMode.Global) {
 			PageLevel3* globalRoot = root.getTable(509);
 
@@ -410,6 +436,46 @@ static:
 		// XXX: return false if it is already there
 		return true;
 	}
+
+	// XXX: handle global and different sizes!
+	/*template findFreeSegment(bool upperhalf = true, bool global = false, uint size = 1024*1024*1024){
+		uint dividingLine = 256;
+
+		ubyte* findFreeSegment(){
+			static uint last1 = upperhalf ? dividingLine : 1, last2 = 0;
+			
+			bool foundFree;
+
+			while(!foundFree){
+				PageLevel3* pl3 = root.getTable(last1);
+
+				while(!foundFree && last2 < pl3.entries.length){
+					if(pl3.entries[last2].pml == 0){
+						foundFree = true;
+						addy = createAddress(last1, last2, 0,0);
+					}
+					last2++;
+				}
+
+				if(last2 >= pl3.entries.length){
+					last1++;
+				}
+
+				if(upperHalf){
+					if(last1 >= root.entries.length){
+						last1 = dividingLine;
+					}
+				}else{
+					if(last1 >= dividingLine){
+						last1 = 1;
+					}
+				}
+
+			}
+			
+			return addy;
+		}
+	}*/
 
 	// OLD
 	ubyte* allocGib(ref ubyte* location, uint gibIndex, uint flags) {

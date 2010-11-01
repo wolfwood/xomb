@@ -19,6 +19,9 @@ public import user.console;
 
 import architecture.cpu;
 import architecture.mutex;
+import architecture.vm;
+
+import user.environment;
 
 // This is the true interface to the console
 class Console {
@@ -48,8 +51,7 @@ public:
 		info.height = LINES;
 
 		// OLD WAY
-		/*
-		Gib video = RamFS.create("/devices/video", Access.Kernel | Access.Read | Access.Write);
+		Gib video = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
 
 		MetaData* videoMetaData = cast(MetaData*)video.ptr;
 		*videoMetaData = info;
@@ -60,28 +62,31 @@ public:
 
 		videoMemoryLocation = video.ptr + videoMetaData.videoBufferOffset;
 		videoInfo = videoMetaData;
-		*/
+		
 		// NEW WAY
 		
 
 		// XXX:get free gib addy some other way
-		Gib video = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
-		//ubyte* freeGib;
+		//Gib video = GibAllocator.alloc(Access.Kernel | Access.Read | Access.Write);
+		/*ubyte* freeGib = VirtualMemory.findFreeSegment();
+		const ulong oneGB = 1024*1024*1024;
 
-		//ubyte[] vid = VirtualMemory.createSegment(freeGib, oneGB, AccessMode.Writable | AccessMode.Kernel);
+		ubyte[] vid = VirtualMemory.createSegment(freeGib, oneGB, AccessMode.Writable | AccessMode.Kernel);
 
-		MetaData* videoMetaData = cast(MetaData*)video.ptr;
+		MetaData* videoMetaData = cast(MetaData*)vid.ptr;
 		*videoMetaData = info;
 		
-		video.seekAlign();
-		videoMetaData.videoBufferOffset = (cast(ulong)video.pos - cast(ulong)video.ptr);
+		//video.seekAlign();
+		videoMetaData.videoBufferOffset = VirtualMemory.pagesize * (1+ MetaData.sizeof/VirtualMemory.pagesize);//(cast(ulong)video.pos - cast(ulong)video.ptr);
 
-		video.map(cast(ubyte*)0xB8000, 1024*1024);
-		//VirtualMemory.mapRegion(cast(ubyte*)2*oneGB, cast(ubyte*)0xB8000, 1024*1024);
-		
-		videoMemoryLocation = video.ptr + videoMetaData.videoBufferOffset;
+		videoMemoryLocation = vid.ptr + videoMetaData.videoBufferOffset;
 		videoInfo = videoMetaData;
 
+
+		//video.map(cast(ubyte*)0xB8000, 1024*1024);
+		VirtualMemory.mapRegion(cast(ubyte*)(videoMemoryLocation), cast(ubyte*)0xB8000, 1024*1024);
+		
+		*/
 		// END NEW WAY
 
 		uint temp = LINES * COLUMNS;

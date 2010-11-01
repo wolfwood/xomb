@@ -35,7 +35,7 @@ public:
 
 	// Create a new segment that will fit the indicated size
 	// into the global address space.
-	ubyte[] createSegment(ubyte* location, ulong size, uint flags) {
+	ubyte[] createSegment(ubyte* location, ulong size, AccessMode flags) {
 		Paging.createGib(location, size, flags);
 
 		return location[0 .. size];
@@ -43,12 +43,12 @@ public:
 
 	// Open a segment indicated by location into the
 	// virtual address space of dest.
-	bool openSegment(ubyte* location, uint flags) {
+	bool openSegment(ubyte* location, AccessMode flags) {
 		// We should open this in our address space.
 		return Paging.openGib(location, flags);
 	}
 
-	bool mapSegment(AddressSpace dest, ubyte* location, ubyte* destination, uint flags) {
+	bool mapSegment(AddressSpace dest, ubyte* location, ubyte* destination, AccessMode flags) {
 		Paging.mapGib(dest, location, destination, flags);
 		return false;
 	}
@@ -61,9 +61,58 @@ public:
 
 	// Create a virtual address space.
 	AddressSpace createAddressSpace() {
-		return Paging.createAddressSpace();;;;
+		return Paging.createAddressSpace();
 	}
 
+		// XXX: handle global and different sizes!
+	template findFreeSegment(bool upperhalf = true, bool global = false, uint size = 1024*1024*1024){
+		//
+
+		ubyte* findFreeSegment(){
+			const uint dividingLine = 256;
+			static uint last1 = (upperhalf ? dividingLine : 1), last2 = 0;
+			
+			bool foundFree;
+			void* addy;
+
+			return cast(ubyte*)Paging.createAddress(257, 0, 0,0);
+
+			while(!foundFree){
+				PageLevel3* pl3 = Paging.root.getTable(last1);
+
+				if(pl3 is null){
+						addy = Paging.createAddress(last1, 0, 0,0);
+						break;
+				}
+
+				while(!foundFree && last2 < pl3.entries.length){
+					if(pl3.entries[last2].pml == 0){
+						foundFree = true;
+						addy = Paging.createAddress(last1, last2, 0,0);
+					}
+					last2++;
+				}
+
+				if(last2 >= pl3.entries.length){
+					last1++;
+				}
+
+				if(upperhalf){
+					if(last1 >= Paging.root.entries.length){
+						last1 = dividingLine;
+					}
+				}else{
+					if(last1 >= dividingLine){
+						last1 = 1;
+					}
+
+				}
+
+			}
+			
+			return cast(ubyte*)addy;
+		}
+	}
 	// --- OLD --- //
 
 	ubyte* allocGib(out ubyte* location, uint gibIndex, uint flags) {

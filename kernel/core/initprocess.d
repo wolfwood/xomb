@@ -45,8 +45,8 @@ struct InitProcess{
 		VirtualMemory.mapSegment(null, Console.virtualAddress(), cast(ubyte*)(2*oneGB), AccessMode.Writable);
 
 		// map in other modules
-		createSegmentForModule(helloname, 3);
-
+		//createSegmentForModule(helloname, 3);
+		
 		return ErrorVal.Success; 
 	}
 
@@ -139,7 +139,7 @@ private:
 			}
 		}
 
-		if(idx >= System.numModules){
+		if(idx >= System.moduleInfo.length){
 			// no match for initname was found
 			return -1;
 		}

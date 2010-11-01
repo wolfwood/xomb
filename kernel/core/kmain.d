@@ -151,12 +151,16 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	//Scheduler.idleLoop();
 
 	Log.print("Init Process: install()");
-	Log.result(InitProcess.install());	
+	auto fail = InitProcess.install();
+	Log.result(fail);	
 
-	InitProcess.enterFromBSP();
-
+	if(fail != ErrorVal.Fail){
+		InitProcess.enterFromBSP();
+	}
 	// Run task
 	assert(false, "Something is VERY VERY WRONG. Scheduler.execute returned. :(");
+	
+	for(;;){}
 }
 
 extern(C) void apEntry() {

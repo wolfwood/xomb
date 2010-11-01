@@ -68,20 +68,20 @@ struct ForkArgs {
 
 struct OpenArgs {
 	ubyte* address;
-	int mode;
+	AccessMode mode;
 }
 
 struct CreateArgs {
 	ubyte* location;
 	ulong size;
-	int mode;
+	AccessMode mode;
 }
 
 struct MapArgs {
 	AddressSpace dest;
 	ubyte* location;
 	ubyte* destination;
-	int mode;
+	AccessMode mode;
 }
 
 struct CloseArgs {
