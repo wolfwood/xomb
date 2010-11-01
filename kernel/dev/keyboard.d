@@ -3,6 +3,7 @@ module kernel.dev.keyboard;
 // Import the architecture specific keyboard driver
 import architecture.keyboard;
 import architecture.vm;
+import user.environment;
 
 import kernel.core.error;
 
@@ -12,27 +13,27 @@ import user.keycodes;
 
 import kernel.dev.console;
 
-import kernel.filesystem.ramfs;
-import kernel.mem.giballocator;
-import kernel.mem.gib;
-
 class Keyboard {
-static:
+	static:
 
 	ErrorVal initialize() {
-		_buffer = RamFS.create("/devices/keyboard", Access.Kernel | Access.Read | Access.Write);
+		address = VirtualMemory.findFreeSegment();
+		_buffer = cast(short[])VirtualMemory.createSegment(address, 2*1024*1024, AccessMode.DefaultKernel);
+
 		_writeOffset = cast(ushort*)_buffer.ptr;
 		*_writeOffset = 0;
-		_buffer.seek(2);
-		_readOffset = cast(ushort*)_buffer.pos;
+		_readOffset = &((cast(ushort*)_buffer)[1]);
 		*_readOffset = 0;
-		_buffer.seek(2);
-		_buffer.write(cast(ushort)(3 * VirtualMemory.pagesize()));
+		
+		((cast(ushort*)_buffer)[2]) = cast(ushort)(3 * VirtualMemory.pagesize());
 		_maxOffset = ((3 * VirtualMemory.pagesize()) / 2) - 3;
+
+		_buffer = _buffer[3..	_maxOffset];
 		ErrorVal ret = KeyboardImplementation.initialize(&putKey);
 		return ret;
 	}
-
+	
+	ubyte* address;
 private:
 
 	void putKey(Key nextKey, bool released) {
@@ -46,10 +47,8 @@ private:
 		}
 
 		// put in the buffer at the write pointer position
-		_buffer.write(cast(short)nextKey);
+		_buffer[*_writeOffset] = cast(short)nextKey;
 		if ((*_writeOffset + 1) >= _maxOffset) {
-			_buffer.rewind();
-			_buffer.seek(6);
 			*_writeOffset = 0;
 		}
 		else {
@@ -57,7 +56,7 @@ private:
 		}
 	}
 
-	Gib _buffer;
+	short[] _buffer;
 	ushort* _writeOffset;
 	ushort* _readOffset;
 	ushort _maxOffset;

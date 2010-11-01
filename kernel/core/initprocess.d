@@ -12,6 +12,7 @@ import kernel.core.kprintf;
 
 // console gib
 import kernel.dev.console;
+import kernel.dev.keyboard;
 
 // module definition
 import kernel.system.info;
@@ -43,6 +44,7 @@ struct InitProcess{
 
 		// * map in video and keyboard segments
 		VirtualMemory.mapSegment(null, Console.virtualAddress(), cast(ubyte*)(2*oneGB), AccessMode.Writable);
+		VirtualMemory.mapSegment(null, Keyboard.address, cast(ubyte*)(3*oneGB), AccessMode.Writable);
 
 		// map in other modules
 		//createSegmentForModule(helloname, 3);

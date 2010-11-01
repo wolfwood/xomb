@@ -130,8 +130,8 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.print("Multiprocessor: bootCores()");
 	Log.result(Multiprocessor.bootCores());
 
-	//Log.print("Keyboard: initialize()");
-	//Log.result(Keyboard.initialize());
+	Log.print("Keyboard: initialize()");
+	Log.result(Keyboard.initialize());
 
 	Log.print("PCI: initialize()");
 	Log.result(ErrorVal.Fail);

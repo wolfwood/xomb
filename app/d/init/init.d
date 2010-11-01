@@ -10,8 +10,6 @@ import user.syscall;
 import user.ramfs;
 
 import console;
-
-import libos.ramfs;
 import libos.keyboard;
 
 import user.keycodes;
@@ -24,6 +22,7 @@ void main() {
 
 	// initialize userspace console code
 	Console.initialize(cast(ubyte*)(2UL*1024UL*1024UL*1024UL));
+	Keyboard.initialize(cast(ushort*)(3UL*1024UL*1024UL*1024UL));
 
 	// say hello
 	Console.backcolor = Color.Black; 
@@ -48,9 +47,65 @@ void main() {
 
 	// yield to xsh
 	
+	printPrompt();
 	
+	char[128] str;
+	uint pos = 0;
+
+	bool released;
+	for(;;) {
+		Key key = Keyboard.nextKey(released);
+		//Console.putChar('|');
+		if (!released) {
+			if (key == Key.Return) {
+				Console.putChar('\n');
+				
+				if (pos != 0) {
+					// interpret str
+					interpret(str[0..pos]);
+				}
+
+				// print prompt
+				printPrompt();
+				
+				// go back to start
+				pos = 0;
+			}
+			else if (key == Key.Backspace) {
+				if (pos > 0) {
+					Point pt;
+					pt = Console.position;
+					Console.position(pt.x-1, pt.y);
+					Console.putChar(' ');
+					Console.position(pt.x-1, pt.y);
+					pos--;
+				}
+			}
+			else {
+				char translate = Keyboard.translateKey(key);
+				if (translate != '\0' && pos < 128) {
+					str[pos] = translate;
+					Console.putChar(translate);
+					pos++;
+				}
+			}
+		}
+	}
+
+
 	for(;;){}
  	
 
 	Console.putString("Done");
+}
+
+void interpret(char[] str) {
+	Console.putString(str);
+	Console.putChar('\n');
+}
+
+void printPrompt() {
+	Console.putString("root@localhost:");
+	Console.putString("/");
+	Console.putString("$ ");
 }
