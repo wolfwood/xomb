@@ -14,7 +14,7 @@ class Console {
 static:
 
 	void initialize() {
-		SysConsole.Console.initialize();
+	SysConsole.Console.initialize(cast(ubyte*)(2*1024*1024*1024UL));
 	}
 
 	void resetColor() {

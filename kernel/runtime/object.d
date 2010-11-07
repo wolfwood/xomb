@@ -74,9 +74,12 @@ version (X86_64)
 }
 else
 {
-	alias uint size_t;
-	alias int ptrdiff_t;
-	alias uint hash_t;
+	//alias uint size_t;
+	//alias int ptrdiff_t;
+	//alias uint hash_t;
+	alias ulong size_t;
+	alias long ptrdiff_t;
+	alias ulong hash_t;
 }
 
 /* *************************

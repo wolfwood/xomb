@@ -18,9 +18,11 @@ import user.keycodes;
 
 import libos.libdeepmajik.threadscheduler;
 
+
+
 void main() {
 
-	Console.initialize();
+	Console.initialize(cast(ubyte*)(2UL*1024UL*1024UL*1024UL));
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.Green;
 
@@ -32,7 +34,7 @@ void main() {
 
 	printPrompt();
 
-	Keyboard.initialize();
+	Keyboard.initialize(cast(ushort*)(3*1024*1024*1024UL));
 	
 
 	char[128] str;
