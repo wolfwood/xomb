@@ -27,8 +27,8 @@ static:
 		_readOffset = cast(ushort*)_buffer.pos;
 		*_readOffset = 0;
 		_buffer.seek(2);
-		_buffer.write(cast(ushort)(3 * VirtualMemory.getPageSize()));
-		_maxOffset = ((3 * VirtualMemory.getPageSize()) / 2) - 3;
+		_buffer.write(cast(ushort)(3 * VirtualMemory.pagesize()));
+		_maxOffset = ((3 * VirtualMemory.pagesize()) / 2) - 3;
 		ErrorVal ret = KeyboardImplementation.initialize(&putKey);
 		return ret;
 	}

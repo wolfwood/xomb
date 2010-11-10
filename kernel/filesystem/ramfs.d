@@ -16,10 +16,10 @@ import kernel.mem.gib;
 
 // The beef of the logic involves this structure
 // Add to directory structure
-// Just use a linked list allocation
+// Just use a binded list allocation
 
 // The first item in the directory is the Directory.Header
-// Followed by a linked list of Directory.Entry objects
+// Followed by a binded list of Directory.Entry objects
 
 struct Directory {
 	void alloc() {
@@ -34,7 +34,8 @@ struct Directory {
 		return gib.address;
 	}
 
-	ErrorVal link(ref Gib foo, char[] name) {
+	// Create a soft link
+	ErrorVal link(char[] name, char[] path, uint flags=0) {
 		Directory.Header* header;
 		header = cast(Directory.Header*)gib.ptr; 
 
@@ -51,11 +52,62 @@ struct Directory {
 		else {
 			// Go to next spot
 			Directory.Entry* entry = cast(Directory.Entry*)(gib.ptr + header.tailOffset);
-			newEntry = cast(Directory.Entry*)(cast(ulong)(entry + 1) + entry.length);
+			newEntry = cast(Directory.Entry*)(cast(ulong)(entry + 1) + entry.length + entry.linklen);
 		}
 
 		newEntry.length = name.length;
+		newEntry.linklen = path.length;
+		newEntry.ptr = null;
+		newEntry.flags = flags | Mode.Softlink;
+
+		nameptr = cast(char*)(newEntry + 1);
+		foreach (c; name) {
+			*nameptr = c;
+			nameptr++;
+		}	
+
+		foreach (c; path) {
+			*nameptr = c;
+			nameptr++;
+		}
+
+		if (header.tailOffset == 0) {
+			// Place in directory
+			header.headOffset = cast(ulong)newEntry - cast(ulong)gib.ptr;
+			header.tailOffset = header.headOffset;
+		}
+		else {
+			Directory.Entry* entry = cast(Directory.Entry*)(gib.ptr + header.tailOffset);
+			header.tailOffset += Directory.Entry.sizeof + entry.length + entry.linklen;
+		}
+		return ErrorVal.Success;
+	}
+
+	// Create a hard link (unreferenced!)
+	ErrorVal bind(ref Gib foo, char[] name, uint flags = 0) {
+		Directory.Header* header;
+		header = cast(Directory.Header*)gib.ptr; 
+
+		Directory.Entry* newEntry;
+
+		char* nameptr;
+
+		// Add after tail (if exists)
+		if (header.tailOffset == 0) {
+			// Empty Directory
+			// Go to the first spot
+			newEntry = cast(Directory.Entry*)(header + 1);
+		}
+		else {
+			// Go to next spot
+			Directory.Entry* entry = cast(Directory.Entry*)(gib.ptr + header.tailOffset);
+			newEntry = cast(Directory.Entry*)(cast(ulong)(entry + 1) + entry.length + entry.linklen);
+		}
+
+		newEntry.length = name.length;
+		newEntry.linklen = 0;
 		newEntry.ptr = foo.address;
+		newEntry.flags = flags;
 
 		nameptr = cast(char*)(newEntry + 1);
 		foreach (c; name) {
@@ -73,6 +125,11 @@ struct Directory {
 			header.tailOffset += Directory.Entry.sizeof + entry.length;
 		}
 		return ErrorVal.Success;
+	}
+
+	void chmod(char[] name, uint flags) {
+		Directory.Entry* entry = locate(name);
+		entry.flags = flags;
 	}
 
 	void open(Directory.Entry* entry, uint flags) {
@@ -121,7 +178,7 @@ struct Directory {
 				break;	
 			}
 
-			current = cast(Directory.Entry*)(nameptr + current.length);
+			current = cast(Directory.Entry*)(nameptr + current.length + current.linklen);
 		}
 
 		return null;
@@ -136,9 +193,17 @@ package:
 	}
 
 	struct Entry {
-		uint length;
+		ushort length;
+		ushort linklen;
 		uint flags;
 		ubyte* ptr;
+	}
+
+	enum Mode {
+		ReadOnly = 1,
+		Directory = 2,
+		Softlink = 4,
+		Executable = 8,
 	}
 }
 
@@ -152,28 +217,31 @@ static:
 		rootDir.alloc();
 
 		sub.alloc();
-		rootDir.link(sub.gib, "binaries");
+		rootDir.bind(sub.gib, "binaries", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.link(sub.gib, "configuration");
+		rootDir.bind(sub.gib, "boot", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.link(sub.gib, "kernel");
+		rootDir.bind(sub.gib, "configuration", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.link(sub.gib, "libraries");
+		rootDir.bind(sub.gib, "kernel", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.link(sub.gib, "share");
+		rootDir.bind(sub.gib, "libraries", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.link(sub.gib, "system");
+		rootDir.bind(sub.gib, "share", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.link(sub.gib, "temp");
+		rootDir.bind(sub.gib, "system", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		sub.alloc();
-		rootDir.link(sub.gib, "devices");
+		rootDir.bind(sub.gib, "temp", Directory.Mode.ReadOnly | Directory.Mode.Directory);
+
+		sub.alloc();
+		rootDir.bind(sub.gib, "devices", Directory.Mode.ReadOnly | Directory.Mode.Directory);
 
 		return ErrorVal.Success;
 	}
@@ -183,12 +251,34 @@ static:
 		size_t pos = 0;
 		Directory curDir = rootDir;
 
+		if (path.length == 1 && path[0] == '/') {
+			// Root directory
+			return rootDir.address();
+		}
+
 		ubyte* last;
 
 		void innerLocate(size_t from, size_t to) {
 			Directory.Entry* entry = curDir.locate(path[from..to]);
 			curDir.open(entry, Access.Kernel | Access.Read | Access.Write);
-			last = entry.ptr;
+			if (entry.linklen > 0) {
+				// soft link
+
+				// Expand out to the actual place
+				// Get link path
+				char* linkptr = cast(char*)(entry + 1);
+				linkptr += entry.length;
+				char[] linkpath = linkptr[0..entry.linklen];
+			
+				ubyte* gibptr = locate(linkpath);
+				if (gibptr !is null) {
+					curDir.gib = GibAllocator.open(gibptr, Access.Kernel | Access.Read | Access.Write);
+				}
+				last = gibptr;
+			}
+			else {
+				last = entry.ptr;
+			}
 		}
 
 		foreach(size_t i, c; path) {
@@ -212,7 +302,7 @@ static:
 		Directory newDir;
 		newDir.alloc();
 
-		return dir.link(newDir.gib, name);
+		return dir.bind(newDir.gib, name);
 	}
 
 	ErrorVal destroy() {
@@ -233,7 +323,7 @@ static:
 		dir.gib = GibAllocator.open(dirptr, Access.Kernel | Access.Read | Access.Write, gibIndex);
 
 		newGib = GibAllocator.alloc(flags);
-		dir.link(newGib, filename);
+		dir.bind(newGib, filename);
 
 		return newGib;
 	}
@@ -252,7 +342,41 @@ static:
 		return ErrorVal.Fail;
 	}
 
-	ErrorVal link() {
+	ErrorVal link(char[] name, char[] linkpath, int flags = 0) {
+		// Open directory where name should be placed
+		char[] path;
+		char[] filename;
+		Gib newGib;
+		if (splitPath(name, path, filename) == ErrorVal.Fail) {
+			return ErrorVal.Fail;
+		}
+
+		ubyte* dirptr = locate(path);
+		Directory dir;
+		dir.gib = GibAllocator.open(dirptr, Access.Kernel | Access.Read | Access.Write);
+
+		dir.link(filename, linkpath, flags);
+		return ErrorVal.Success;
+	}
+
+	ErrorVal chmod(char[] name, int flags = 0) {
+		// Open directory where name should be placed
+		char[] path;
+		char[] filename;
+		Gib newGib;
+		if (splitPath(name, path, filename) == ErrorVal.Fail) {
+			return ErrorVal.Fail;
+		}
+
+		ubyte* dirptr = locate(path);
+		Directory dir;
+		dir.gib = GibAllocator.open(dirptr, Access.Kernel | Access.Read | Access.Write);
+
+		dir.chmod(filename, flags);
+		return ErrorVal.Success;
+	}
+
+	ErrorVal bind() {
 		return ErrorVal.Fail;
 	}
 
@@ -264,7 +388,12 @@ private:
 				if (i == fullpath.length - 1) {
 					return ErrorVal.Fail;
 				}
-				path = fullpath[0..i];
+				if (i == 0) {
+					path = fullpath[0..1];
+				}
+				else {
+					path = fullpath[0..i];
+				}
 				filename = fullpath[i+1..$];
 				break;
 			}

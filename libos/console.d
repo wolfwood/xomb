@@ -1,4 +1,4 @@
-module libos.libconsole;
+module libos.console;
 
 private import user.syscall;
 
@@ -24,7 +24,7 @@ static:
 		videoInfo = cast(MetaData*)videoBuffer;
 
 		// Go to actual video buffer
-		videoBuffer += 4096;
+		videoBuffer += videoInfo.videoBufferOffset;
 	}
 
 	void putChar(char c) {
@@ -68,6 +68,14 @@ static:
 	void setPosition(uint x, uint y) {
 		videoInfo.xpos = x;
 		videoInfo.ypos = y;
+	
+		if (videoInfo.xpos >= videoInfo.width) {
+			videoInfo.xpos = videoInfo.width - 1;
+		}
+
+		if (videoInfo.ypos >= videoInfo.height) {
+			videoInfo.ypos = videoInfo.height - 1;
+		}
 	}
 
 	void clear() {
@@ -118,24 +126,6 @@ static:
 		if (videoInfo.ypos < 0) {
 			videoInfo.ypos = 0;
 		}
-	}
-
-	void position(uint x, uint y) {
-		videoInfo.xpos = x;
-		videoInfo.ypos = y;
-
-		if (videoInfo.xpos >= videoInfo.width) {
-			videoInfo.xpos = videoInfo.width - 1;
-		}
-
-		if (videoInfo.ypos >= videoInfo.height) {
-			videoInfo.ypos = videoInfo.height - 1;
-		}
-	}
-
-	void reset() {
-		videoInfo.colorAttribute = DEFAULTCOLORS;
-		clear();
 	}
 
 	void resetColor() {

@@ -49,6 +49,9 @@ import kernel.dev.console;
 // keyboard driver
 import kernel.dev.keyboard;
 
+// PCI
+import kernel.dev.pci;
+
 import kernel.core.syscall;
 
 
@@ -128,6 +131,10 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.print("Keyboard: initialize()");
 	Log.result(Keyboard.initialize());
 
+	Log.print("PCI: initialize()");
+	Log.result(ErrorVal.Fail);
+	//Log.result(PCI.initialize());
+
 	// 7. Schedule
 	Scheduler.initialize();
 	
@@ -135,7 +142,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	Date dt;
 	Timing.currentDate(dt);
-	kprintfln!("Date: {} {} {}")(dt.day, dt.month, dt.year);
+	//kprintfln!("Date: {} {} {}")(dt.day, dt.month, dt.year);
 
 	Scheduler.kmainComplete();
 

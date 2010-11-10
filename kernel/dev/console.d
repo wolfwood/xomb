@@ -47,10 +47,12 @@ public:
 
 		MetaData* videoMetaData = cast(MetaData*)video.ptr;
 		*videoMetaData = info;
-		video.seek(4096);
+
+		video.seekAlign();
+		videoMetaData.videoBufferOffset = (cast(ulong)video.pos - cast(ulong)video.ptr);
 		video.map(cast(ubyte*)0xB8000, 1024*1024);
 
-		videoMemoryLocation = cast(ubyte*)video.ptr + 4096;
+		videoMemoryLocation = video.ptr + videoMetaData.videoBufferOffset;
 		videoInfo = videoMetaData;
 
 		uint temp = LINES * COLUMNS;

@@ -4,6 +4,8 @@
 
 module kernel.system.definitions;
 
+import kernel.dev.pci;
+
 // This structure keeps track of information pertaining to onboard memory.
 struct Memory {
 	// The size of the RAM.
@@ -19,11 +21,13 @@ struct Module {
 	ubyte* start;
 	ulong length;
 
-	ubyte* virtualStart;
-
 	// The name of the module, if given.
-	uint nameLength;
-	char[64] name;
+	char[] name;
+	char[128] nameSpace;
+
+	// The path to this module on the file system
+	char[] path;
+	char[128] pathSpace;
 }
 
 // This enum is for the Region structure
@@ -81,5 +85,16 @@ struct Cache {
 	uint linesPerSector;
 }
 
+struct Device {
+	enum BusType {
+		PCI,
+	}
 
+	BusType type;
 
+	union Bus {
+		PCIDevice pci;
+	}
+
+	Bus bus;
+}

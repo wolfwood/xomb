@@ -45,7 +45,7 @@ public:
 	}
 
 	// The page size we are using
-	uint getPageSize() {
+	uint pagesize() {
 		return Paging.PAGESIZE;
 	}
 

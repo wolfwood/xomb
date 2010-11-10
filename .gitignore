@@ -6,7 +6,9 @@ build/xomb.iso
 build/iso/boot/xomb
 build/dsss.conf
 user/nativecall.d
+runtimes/mindrt/*.a
 *.a
 *.swp
 *.o
 *~
+*.dump

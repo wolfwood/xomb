@@ -10,9 +10,11 @@
  *
  * Author: Dave Wilkinson, The Regents of the University of California.
  *
+ * License: Public Domain
+ *
  */
 
-module kernel.runtime.precision;
+module mindrt.precision;
 
 /*-
  * Copyright (c) 1992, 1993
@@ -60,11 +62,6 @@ module kernel.runtime.precision;
  */
 
 //-------------
-
-/*#include <sys/cdefs.h>
-#include <sys/types.h>
-#include <sys/limits.h>
-#include <sys/syslimits.h>*/
 
 /*
  * Depending on the desired operation, we view a 64 bit integer (a long)
@@ -153,12 +150,10 @@ alias uint digit;
  * `fall out' the left (there never will be any such anyway).
  * We may assume len >= 0.  NOTE THAT THIS WRITES len+1 DIGITS.
  */
-void shl(digit* p, int len, int sh)
-{
+void shl(digit* p, int len, int sh) {
 	int i;
 
-	for (i = 0; i < len; i++)
-	{
+	for (i = 0; i < len; i++) {
 		p[i] = LHALF(p[i] << sh) | (p[i + 1] >> (HALF_BITS - sh));
 	}
 
@@ -173,8 +168,7 @@ void shl(digit* p, int len, int sh)
  * divisor are 4 `digits' in this base (they are shorter if they have
  * leading zeros).
  */
-ulong qdivrem(ulong uq, ulong vq, ulong* arq)
-{
+ulong qdivrem(ulong uq, ulong vq, ulong* arq) {
 	uu tmp;
 
 	digit* u;
@@ -381,8 +375,7 @@ qhat_too_big:
 	 */
 	if (arq) {
 		if (d) {
-			for (i = m + n; i > m; --i)
-			{
+			for (i = m + n; i > m; --i) {
 				u[i] = (u[i] >> d) | LHALF(u[i - 1] << (HALF_BITS - d));
 			}
 			u[i] = 0;
@@ -400,8 +393,7 @@ qhat_too_big:
 
 // Return 0, 1, or 2 as a <, =, > b respectively.
 // Neither a nor b are considered signed.
-int ucmpdi2(ulong a, ulong b)
-{
+int ucmpdi2(ulong a, ulong b) {
 	uu aa, bb;
 
 	aa.ul = a;
@@ -410,38 +402,32 @@ int ucmpdi2(ulong a, ulong b)
 			aa.ui[L] < bb.ui[L] ? 0 : aa.ui[L] > bb.ui[L] ? 2 : 1);
 }
 
-extern(C) int __ucmpdi2(ulong a, ulong b)
-{
+extern(C) int __ucmpdi2(ulong a, ulong b) {
 	return ucmpdi2(a,b);
 }
 
 // Divide two unsigned longs
-ulong udivdi3(ulong a, ulong b)
-{
+ulong udivdi3(ulong a, ulong b) {
 	return qdivrem(a, b, null);
 }
 
-extern(C) ulong __udivdi3(ulong a, ulong b)
-{
+extern(C) ulong __udivdi3(ulong a, ulong b) {
 	return udivdi3(a,b);
 }
 
 // Modulus two unsigned longs
-ulong umoddi3(ulong a, ulong b)
-{
+ulong umoddi3(ulong a, ulong b) {
 	ulong r;
 	qdivrem(a, b, &r);
 	return r;
 }
 
-extern(C) ulong __umoddi3(ulong a, ulong b)
-{
+extern(C) ulong __umoddi3(ulong a, ulong b) {
 	return umoddi3(a,b);
 }
 
 // Logical shift right of an unsigned long
-long lshrdi3(long a, qshift_t shift)
-{
+long lshrdi3(long a, qshift_t shift) {
 	uu aa;
 
 	aa.l = a;
@@ -449,7 +435,8 @@ long lshrdi3(long a, qshift_t shift)
 		aa.ui[L] = shift >= QUAD_BITS ? 0 :
 			aa.ui[H] >> (shift - LONG_BITS);
 		aa.ui[H] = 0;
-	} else if (shift > 0) {
+	}
+	else if (shift > 0) {
 		aa.ui[L] = (aa.ui[L] >> shift) |
 			(aa.ui[H] << (LONG_BITS - shift));
 		aa.ui[H] >>= shift;
@@ -458,15 +445,13 @@ long lshrdi3(long a, qshift_t shift)
 	return aa.l;
 }
 
-extern(C) long __lshrdi3(long a, qshift_t shift)
-{
+extern(C) long __lshrdi3(long a, qshift_t shift) {
 	return lshrdi3(a, shift);
 }
 
 // Arithmetic Shift Left of a signed long
 // A.K.A. Logical Shift Left
-long ashldi3(long a, qshift_t shift)
-{
+long ashldi3(long a, qshift_t shift) {
 	uu aa;
 
 	aa.l = a;
@@ -474,7 +459,8 @@ long ashldi3(long a, qshift_t shift)
 		aa.ui[H] = shift >= QUAD_BITS ? 0 :
 			aa.ui[L] << (shift - LONG_BITS);
 		aa.ui[L] = 0;
-	} else if (shift > 0) {
+	}
+	else if (shift > 0) {
 		aa.ui[H] = (aa.ui[H] << shift) |
 			(aa.ui[L] >> (LONG_BITS - shift));
 		aa.ui[L] <<= shift;
@@ -483,14 +469,12 @@ long ashldi3(long a, qshift_t shift)
 	return aa.l;
 }
 
-extern(C) long __ashldi3(long a, qshift_t shift)
-{
+extern(C) long __ashldi3(long a, qshift_t shift) {
 	return ashldi3(a, shift);
 }
 
 // Arithmetic Shift Right of a signed long
-long ashrdi3(long a, qshift_t shift)
-{
+long ashrdi3(long a, qshift_t shift) {
 	uu aa;
 
 	aa.l = a;
@@ -516,16 +500,14 @@ long ashrdi3(long a, qshift_t shift)
 	return aa.l;
 }
 
-extern(C) long __ashrdi3(long a, qshift_t shift)
-{
+extern(C) long __ashrdi3(long a, qshift_t shift) {
 	return ashrdi3(a,shift);
 }
 
 // Return 0, 1, or 2 as a <, =, > b respectively.
 // Both a and b are considered signed -- which means only
 // the high word is signed.
-int cmpdi2(long a, long b)
-{
+int cmpdi2(long a, long b) {
 	uu aa, bb;
 
 	aa.l = a;
@@ -535,21 +517,20 @@ int cmpdi2(long a, long b)
 			aa.ui[L] < bb.ui[L] ? 0 : aa.ui[L] > bb.ui[L] ? 2 : 1);
 }
 
-extern(C) int __cmpdi2(long a, long b)
-{
+extern(C) int __cmpdi2(long a, long b) {
 	return cmpdi2(a,b);
 }
 
 // Divide two signed longs
-long divdi3(long a, long b)
-{
+long divdi3(long a, long b) {
 	ulong ua, ub, ul;
 	int neg;
 
 	if (a < 0) {
 		ua = -cast(ulong)a;
 		neg = 1;
-	} else {
+	}
+	else {
 		ua = a;
 		neg = 0;
 	}
@@ -557,7 +538,8 @@ long divdi3(long a, long b)
 	if (b < 0) {
 		ub = -cast(ulong)b;
 		neg ^= 1;
-	} else {
+	}
+	else {
 		ub = b;
 	}
 
@@ -565,28 +547,28 @@ long divdi3(long a, long b)
 	return (neg ? -ul : ul);
 }
 
-extern(C) long __divdi3(long a, long b)
-{
+extern(C) long __divdi3(long a, long b) {
 	return divdi3(a,b);
 }
 
 // Modulus two signed longs
-long moddi3(long a, long b)
-{
+long moddi3(long a, long b) {
 	ulong ua, ub, ur;
 	int neg;
 
 	if (a < 0) {
 		ua = -cast(ulong)a;
 		neg = 1;
-	} else {
+	}
+	else {
 		ua = a;
 		neg = 0;
 	}
 
 	if (b < 0) {
 		ub = -cast(ulong)b;
-	} else {
+	}
+	else {
 		ub = b;
 	}
 
@@ -594,7 +576,6 @@ long moddi3(long a, long b)
 	return (neg ? -ur : ur);
 }
 
-extern(C) long __moddi3(long a, long b)
-{
+extern(C) long __moddi3(long a, long b) {
 	return moddi3(a,b);
 }

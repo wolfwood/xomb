@@ -7,23 +7,41 @@
 
 module architecture.pci;
 
-class PCIImplementation {
+import architecture.cpu;
+
+import kernel.core.kprintf;
+
+class PCIConfiguration {
 static:
+protected:
 
-	// Description: Will read from PCI.
-	ushort read(ushort bus, ushort slot, ushort func, ushort offset) {
-		return 0;
+	T read(T)(uint address) {
+		synchronized {
+			_setAddress(address);
+
+			// get offset
+			ushort offset = cast(ushort)(address & 0x3);
+
+//			return cast(T)(Cpu.ioIn!(uint)(0xcfc) >> (cast(uint)offset * 8));
+			return Cpu.ioIn!(T)(0xcfc + offset);
+		}
 	}
 
-	// Description: Will write to PCI.
-	void write8(uint address, ubyte offset, ubyte value) {
+	void write(T)(uint address, T value) {
+		synchronized {
+			_setAddress(address);
+
+			// get offset
+			ushort offset = cast(ushort)(address & 0x3);
+
+			Cpu.ioOut!(T)(0xcfc + offset, value);
+		}
 	}
 
-	// Description: Will write to PCI.
-	void write16(uint address, ubyte offset, ushort value) {
-	}
+private:
 
-	// Description: Will write to PCI.
-	void write32(uint address, ubyte offset, uint value) {
+	void _setAddress(uint address) {
+		// write out address
+		Cpu.ioOut!(uint, "0xcf8")(address & ~0x3);
 	}
 }

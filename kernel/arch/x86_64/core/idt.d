@@ -8,7 +8,7 @@
 
 module kernel.arch.x86_64.core.idt;
 
-import kernel.arch.x86_64.core.gdt;
+import kernel.arch.x86_64.core.descriptor;
 
 import kernel.core.util;	// For BitField!()
 import kernel.core.error;	// For ErrorVal so errors can be indicated
@@ -16,7 +16,7 @@ import kernel.core.kprintf;	// For printing the stack dump
 
 // This structure represents the appearance of the stack
 // upon receiving an interrupt on this architecture.
-align(1) struct InterruptStack {
+struct InterruptStack {
 	// Registers
 	ulong r15, r14, r13, r12, r11, r10, r9, r8;
 	ulong rbp, rdi, rsi, rdx, rcx, rbx, rax;
@@ -116,11 +116,11 @@ public:
 	// The following functions define entries within the table, where
 	// num is the index of the entry to set.
 	void setInterruptGate(uint num, void* funcPtr, uint ist = StackType.RegisterStack) {
-		setGate(num, GDT.SystemSegmentType.InterruptGate, cast(ulong)funcPtr, 0, ist);
+		setGate(num, SystemSegmentType.InterruptGate, cast(ulong)funcPtr, 0, ist);
 	}
 
 	void setSystemGate(uint num, void* funcPtr, uint ist = StackType.RegisterStack) {
-		setGate(num, GDT.SystemSegmentType.InterruptGate, cast(ulong)funcPtr, 3, ist);
+		setGate(num, SystemSegmentType.InterruptGate, cast(ulong)funcPtr, 3, ist);
 	}
 
 	void assignHandler(InterruptHandler func, uint vector) {
@@ -169,7 +169,7 @@ private:
 
 
 	// The generic setGate function
-	void setGate(uint num, GDT.SystemSegmentType gateType, ulong funcPtr, uint dplFlags, uint istFlags) {
+	void setGate(uint num, SystemSegmentType gateType, ulong funcPtr, uint dplFlags, uint istFlags) {
 		with(entries[num]) {
 			targetLo = funcPtr & 0xffff;
 			segment = 0x10;	// It will use CS_KERNEL (entry 2)
