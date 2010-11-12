@@ -66,7 +66,7 @@ void main() {
 	map(hiApp, cast(ubyte*)(2*oneGB), cast(ubyte*)(2*oneGB), AccessMode.Writable);
 
 	Console.putString("Yield\n");
-	yield(hiApp);
+	yieldToAddressSpace(hiApp);
 
 
 	printPrompt();

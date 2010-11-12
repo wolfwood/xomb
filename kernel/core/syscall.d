@@ -26,6 +26,8 @@ import architecture.vm;
 
 // temporary h4x
 import kernel.system.loader;
+import kernel.core.initprocess;
+
 	
 class SyscallImplementations {
 static:
@@ -55,8 +57,9 @@ public:
 	// void exit(ulong retval)
 	SyscallError exit(ExitArgs* params) {
 
-		for(;;){}
+		VirtualMemory.switchAddressSpace();
 
+		InitProcess.enter();
 
 		// You DO NOT return from exit... NEVER
 		return SyscallError.Failcopter;

@@ -318,11 +318,22 @@ static:
 		fakePl2.entries[511].present = 1;
 		fakePl2.entries[511].rw = 1;
 
+		// insert parent into child
+		fakePl3 = addressSpace.getOrCreateTable(255);
+		fakePl3.entries[0].pml = root.entries[511].pml;
+		fakePl3.entries[0].present = 1;
+		// child should not be able to edit parent's root table
+		fakePl3.entries[0].rw = 0;
 
 		return cast(AddressSpace)addressSpace;
 	}
 
 	synchronized ErrorVal switchAddressSpace(AddressSpace as){
+
+		if(as is null){
+			// XXX - just decode phys addr directly?
+			as = cast(AddressSpace)root.getTable(255).getTable(0);
+		}
 
 		// XXX: error checking
 
@@ -334,9 +345,13 @@ static:
 		PageLevel2* pl2 = pl3.getTable(indexL3);
 		PageLevel1* pl1 = pl2.getTable(indexL2);
 
-		rootPhysical = pl1.entries[indexL1].location();
+		ulong newPhysRoot = cast(ulong)pl1.entries[indexL1].location();
 
-		install();
+		asm{
+			mov RAX, newPhysRoot;
+			mov CR3, RAX;
+		}
+		
 
 		return ErrorVal.Success;
 	}

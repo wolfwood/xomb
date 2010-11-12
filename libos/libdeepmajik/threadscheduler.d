@@ -3,6 +3,8 @@ module libos.libdeepmajik.threadscheduler;
 import libos.libdeepmajik.umm;
 import user.syscall;
 
+import user.environment;
+
 const ulong ThreadStackSize = 4096;
 
 align(1) struct XombThread {
@@ -106,7 +108,7 @@ void threadYield(){
 
 	asm{
 		naked;
-
+		
 		//if(schedQueueRoot == schedQueueTail){return;}// super Fast (single thread) Path
 		mov R9, schedQueueRoot;
 		mov R8, schedQueueTail;
@@ -212,6 +214,37 @@ void threadYield(){
 	*/
 }
 
+
+void yieldToAddressSpace(AddressSpace as){
+	asm{
+		naked;
+		
+		// save stack ready to ret
+
+		call getCurrentThread;
+		mov R11, RAX;
+		
+		pushq RBX;
+		pushq RBP;
+		pushq R12;
+		pushq R13;
+		pushq R14;
+		pushq R15;
+		
+		//mov R11, thread;
+		mov [R11+XombThread.rsp.offsetof],RSP;
+		
+		// stuff old thread onto schedQueueTail
+		mov R9, schedQueueTail;
+		mov [R11+XombThread.next.offsetof],R9;
+		mov schedQueueTail, R11;
+		
+
+		jmp yield;
+	}
+}
+
+
 void threadExit(){
 	XombThread* thread = getCurrentThread();
 
@@ -230,6 +263,7 @@ void threadExit(){
 		}
 	}
 }
+
 void yieldCPU(uint eid){
 	asm{
 		naked;

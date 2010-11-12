@@ -64,7 +64,7 @@ public:
 		return Paging.createAddressSpace();
 	}
 
-	ErrorVal switchAddressSpace(AddressSpace as){
+	ErrorVal switchAddressSpace(AddressSpace as = null){
 		return Paging.switchAddressSpace(as);
 	}
 
