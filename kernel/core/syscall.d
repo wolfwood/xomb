@@ -34,6 +34,9 @@ public:
 	// Syscall Implementations
 
 	SyscallError allocPage(out int ret, AllocPageArgs* params) {
+
+	assert(false);
+
 		synchronized {
 			Environment* current = Scheduler.current();
 
@@ -51,21 +54,9 @@ public:
 
 	// void exit(ulong retval)
 	SyscallError exit(ExitArgs* params) {
-		Environment* child = Scheduler.current();
-		Environment* parent = child.parent;
 
-		// Use ExitArgs* before this line
-		// Remove the environment from the scheduler
-		ErrorVal ret = Scheduler.removeEnvironment();
+		for(;;){}
 
-		if(!(parent is null)){
-			Scheduler.executeEnvironment(parent);
-
-			// if parent exits, above might return
-			Scheduler.idleLoop();
-		}else{
-			Scheduler.idleLoop();
-		}
 
 		// You DO NOT return from exit... NEVER
 		return SyscallError.Failcopter;
@@ -106,6 +97,9 @@ public:
 
 	// AddressSpace space = createAddressSpace();
 	SyscallError createAddressSpace(out AddressSpace ret, CreateAddressSpaceArgs* params) {
+
+		ret = VirtualMemory.createAddressSpace();
+
 		return SyscallError.Failcopter;
 	}
 
@@ -165,15 +159,37 @@ public:
 	}
 
 	SyscallError yield(YieldArgs* params){
-		Environment* child = Scheduler.getEnvironmentById(params.eid);
+		if(VirtualMemory.switchAddressSpace(params.dest) == ErrorVal.Fail){
+			return SyscallError.Failcopter;
+		}
 
-		Scheduler.executeEnvironment(child);
+		ulong mySS = ((8UL << 3) | 3);
+		ulong myRSP = 0;
+		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
+		ulong myCS = ((9UL << 3) | 3);
+		ulong oneGB = 1024*1024*1024;
 
-		// this should only happen if the eid is for an environment that unused or in the process of exiting
-		Scheduler.idleLoop();
+		asm{
+			movq R11, mySS;
+			pushq R11;
+                        
+			movq R11, myRSP;
+			pushq R11;
 
-		// never happens
-		return SyscallError.OK;
+			movq R11, myFLAGS;
+			pushq R11;
+
+			movq R11, myCS;
+			pushq R11;
+
+			movq R11, oneGB;
+			pushq R11;
+
+			movq RDI, 0;
+
+			iretq;
+		}
+
 	}
 }
 

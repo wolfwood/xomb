@@ -64,6 +64,10 @@ public:
 		return Paging.createAddressSpace();
 	}
 
+	ErrorVal switchAddressSpace(AddressSpace as){
+		return Paging.switchAddressSpace(as);
+	}
+
 		// XXX: handle global and different sizes!
 	template findFreeSegment(bool upperhalf = true, bool global = false, uint size = 1024*1024*1024){
 		//

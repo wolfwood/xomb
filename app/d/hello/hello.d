@@ -11,11 +11,13 @@ import user.ramfs;
 
 import console;
 
+import user.environment;
+
 import libos.libdeepmajik.threadscheduler;
 
 void main() {
 
-	Console.initialize();
+	Console.initialize(cast(ubyte*)(2*oneGB));
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.Green;
 

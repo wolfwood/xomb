@@ -134,7 +134,9 @@ static:
 			PageLevel2* pl2 = pl3.getTable(indexL3);
 			if (pl2 is null) {
 				// NOT AVAILABLE (FOR SOME REASON)
-				kprintfln!("CR2 {}")(addr);
+				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
+
+				for(;;){}
 			}
 			else {
 //				kprintfln!("Gib Available")();
@@ -253,31 +255,39 @@ static:
 		// and now it is going to be hardcoded here :(
 
 		// Make a new root pagetable
-		ubyte* rootPhysAddr = cast(ubyte*)PageAllocator.allocPage();
+		ubyte* newRootPhysAddr = cast(ubyte*)PageAllocator.allocPage();
 
-		PageLevel3* pl3 = root.getTable(255);
-		PageLevel2* addressRoot = pl3.getTable(0);
+		PageLevel3* addressRoot = root.getOrCreateTable(255);
 
-		PageLevel4* addressSpace;
+		PageLevel2* addressSpace;
 
-		for(int i = 1; i < 512; i++) {
+
+		uint idx = 0;
+		for(uint i = 1; i < 512; i++) {
 			if (addressRoot.getTable(i) is null) {
-				addressRoot.setTable(i, rootPhysAddr, false);
-				addressSpace = cast(PageLevel4*)addressRoot.getTable(i);
+				addressRoot.setTable(i, newRootPhysAddr, false);
+				addressSpace = addressRoot.getTable(i);
+				idx = i;
 				break;
 			}
 		}
 
+		if(idx == 0){
+			return null;
+		}
+
+
 		// Initialize the address space root page table
-		*addressSpace = PageLevel4.init;
+		*(cast(PageLevel4*)addressSpace) = PageLevel4.init;
 
 		// Map in kernel pages
 		addressSpace.entries[256].pml = root.entries[256].pml;
 		addressSpace.entries[509].pml = root.entries[509].pml;
 
-		addressSpace.entries[511].pml = cast(ulong)rootPhysAddr;
+		addressSpace.entries[511].pml = cast(ulong)newRootPhysAddr;
 		addressSpace.entries[511].present = 1;
 		addressSpace.entries[511].rw = 1;
+
 
 		// Create Level 3 and Level 2 for page trick
 		void* pl3addr = PageAllocator.allocPage();
@@ -287,30 +297,54 @@ static:
 		addressSpace.entries[510].present = 1;
 		addressSpace.entries[510].rw = 1;
 
-		pl3 = addressSpace.getTable(510);
-		*pl3 = PageLevel3.init;
-		
-		// Map entry 510 to the next level
-		pl3.entries[510].pml = cast(ulong)pl2addr;
-		pl3.entries[510].present = 1;
-		pl3.entries[510].rw = 1;
+		PageLevel1* fakePl3 = addressSpace.getTable(510);
+		*(cast(PageLevel3*)fakePl3) = PageLevel3.init;
 
-		PageLevel2* pl2 = pl3.getTable(510);
-		*pl2 = PageLevel2.init;
+
+		// Map entry 510 to the next level
+		fakePl3.entries[510].pml = cast(ulong)pl2addr;
+		fakePl3.entries[510].present = 1;
+		fakePl3.entries[510].rw = 1;
+
+		PageLevel2* fakePl2 = cast(PageLevel2*)createAddress(510, 510, idx, 255);//fakePl3.getTable(510);
+		*fakePl2 = PageLevel2.init;
 
 		// Map entries 511 to the PML4
-		pl3.entries[511].pml = cast(ulong)rootPhysAddr;
-		pl3.entries[511].present = 1;
-		pl3.entries[511].rw = 1;
-		pl2.entries[511].pml = cast(ulong)rootPhysAddr;
-		pl2.entries[511].present = 1;
-		pl2.entries[511].rw = 1;
+		fakePl3.entries[511].pml = cast(ulong)newRootPhysAddr;
+		fakePl3.entries[511].present = 1;
+		fakePl3.entries[511].rw = 1;
+
+		fakePl2.entries[511].pml = cast(ulong)newRootPhysAddr;
+		fakePl2.entries[511].present = 1;
+		fakePl2.entries[511].rw = 1;
+
 
 		return cast(AddressSpace)addressSpace;
 	}
 
+	synchronized ErrorVal switchAddressSpace(AddressSpace as){
+
+		// XXX: error checking
+
+		ulong indexL4, indexL3, indexL2, indexL1;
+				
+		translateAddress(cast(ubyte*)as, indexL1, indexL2, indexL3, indexL4);
+
+		PageLevel3* pl3 = root.getTable(indexL4);
+		PageLevel2* pl2 = pl3.getTable(indexL3);
+		PageLevel1* pl1 = pl2.getTable(indexL2);
+
+		rootPhysical = pl1.entries[indexL1].location();
+
+		install();
+
+		return ErrorVal.Success;
+	}
+
 	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, AccessMode flags) {
 		PageLevel4* addressSpace;
+
+		// XXX: use switchAddressSpace() ?
 
 		// XXX: look for special bit or something, or that the pointer is
 		// within the AddressSpace area...

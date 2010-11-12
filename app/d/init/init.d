@@ -6,23 +6,32 @@
 
 module init;
 
+
 import user.syscall;
-import user.ramfs;
+//import user.ramfs;
 
 import console;
 import libos.keyboard;
 
 import user.keycodes;
 
+import user.environment;
+
 import libos.libdeepmajik.threadscheduler;
+
+import libos.elf.loader;
+
+
+ubyte[] xsh = cast(ubyte[])import("binaries/xsh");
+ubyte[] hello = cast(ubyte[])import("binaries/hello");
 
 void main() {
 
 	// create heap gib?
 
 	// initialize userspace console code
-	Console.initialize(cast(ubyte*)(2UL*1024UL*1024UL*1024UL));
-	Keyboard.initialize(cast(ushort*)(3UL*1024UL*1024UL*1024UL));
+	Console.initialize(cast(ubyte*)(2*oneGB));
+	Keyboard.initialize(cast(ushort*)(3*oneGB));
 
 	// say hello
 	Console.backcolor = Color.Black; 
@@ -46,7 +55,20 @@ void main() {
 	// map in console and keyboard
 
 	// yield to xsh
+
+	Console.putString("Create\n");
+	AddressSpace hiApp = createAddressSpace();
+	Console.putString("Load\n");
+	Loader.flatLoad(hello, hiApp);
 	
+
+	Console.putString("Map\n");
+	map(hiApp, cast(ubyte*)(2*oneGB), cast(ubyte*)(2*oneGB), AccessMode.Writable);
+
+	Console.putString("Yield\n");
+	yield(hiApp);
+
+
 	printPrompt();
 	
 	char[128] str;

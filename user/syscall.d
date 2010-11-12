@@ -100,7 +100,7 @@ struct ScheduleArgs {
 }
 
 struct YieldArgs {
-	int eid;
+	AddressSpace dest;
 }
 
 struct CreateEnvArgs {

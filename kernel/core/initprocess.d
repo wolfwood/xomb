@@ -32,12 +32,10 @@ struct InitProcess{
 		uint idx, j;
 
 		char[] initname = "/binaries/init";
-		char[] helloname = "/banaries/hello";
-		
+				
 		// XXX: create null gib without alloc on access
 
 		// --- * turn module into segment ---
-		// XXX: make only data & BSS writable?
 		if(createSegmentForModule(initname, 1) is null){
 			return ErrorVal.Fail;
 		}
@@ -46,9 +44,6 @@ struct InitProcess{
 		VirtualMemory.mapSegment(null, Console.virtualAddress(), cast(ubyte*)(2*oneGB), AccessMode.Writable);
 		VirtualMemory.mapSegment(null, Keyboard.address, cast(ubyte*)(3*oneGB), AccessMode.Writable);
 
-		// map in other modules
-		//createSegmentForModule(helloname, 3);
-		
 		return ErrorVal.Success; 
 	}
 
