@@ -117,11 +117,6 @@ static:
 
 		void* addr = cast(void*)cr2;
 
-		if (stack.rip < 0xf_0000_0000_0000) {
-			kprintfln!("User Mode Page Fault {x}")(stack.rip);
-			kprintfln!("CR2: {}")(addr);
-		}
-
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(addr, indexL1, indexL2, indexL3, indexL4);
 
@@ -129,23 +124,34 @@ static:
 		PageLevel3* pl3 = root.getTable(indexL4);
 		if (pl3 is null) {
 			// NOT AVAILABLE
+
+				if (stack.rip < 0xf_0000_0000_0000) {
+					kprintfln!("User Mode Page Fault {x}")(stack.rip);
+				}
+
+				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
+
+				for(;;){}
 		}
 		else {
 			PageLevel2* pl2 = pl3.getTable(indexL3);
 			if (pl2 is null) {
 				// NOT AVAILABLE (FOR SOME REASON)
+
+				if (stack.rip < 0xf_0000_0000_0000) {
+					kprintfln!("User Mode Page Fault {x}")(stack.rip);
+				}
+
 				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
 
 				for(;;){}
 			}
 			else {
-//				kprintfln!("Gib Available")();
 
 				// Allocate Page 
 				// XXX: only if gib is allocate on access!!
 				addr = cast(void*)(cast(ulong)addr & 0xffff_ffff_ffff_f000UL);
 
-//				kprintfln!("Allocating a page")();
 				void* page = PageAllocator.allocPage();
 
 				mapRegion(null, page, PAGESIZE, addr, true);
