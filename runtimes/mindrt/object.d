@@ -44,7 +44,7 @@ import mindrt.error;
  */
 
 // Figure out the size of a pointer
-static if ((ubyte*).sizeof == 8) {
+/*static if ((ubyte*).sizeof == 8) {
 	version = Arch64;
 }
 else static if ((ubyte*).sizeof == 4) {
@@ -57,10 +57,11 @@ version(Arch32) {
 	alias uint hash_t;
 }
 else {
+*/
 	alias ulong size_t;
 	alias long ptrdiff_t;
 	alias ulong hash_t;
-}
+//}
 
 // Description: This is an internal structure hidden in the object.
 struct Monitor {

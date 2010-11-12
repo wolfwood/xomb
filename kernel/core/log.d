@@ -7,6 +7,7 @@ module kernel.core.log;
 //we can't exactly write to the console
 //if we don't import the cosole, now can we?
 import kernel.dev.console;
+import user.console;
 
 //we need to know about errors to print them out to the screen
 import kernel.core.error;

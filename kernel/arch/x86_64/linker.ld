@@ -20,6 +20,8 @@
 kernel_VMA = 0xffff800000000000;
 kernel_LMA = 0x100000;
 
+OUTPUT_FORMAT("elf64-x86-64")
+
 /* start from the entry point */
 ENTRY(_start)
 SECTIONS
