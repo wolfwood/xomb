@@ -22,7 +22,6 @@ import libos.libdeepmajik.threadscheduler;
 import libos.elf.loader;
 
 
-ubyte[] xsh = cast(ubyte[])import("binaries/xsh");
 ubyte[] hello = cast(ubyte[])import("binaries/hello");
 
 void main() {
