@@ -6,16 +6,15 @@
 
 module init;
 
-
 import user.syscall;
-//import user.ramfs;
+import user.environment;
+
+import libos.fs.minfs;
 
 import console;
 import libos.keyboard;
 
 import user.keycodes;
-
-import user.environment;
 
 import libos.libdeepmajik.threadscheduler;
 
@@ -31,6 +30,8 @@ void main() {
 	// initialize userspace console code
 	Console.initialize(cast(ubyte*)(2*oneGB));
 	Keyboard.initialize(cast(ushort*)(3*oneGB));
+
+	MinFS.format();
 
 	// say hello
 	Console.backcolor = Color.Black; 
@@ -55,11 +56,17 @@ void main() {
 
 	// yield to xsh
 
+	File foo =  MinFS.open("/foobar", AccessMode.Writable);
+
 	Console.putString("Create\n");
 	AddressSpace hiApp = createAddressSpace();
 	Console.putString("Load\n");
 	Loader.flatLoad(hello, hiApp);
 	
+
+	foo[0] = 'a';
+	foo[1] = 'b';
+
 
 	Console.putString("Map\n");
 	map(hiApp, cast(ubyte*)(2*oneGB), cast(ubyte*)(2*oneGB), AccessMode.Writable);
