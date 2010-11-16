@@ -7,7 +7,6 @@
 module hello;
 
 import user.syscall;
-import user.ramfs;
 
 import console;
 
@@ -26,17 +25,8 @@ void main() {
 	MinFS.initialize();
 
 	Console.putString("\nHello, and Welcome to XOmB\n");
-
-	File f = MinFS.open("/foobar", AccessMode.Global);
-
 	Console.putString(  "-=-=-=-=-=-=-=-\n\n");
-
-	//for(;;){}
 
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.LightGray;
-
-	Console.putString("/foobar starts with: ");
-	Console.putString((cast(char[])f)[0..2]);
-	Console.putString("\n\n");
 }
