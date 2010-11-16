@@ -13,6 +13,4 @@ runtimes/mindrt/*.a
 *~
 *.dump
 *-elf
-init
-xsh
-hello
+
