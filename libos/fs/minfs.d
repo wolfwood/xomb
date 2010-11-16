@@ -1,6 +1,6 @@
 module libos.fs.minfs;
 
-import user.environment;
+public import user.environment;
 import Syscall = user.syscall;
 
 import libos.console;

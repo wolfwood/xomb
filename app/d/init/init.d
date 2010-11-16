@@ -19,9 +19,8 @@ import user.keycodes;
 import libos.libdeepmajik.threadscheduler;
 
 import libos.elf.loader;
+import mindrt.util;
 
-
-ubyte[] hello = cast(ubyte[])import("binaries/hello");
 
 void main() {
 
@@ -43,97 +42,51 @@ void main() {
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.LightGray;
 
-	// initialize userspace keyboard code
-
-
-	// create new environment
-
-	// load shell module into new gib(s)
-
-	// map gib into new env
-
-	// map in console and keyboard
-
-	// yield to xsh
-
-	File foo =  MinFS.open("/foobar", AccessMode.Writable);
-
-	Console.putString("Create\n");
-	AddressSpace hiApp = createAddressSpace();
-	Console.putString("Load\n");
-	Loader.flatLoad(hello, hiApp);
+	makeFS!("binaries/hello", true)();
+	File xsh = makeFS!("binaries/xsh", true)();
+	makeFS!("kernel/LICENSE", false)();
 	
-
-	foo[0] = 'a';
-	foo[1] = 'b';
-
+	// yield to xsh
+	Console.putString("Create\n");
+	AddressSpace xshAS = createAddressSpace();	
+	Console.putString("Load\n");
+	
+	map(xshAS, xsh.ptr, cast(ubyte*)oneGB, AccessMode.Writable);
 
 	Console.putString("Map\n");
-	map(hiApp, cast(ubyte*)(2*oneGB), cast(ubyte*)(2*oneGB), AccessMode.Writable);
+	map(xshAS, cast(ubyte*)(2*oneGB), cast(ubyte*)(2*oneGB), AccessMode.Writable);
+	map(xshAS, cast(ubyte*)(3*oneGB), cast(ubyte*)(3*oneGB), AccessMode.Writable);
 
 	Console.putString("Yield\n");
-	yieldToAddressSpace(hiApp);
+
+	yieldToAddressSpace(xshAS);
 
 
-	printPrompt();
-	
-	char[128] str;
-	uint pos = 0;
+	Console.putString("Done"); for(;;){}
+}
 
-	bool released;
-	for(;;) {
-		Key key = Keyboard.nextKey(released);
-		//Console.putChar('|');
-		if (!released) {
-			if (key == Key.Return) {
-				Console.putChar('\n');
-				
-				if (pos != 0) {
-					// interpret str
-					interpret(str[0..pos]);
-				}
+template makeFS(char[] filename, bool exe){
+	File makeFS(){
+		const char[] actualFilename = "/" ~ filename;
 
-				// print prompt
-				printPrompt();
-				
-				// go back to start
-				pos = 0;
-			}
-			else if (key == Key.Backspace) {
-				if (pos > 0) {
-					Point pt;
-					pt = Console.position;
-					Console.position(pt.x-1, pt.y);
-					Console.putChar(' ');
-					Console.position(pt.x-1, pt.y);
-					pos--;
-				}
-			}
-			else {
-				char translate = Keyboard.translateKey(key);
-				if (translate != '\0' && pos < 128) {
-					str[pos] = translate;
-					Console.putChar(translate);
-					pos++;
-				}
-			}
+		// import file
+		ubyte[] data = cast(ubyte[])import(filename);
+
+		// create minFS file
+		File f =  MinFS.open(actualFilename, AccessMode.Writable);
+
+		// populate
+		if(exe){
+			memcpy(cast(void*)f.ptr, cast(void*)data.ptr, data.length);
+		}else{
+			ulong* size = cast(ulong*)f.ptr;
+
+			*size = data.length;
+
+			memcpy(cast(void*)((f.ptr)[ulong.sizeof..ulong.sizeof]).ptr, cast(void*)data.ptr, data.length);
 		}
+
+		return f;
 	}
-
-
-	for(;;){}
- 	
-
-	Console.putString("Done");
 }
 
-void interpret(char[] str) {
-	Console.putString(str);
-	Console.putChar('\n');
-}
-
-void printPrompt() {
-	Console.putString("root@localhost:");
-	Console.putString("/");
-	Console.putString("$ ");
-}
