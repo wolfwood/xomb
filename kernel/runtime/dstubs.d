@@ -979,7 +979,7 @@ int _adEq(Array a1, Array a2, TypeInfo ti)
 	if(a1.length != a2.length)
 		return 0;				// not equal
 
-	auto sz = ti.tsize();
+	auto sz = ti.next().tsize();
 	auto p1 = a1.data;
 	auto p2 = a2.data;
 
