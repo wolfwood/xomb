@@ -51,9 +51,8 @@ private:
 	Header* hdr;
 
 	File find(char[] name){
-		//foreach(i, str; hdr.entries){
-		for(uint i = 0; i < hdr.entries.length; i++){
-			if(streq(name, hdr.entries[i])){
+		foreach(i, str; hdr.entries){
+			if(streq(name, str)){
 				return (cast(ubyte*)(cast(ulong)hdr + ((i+1) * oneGB)))[0..oneGB];
 			}
 		}

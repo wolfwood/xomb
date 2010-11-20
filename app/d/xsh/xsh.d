@@ -254,10 +254,25 @@ void interpret(char[] str) {
 	}
 	else if (streq(cmd, "run")) {
 		// Open the file, parse the ELF into a new address space, and execute
-		/*
+		
 		if (argument.length > 0) {
 			createArgumentPath(argument);
 
+			AddressSpace child = createAddressSpace();
+
+			File f = MinFS.open(argumentPath, AccessMode.Writable);
+
+			// map in code
+			map(child, f.ptr, cast(ubyte*)oneGB, AccessMode.Writable);
+
+			// map in console aqnd keyboard
+			map(child, cast(ubyte*)(2*oneGB), cast(ubyte*)(2*oneGB), AccessMode.Writable);
+			map(child, cast(ubyte*)(3*oneGB), cast(ubyte*)(3*oneGB), AccessMode.Writable);
+
+			yieldToAddressSpace(child);
+		}
+
+			/*
 			uint flags;
 			if (exists(argumentPath, flags)) {
 				if ((flags & Directory.Mode.Directory) == 0) {
