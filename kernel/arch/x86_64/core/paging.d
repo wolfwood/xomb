@@ -232,32 +232,6 @@ static:
 
 	Mutex pagingLock;
 
-	const ulong MAX_USER_GIB = (256 * 512);
-	synchronized void* allocUserGib(ulong gibIndex) {
-		if (gibIndex > MAX_USER_GIB) {
-			return cast(void*)-1;
-		}
-
-		pagingLock.lock();
-		// Calculate address
-		void* gibAddr = cast(void*)(GIB_SIZE * gibIndex); 
-
-		// Create PML2 for this gib (sets present bits and allocates tables)
-		ulong indexL4, indexL3, indexL2, indexL1;
-		translateAddress(gibAddr, indexL1, indexL2, indexL3, indexL4);
-		PageLevel3* pl3 = root.getOrCreateTable(indexL4, true);
-		PageLevel2* pl2 = pl3.getOrCreateTable(indexL3, true);
-
-		// This is to ensure canonical addressing (high memory vs low)
-		if (cast(ulong)gibAddr >= 0x800000000000) {
-			gibAddr = cast(void*)(cast(ulong)gibAddr | 0xffff000000000000);
-		}
-
-		// Return this gib address
-		pagingLock.unlock();
-		return gibAddr;
-	}
-
 	AddressSpace createAddressSpace() {
 		// XXX: the place where the address foo is stored is hard coded in context :(
 		// and now it is going to be hardcoded here :(
@@ -419,56 +393,6 @@ static:
 		return ErrorVal.Success;
 	}
 
-	synchronized ErrorVal mapGib(void* gib, void* to) {
-		pagingLock.lock();
-
-		// Get the address of the gib, and find its PL3 and PL2
-		ulong indexL4, indexL3, indexL2, indexL1;
-		translateAddress(gib, indexL1, indexL2, indexL3, indexL4);
-		PageLevel3* pl3 = root.getTable(indexL4);
-		if (pl3 is null) {
-			pagingLock.unlock();
-			return ErrorVal.Fail;
-		}
-
-		ulong indexL4_to, indexL3_to, indexL2_to, indexL1_to;
-		translateAddress(to, indexL1_to, indexL2_to, indexL3_to, indexL4_to);
-
-		PageLevel3* pl3_to = root.getTable(indexL4_to);
-		if (pl3_to is null) {
-			pagingLock.unlock();
-			return ErrorVal.Fail;
-		}
-		PageLevel2* pl2_to = pl3_to.getTable(indexL3_to);
-		if (pl2_to is null) {
-			pagingLock.unlock();
-			return ErrorVal.Fail;
-		}
-
-		pl3.entries[indexL3].pml = pl3_to.entries[indexL3_to].pml;
-		pl3.entries[indexL3].us = 1;
-
-		pagingLock.unlock();
-		return ErrorVal.Success;
-	}
-
-	// Return an address to a new gib (kernel)
-	ulong nextGib = (256 * 512);
-	const ulong MAX_GIB = (512 * 512);
-	const ulong GIB_SIZE = (512 * 512 * PAGESIZE);
-
-	ubyte* gibAddress(uint gibIndex) {
-		// Find initial address of gib
-		ubyte* gibAddr = cast(ubyte*)0x0;
-		gibAddr += (GIB_SIZE * cast(ulong)gibIndex);
-
-		// Make Canonical
-		if (cast(ulong)gibAddr >= 0x800000000000UL) {
-			gibAddr = cast(ubyte*)(cast(ulong)gibAddr | 0xffff000000000000UL);
-		}
-
-		return gibAddr;
-	}
 
 	bool createGib(ubyte* location, ulong size, AccessMode flags) {
 		// Find page translation
@@ -499,9 +423,42 @@ static:
 		// XXX: return false if it is already there
 		return true;
 	}
+	
+	// XXX support multiple sizes
+	bool closeGib(ubyte* location) {
+		// Find page translation
+		ulong indexL4, indexL3, indexL2, indexL1;
+		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
+
+		PageLevel3* pl3 = root.getTable(indexL4);
+		if (pl3 is null) {
+			return false;
+		}
+
+		pl3.setTable(indexL3, null, false);
+		return true;
+	}
 
 
 	// OLD
+	// Return an address to a new gib (kernel)
+	ulong nextGib = (256 * 512);
+	const ulong MAX_GIB = (512 * 512);
+	const ulong GIB_SIZE = (512 * 512 * PAGESIZE);
+
+	ubyte* gibAddress(uint gibIndex) {
+		// Find initial address of gib
+		ubyte* gibAddr = cast(ubyte*)0x0;
+		gibAddr += (GIB_SIZE * cast(ulong)gibIndex);
+
+		// Make Canonical
+		if (cast(ulong)gibAddr >= 0x800000000000UL) {
+			gibAddr = cast(ubyte*)(cast(ulong)gibAddr | 0xffff000000000000UL);
+		}
+
+		return gibAddr;
+	}
+
 	ubyte* allocGib(ref ubyte* location, uint gibIndex, uint flags) {
 		// Get initial address of gib
 		ubyte* gibAddr = gibAddress(gibIndex);
@@ -520,20 +477,6 @@ static:
 
 		// pl2 is your gib structure.
 		return gibAddr;
-	}
-	
-	bool closeGib(ubyte* location) {
-		// Find page translation
-		ulong indexL4, indexL3, indexL2, indexL1;
-		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
-
-		PageLevel3* pl3 = root.getTable(indexL4);
-		if (pl3 is null) {
-			return false;
-		}
-
-		pl3.setTable(indexL3, null, false);
-		return true;
 	}
 
 	bool openGib(ubyte* location, uint flags) {
