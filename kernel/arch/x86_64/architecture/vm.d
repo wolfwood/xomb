@@ -70,8 +70,6 @@ public:
 
 		// XXX: handle global and different sizes!
 	template findFreeSegment(bool upperhalf = true, bool global = false, uint size = 1024*1024*1024){
-		//
-
 		ubyte* findFreeSegment(){
 			const uint dividingLine = 256;
 			static uint last1 = (upperhalf ? dividingLine : 1), last2 = 0;
