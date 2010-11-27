@@ -1,4 +1,4 @@
-DFLAGS = -I ../../. -I../../runtimes/mindrt -I../../runtimes -O2 -release
+DFLAGS = -I ../../. -I../../runtimes/mindrt -I../../runtimes -O2
 
 syscall.a: mindrt.a
 	ldc ${DFLAGS} -c csyscall.d  

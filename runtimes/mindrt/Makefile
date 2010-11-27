@@ -1,4 +1,4 @@
-DFLAGS = -I../. -release -O2
+DFLAGS = -I../. -O2
 
 drt0.a: entry.d mindrt.a
 	ldc -nodefaultlib -I../../. ${DFLAGS} -c entry.d -ofdsss_objs/O/runtime.entry.o;
