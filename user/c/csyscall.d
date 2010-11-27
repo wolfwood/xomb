@@ -34,6 +34,8 @@ void initC2D(){
 		Console.initialize(cast(ubyte*)( 2*oneGB));
 		
 		heapStart = cast(ulong)Umm.initHeap().ptr;
+
+		initFlag = true;
 	}
 }
 
