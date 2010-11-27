@@ -21,7 +21,6 @@ enum SyscallID : ulong {
 	Map,
 	Schedule,
 	Yield,
-	CreateEnv,
 }
 
 // Names of system calls
@@ -34,8 +33,7 @@ alias Tuple! (
 	"createAddressSpace", // createAddressSpace()
 	"map",				// map()
 	"schedule",			// schedule()
-	"yield",			// yield()
-	"createEnv"			// createEnv()
+	"yield"			// yield()
 ) SyscallNames;
 
 
@@ -49,8 +47,7 @@ alias Tuple! (
 	AddressSpace,	// createAddressSpace
 	void,			// map
 	void,			// schedule
-	void,			// yield
-	uint			// createEnv
+	void			// yield
 ) SyscallRetTypes;
 
 // Parameters to system call
@@ -101,10 +98,6 @@ struct ScheduleArgs {
 
 struct YieldArgs {
 	AddressSpace dest;
-}
-
-struct CreateEnvArgs {
-	char[] name;
 }
 
 // XXX: This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason

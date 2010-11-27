@@ -22,14 +22,8 @@ import kernel.core.error;
 //handle everything that the boot loader gives us
 import kernel.system.bootinfo;
 
-// handle loading executables from modules
-import kernel.system.loader;
-
 // get basic info about the system
 import kernel.system.info;
-
-// Scheduler
-import kernel.environ.scheduler;
 
 //we need to print log stuff to the screen
 import kernel.core.log;
@@ -37,11 +31,6 @@ import kernel.core.log;
 // kernel heap
 import kernel.mem.heap;
 import kernel.mem.pageallocator;
-import kernel.mem.gib;
-import kernel.mem.giballocator;
-
-// kernel-side ramfs
-import kernel.filesystem.ramfs;
 
 // console device
 import kernel.dev.console;
@@ -100,22 +89,15 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.print("Cpu: initialize()");
 	Log.result(Cpu.initialize());
 
-	// 3a. Initialize the Page Allocator
+	// 4a. Initialize the Page Allocator
 	Log.print("PageAllocator: initialize()");
 	Log.result(PageAllocator.initialize());
 
-	// 3b. RamFS Initialization
-	Log.print("RamFS: initialize()");
-	Log.result(RamFS.initialize());
-
-	// 3c. Console Initialization
+	// 4b. Console Initialization
 	Log.print("Console: initialize()");
 	Log.result(Console.initialize());
 
-	// 4. Timer Initialization
-	// LATER
-
-	// 5. Scheduler Initialization
+	// 5. Timer Initialization
 	// LATER
 
 	// 6. Multiprocessor Initialization
@@ -144,7 +126,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	Date dt;
 	Timing.currentDate(dt);
-	//kprintfln!("Date: {} {} {}")(dt.day, dt.month, dt.year);
+	kprintfln!("Date: {} {} {}")(dt.day, dt.month, dt.year);
 
 	//Scheduler.kmainComplete();
 

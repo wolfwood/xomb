@@ -5,11 +5,6 @@ module kernel.dev.console;
 // Import system info
 import kernel.system.info;
 
-// For Gibs
-import kernel.mem.gib;
-import kernel.mem.giballocator;
-import kernel.filesystem.ramfs;
-
 // Errors
 import kernel.core.error;
 import kernel.core.kprintf;

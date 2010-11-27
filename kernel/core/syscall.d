@@ -5,9 +5,6 @@ module kernel.core.syscall;
 import user.syscall;
 import user.environment;
 
-import kernel.environ.info;
-import kernel.environ.scheduler;
-
 import kernel.dev.console;
 
 import kernel.mem.heap;
@@ -16,7 +13,6 @@ import kernel.mem.gib;
 import kernel.core.error;
 import kernel.core.kprintf;
 
-import kernel.filesystem.ramfs;
 
 import architecture.perfmon;
 import architecture.mutex;
@@ -25,7 +21,6 @@ import architecture.timing;
 import architecture.vm;
 
 // temporary h4x
-import kernel.system.loader;
 import kernel.core.initprocess;
 
 	
@@ -39,6 +34,7 @@ public:
 
 	assert(false);
 
+	/*
 		synchronized {
 			Environment* current = Scheduler.current();
 
@@ -51,7 +47,7 @@ public:
 			ret = 0;
 
 			return SyscallError.OK;
-		}
+			}*/
 	}
 
 	// void exit(ulong retval)
@@ -140,24 +136,6 @@ public:
 			}
 
 			return SyscallError.OK;
-		}
-	}
-
-	SyscallError createEnv(out uint ret, CreateEnvArgs* params){
-		Environment* child;
-
-		child = Loader.path2env(params.name);
-
-		// restore current's root page table
-		Scheduler.current.context.install();
-
-		if(!(child is null)){
-			child.parent = Scheduler.current;
-			ret = child.info.id;
-
-			return SyscallError.OK;
-		}else{
-			return SyscallError.Failcopter;
 		}
 	}
 
