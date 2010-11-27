@@ -41,8 +41,9 @@ import user.environment;
 		return;
 	}
 
+// XXX: heap is limited to 4 GB
 ubyte[] initHeap(){
-	int i;
+	ulong i;
 	ubyte[] foo 
 		= create(cast(ubyte*)(20*oneGB), 1024*1024*1024, AccessMode.Writable);
 
@@ -50,6 +51,8 @@ ubyte[] initHeap(){
 		create(cast(ubyte*)((20+1)*oneGB), 1024*1024*1024, AccessMode.Writable);
 	}
 
-	return foo.ptr[0..(i*oneGB)];
+	foo = foo.ptr[0..(i*oneGB)];
+
+	return foo;
 }
 //}

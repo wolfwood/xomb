@@ -10,9 +10,9 @@ struct EmbeddedFS{
 		MinFS.format();
 		
 		// binaries
-		makeFile!("binaries/hello", true)();
 		xsh = makeFile!("binaries/xsh", true)();
-
+		//makeFile!("binaries/hello", true)();
+		
 		// data
 		makeFile!("kernel/LICENSE", false)();
 	}

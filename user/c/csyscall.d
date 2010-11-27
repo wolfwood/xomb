@@ -7,6 +7,8 @@ import libos.fs.minfs;
 
 import mindrt.util;
 
+import Umm = libos.libdeepmajik.umm;
+
 extern(C):
 
 bool cinit = false;
@@ -22,6 +24,22 @@ struct fdTableEntry{
 
 const uint MAX_NUM_FDS = 128;
 fdTableEntry[MAX_NUM_FDS] fdTable;
+
+ulong heapStart;
+
+void init(){
+	if(!finit){
+		MinFS.initialize();
+		finit=true;
+	}
+
+	if(!cinit){
+		Console.initialize(cast(ubyte*)( 2*oneGB));
+		cinit=true;
+	}
+
+	heapStart = cast(ulong)Umm.initHeap().ptr;
+}
 
 int gibRead(int fd, ubyte* buf, uint len){
 	if(!fdTable[fd].valid){
@@ -56,11 +74,6 @@ int gibWrite(int fd, ubyte* buf, uint len){
 int gibOpen(char* name, uint nameLen, bool readOnly){
 	char[] gibName = cast(char[])name[0..nameLen];
 
-	if(!finit){
-		MinFS.initialize();
-		finit=true;
-	}
-
 	uint i, fd = -1;
 
 	for(i = 3; i < fdTable.length; i++){
@@ -87,10 +100,6 @@ int gibClose(int fd){
 }
 
 void wconsole(char* ptr, int len){
-	if(!cinit){
-		Console.initialize(cast(ubyte*)( 2*oneGB));
-		cinit=true;
-	}
 
 	Console.putString(ptr[0..len]);
 }
@@ -105,4 +114,8 @@ void perfPoll(int event) {
 
 void exit(int val) {
 	return Syscalls.exit(val);
+}
+
+ulong initHeap(){
+	return heapStart;
 }

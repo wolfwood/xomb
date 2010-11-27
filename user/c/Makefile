@@ -1,4 +1,4 @@
-DFLAGS = -I ../../. -I../../runtimes/mindrt -I../../runtimes
+DFLAGS = -I ../../. -I../../runtimes/mindrt -I../../runtimes -O2 -release
 
 syscall.a: mindrt.a
 	ldc ${DFLAGS} -c csyscall.d  
@@ -7,7 +7,7 @@ syscall.a: mindrt.a
 	ldc ${DFLAGS} -c ../../libos/fs/minfs.d
 	ldc ${DFLAGS} -c ../nativecall.d
 	# these belong in mindrt.a
-	ldc ${DFLAGS} -c ../../runtimes/mindrt/entry.d ../../libos/libdeepmajik/threadscheduler.d  ../../libos/libdeepmajik/umm.d
+	ldc ${DFLAGS} -c ../../libos/libdeepmajik/threadscheduler.d  ../../libos/libdeepmajik/umm.d ../../runtimes/mindrt/entry.d
 	yasm -felf64 pretexttrampoline.S 
 	ar rcs lib/syscall.a *.o
 	#	console.o  csyscall.o entry.o nativecall.o pretexttrampoline.o syscall.o threadscheduler.o umm.o
