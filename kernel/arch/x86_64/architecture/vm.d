@@ -119,6 +119,12 @@ public:
 			return cast(ubyte*)addy;
 		}
 	}
+
+	// The page size we are using
+	uint pagesize() {
+		return Paging.PAGESIZE;
+	}
+
 	// --- OLD --- //
 
 	ubyte* allocGib(out ubyte* location, uint gibIndex, uint flags) {
@@ -129,34 +135,14 @@ public:
 		return Paging.openGib(address, gibIndex, flags);
 	}
 
-	// This function will take the "gibSrc" specified and map it to the gib determined by "gibDest".
-	synchronized ErrorVal mapGib(void* gibSrc, void* gibDest) {
-		return Paging.mapGib(gibSrc, gibDest);
-	}
-
 	synchronized ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
 		return Paging.mapRegion(gib, physAddr, regionLength);
 	}
 
-	// The page size we are using
-	uint pagesize() {
-		return Paging.PAGESIZE;
-	}
-
-	// This function will translate a virtual address to a physical address.
-	synchronized void* translate(void* address) {
-		return Paging.translateAddress(address);
-	}
-
-	// This function will map a region to the region space starting at
-	// physAdd across a length of regionLength.
-	synchronized void* mapRegion(void* physAddr, ulong regionLength) {
-		return Paging.mapRegion(physAddr, regionLength);
-	}
 
 	//
 	synchronized void* mapKernelPage(void* physAddr) {
 		return Paging.mapRegion(physAddr, 4096);
 	}
-
+	
 }
