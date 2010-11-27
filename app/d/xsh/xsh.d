@@ -7,20 +7,20 @@
 module xsh;
 
 import user.syscall;
-import user.ramfs;
 
 import console;
-
-import libos.ramfs;
 import libos.keyboard;
-
 import user.keycodes;
 
 import libos.libdeepmajik.threadscheduler;
 
+import libos.fs.minfs;
+
 void main() {
 
-	Console.initialize();
+	Console.initialize(cast(ubyte*)(2*oneGB));
+	Keyboard.initialize(cast(ushort*)(3*oneGB));
+
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.Green;
 
@@ -30,10 +30,9 @@ void main() {
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.LightGray;
 
-	printPrompt();
+	MinFS.initialize();
 
-	Keyboard.initialize();
-	
+	printPrompt();
 
 	char[128] str;
 	uint pos = 0;
@@ -135,7 +134,7 @@ void interpret(char[] str) {
 		// Open current directory
 		
 		// if there is an argument... we should parse it
-		char[] listDirectory;
+		/*char[] listDirectory;
 		if (argument.length > 0) {
 			if (argument.length == 1 && argument[0] == '.') {
 				listDirectory = workingDirectory;
@@ -193,14 +192,15 @@ void interpret(char[] str) {
 		}
 
 		d.close();
+		*/
 	}
 	else if (streq(cmd, "ln")) {
-		if (argc != 3) {
+		/*if (argc != 3) {
 			Console.putString("xsh: ln: Not the right number of arguments.\n");
-		}
+			}
 		else {
 			RamFS.link(arguments[1], arguments[2], 0);
-		}
+			}*/
 	}
 	else if (streq(cmd, "pwd")) {
 		// Print working directory
@@ -208,8 +208,19 @@ void interpret(char[] str) {
 		Console.putString("\n");
 	}
 	else if (streq(cmd, "cat")) {
-		// Open the file in the argument and print it to the screen
+		if (argument.length > 0) {
+			createArgumentPath(argument);
 
+			File f = MinFS.open(argumentPath, cast(AccessMode)0);
+
+			ulong* size = cast(ulong*)f.ptr;
+			char[] data = (cast(char*)f.ptr)[ulong.sizeof..(ulong.sizeof + *size)];
+
+			Console.putString(data);
+		}
+
+		// Open the file in the argument and print it to the screen
+		/*
 		if (argument.length > 0) {
 			createArgumentPath(argument);
 
@@ -239,7 +250,7 @@ void interpret(char[] str) {
 			else {
 				Console.putString("xsh: cat: File not found.\n");
 			}
-		}
+			}*/
 	}
 	else if (streq(cmd, "run")) {
 		// Open the file, parse the ELF into a new address space, and execute
@@ -247,6 +258,21 @@ void interpret(char[] str) {
 		if (argument.length > 0) {
 			createArgumentPath(argument);
 
+			AddressSpace child = createAddressSpace();
+
+			File f = MinFS.open(argumentPath, AccessMode.Writable);
+
+			// map in code
+			map(child, f.ptr, cast(ubyte*)oneGB, AccessMode.Writable);
+
+			// map in console aqnd keyboard
+			map(child, cast(ubyte*)(2*oneGB), cast(ubyte*)(2*oneGB), AccessMode.Writable);
+			map(child, cast(ubyte*)(3*oneGB), cast(ubyte*)(3*oneGB), AccessMode.Writable);
+
+			yieldToAddressSpace(child);
+		}
+
+			/*
 			uint flags;
 			if (exists(argumentPath, flags)) {
 				if ((flags & Directory.Mode.Directory) == 0) {
@@ -285,7 +311,7 @@ void interpret(char[] str) {
 			else {
 				Console.putString("xsh: run: Executable not found.\n");
 			}
-		}
+			}*/
 	}
 	else if (streq(cmd, "exit")) {
 		exit(0);
@@ -296,6 +322,7 @@ void interpret(char[] str) {
 	}
 	else if (streq(cmd, "cd")) {
 		// Change directory
+		/*
 		if (argument.length > 0) {
 			// Directory Up?
 			if (argument.length == 2 && argument[0] == '.' && argument[1] == '.') {
@@ -335,7 +362,7 @@ void interpret(char[] str) {
 					return;
 				}
 			}			
-		}
+			}*/
 	}
 	else {
 		Console.putString("xsh: Unknown Command: ");
@@ -344,7 +371,7 @@ void interpret(char[] str) {
 	}
 }
 
-bool exists(char[] path, out uint flags) {
+/*bool exists(char[] path, out uint flags) {
 	if (streq(path, "/")) {
 		flags = Directory.Mode.Directory;
 		return true;
@@ -374,7 +401,7 @@ bool exists(char[] path, out uint flags) {
 	}
 	d.close();
 	return found;
-}
+}*/
 
 void createArgumentPath(char[] argument) {
 	int offset = 0;

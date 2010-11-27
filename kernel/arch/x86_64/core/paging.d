@@ -478,7 +478,8 @@ static:
 		bool usermode = (flags & AccessMode.Kernel) == 0;
 
 		if (flags & AccessMode.Global) {
-			PageLevel3* globalRoot = root.getTable(509);
+			//XXX:  instead, getTable and isure this is created elsewhere for kernel/init
+			PageLevel3* globalRoot = root.getOrCreateTable(509);
 
 			PageLevel2* global_pl3 = globalRoot.getOrCreateTable(indexL4, usermode);
 			PageLevel1* global_pl2 = global_pl3.getOrCreateTable(indexL3, usermode);
@@ -487,7 +488,7 @@ static:
 
 			// Allocate paging structures
 			PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
-			pl3.setTable(indexL3, cast(ubyte*)global_pl2, usermode);
+			pl3.setTable(indexL3, cast(ubyte*)global_pl3.entries[indexL3].location(), usermode);
 		}
 		else {
 			PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);

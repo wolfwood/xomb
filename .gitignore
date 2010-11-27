@@ -12,3 +12,5 @@ runtimes/mindrt/*.a
 *.o
 *~
 *.dump
+*-elf
+
