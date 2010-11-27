@@ -11,8 +11,8 @@ import Umm = libos.libdeepmajik.umm;
 
 extern(C):
 
-bool cinit = false;
-bool finit = false;
+bool initFlag = false;
+
 
 struct fdTableEntry{
 	ulong* len;
@@ -27,18 +27,14 @@ fdTableEntry[MAX_NUM_FDS] fdTable;
 
 ulong heapStart;
 
-void init(){
-	if(!finit){
+void initC2D(){
+	if(!initFlag){
 		MinFS.initialize();
-		finit=true;
-	}
 
-	if(!cinit){
 		Console.initialize(cast(ubyte*)( 2*oneGB));
-		cinit=true;
+		
+		heapStart = cast(ulong)Umm.initHeap().ptr;
 	}
-
-	heapStart = cast(ulong)Umm.initHeap().ptr;
 }
 
 int gibRead(int fd, ubyte* buf, uint len){
