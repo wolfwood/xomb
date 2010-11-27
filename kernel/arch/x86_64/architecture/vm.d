@@ -159,26 +159,4 @@ public:
 		return Paging.mapRegion(physAddr, 4096);
 	}
 
-	// This function will map a single page at the specified physical address
-	// to the specifed virtual address.
-	synchronized ErrorVal mapPage(void* physAddr, void* virtAddr) {
-		return ErrorVal.Success;
-	}
-
-	// This function will map a range of data located at the physical
-	// address across a range of a specifed length to the virtual
-	// region starting at virtual address.
-	synchronized ErrorVal mapRange(void* physAddr, ulong rangeLength, void* virtAddr) {
-		return ErrorVal.Success;
-	}
-
-	// This function will unmap a page at the virtual address specified.
-	synchronized ErrorVal unmapPage(void* virtAddr) {
-		return ErrorVal.Success;
-	}
-
-	// This function will unmap a range of data. Give the length in bytes.
-	synchronized ErrorVal unmapRange(void* virtAddr, ulong rangeLength) {
-		return ErrorVal.Success;
-	}
 }
