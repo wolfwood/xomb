@@ -29,7 +29,6 @@ import kernel.system.info;
 import kernel.core.log;
 
 // kernel heap
-import kernel.mem.heap;
 import kernel.mem.pageallocator;
 
 // console device

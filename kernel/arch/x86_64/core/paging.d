@@ -14,8 +14,6 @@ import kernel.core.kprintf;
 
 // Import the heap allocator, so we can allocate memory
 import kernel.mem.pageallocator;
-import kernel.mem.heap;
-import kernel.mem.giballocator;
 
 // Import some arch-dependent modules
 import kernel.arch.x86_64.linker;	// want linker info
@@ -459,52 +457,17 @@ static:
 		return gibAddr;
 	}
 
-	ubyte* allocGib(ref ubyte* location, uint gibIndex, uint flags) {
-		// Get initial address of gib
-		ubyte* gibAddr = gibAddress(gibIndex);
-
-		// Find page translation
-		ulong indexL4, indexL3, indexL2, indexL1;
-		translateAddress(gibAddr, indexL1, indexL2, indexL3, indexL4);
-
-		// Allocate paging structures
-		bool usermode = (flags & Access.Kernel) == 0;
-		PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
-		PageLevel2* pl2 = pl3.getOrCreateTable(indexL3, usermode);
-
-		// Physical address of gib
-		location = pl3.entries[indexL3].location;
-
-		// pl2 is your gib structure.
-		return gibAddr;
-	}
-
 	bool openGib(ubyte* location, uint flags) {
 		// Find page translation
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
 
-		bool usermode = (flags & Access.Kernel) == 0;
+		bool usermode = (flags & AccessMode.Kernel) == 0;
 		PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
 
 		pl3.setTable(indexL3, location, usermode);
 
 		return true;
-	}
-
-	ubyte* openGib(ubyte* location, uint gibIndex, uint flags) {
-		ubyte* gibAddr = gibAddress(gibIndex);
-
-		// Find page translation
-		ulong indexL4, indexL3, indexL2, indexL1;
-		translateAddress(gibAddr, indexL1, indexL2, indexL3, indexL4);
-
-		bool usermode = (flags & Access.Kernel) == 0;
-		PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
-
-		pl3.setTable(indexL3, location, usermode);
-
-		return gibAddr;
 	}
 
 	ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
