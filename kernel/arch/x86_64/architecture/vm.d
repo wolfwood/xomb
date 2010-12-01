@@ -124,23 +124,12 @@ public:
 	}
 
 	// --- OLD --- //
-
-	ubyte* allocGib(out ubyte* location, uint gibIndex, uint flags) {
-		return Paging.allocGib(location, gibIndex, flags);
-	}
-
-	ubyte* openGib(ubyte* address, uint gibIndex, uint flags) {
-		return Paging.openGib(address, gibIndex, flags);
-	}
-
 	synchronized ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
 		return Paging.mapRegion(gib, physAddr, regionLength);
 	}
-
 
 	//
 	synchronized void* mapKernelPage(void* physAddr) {
 		return Paging.mapRegion(physAddr, 4096);
 	}
-	
 }

@@ -7,9 +7,6 @@ import user.environment;
 
 import kernel.dev.console;
 
-import kernel.mem.heap;
-import kernel.mem.gib;
-
 import kernel.core.error;
 import kernel.core.kprintf;
 
