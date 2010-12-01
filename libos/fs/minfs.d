@@ -34,7 +34,7 @@ class MinFS{
 			//ubyte[]
 			Syscall.create(f.ptr, f.length, mode | AccessMode.Global);
 		}else{
-			//bool
+			//XXX: don't use create as open
 			Syscall.create(f.ptr, f.length, mode | AccessMode.Global);
 		}
 
