@@ -79,11 +79,22 @@ void start2(){
 
 void start3(){
 	//UsermodeMemoryManager.
+	const static char[] name = "/binaries/app\0";
+	const static char*[] args = [name.ptr, null];
+	const static char** argv = args.ptr;
+	ulong argvul = cast(ulong)argv;
+	// __ENV ?
+
 	init();
 
 	XombThread* mainThread = threadCreate(&main);
 
 	mainThread.schedule();
+
+	asm{
+		mov RDI, 1;
+		mov RSI, argvul;
+	}
 
 	_enterThreadScheduler();
 }
