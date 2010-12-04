@@ -641,7 +641,7 @@ private:
 	// Note: You have to preserve the current stack
 	ErrorVal installStack() {
 		ubyte* stackSpace = cast(ubyte*)PageAllocator.allocPage();
-		stackSpace = cast(ubyte*)VirtualMemory.mapKernelPage(stackSpace);
+		stackSpace = cast(ubyte*)VirtualMemory.mapStack(stackSpace);
 		ubyte* currentStack = cast(ubyte*)(&_stack-4096);
 
 		stackSpace[0..4096] = currentStack[0..4096];

@@ -123,13 +123,26 @@ public:
 		return Paging.PAGESIZE;
 	}
 
+	synchronized void* mapStack(void* physAddr) {
+		if(stackSegment is null){
+			stackSegment = findFreeSegment();
+			Paging.createGib(stackSegment, oneGB, AccessMode.Kernel|AccessMode.Writable);
+		}
+
+		stackSegment += Paging.PAGESIZE;
+
+		if(Paging.mapRegion(stackSegment, physAddr, Paging.PAGESIZE) == ErrorVal.Fail){
+			return null;
+		}else{
+			return stackSegment;
+		} 
+	}
+
 	// --- OLD --- //
 	synchronized ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
 		return Paging.mapRegion(gib, physAddr, regionLength);
 	}
 
-	//
-	synchronized void* mapKernelPage(void* physAddr) {
-		return Paging.mapRegion(physAddr, 4096);
-	}
+private:
+	ubyte* stackSegment;
 }
