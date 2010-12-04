@@ -9,13 +9,13 @@ syscall.a: mindrt.a
 	# these belong in mindrt.a
 	ldc ${DFLAGS} -c ../../libos/libdeepmajik/threadscheduler.d  ../../libos/libdeepmajik/umm.d ../../runtimes/mindrt/entry.d
 	yasm -felf64 pretexttrampoline.S 
-	ar rcs lib/syscall.a *.o
+	ar rcs lib/libsyscall.a *.o
 	#	console.o  csyscall.o entry.o nativecall.o pretexttrampoline.o syscall.o threadscheduler.o umm.o
 
 
 mindrt.a: clean
-	cp ../../runtimes/mindrt/mindrt.a lib/.
+	cp ../../runtimes/mindrt/mindrt.a lib/libmindrt.a
 
 clean:
-	rm -f lib/*
+	rm -f lib/*.a
 	rm -f *.o
