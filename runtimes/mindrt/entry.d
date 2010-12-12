@@ -23,13 +23,13 @@ ubyte* endBSS = &_end;
 
 // Upcall Vector Table
 void function()[2] UVT = [&start, &_enterThreadScheduler];
-ubyte* UVTbase = cast(ubyte*)UVT.ptr;
+extern(C) ubyte* UVTbase = cast(ubyte*)UVT.ptr;
 
 ubyte[1024] tempStack;
 ubyte* tempStackTop = &tempStack[tempStack.length - 8];
 
 
-extern(C) void _start(int thing) {
+/*extern(C) void _start(int thing) {
 	asm{
 		naked;
 
@@ -39,7 +39,7 @@ extern(C) void _start(int thing) {
 		addq RSI, RDI;
 		jmp [RSI];
 	}
-}
+	}*/
 
 void start(){
 	// Zero the BSS, equivalent to start2()
