@@ -3,9 +3,11 @@ build/dsss_imports/*
 build/dsss.last
 build/xomb.dump
 build/xomb.iso
+build/iso
 build/iso/boot/xomb
 build/dsss.conf
 user/nativecall.d
+libos/penguinhat
 runtimes/mindrt/*.a
 *.a
 *.swp
@@ -13,4 +15,7 @@ runtimes/mindrt/*.a
 *~
 *.dump
 *-elf
-
+app/c/hello/chel
+app/d/hello/hello
+app/fortran/hello/fhel
+app/d/init/init
