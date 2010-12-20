@@ -8,6 +8,7 @@ syscall.a: clean
 	ldc ${DFLAGS} -c ../nativecall.d
 	# these belong in mindrt.a
 	ldc ${DFLAGS} -c ../../libos/libdeepmajik/threadscheduler.d  ../../libos/libdeepmajik/umm.d ../../runtimes/mindrt/entry.d
+	mkdir -p lib
 	ar rcs lib/syscall.a *.o
 	#	console.o  csyscall.o entry.o nativecall.o pretexttrampoline.o syscall.o threadscheduler.o umm.o
 
