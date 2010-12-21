@@ -40,12 +40,15 @@ private:
 			if(exe){
 				memcpy(cast(void*)f.ptr, cast(void*)data.ptr, data.length);
 			}else{
-				ulong* size = cast(ulong*)f.ptr;
-				
-				*size = data.length;
+				int spacer = ulong.sizeof;
 
-				memcpy(cast(void*)((f.ptr)[ulong.sizeof..ulong.sizeof]).ptr, cast(void*)data.ptr, data.length);
+				memcpy(cast(void*)((f.ptr)[spacer..spacer]).ptr,
+							 cast(void*)data.ptr, data.length);
 			}
+
+			ulong* size = cast(ulong*)f.ptr;
+
+			*size = data.length;
 
 			return f;
 		}

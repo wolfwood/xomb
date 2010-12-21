@@ -56,9 +56,8 @@ struct InitProcess{
 		ulong myRSP = 0;
 		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
 		ulong myCS = ((9UL << 3) | 3);
-		ulong oneGB = 1024*1024*1024;
+		ulong entry = oneGB + ulong.sizeof*2;
 
-		//for(;;){}
 		asm{
 			movq R11, mySS;
 			pushq R11;
@@ -72,7 +71,7 @@ struct InitProcess{
 			movq R11, myCS;
 			pushq R11;
 
-			movq R11, oneGB;
+			movq R11, entry;
 			pushq R11;
 
 			movq RDI, 1;
@@ -87,9 +86,8 @@ struct InitProcess{
 		ulong myRSP = 0;
 		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
 		ulong myCS = ((9UL << 3) | 3);
-		ulong oneGB = 1024*1024*1024;
+		ulong entry = oneGB + ulong.sizeof*2;
 
-		//for(;;){}
 		asm{
 			movq R11, mySS;
 			pushq R11;
@@ -103,7 +101,7 @@ struct InitProcess{
 			movq R11, myCS;
 			pushq R11;
 
-			movq R11, oneGB;
+			movq R11, entry;
 			pushq R11;
 
 			movq RDI, 0;
@@ -121,8 +119,6 @@ struct InitProcess{
 	}
 
 private:
-	const ulong oneGB = 1024*1024*1024;
-
 	ubyte[] createSegmentForModule(char[] name, int segidx = -1){
 		int idx = findIndexForModuleName(name);
 
