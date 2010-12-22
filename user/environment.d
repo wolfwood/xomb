@@ -32,6 +32,61 @@ struct MessageInAbottle {
 	ubyte[] stdout
 	bool stdinIsTTY, stdoutIsTTY;
 	char[][] argv;
+
+	// assumes alloc on write beyond end of exe
+	void setArgv(char[][] parentArgv){
+		argv = (cast(char[]*)this + MessageInAbottle.sizeof)[0..parentArgv.length];
+		
+		char[] storage = (cast(char*)argv[length..length].ptr)[0..0];
+
+		foreach(str, i; argv){
+			storage = storage[length..length].ptr[0..str.length];
+			storage[] = str[];
+			argv[i] = storage;
+		}
+	}
+	
+	void setArgv(char[] parentArgv){
+		char[] storage = cast(char*)(this + MessageInAbottle.sizeof)[0..parentArgv.length];
+		
+		storage[] = parentArgv[];
+		
+		int substrings = 1;
+
+		foreach(ch; storage){
+			if(ch == ' '){
+				substrings++;
+			}
+		}
+		
+		argv = cast(char[][])storage[length..length].ptr[0..substrings];
+
+		char* arg;
+		int len, i;
+
+		foreach(ch; storage){
+			if(len == 0){
+				arg = storage.ptr;
+			}
+
+			if(ch == ' '){
+				argv[i] = arg[len];
+				len = 0;
+				i++;
+			}else{
+				len++;
+			}
+		}//end foreach
+	}
+	
+	static:
+	MessageInAbottle getBottleForSegment(ubyte* seg){
+		return seg + *cast(ulong*)seg;
+	}
+
+	MessageInAbottle getMyBottle(){
+		return getBottleForSegment(cast(ubyte*) oneGB);
+	}
 }
 
 
