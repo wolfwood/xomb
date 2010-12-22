@@ -29,7 +29,7 @@ enum AccessMode : uint {
 // 
 struct MessageInAbottle {
 	ubyte[] stdin;
-	ubyte[] stdout
+	ubyte[] stdout;
 	bool stdinIsTTY, stdoutIsTTY;
 	char[][] argv;
 
@@ -39,7 +39,7 @@ struct MessageInAbottle {
 		
 		char[] storage = (cast(char*)argv[length..length].ptr)[0..0];
 
-		foreach(str, i; argv){
+		foreach(i, str; argv){
 			storage = storage[length..length].ptr[0..str.length];
 			storage[] = str[];
 			argv[i] = storage;
@@ -47,7 +47,7 @@ struct MessageInAbottle {
 	}
 	
 	void setArgv(char[] parentArgv){
-		char[] storage = cast(char*)(this + MessageInAbottle.sizeof)[0..parentArgv.length];
+		char[] storage = (cast(char*)this + MessageInAbottle.sizeof)[0..parentArgv.length];
 		
 		storage[] = parentArgv[];
 		
@@ -61,16 +61,17 @@ struct MessageInAbottle {
 		
 		argv = cast(char[][])storage[length..length].ptr[0..substrings];
 
-		char* arg;
+		char* arg = storage.ptr;
 		int len, i;
 
 		foreach(ch; storage){
-			if(len == 0){
-				arg = storage.ptr;
-			}
+			/*if(len == 0){
+				arg 
+				}*/
 
 			if(ch == ' '){
-				argv[i] = arg[len];
+				argv[i] = arg[0..len];
+				arg = arg[len..len].ptr;
 				len = 0;
 				i++;
 			}else{
@@ -80,11 +81,11 @@ struct MessageInAbottle {
 	}
 	
 	static:
-	MessageInAbottle getBottleForSegment(ubyte* seg){
-		return seg + *cast(ulong*)seg;
+	MessageInAbottle* getBottleForSegment(ubyte* seg){
+		return cast(MessageInAbottle*)seg + *cast(ulong*)seg;
 	}
 
-	MessageInAbottle getMyBottle(){
+	MessageInAbottle* getMyBottle(){
 		return getBottleForSegment(cast(ubyte*) oneGB);
 	}
 }
