@@ -40,9 +40,20 @@ struct InitProcess{
 			return ErrorVal.Fail;
 		}
 
+		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
+
+		// XXX: replace fixed values with findFreeGib()
+		bottle.stdin = (cast(ubyte*)(2*oneGB))[0..oneGB];
+		bottle.stdout = (cast(ubyte*)(3*oneGB))[0..oneGB];
+
 		// * map in video and keyboard segments
-		VirtualMemory.mapSegment(null, Console.virtualAddress(), cast(ubyte*)(2*oneGB), AccessMode.Writable);
-		VirtualMemory.mapSegment(null, Keyboard.address, cast(ubyte*)(3*oneGB), AccessMode.Writable);
+		VirtualMemory.mapSegment(null, Console.virtualAddress(), bottle.stdin.ptr, AccessMode.Writable);
+		bottle.stdinIsTTY = true;
+
+		VirtualMemory.mapSegment(null, Keyboard.address, bottle.stdout.ptr, AccessMode.Writable);
+		bottle.stdoutIsTTY = true;
+
+		bottle.setArgv("init and some args");
 
 		return ErrorVal.Success; 
 	}

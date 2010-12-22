@@ -78,6 +78,8 @@ struct MessageInAbottle {
 				len++;
 			}
 		}//end foreach
+
+		argv[i] = arg[0..len];
 	}
 	
 	static:
