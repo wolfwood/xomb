@@ -25,7 +25,17 @@ enum AccessMode : uint {
 		DefaultKernel = Writable | AllocOnAccess | Kernel
 }
 
-// -- Structures -- //
+
+// 
+struct MessageInAbottle {
+	ubyte[] stdin;
+	ubyte[] stdout
+	bool stdinIsTTY, stdoutIsTTY;
+	char[][] argv;
+}
+
+
+// -- Paging Structures -- //
 
 // The x86 implements a four level page table.
 // We use the 4KB page size hierarchy
