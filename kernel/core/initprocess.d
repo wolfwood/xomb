@@ -43,15 +43,15 @@ struct InitProcess{
 		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
 
 		// XXX: replace fixed values with findFreeGib()
-		bottle.stdin = (cast(ubyte*)(2*oneGB))[0..oneGB];
-		bottle.stdout = (cast(ubyte*)(3*oneGB))[0..oneGB];
+		bottle.stdout = (cast(ubyte*)(2*oneGB))[0..oneGB];
+		bottle.stdin = (cast(ubyte*)(3*oneGB))[0..oneGB];
 
 		// * map in video and keyboard segments
-		VirtualMemory.mapSegment(null, Console.virtualAddress(), bottle.stdin.ptr, AccessMode.Writable);
-		bottle.stdinIsTTY = true;
-
-		VirtualMemory.mapSegment(null, Keyboard.address, bottle.stdout.ptr, AccessMode.Writable);
+		VirtualMemory.mapSegment(null, Console.virtualAddress(), bottle.stdout.ptr, AccessMode.Writable);
 		bottle.stdoutIsTTY = true;
+
+		VirtualMemory.mapSegment(null, Keyboard.address, bottle.stdin.ptr, AccessMode.Writable);
+		bottle.stdinIsTTY = true;
 
 		bottle.setArgv("init and some args");
 
@@ -146,6 +146,9 @@ private:
 			VirtualMemory.createSegment(cast(ubyte*)(segidx*oneGB), oneGB, AccessMode.Writable);
 
 		VirtualMemory.mapRegion(segmentBytes.ptr, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
+		
+		// set module length in first ulong of segment
+		*cast(ulong*)segmentBytes.ptr = System.moduleInfo[idx].length;
 
 		return segmentBytes;
 	}
