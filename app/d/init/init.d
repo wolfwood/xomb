@@ -25,18 +25,33 @@ import mindrt.util;
 
 
 void main() {
+	MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
 
 	// create heap gib?
 
 	// initialize userspace console code
-	Console.initialize(cast(ubyte*)(2*oneGB));
-	Keyboard.initialize(cast(ushort*)(3*oneGB));
+	if(bottle.stdoutIsTTY){
+		Console.initialize(bottle.stdout.ptr);
+	}else{
+		assert(false);
+	}
+
+	if(bottle.stdoutIsTTY){
+		Keyboard.initialize(bottle.stdout.ptr);
+	}else{
+		assert(false);
+	}
 
 	EmbeddedFS.makeFS();
 
 	// say hello
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.Green;
+
+	foreach(str; bottle.argv){
+		Console.putString(str);
+		Console.putString("\n");
+	}
 
 	Console.putString("\nWelcome to XOmB\n");
 	Console.putString(  "-=-=-=-=-=-=-=-\n\n");
