@@ -36,8 +36,8 @@ void main() {
 		assert(false);
 	}
 
-	if(bottle.stdoutIsTTY){
-		Keyboard.initialize(bottle.stdout.ptr);
+	if(bottle.stdinIsTTY){
+		Keyboard.initialize(cast(ushort*)bottle.stdin.ptr);
 	}else{
 		assert(false);
 	}
