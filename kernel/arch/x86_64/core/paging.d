@@ -168,32 +168,6 @@ static:
 		return ErrorVal.Success;
 	}
 
-	void* createAddress(ulong indexLevel1,
-											ulong indexLevel2,
-											ulong indexLevel3,
-											ulong indexLevel4) {
-		ulong vAddr = 0;
-
-		if(indexLevel4 >= 256){
-			vAddr = ~vAddr;
-			vAddr <<= 9;
-		}
-
-		vAddr |= indexLevel4 & 0x1ff;
-		vAddr <<= 9;
-
-		vAddr |= indexLevel3 & 0x1ff;
-		vAddr <<= 9;
-
-		vAddr |= indexLevel2 & 0x1ff;
-		vAddr <<= 9;
-
-		vAddr |= indexLevel1 & 0x1ff;
-		vAddr <<= 12;
-
-		return cast(void*) vAddr;
-	}
-
 	// This function will get the physical address that is mapped from the
 	// specified virtual address.
 	void* translateAddress(void* virtAddress) {
@@ -723,4 +697,3 @@ private:
 	alias heapMap!(false) doHeapMap;
 
 }
-

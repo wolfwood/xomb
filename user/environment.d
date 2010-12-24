@@ -92,6 +92,58 @@ struct MessageInAbottle {
 }
 
 
+// find free gib magic
+// XXX: handle global and different sizes!
+template findFreeSegment(bool upperhalf = true, bool global = false, uint size = 1024*1024*1024){
+	ubyte* findFreeSegment(){
+		const uint dividingLine = 256;
+		static uint last1 = (upperhalf ? dividingLine : 1), last2 = 0;
+			
+		bool foundFree;
+		void* addy;
+
+		while(!foundFree){
+			PageLevel3* pl3 = root.getTable(last1);
+
+			if(pl3 is null){
+				addy = createAddress(0, 0, 0, last1);
+				last2 = 1;
+				break;
+			}
+
+			while(!foundFree && last2 < pl3.entries.length){
+				if(pl3.entries[last2].pml == 0){
+					foundFree = true;
+					addy = createAddress(0, 0, last2, last1);
+				}
+				last2++;
+			}
+
+			if(last2 >= pl3.entries.length){
+				last1++;
+				last2 = 0;
+			}
+
+			if(upperhalf){
+				if(last1 >= root.entries.length){
+					last1 = dividingLine;
+				}
+			}else{
+				if(last1 >= dividingLine){
+					last1 = 1;
+				}
+
+			}
+
+		}
+			
+		assert(addy !is null, "null gib find fail\n");
+
+		return cast(ubyte*)addy;
+	}
+}
+
+
 // -- Paging Structures -- //
 
 // The x86 implements a four level page table.
@@ -306,3 +358,27 @@ struct PageLevel1 {
 	}
 }
 
+void* createAddress(ulong indexLevel1, ulong indexLevel2,	ulong indexLevel3, ulong indexLevel4) {
+	ulong vAddr = 0;
+
+	if(indexLevel4 >= 256){
+		vAddr = ~vAddr;
+		vAddr <<= 9;
+	}
+
+	vAddr |= indexLevel4 & 0x1ff;
+	vAddr <<= 9;
+
+	vAddr |= indexLevel3 & 0x1ff;
+	vAddr <<= 9;
+
+	vAddr |= indexLevel2 & 0x1ff;
+	vAddr <<= 9;
+
+	vAddr |= indexLevel1 & 0x1ff;
+	vAddr <<= 12;
+
+	return cast(void*) vAddr;
+}
+
+PageLevel4* root = cast(PageLevel4*)0xFFFFFFFF_FFFFF000;
