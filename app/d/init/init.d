@@ -48,7 +48,10 @@ void main() {
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.Green;
 
+	Console.putString("Y\n");
+
 	foreach(str; bottle.argv){
+		Console.putString("X");
 		Console.putString(str);
 		Console.putString("\n");
 	}

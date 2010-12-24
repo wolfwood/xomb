@@ -26,7 +26,7 @@ enum AccessMode : uint {
 }
 
 
-// 
+// place to store values that must be communicated to the  child process from the parent
 struct MessageInAbottle {
 	ubyte[] stdin;
 	ubyte[] stdout;
@@ -39,9 +39,11 @@ struct MessageInAbottle {
 		
 		char[] storage = (cast(char*)argv[length..length].ptr)[0..0];
 
-		foreach(i, str; argv){
+		foreach(i, str; parentArgv){
 			storage = storage[length..length].ptr[0..str.length];
+
 			storage[] = str[];
+
 			argv[i] = storage;
 		}
 	}
@@ -59,18 +61,15 @@ struct MessageInAbottle {
 			}
 		}
 		
-		argv = cast(char[][])storage[length..length].ptr[0..substrings];
+		argv = (cast(char[]*)storage[length..length].ptr)[0..substrings];
 
 		char* arg = storage.ptr;
 		int len, i;
 
 		foreach(ch; storage){
-			/*if(len == 0){
-				arg 
-				}*/
-
 			if(ch == ' '){
 				argv[i] = arg[0..len];
+				len++;
 				arg = arg[len..len].ptr;
 				len = 0;
 				i++;

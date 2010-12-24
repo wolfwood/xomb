@@ -53,7 +53,7 @@ struct InitProcess{
 		VirtualMemory.mapSegment(null, Keyboard.address, bottle.stdin.ptr, AccessMode.Writable);
 		bottle.stdinIsTTY = true;
 
-		bottle.setArgv("init and some args");
+		bottle.setArgv("init");
 
 		return ErrorVal.Success; 
 	}
