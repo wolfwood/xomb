@@ -12,6 +12,8 @@ import user.syscall;
 import libos.libdeepmajik.threadscheduler;
 import libos.libdeepmajik.umm;
 
+import user.environment;
+
 // Will be linked to the user's main function
 int main(char[][]);
 
@@ -79,10 +81,11 @@ void start2(){
 
 void start3(){
 	//UsermodeMemoryManager.
-	const static char[] name = "/binaries/app\0";
-	const static char*[] args = [name.ptr, null];
-	const static char** argv = args.ptr;
-	ulong argvul = cast(ulong)argv;
+
+	char[][] argv = MessageInAbottle.getMyBottle().argv;
+
+	ulong argvlen = cast(ulong)argv.length;
+	ulong argvptr = cast(ulong)argv.ptr;
 	// __ENV ?
 
 	init();
@@ -92,8 +95,8 @@ void start3(){
 	mainThread.schedule();
 
 	asm{
-		mov RDI, 1;
-		mov RSI, argvul;
+		mov RDI, argvlen;
+		mov RSI, argvptr;
 	}
 
 	_enterThreadScheduler();

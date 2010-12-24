@@ -24,7 +24,7 @@ import libos.elf.loader;
 import mindrt.util;
 
 
-void main() {
+void main(char[][] argv) {
 	MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
 
 	// create heap gib?
@@ -50,7 +50,7 @@ void main() {
 
 	Console.putString("Y\n");
 
-	foreach(str; bottle.argv){
+	foreach(str; argv){
 		Console.putString("X");
 		Console.putString(str);
 		Console.putString("\n");
