@@ -67,8 +67,8 @@ void main(char[][] argv) {
 	
 	map(xshAS, EmbeddedFS.shellAddr(), cast(ubyte*)oneGB, AccessMode.Writable);
 
-	map(xshAS, cast(ubyte*)(2*oneGB), cast(ubyte*)(2*oneGB), AccessMode.Writable);
-	map(xshAS, cast(ubyte*)(3*oneGB), cast(ubyte*)(3*oneGB), AccessMode.Writable);
+	map(xshAS, bottle.stdout.ptr, cast(ubyte*)(2*oneGB), AccessMode.Writable);
+	map(xshAS, bottle.stdin.ptr, cast(ubyte*)(3*oneGB), AccessMode.Writable);
 
 	yieldToAddressSpace(xshAS);
 
