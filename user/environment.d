@@ -97,7 +97,7 @@ struct MessageInAbottle {
 template findFreeSegment(bool upperhalf = true, bool global = false, uint size = 1024*1024*1024){
 	ubyte* findFreeSegment(){
 		const uint dividingLine = 256;
-		static uint last1 = (upperhalf ? dividingLine : 1), last2 = 0;
+		static uint last1 = (upperhalf ? dividingLine : 0), last2 = (upperhalf ? 0 : 1);
 			
 		bool foundFree;
 		void* addy;
@@ -106,12 +106,12 @@ template findFreeSegment(bool upperhalf = true, bool global = false, uint size =
 			PageLevel3* pl3 = root.getTable(last1);
 
 			if(pl3 is null){
-				addy = createAddress(0, 0, 0, last1);
+				addy = createAddress(0, 0, ((!upperhalf && (last1== 0))? 1 : 0), last1);
 				last2 = 1;
 				break;
 			}
 
-			while(!foundFree && last2 < pl3.entries.length){
+			while(!foundFree && (last2 < pl3.entries.length)){
 				if(pl3.entries[last2].pml == 0){
 					foundFree = true;
 					addy = createAddress(0, 0, last2, last1);
@@ -130,7 +130,8 @@ template findFreeSegment(bool upperhalf = true, bool global = false, uint size =
 				}
 			}else{
 				if(last1 >= dividingLine){
-					last1 = 1;
+					last1 = 0;
+					last2 = 1;
 				}
 
 			}
