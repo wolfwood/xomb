@@ -48,14 +48,6 @@ void main(char[][] argv) {
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.Green;
 
-	Console.putString("Y\n");
-
-	foreach(str; argv){
-		Console.putString("X");
-		Console.putString(str);
-		Console.putString("\n");
-	}
-
 	Console.putString("\nWelcome to XOmB\n");
 	Console.putString(  "-=-=-=-=-=-=-=-\n\n");
 	
