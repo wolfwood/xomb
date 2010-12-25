@@ -31,8 +31,6 @@ void initC2D(){
 	if(!initFlag){
 		MinFS.initialize();
 
-		Console.initialize(cast(ubyte*)( 2*oneGB));
-		
 		heapStart = cast(ulong)Umm.initHeap().ptr;
 
 		initFlag = true;

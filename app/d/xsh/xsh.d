@@ -17,10 +17,6 @@ import libos.libdeepmajik.threadscheduler;
 import libos.fs.minfs;
 
 void main() {
-
-	Console.initialize(cast(ubyte*)(2*oneGB));
-	Keyboard.initialize(cast(ushort*)(3*oneGB));
-
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.Green;
 

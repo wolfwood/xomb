@@ -29,19 +29,6 @@ void main(char[][] argv) {
 
 	// create heap gib?
 
-	// initialize userspace console code
-	if(bottle.stdoutIsTTY){
-		Console.initialize(bottle.stdout.ptr);
-	}else{
-		assert(false);
-	}
-
-	if(bottle.stdinIsTTY){
-		Keyboard.initialize(cast(ushort*)bottle.stdin.ptr);
-	}else{
-		assert(false);
-	}
-
 	EmbeddedFS.makeFS();
 
 	// say hello
@@ -56,11 +43,21 @@ void main(char[][] argv) {
 
 	// yield to xsh
 	AddressSpace xshAS = createAddressSpace();	
-	
+
 	map(xshAS, EmbeddedFS.shellAddr(), cast(ubyte*)oneGB, AccessMode.Writable);
 
-	map(xshAS, bottle.stdout.ptr, cast(ubyte*)(2*oneGB), AccessMode.Writable);
-	map(xshAS, bottle.stdin.ptr, cast(ubyte*)(3*oneGB), AccessMode.Writable);
+
+	MessageInAbottle* childBottle = MessageInAbottle.getBottleForSegment(EmbeddedFS.shellAddr());
+
+	// XXX: use findFreeSemgent to pick gib locations in child
+	childBottle.stdout = (cast(ubyte*)(2*oneGB))[0..oneGB];
+	childBottle.stdoutIsTTY = true;
+	childBottle.stdin = (cast(ubyte*)(3*oneGB))[0..oneGB];
+	childBottle.stdinIsTTY = true;
+
+	map(xshAS, bottle.stdout.ptr, childBottle.stdout.ptr, AccessMode.Writable);
+	map(xshAS, bottle.stdin.ptr, childBottle.stdin.ptr, AccessMode.Writable);
+	
 
 	yieldToAddressSpace(xshAS);
 

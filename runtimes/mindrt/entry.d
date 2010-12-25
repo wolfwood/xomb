@@ -14,6 +14,9 @@ import libos.libdeepmajik.umm;
 
 import user.environment;
 
+import libos.console;
+import libos.keyboard;
+
 // Will be linked to the user's main function
 int main(char[][]);
 
@@ -87,6 +90,20 @@ void start3(){
 	ulong argvlen = cast(ulong)argv.length;
 	ulong argvptr = cast(ulong)argv.ptr;
 	// __ENV ?
+
+	MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
+
+	if(bottle.stdoutIsTTY){
+		Console.initialize(bottle.stdout.ptr);
+	}else{
+		assert(false);
+	}
+
+	if(bottle.stdinIsTTY){
+		Keyboard.initialize(cast(ushort*)bottle.stdin.ptr);
+	}else{
+		assert(false);
+	}
 
 	init();
 

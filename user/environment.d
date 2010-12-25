@@ -382,4 +382,4 @@ void* createAddress(ulong indexLevel1, ulong indexLevel2,	ulong indexLevel3, ulo
 	return cast(void*) vAddr;
 }
 
-PageLevel4* root = cast(PageLevel4*)0xFFFFFFFF_FFFFF000;
+const PageLevel4* root = cast(PageLevel4*)0xFFFFFFFF_FFFFF000;
