@@ -9,7 +9,7 @@ module hello;
 import user.syscall;
 
 import console;
-
+import libos.keyboard;
 import user.environment;
 
 import libos.libdeepmajik.threadscheduler;

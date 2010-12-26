@@ -257,13 +257,8 @@ void interpret(char[] str) {
 			AddressSpace child = createAddressSpace();
 
 			File f = MinFS.open(argumentPath, AccessMode.Writable);
-
-			// map in code
-			map(child, f.ptr, cast(ubyte*)oneGB, AccessMode.Writable);
-
-			// map in console aqnd keyboard
-			map(child, cast(ubyte*)(2*oneGB), cast(ubyte*)(2*oneGB), AccessMode.Writable);
-			map(child, cast(ubyte*)(3*oneGB), cast(ubyte*)(3*oneGB), AccessMode.Writable);
+			
+			populateForegroundChild(arguments, child, f);
 
 			yieldToAddressSpace(child);
 		}

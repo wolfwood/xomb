@@ -19,8 +19,8 @@ struct EmbeddedFS{
 		makeFile!("kernel/LICENSE", false)();
 	}
 
-	ubyte* shellAddr(){
-		return xsh.ptr;
+	ubyte[] shell(){
+		return xsh;
 	}
 
 private:

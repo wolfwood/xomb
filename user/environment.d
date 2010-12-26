@@ -1,6 +1,7 @@
 module user.environment;
 
 import user.util;
+import user.syscall;
 
 version(KERNEL){
 	import kernel.mem.pageallocator;
@@ -91,6 +92,28 @@ struct MessageInAbottle {
 	}
 }
 
+template populateForegroundChild(T){
+	void populateForegroundChild(T argv, AddressSpace child, ubyte[] f){
+		// XXX: restrict T to char[] and char[][]
+
+		map(child, f.ptr, cast(ubyte*)oneGB, AccessMode.Writable);
+
+		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
+		MessageInAbottle* childBottle = MessageInAbottle.getBottleForSegment(f.ptr);
+	
+		// XXX: use findFreeSemgent to pick gib locations in child
+		childBottle.stdout = (cast(ubyte*)(2*oneGB))[0..oneGB];
+		childBottle.stdoutIsTTY = true;
+		childBottle.stdin = (cast(ubyte*)(3*oneGB))[0..oneGB];
+		childBottle.stdinIsTTY = true;
+		
+		childBottle.setArgv(argv);
+
+		map(child, bottle.stdout.ptr, childBottle.stdout.ptr, AccessMode.Writable);
+
+		map(child, bottle.stdin.ptr, childBottle.stdin.ptr, AccessMode.Writable);
+	}
+}
 
 // find free gib magic
 // XXX: handle global and different sizes!

@@ -44,20 +44,9 @@ void main(char[][] argv) {
 	// yield to xsh
 	AddressSpace xshAS = createAddressSpace();	
 
-	map(xshAS, EmbeddedFS.shellAddr(), cast(ubyte*)oneGB, AccessMode.Writable);
+	const char[][] args = ["xsh", "arg"];
 
-
-	MessageInAbottle* childBottle = MessageInAbottle.getBottleForSegment(EmbeddedFS.shellAddr());
-
-	// XXX: use findFreeSemgent to pick gib locations in child
-	childBottle.stdout = (cast(ubyte*)(2*oneGB))[0..oneGB];
-	childBottle.stdoutIsTTY = true;
-	childBottle.stdin = (cast(ubyte*)(3*oneGB))[0..oneGB];
-	childBottle.stdinIsTTY = true;
-
-	map(xshAS, bottle.stdout.ptr, childBottle.stdout.ptr, AccessMode.Writable);
-	map(xshAS, bottle.stdin.ptr, childBottle.stdin.ptr, AccessMode.Writable);
-	
+	populateForegroundChild(args, xshAS, EmbeddedFS.shell());
 
 	yieldToAddressSpace(xshAS);
 
