@@ -46,7 +46,7 @@ void main(char[][] argv) {
 
 	const char[][] args = ["xsh", "arg"];
 
-	populateForegroundChild(args, xshAS, EmbeddedFS.shell());
+	populateChild(args, xshAS, EmbeddedFS.shell());
 
 	yieldToAddressSpace(xshAS);
 

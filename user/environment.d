@@ -92,8 +92,8 @@ struct MessageInAbottle {
 	}
 }
 
-template populateForegroundChild(T){
-	void populateForegroundChild(T argv, AddressSpace child, ubyte[] f){
+template populateChild(T){
+	void populateChild(T argv, AddressSpace child, ubyte[] f, ubyte* stdin = null, ubyte* stdout = null){
 		// XXX: restrict T to char[] and char[][]
 
 		map(child, f.ptr, cast(ubyte*)oneGB, AccessMode.Writable);
@@ -109,9 +109,18 @@ template populateForegroundChild(T){
 		
 		childBottle.setArgv(argv);
 
-		map(child, bottle.stdout.ptr, childBottle.stdout.ptr, AccessMode.Writable);
 
-		map(child, bottle.stdin.ptr, childBottle.stdin.ptr, AccessMode.Writable);
+		if(stdout is null){
+			stdout = bottle.stdout.ptr;
+		}
+
+		map(child, stdout, childBottle.stdout.ptr, AccessMode.Writable);
+
+		if(stdin is null){
+			stdin = bottle.stdin.ptr;
+		}
+
+		map(child, stdin, childBottle.stdin.ptr, AccessMode.Writable);
 	}
 }
 

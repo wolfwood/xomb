@@ -258,7 +258,7 @@ void interpret(char[] str) {
 
 			File f = MinFS.open(argumentPath, AccessMode.Writable);
 			
-			populateForegroundChild(arguments, child, f);
+			populateChild(arguments, child, f);
 
 			yieldToAddressSpace(child);
 		}
