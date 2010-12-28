@@ -25,7 +25,7 @@ class MinFS{
 		hdr.strTable = (cast(char*)createAddr(0,1,0,257))[0..0];
 	}
 	
-	File open(char[] name, AccessMode mode, bool createFlag = true){
+	File open(char[] name, AccessMode mode, bool createFlag = false){
 		File f = find(name);
 
 		if((f is null) && createFlag){
