@@ -126,34 +126,37 @@ template populateChild(T){
 	void populateChild(T argv, AddressSpace child, ubyte[] f, ubyte* stdin = null, ubyte* stdout = null){
 		// XXX: restrict T to char[] and char[][]
 
+		// map executable to default (kernel hardcoded) location in the child address space
 		ubyte* dest = cast(ubyte*)oneGB;
-
 		map(child, f.ptr, dest, AccessMode.Writable);
 
+		// bottle to bottle transfer of stdin/out isthe default case
 		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
 		MessageInAbottle* childBottle = MessageInAbottle.getBottleForSegment(f.ptr);
 	
 		// XXX: use findFreeSemgent to pick gib locations in child
+		// assume default locations and non-TTY for rebound stdin/out
 		childBottle.stdout = (cast(ubyte*)(2*oneGB))[0..oneGB];
 		childBottle.stdoutIsTTY = false;
 		childBottle.stdin = (cast(ubyte*)(3*oneGB))[0..oneGB];
 		childBottle.stdinIsTTY = false;
 		
+
 		childBottle.setArgv(argv);
-
-
+		
+		// if no stdin/out is specified, us the same buffer as parent
 		if(stdout is null){
 			stdout = bottle.stdout.ptr;
 			childBottle.stdoutIsTTY =	bottle.stdoutIsTTY;
 		}
-
-		map(child, stdout, childBottle.stdout.ptr, AccessMode.Writable);
 
 		if(stdin is null){
 			stdin = bottle.stdin.ptr;
 			childBottle.stdinIsTTY = bottle.stdinIsTTY;
 		}
 
+		// map stdin/out into child process
+		map(child, stdout, childBottle.stdout.ptr, AccessMode.Writable);
 		map(child, stdin, childBottle.stdin.ptr, AccessMode.Writable);
 	}
 }
