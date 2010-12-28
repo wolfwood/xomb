@@ -14,7 +14,7 @@ import user.environment;
 
 import libos.libdeepmajik.threadscheduler;
 
-void main() {
+void main(char[][] argv) {
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.Green;
 
@@ -23,4 +23,11 @@ void main() {
 
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.LightGray;
+
+	foreach(str; argv){
+		Console.putString(str);
+		Console.putString("\n");
+	}
+
+	Console.putString("\n");
 }
