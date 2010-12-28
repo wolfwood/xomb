@@ -10,6 +10,7 @@ version(KERNEL){
 typedef ubyte* AddressSpace;
 
 const ulong oneGB = 1024*1024*1024UL;
+//const ubyte[] squareGB = (cast(ubyte*)oneGB)[0..oneGB];
 
 enum AccessMode : uint {
 
@@ -35,9 +36,13 @@ struct MessageInAbottle {
 	char[][] argv;
 
 	// assumes alloc on write beyond end of exe
-	void setArgv(char[][] parentArgv){
+	void setArgv(char[][] parentArgv, ubyte[] to = (cast(ubyte*)oneGB)[0..oneGB]){
+		// assumes allocation on write region exists immediately following bottle
+
+		// allocate argv's array reference array first, since we know how long it is
 		argv = (cast(char[]*)this + MessageInAbottle.sizeof)[0..parentArgv.length];
 		
+		// this will be a sliding window for the strngs themselves, allocated after the argv array reference array 
 		char[] storage = (cast(char*)argv[length..length].ptr)[0..0];
 
 		foreach(i, str; parentArgv){
@@ -47,13 +52,19 @@ struct MessageInAbottle {
 
 			argv[i] = storage;
 		}
+
+		// adjust pointers
+		adjustArgvPointers(to);
 	}
 	
-	void setArgv(char[] parentArgv){
+	void setArgv(char[] parentArgv,  ubyte[] to = (cast(ubyte*)oneGB)[0..oneGB]){
+
+		// allocate strings first, since we know how long they are
 		char[] storage = (cast(char*)this + MessageInAbottle.sizeof)[0..parentArgv.length];
 		
 		storage[] = parentArgv[];
 		
+		// determine length of array reference array
 		int substrings = 1;
 
 		foreach(ch; storage){
@@ -62,6 +73,7 @@ struct MessageInAbottle {
 			}
 		}
 		
+		// allocate array reference array
 		argv = (cast(char[]*)storage[length..length].ptr)[0..substrings];
 
 		char* arg = storage.ptr;
@@ -79,10 +91,28 @@ struct MessageInAbottle {
 			}
 		}//end foreach
 
-		argv[i] = arg[0..len];
+		// final sub array isn't (hopefully) followed by a space, so it
+		// will bot get assigned in loop, and we must do it here instead
+
+		argv[i] = (arg)[0..len];
+
+		adjustArgvPointers(to);
 	}
 	
-	static:
+private:
+	void adjustArgvPointers(ubyte[] to){
+		// exploits fact that all argv pointers are intra-segment, so it
+		// is enought to mod (mask) by the segment size and then add the
+		// new segment base address
+
+		foreach(ref str; argv){
+			str = (cast(char*)(to.ptr + (cast(ulong)str.ptr & (to.length -1) )))[0..str.length];
+		}
+
+		argv = (cast(char[]*)(to.ptr + (cast(ulong)argv.ptr & (to.length -1) )))[0..argv.length];
+	}
+
+	public static:
 	MessageInAbottle* getBottleForSegment(ubyte* seg){
 		return cast(MessageInAbottle*)seg + *cast(ulong*)seg;
 	}
@@ -96,28 +126,32 @@ template populateChild(T){
 	void populateChild(T argv, AddressSpace child, ubyte[] f, ubyte* stdin = null, ubyte* stdout = null){
 		// XXX: restrict T to char[] and char[][]
 
-		map(child, f.ptr, cast(ubyte*)oneGB, AccessMode.Writable);
+		ubyte* dest = cast(ubyte*)oneGB;
+
+		map(child, f.ptr, dest, AccessMode.Writable);
 
 		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
 		MessageInAbottle* childBottle = MessageInAbottle.getBottleForSegment(f.ptr);
 	
 		// XXX: use findFreeSemgent to pick gib locations in child
 		childBottle.stdout = (cast(ubyte*)(2*oneGB))[0..oneGB];
-		childBottle.stdoutIsTTY = true;
+		childBottle.stdoutIsTTY = false;
 		childBottle.stdin = (cast(ubyte*)(3*oneGB))[0..oneGB];
-		childBottle.stdinIsTTY = true;
+		childBottle.stdinIsTTY = false;
 		
 		childBottle.setArgv(argv);
 
 
 		if(stdout is null){
 			stdout = bottle.stdout.ptr;
+			childBottle.stdoutIsTTY =	bottle.stdoutIsTTY;
 		}
 
 		map(child, stdout, childBottle.stdout.ptr, AccessMode.Writable);
 
 		if(stdin is null){
 			stdin = bottle.stdin.ptr;
+			childBottle.stdinIsTTY = bottle.stdinIsTTY;
 		}
 
 		map(child, stdin, childBottle.stdin.ptr, AccessMode.Writable);
