@@ -203,7 +203,7 @@ void interpret(char[] str) {
 		Console.putString(workingDirectory);
 		Console.putString("\n");
 	}
-	else if (streq(cmd, "cat")) {
+	else if (streq(cmd, "scat")) {
 		if (argument.length > 0) {
 			createArgumentPath(argument);
 
@@ -258,7 +258,7 @@ void interpret(char[] str) {
 
 			File f = MinFS.open(argumentPath, AccessMode.Writable);
 			
-			populateChild(arguments, child, f);
+			populateChild(arguments[0..argc], child, f);
 
 			yieldToAddressSpace(child);
 		}
