@@ -52,7 +52,7 @@ private:
 
 	File find(char[] name){
 		foreach(i, str; hdr.entries){
-			if(streq(name, str)){
+			if(name == str){
 				return (cast(ubyte*)(cast(ulong)hdr + ((i+1) * oneGB)))[0..oneGB];
 			}
 		}
@@ -111,19 +111,5 @@ private:
 		vAddr <<= 12;
 		
 		return cast(ubyte*) vAddr;
-	}
-	
-	bool streq(char[] stra, char[] strb) {
-		if (stra.length != strb.length) {
-			return false;
-		}
-		
-		foreach(size_t i, c; stra) {
-			if (strb[i] != c) {
-				return false;
-			}
-		}
-		
-		return true;
 	}
 }
