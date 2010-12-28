@@ -19,25 +19,24 @@ void main(char[][] argv){
 		exit(0);
 	}
 
-	foreach(str; argv){
-		Console.putString(str);
-		Console.putString("\n");
-	}
-
 	MinFS.initialize();
 	MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
 
 	switch(argv[0]){
 	case "cat":
-		if(argv.length < 1){
+		if(argv.length < 2){
 			exit(1);
 		}
 
 		if(bottle.stdoutIsTTY){
 
 			foreach(file; argv[1..$]){
-				File f = MinFS.open(file, cast(AccessMode)0);
+				File f = MinFS.open(file, AccessMode.Read);
 				if (f is null){
+					Console.putString("File ");
+					Console.putString(file);
+					Console.putString("Does Not Exist!\n");
+
 					continue;
 				}
 
@@ -55,6 +54,11 @@ void main(char[][] argv){
 			foreach(file; argv[1..$]){
 				File f = MinFS.open(file, cast(AccessMode)0);
 				if (f is null){
+					// XXX: stderr
+					//Console.putString("File ");
+					//Console.putString(file);
+					//Console.putString("Does Not Exist!\n");
+
 					continue;
 				}
 
