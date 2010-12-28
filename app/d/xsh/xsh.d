@@ -356,10 +356,6 @@ void interpret(char[] str) {
 			}*/
 	}
 	else {
-		Console.putString("xsh: Unknown Command: ");
-		Console.putString(cmd);
-		Console.putString(".\n");
-
 		if (argument.length > 0) {		
 			AddressSpace child = createAddressSpace();
 
