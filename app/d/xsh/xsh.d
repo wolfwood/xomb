@@ -359,6 +359,16 @@ void interpret(char[] str) {
 		Console.putString("xsh: Unknown Command: ");
 		Console.putString(cmd);
 		Console.putString(".\n");
+
+		if (argument.length > 0) {		
+			AddressSpace child = createAddressSpace();
+
+			File f = MinFS.open("/binaries/posix", AccessMode.Writable);
+
+			populateChild(arguments[0..argc], child, f);
+
+			yieldToAddressSpace(child);
+		}
 	}
 }
 
