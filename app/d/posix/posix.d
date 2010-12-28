@@ -35,7 +35,7 @@ void main(char[][] argv){
 				if (f is null){
 					Console.putString("File ");
 					Console.putString(file);
-					Console.putString("Does Not Exist!\n");
+					Console.putString(" Does Not Exist!\n");
 
 					continue;
 				}
@@ -52,7 +52,7 @@ void main(char[][] argv){
 			*stdoutlen = 0;
 
 			foreach(file; argv[1..$]){
-				File f = MinFS.open(file, cast(AccessMode)0);
+				File f = MinFS.open(file, AccessMode.Read);
 				if (f is null){
 					// XXX: stderr
 					//Console.putString("File ");
@@ -75,7 +75,32 @@ void main(char[][] argv){
 
 		break;
 	case "cp":
+		if(argv.length != 3){
+			Console.putString("Usage: cp src dest\n");
+			exit(1);
+		}
 
+		File f = MinFS.open(argv[1], AccessMode.Read);
+		if (f is null){
+			Console.putString("File ");
+			Console.putString(argv[1]);
+			Console.putString(" Does Not Exist!\n");
+			
+			exit(1);
+		}
+
+		File g = MinFS.open(argv[2], AccessMode.Writable, true);
+		if (g is null){
+			Console.putString("File ");
+			Console.putString(argv[2]);
+			Console.putString(" Does Not Exist!\n");
+			
+			exit(1);
+		}
+		
+		ulong* size = cast(ulong*)f.ptr;
+
+		memcpy(g.ptr, f.ptr, *size + ulong.sizeof);
 
 		break;
 	case "echo":
