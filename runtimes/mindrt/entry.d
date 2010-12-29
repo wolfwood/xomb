@@ -96,13 +96,13 @@ void start3(){
 	if(bottle.stdoutIsTTY){
 		Console.initialize(bottle.stdout.ptr);
 	}else{
-		assert(false);
+		//assert(false);
 	}
 
 	if(bottle.stdinIsTTY){
 		Keyboard.initialize(cast(ushort*)bottle.stdin.ptr);
 	}else{
-		assert(false);
+		//assert(false);
 	}
 
 	init();

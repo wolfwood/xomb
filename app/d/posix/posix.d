@@ -31,7 +31,14 @@ void main(char[][] argv){
 		if(bottle.stdoutIsTTY){
 
 			foreach(file; argv[1..$]){
-				File f = MinFS.open(file, AccessMode.Read);
+				File f;
+
+				if(file == "-"){
+					f = bottle.stdin.ptr[0..oneGB];
+				}else{
+					f = MinFS.open(file, AccessMode.Read);
+				}
+
 				if (f is null){
 					Console.putString("File ");
 					Console.putString(file);
@@ -47,7 +54,7 @@ void main(char[][] argv){
 			}
 		}else{
 			ulong* stdoutlen = cast(ulong*)bottle.stdout.ptr;
-			ubyte* ptr = bottle.stdout.ptr + ulong.sizeof;
+			ubyte* ptr = cast(ubyte*)bottle.stdout.ptr + ulong.sizeof;
 
 			*stdoutlen = 0;
 
@@ -104,7 +111,32 @@ void main(char[][] argv){
 
 		break;
 	case "echo":
-		
+		char[] space = " ", newline = "\n";
+
+		if(bottle.stdoutIsTTY){
+			foreach(str; argv[1..$]){
+				Console.putString(str);
+				Console.putString(space);
+			}
+
+			Console.putString(newline);
+		}else{
+			ulong* size = cast(ulong*)bottle.stdout.ptr;
+			char* ptr = cast(char*)bottle.stdout.ptr + ulong.sizeof;
+
+			foreach(str; argv[1..$]){
+				memcpy(ptr, str.ptr, str.length);
+				ptr += str.length;
+				*size += str.length;
+
+				memcpy(ptr, space.ptr, space.length);
+				ptr += space.length;
+				*size += space.length;
+			}
+
+				memcpy(ptr, newline.ptr, newline.length);
+				*size += newline.length;
+		}
 
 		break;
 	case "grep":

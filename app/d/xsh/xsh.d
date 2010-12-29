@@ -358,10 +358,22 @@ void interpret(char[] str) {
 	else {
 		if (argument.length > 0) {		
 			AddressSpace child = createAddressSpace();
+			File infile = null, outfile = null;
+
+			// XXX: really lame redirects
+			if(argc > 2){
+				if(arguments[argc-2] == ">"){
+					outfile = MinFS.open(arguments[argc-1], AccessMode.Writable, true);	
+					argc -= 2;
+				}else if(arguments[argc-2] == "<"){
+					infile = MinFS.open(arguments[argc-1], AccessMode.Read, true);		
+					argc -= 2;
+				}
+			}
 
 			File f = MinFS.open("/binaries/posix", AccessMode.Writable);
 
-			populateChild(arguments[0..argc], child, f);
+			populateChild(arguments[0..argc], child, f, infile.ptr, outfile.ptr);
 
 			yieldToAddressSpace(child);
 		}

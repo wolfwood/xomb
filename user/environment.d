@@ -158,7 +158,7 @@ template populateChild(T){
 
 		// map stdin/out into child process
 		map(child, stdout, childBottle.stdout.ptr, AccessMode.Writable);
-		map(child, stdin, childBottle.stdin.ptr, AccessMode.Writable);
+		map(child, stdin, childBottle.stdin.ptr, AccessMode.Read);
 	}
 }
 
