@@ -68,55 +68,7 @@ public:
 		return Paging.switchAddressSpace(as);
 	}
 
-		// XXX: handle global and different sizes!
-	template findFreeSegment(bool upperhalf = true, bool global = false, uint size = 1024*1024*1024){
-		ubyte* findFreeSegment(){
-			const uint dividingLine = 256;
-			static uint last1 = (upperhalf ? dividingLine : 1), last2 = 0;
-			
-			bool foundFree;
-			void* addy;
-
-			while(!foundFree){
-				PageLevel3* pl3 = Paging.root.getTable(last1);
-
-				if(pl3 is null){
-					addy = Paging.createAddress(0, 0, 0, last1);
-					last2 = 1;
-					break;
-				}
-
-				while(!foundFree && last2 < pl3.entries.length){
-					if(pl3.entries[last2].pml == 0){
-						foundFree = true;
-						addy = Paging.createAddress(0, 0, last2, last1);
-					}
-					last2++;
-				}
-
-				if(last2 >= pl3.entries.length){
-					last1++;
-					last2 = 0;
-				}
-
-				if(upperhalf){
-					if(last1 >= Paging.root.entries.length){
-						last1 = dividingLine;
-					}
-				}else{
-					if(last1 >= dividingLine){
-						last1 = 1;
-					}
-
-				}
-
-			}
-			
-			assert(addy !is null, "null gib find fail\n");
-
-			return cast(ubyte*)addy;
-		}
-	}
+	public import user.environment : findFreeSegment;
 
 	// The page size we are using
 	uint pagesize() {

@@ -145,7 +145,7 @@ public:
 		ulong myRSP = 0;
 		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
 		ulong myCS = ((9UL << 3) | 3);
-		ulong oneGB = 1024*1024*1024;
+		ulong entry = oneGB + ulong.sizeof*2;
 
 		asm{
 			movq R11, mySS;
@@ -160,7 +160,7 @@ public:
 			movq R11, myCS;
 			pushq R11;
 
-			movq R11, oneGB;
+			movq R11, entry;
 			pushq R11;
 
 			movq RDI, 0;
