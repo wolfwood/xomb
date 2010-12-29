@@ -41,6 +41,21 @@ class MinFS{
 		return f;
 	}
 
+	char[] findPrefix(char[] name, ref uint idx){
+    char[] val = null;
+
+		for(uint i = idx; i < hdr.entries.length; i++){
+			char[] str = hdr.entries[i];
+			if(name.length <= str.length && name == str[0..name.length]){
+				val = str;
+				idx = i+1;
+				break;
+			}
+		}
+		
+		return val;
+	}
+
 private:
 
 	struct Header{

@@ -126,7 +126,7 @@ void interpret(char[] str) {
 	if (streq(cmd, "clear")) {
 		Console.clear();
 	}
-	else if (streq(cmd, "ls")) {
+	else if (streq(cmd, "sls")) {
 		// Open current directory
 		
 		// if there is an argument... we should parse it

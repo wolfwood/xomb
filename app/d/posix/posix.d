@@ -148,6 +148,25 @@ void main(char[][] argv){
 
 
 		break;
+	case "ls":
+		uint idx;
+	  if(argv.length < 2){
+			Console.putString("Usage: ls dir\n");
+			exit(1);
+		}
+
+		foreach(dir; argv[1..$]){
+			Console.putString(dir);
+			Console.putString(":\n");
+
+			char[] str = MinFS.findPrefix(dir, idx);
+			while(str !is null){
+				Console.putString(str);
+				Console.putString("\n");
+				str = MinFS.findPrefix(dir, idx);
+			}
+		}
+		break;
 	default: 
 		Console.putString("Posix: command not found\n");
 		//return 1;
