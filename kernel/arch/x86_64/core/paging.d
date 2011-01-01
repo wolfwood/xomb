@@ -126,7 +126,9 @@ static:
 			// NOT AVAILABLE
 
 				if (stack.rip < 0xf_0000_0000_0000) {
-					kprintfln!("User Mode Page Fault {x}")(stack.rip);
+					kprintfln!("User Mode Level 3 Page Fault: instruction address {x}")(stack.rip);
+				}else{
+					kprintfln!("Kernel Mode Level 3 Page Fault: instruction address {x}")(stack.rip);
 				}
 
 				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
@@ -139,7 +141,9 @@ static:
 				// NOT AVAILABLE (FOR SOME REASON)
 
 				if (stack.rip < 0xf_0000_0000_0000) {
-					kprintfln!("User Mode Page Fault {x}")(stack.rip);
+					kprintfln!("User Mode Level 2 Page Fault {x}")(stack.rip);
+				}else{
+					kprintfln!("Kernel Mode Level 2 Page Fault {x}")(stack.rip);
 				}
 
 				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
