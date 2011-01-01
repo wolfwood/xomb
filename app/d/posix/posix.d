@@ -148,6 +148,21 @@ void main(char[][] argv){
 
 
 		break;
+	case "ln":
+	  if(argv.length < 3){
+			Console.putString("Usage: ln file target\n");
+			exit(1);
+		}
+
+		File f = MinFS.link(argv[1], argv[2]);
+
+		if (f is null){
+			Console.putString("target already exists!\n");
+			//return(1);
+		}
+		
+		//return(0);
+		break;
 	case "ls":
 		uint idx;
 	  if(argv.length < 2){

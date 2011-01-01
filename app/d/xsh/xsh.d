@@ -190,7 +190,7 @@ void interpret(char[] str) {
 		d.close();
 		*/
 	}
-	else if (streq(cmd, "ln")) {
+	else if (streq(cmd, "sln")) {
 		/*if (argc != 3) {
 			Console.putString("xsh: ln: Not the right number of arguments.\n");
 			}

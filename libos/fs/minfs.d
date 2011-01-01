@@ -56,6 +56,22 @@ class MinFS{
 		return val;
 	}
 
+	File link(char[] file, char[] target){
+		File f = find(file), t = find(target);
+
+		if(t is null){
+			t = alloc(target);
+		}else{
+			return null;
+		}
+
+		File eff = open(file, AccessMode.Read | AccessMode.Global);
+
+		Syscall.map(null, eff.ptr, t.ptr, AccessMode.Read | AccessMode.Global);
+
+		return t;
+	}
+
 private:
 
 	struct Header{

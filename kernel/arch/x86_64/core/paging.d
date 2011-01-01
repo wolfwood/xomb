@@ -315,6 +315,27 @@ static:
 	}
 
 	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, AccessMode flags) {
+
+		if(flags & AccessMode.Global){
+			ulong indexL1, indexL2, indexL3, indexL4;
+			PageLevel3* pl3 = root.getOrCreateTable(509, true);
+			PageLevel2* pl2;
+
+			translateAddress(location, indexL1, indexL2, indexL3, indexL4);
+			pl2 = pl3.getOrCreateTable(indexL4, true);
+			ubyte* locationAddr = cast(ubyte*)pl2.entries[indexL3].location();
+
+
+			indexL1 = indexL2 = indexL3 = indexL4 = 0;
+
+			translateAddress(destination, indexL1, indexL2, indexL3, indexL4);
+			pl2 = pl3.getOrCreateTable(indexL4, true);
+			pl2.setTable(indexL3, locationAddr, true);
+
+			return ErrorVal.Success;
+		}
+
+
 		PageLevel4* addressSpace;
 
 		// XXX: use switchAddressSpace() ?
