@@ -5,6 +5,7 @@ build/xomb.dump
 build/xomb.iso
 build/iso
 build/iso/boot/xomb
+build/root/*
 build/dsss.conf
 user/nativecall.d
 libos/penguinhat
