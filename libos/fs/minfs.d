@@ -10,12 +10,14 @@ alias ubyte[] File;
 
 class MinFS{
 	static:
+	// open the SuperSegment, allowing metadata reads and writes
 	void initialize(){
 		Syscall.create(createAddr(0,0,0,257), oneGB, AccessMode.Writable | AccessMode.Global);
 		
 		hdr = cast(Header*)createAddr(0,0,0,257);
 	}
 	
+	// this creates the 'SuperSegment', the super-block-like known-location which also happens to contain all the fs metadata (filenames)
 	void format(){
 		Syscall.create(createAddr(0,0,0,257), oneGB, AccessMode.Writable | AccessMode.Global);
 		
@@ -25,6 +27,7 @@ class MinFS{
 		hdr.strTable = (cast(char*)createAddr(0,1,0,257))[0..0];
 	}
 	
+	// maps a segment's page tables (currently mapped in at a lower level in the tree under the global segment) into the root page tabel at a known location
 	File open(char[] name, AccessMode mode, bool createFlag = false){
 		File f = find(name);
 
@@ -46,6 +49,7 @@ class MinFS{
 
 		for(uint i = idx; i < hdr.entries.length; i++){
 			char[] str = hdr.entries[i];
+			// to check prefix we just do a normal string equals against the prefix-sized substring
 			if(name.length <= str.length && name == str[0..name.length]){
 				val = str;
 				idx = i+1;
@@ -56,20 +60,21 @@ class MinFS{
 		return val;
 	}
 
-	File link(char[] file, char[] target){
-		File f = find(file), t = find(target);
 
-		if(t is null){
-			t = alloc(target);
+	// currently a non-refcounted hardlink... this FS is gonna need a garbage collector
+	File link(char[] filename, char[] linkname){
+		File file = find(filename), link = find(linkname);
+
+		if(link is null){
+			link = alloc(linkname);
 		}else{
 			return null;
 		}
 
-		File eff = open(file, AccessMode.Read | AccessMode.Global);
+		// Global bit means this operates on the global segment table that is mapped in to all AddressSpaces. this also means we leave the AS as null
+		Syscall.map(null, file.ptr, link.ptr, AccessMode.Read | AccessMode.Global);
 
-		Syscall.map(null, eff.ptr, t.ptr, AccessMode.Read | AccessMode.Global);
-
-		return t;
+		return link;
 	}
 
 private:
@@ -122,25 +127,6 @@ private:
 											 ulong indexLevel2,
 											 ulong indexLevel3,
 											 ulong indexLevel4) {
-		ulong vAddr = 0;
-		
-		if(indexLevel4 >= 256){
-			vAddr = ~vAddr;
-			vAddr <<= 9;
-		}
-		
-		vAddr |= indexLevel4 & 0x1ff;
-		vAddr <<= 9;
-		
-		vAddr |= indexLevel3 & 0x1ff;
-		vAddr <<= 9;
-		
-		vAddr |= indexLevel2 & 0x1ff;
-		vAddr <<= 9;
-		
-		vAddr |= indexLevel1 & 0x1ff;
-		vAddr <<= 12;
-		
-		return cast(ubyte*) vAddr;
+		return cast(ubyte*) createAddress(indexLevel1, indexLevel2, indexLevel3, indexLevel4);
 	}
 }
