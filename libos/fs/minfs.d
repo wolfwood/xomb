@@ -5,8 +5,29 @@ import Syscall = user.syscall;
 
 import libos.console;
 
-
 alias ubyte[] File;
+
+
+/*
+	Overview:
+
+	In this filesystem the managed objects are contiguous ranges of
+	virtual memory. The convention currently used is that allocation is
+	sparse and on demand.  The virtual size allocated to an object is
+	1GB, and convention is that files based on these objects track
+	size-in-bytes and pointers to extension blocks, internally, this
+	code does not depend on this behavior, however.  The only metadata
+	stored is an identifying string.  This metadata is organized in a
+	single 1GB super-segment, at the known location returned by
+	createAddr(0,0,0,257).  The header, which occupies a fixed number of
+	the initial bytes of the super-segment, points to two arrays. The
+	first, growing out from the header, is the entries array.  This
+	array serves both as an object allocation table, and, if the entry
+	is non-null, points to the name used to identify the object, if any.
+	The names are allocated in a string table which grows down from the
+	highest bytes of the segment.
+ */
+
 
 class MinFS{
 	static:
