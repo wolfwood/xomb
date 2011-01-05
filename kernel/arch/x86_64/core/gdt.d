@@ -85,8 +85,8 @@ package:
 	}
 
 	align(1) struct CodeSegmentDescriptor {
-		ushort limit	= 0xffff;
-		ushort base		= 0x0000;
+		ushort limit	= 0x0000;
+		ushort base		= 0xffff;
 		ubyte zero1		= 0;
 		ubyte flags1	= 0b11111101;
 		ubyte flags2	= 0b00000000;
@@ -99,8 +99,8 @@ package:
 	static assert(CodeSegmentDescriptor.sizeof == 8);
 
 	align(1) struct DataSegmentDescriptor {
-		ushort limit	= 0xffff;
-		ushort base		= 0x0000;
+		ushort limit	= 0x0000;
+		ushort base		= 0xffff;
 		ubyte zero1		= 0;
 		ubyte flags1	= 0b11110011;
 		ubyte flags2	= 0b11001111;
