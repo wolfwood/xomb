@@ -78,11 +78,6 @@ static:
 		pl3.entries[510].present = 1;
 		pl3.entries[510].rw = 1;
 
-		// Map entry 509 to the global root
-		root.entries[509].pml = cast(ulong)globalRoot;
-		root.entries[509].present = 1;
-		root.entries[509].rw = 1;
-
 		// The current position of the kernel space. All gets appended to this address.
 		heapAddress = LinkerScript.kernelVMA;
 
