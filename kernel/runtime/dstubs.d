@@ -1137,8 +1137,8 @@ byte[] _d_arraycopy(size_t size, byte[] from, byte[] to)
 {
 	if(to.length != from.length)
 		assert (0, "lengths don't match for array copy");
-	else if(cast(byte *)to + to.length * size <= cast(byte *)from || cast(byte *)from + from.length * size <= cast(byte *)to)
-		memcpy(cast(byte *)to, cast(byte *)from, to.length * size);
+	else if(to.ptr + to.length * size <= from.ptr || from.ptr + from.length * size <= to.ptr)
+		memcpy(to.ptr, from.ptr, to.length * size);
 	else
 		assert (0, "overlapping array copy");
 
