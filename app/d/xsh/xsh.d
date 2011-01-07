@@ -126,127 +126,10 @@ void interpret(char[] str) {
 	if (streq(cmd, "clear")) {
 		Console.clear();
 	}
-	else if (streq(cmd, "sls")) {
-		// Open current directory
-		
-		// if there is an argument... we should parse it
-		/*char[] listDirectory;
-		if (argument.length > 0) {
-			if (argument.length == 1 && argument[0] == '.') {
-				listDirectory = workingDirectory;
-			}
-			else {
-				createArgumentPath(argument);
-				listDirectory = argumentPath;
-			}
-		}
-		else {
-			listDirectory = workingDirectory;
-		}
-
-		uint flags;
-		if (exists(listDirectory, flags)) {
-			if ((flags & Directory.Mode.Directory) == 0) {
-				Console.putString("xsh: ls: Not a directory.\n");
-				return;
-			}
-		}
-		else {
-			Console.putString("xsh: ls: Directory not found.\n");
-			return;
-		}
-
-		Directory d = Directory.open(listDirectory);
-
-		int pos = 0;
-
-		// Print items in directory
-		foreach(DirectoryEntry dirent;d) {
-			char[] f = dirent.name;
-			if ((pos + f.length) >= Console.width()) {
-				Console.putString("\n");
-				pos = 0;
-			}
-			if (dirent.flags & Directory.Mode.Directory) {
-				Console.forecolor = Color.LightBlue;
-			}
-			if (dirent.flags & Directory.Mode.Softlink) {
-				Console.forecolor = Color.LightCyan;
-			}
-			if (dirent.flags & Directory.Mode.Executable) {
-				Console.forecolor = Color.LightGreen;
-			}
-			Console.putString(f);
-			Console.forecolor = Color.LightGray;
-			if ((pos + f.length + 2) < Console.width()) {
-				Console.putString("  ");
-			}
-			pos += f.length + 2;
-		}
-		if (pos != 0) {
-			Console.putString("\n");
-		}
-
-		d.close();
-		*/
-	}
-	else if (streq(cmd, "sln")) {
-		/*if (argc != 3) {
-			Console.putString("xsh: ln: Not the right number of arguments.\n");
-			}
-		else {
-			RamFS.link(arguments[1], arguments[2], 0);
-			}*/
-	}
 	else if (streq(cmd, "pwd")) {
 		// Print working directory
 		Console.putString(workingDirectory);
 		Console.putString("\n");
-	}
-	else if (streq(cmd, "scat")) {
-		if (argument.length > 0) {
-			createArgumentPath(argument);
-
-			File f = MinFS.open(argumentPath, cast(AccessMode)0);
-
-			ulong* size = cast(ulong*)f.ptr;
-			char[] data = (cast(char*)f.ptr)[ulong.sizeof..(ulong.sizeof + *size)];
-
-			Console.putString(data);
-		}
-
-		// Open the file in the argument and print it to the screen
-		/*
-		if (argument.length > 0) {
-			createArgumentPath(argument);
-
-			uint flags;
-			if (exists(argumentPath, flags)) {
-				if ((flags & Directory.Mode.Directory) == 0) {
-					// Open this file
-					Gib g = RamFS.open(argumentPath, 0);
-
-					// Write out the stuff in this file
-					char[1] foo;
-					int i;
-					char* fooptr = cast(char*)g.ptr;
-					for (i=0; i<g.length; i++) {
-						foo[0] = *fooptr;
-						fooptr++;
-						Console.putString(foo);
-					}
-
-					g.close();
-					return;
-				}
-				else {
-					Console.putString("xsh: cat: File is a directory.\n");
-				}
-			}
-			else {
-				Console.putString("xsh: cat: File not found.\n");
-			}
-			}*/
 	}
 	else if (streq(cmd, "run")) {
 		// Open the file, parse the ELF into a new address space, and execute
@@ -262,47 +145,6 @@ void interpret(char[] str) {
 
 			yieldToAddressSpace(child);
 		}
-
-			/*
-			uint flags;
-			if (exists(argumentPath, flags)) {
-				if ((flags & Directory.Mode.Directory) == 0) {
-					// Open this file
-					//Gib g = RamFS.open(argumentPath, 0);
-
-					// create new address space
-					uint eid = createEnv(argumentPath);
-
-					// create stack gib
-					//Syscall.gibOpen
-
-					// create text gib
-
-
-					// fill text from ELF
-
-
-					// create data gib
-
-
-					// fill text from ELF
-					
-
-					//g.close();
-
-					
-					yieldCPU(eid);
-
-					return;
-				}
-				else {
-					Console.putString("xsh: run: File is a directory.\n");
-				}
-			}
-			else {
-				Console.putString("xsh: run: Executable not found.\n");
-			}
-			}*/
 	}
 	else if (streq(cmd, "exit")) {
 		exit(0);
