@@ -90,6 +90,15 @@ public:
 		} 
 	}
 
+	// --- Simulated PCM ---
+	void pcmClearStats(){
+		Paging.clearPCMstats();
+	}
+
+	void pcmPrintStats(){
+		Paging.printPCMstats();
+	}
+
 	// --- OLD --- //
 	synchronized ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
 		return Paging.mapRegion(gib, physAddr, regionLength);

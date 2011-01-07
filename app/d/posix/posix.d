@@ -191,6 +191,13 @@ void main(char[][] argv){
 			}
 		}
 		break;
+
+	case "clearpcm":
+		pcmClearStats();
+		break;
+	case "printpcm":
+		pcmPrintStats();
+		break;
 	default: 
 		Console.putString("Posix: command '");
 		foreach(str; argv){

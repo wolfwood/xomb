@@ -161,16 +161,35 @@ static:
 	}
 
 	const ulong PCM_PAGE_START = 32*1024;
-	const int COUNT_PCM = 0, DEBUG = 0;
+	const int COUNT_PCM = 0, DEBUG = 1;
 
+	struct PCMstats{
+		ulong pcmWrites;		
+		void* clockHand;
+		ulong swaps;
+		ulong pcmPagesMapped;
+	}
+
+
+	PCMstats globalStats;
+
+	void clearPCMstats(){
+		globalStats = PCMstats.init;
+	}
+
+	void printPCMstats(){
+		kprintfln!("PCM pages Mapped {}")(globalStats.pcmPagesMapped);
+		kprintfln!("PCM writes {}")(globalStats.pcmWrites);
+		kprintfln!("PCM swaps {}")(globalStats.swaps);
+	}
 
 	void debugHandler(InterruptStack* stack) {
-		Environment* env = Scheduler.current();
+		PCMstats* stats = &globalStats;
 		
-		env.pcmWrites++;
+		stats.pcmWrites++;
 
 		ulong indexL4, indexL3, indexL2, indexL1;
-		translateAddress(env.clockHand, indexL1, indexL2, indexL3, indexL4);
+		translateAddress(stats.clockHand, indexL1, indexL2, indexL3, indexL4);
 
 		PageLevel3* pl3 = root.getTable(indexL4);
 		//if(user){kprintfln!("decoded l4 {}")(pl3);}
@@ -190,7 +209,7 @@ static:
 				if( (pl1 is null) || (pl1.entries[indexL1].avl == 1) ){
 					kprintfln!("pl1 failwalk")();
 				}else{
-					void* addr = env.clockHand;
+					void* addr = stats.clockHand;
 					asm{
 						mov R11, addr;
 						invlpg [R11];
@@ -272,9 +291,11 @@ static:
 					mapRegion(null, page, PAGESIZE, addr, true);
 				}else{ // PCM!
 
+					PCMstats* stats = &globalStats;
+
 					cr2 &= ~0x7;
 					static if(COUNT_PCM == 1){
-						if(env.clockHand == cast(void*)0){
+						if(stats.clockHand == cast(void*)0){
 							kprintfln!("PCM Init")();
 
 							asm{
@@ -300,9 +321,9 @@ static:
 							}
 						}
 
-						env.clockHand = cast(void*)(cr2 & 0xffff_ffff_ffff_f000UL);
+						stats.clockHand = cast(void*)(cr2 & 0xffff_ffff_ffff_f000UL);
 
-						env.swaps++;
+						stats.swaps++;
 
 						pl1.entries[indexL1].rw = 1;
 						pl1.entries[indexL1].avl = 0;
@@ -316,7 +337,7 @@ static:
 						//kprintfln!("PCM fault {} {}")(addr, indexL1);
 
 						// --- walk page-table looking for a non-PCM (clean?), unreferenced page ---
-						void* addr2 = env.clockHand;
+						void* addr2 = stats.clockHand;
 						
 						ulong idx1, idx2, idx3, idx4;
 
@@ -471,11 +492,11 @@ static:
 								dram[i] = pcm[i];
 								pcm[i] = temp;
 								
-								env.pcmWrites++;
+								stats.pcmWrites++;
 							}
 						}
 						
-						env.swaps++;
+						stats.swaps++;
 
 						//kprintfln!("addr2 {} addr {} rip {x} rsp {x}")(addr2, addr, stack.rip, stack.rsp);
 						//kprintfln!("{x} {x} {x} {x}")(pl1.entries[indexL1].address, p1.entries[idx1].address, pl1.entries[indexL1].pml, p1.entries[idx1].pml);
@@ -519,7 +540,7 @@ static:
 
 						//kprintfln!("{x} {x} {x} {x}")(pl1.entries[indexL1].address, p1.entries[idx1].address, pl1.entries[indexL1].pml, p1.entries[idx1].pml);
 						
-						env.clockHand = addr2 + 4096;
+						stats.clockHand = addr2 + 4096;
 					}// end static if
 				} // end PCM
 				
@@ -1051,6 +1072,12 @@ private:
 							pl1.entries[indexL1].pat = 1;
 							static if (!kernelLevel) {
 								pl1.entries[indexL1].us = 1;
+
+								if(pl1.entries[indexL1].address >= PCM_PAGE_START){
+									pl1.entries[indexL1].rw = 0;
+									pl1.entries[indexL1].avl = 1;
+									globalStats.pcmPagesMapped++;
+								}
 							}
 
 							physAddr += PAGESIZE;

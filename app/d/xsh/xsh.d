@@ -204,7 +204,7 @@ void interpret(char[] str) {
 			}*/
 	}
 	else {
-		if (str.length > 0) {		
+		if (arguments.length > 0) {		
 			AddressSpace child = createAddressSpace();
 			File infile = null, outfile = null;
 

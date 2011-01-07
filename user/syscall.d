@@ -15,6 +15,8 @@ enum SyscallID : ulong {
 	AllocPage,
 	Exit,
 	PerfPoll,
+	PcmClearStats,
+	PcmPrintStats,
 	Open,
 	Create,
 	CreateAddressSpace,
@@ -28,6 +30,8 @@ alias Tuple! (
 	"allocPage",		// allocPage()
 	"exit",				// exit()
 	"perfPoll",			// perfPoll()
+	"pcmClearStats",
+	"pcmPrintStats",
 	"open",				// open()
 	"create",			// create()
 	"createAddressSpace", // createAddressSpace()
@@ -42,6 +46,8 @@ alias Tuple! (
 	int,			// allocPage
 	void,			// exit
 	void,			// perfPoll
+	void,     // pcmClearStats
+	void,     // pcmPrintStats
 	bool,			// open
 	ubyte[],		// create
 	AddressSpace,	// createAddressSpace
@@ -87,6 +93,12 @@ struct CloseArgs {
 
 struct PerfPollArgs {
 	uint event;
+}
+
+struct PcmClearStatsArgs {
+}
+
+struct PcmPrintStatsArgs {
 }
 
 struct CreateAddressSpaceArgs {

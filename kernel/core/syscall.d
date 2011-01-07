@@ -169,5 +169,16 @@ public:
 		}
 
 	}
+
+	SyscallError pcmClearStats(PcmClearStatsArgs* params) {
+		VirtualMemory.pcmClearStats();
+		
+		return SyscallError.OK;
+	}
+	SyscallError pcmPrintStats(PcmPrintStatsArgs* params) {
+		VirtualMemory.pcmPrintStats();
+		
+		return SyscallError.OK;
+	}
 }
 
