@@ -25,7 +25,7 @@ class MinFS{
 		hdr.strTable = (cast(char*)createAddr(0,1,0,257))[0..0];
 	}
 	
-	File open(char[] name, AccessMode mode, bool createFlag = true){
+	File open(char[] name, AccessMode mode, bool createFlag = false){
 		File f = find(name);
 
 		if((f is null) && createFlag){
@@ -41,6 +41,21 @@ class MinFS{
 		return f;
 	}
 
+	char[] findPrefix(char[] name, ref uint idx){
+    char[] val = null;
+
+		for(uint i = idx; i < hdr.entries.length; i++){
+			char[] str = hdr.entries[i];
+			if(name.length <= str.length && name == str[0..name.length]){
+				val = str;
+				idx = i+1;
+				break;
+			}
+		}
+		
+		return val;
+	}
+
 private:
 
 	struct Header{
@@ -52,7 +67,7 @@ private:
 
 	File find(char[] name){
 		foreach(i, str; hdr.entries){
-			if(streq(name, str)){
+			if(name == str){
 				return (cast(ubyte*)(cast(ulong)hdr + ((i+1) * oneGB)))[0..oneGB];
 			}
 		}
@@ -111,19 +126,5 @@ private:
 		vAddr <<= 12;
 		
 		return cast(ubyte*) vAddr;
-	}
-	
-	bool streq(char[] stra, char[] strb) {
-		if (stra.length != strb.length) {
-			return false;
-		}
-		
-		foreach(size_t i, c; stra) {
-			if (strb[i] != c) {
-				return false;
-			}
-		}
-		
-		return true;
 	}
 }

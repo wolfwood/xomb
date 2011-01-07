@@ -2,4 +2,5 @@
 LDFLAGS=-L../../../user/c/lib -L../../../runtimes/mindrt -l:drt0.a -l:syscall.a -l:mindrt.a
 all:
 	x86_64-pc-xomb-gcc -T../../build/flat.ld -o chel -static hello.c ${LDFLAGS}
+	x86_64-pc-xomb-gcc -T../../build/elf.ld -o chel-elf -static hello.c ${LDFLAGS}
 	cp chel ../../../build/iso/binaries

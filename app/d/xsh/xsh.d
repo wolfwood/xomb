@@ -17,10 +17,6 @@ import libos.libdeepmajik.threadscheduler;
 import libos.fs.minfs;
 
 void main() {
-
-	Console.initialize(cast(ubyte*)(2*oneGB));
-	Keyboard.initialize(cast(ushort*)(3*oneGB));
-
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.Green;
 
@@ -130,7 +126,7 @@ void interpret(char[] str) {
 	if (streq(cmd, "clear")) {
 		Console.clear();
 	}
-	else if (streq(cmd, "ls")) {
+	else if (streq(cmd, "sls")) {
 		// Open current directory
 		
 		// if there is an argument... we should parse it
@@ -207,7 +203,7 @@ void interpret(char[] str) {
 		Console.putString(workingDirectory);
 		Console.putString("\n");
 	}
-	else if (streq(cmd, "cat")) {
+	else if (streq(cmd, "scat")) {
 		if (argument.length > 0) {
 			createArgumentPath(argument);
 
@@ -261,13 +257,8 @@ void interpret(char[] str) {
 			AddressSpace child = createAddressSpace();
 
 			File f = MinFS.open(argumentPath, AccessMode.Writable);
-
-			// map in code
-			map(child, f.ptr, cast(ubyte*)oneGB, AccessMode.Writable);
-
-			// map in console aqnd keyboard
-			map(child, cast(ubyte*)(2*oneGB), cast(ubyte*)(2*oneGB), AccessMode.Writable);
-			map(child, cast(ubyte*)(3*oneGB), cast(ubyte*)(3*oneGB), AccessMode.Writable);
+			
+			populateChild(arguments[0..argc], child, f);
 
 			yieldToAddressSpace(child);
 		}
@@ -365,9 +356,27 @@ void interpret(char[] str) {
 			}*/
 	}
 	else {
-		Console.putString("xsh: Unknown Command: ");
-		Console.putString(cmd);
-		Console.putString(".\n");
+		if (argument.length > 0) {		
+			AddressSpace child = createAddressSpace();
+			File infile = null, outfile = null;
+
+			// XXX: really lame redirects
+			if(argc > 2){
+				if(arguments[argc-2] == ">"){
+					outfile = MinFS.open(arguments[argc-1], AccessMode.Writable, true);	
+					argc -= 2;
+				}else if(arguments[argc-2] == "<"){
+					infile = MinFS.open(arguments[argc-1], AccessMode.Read, true);		
+					argc -= 2;
+				}
+			}
+
+			File f = MinFS.open("/binaries/posix", AccessMode.Writable);
+
+			populateChild(arguments[0..argc], child, f, infile.ptr, outfile.ptr);
+
+			yieldToAddressSpace(child);
+		}
 	}
 }
 

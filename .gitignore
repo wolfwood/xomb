@@ -19,3 +19,4 @@ app/c/hello/chel
 app/d/hello/hello
 app/fortran/hello/fhel
 app/d/init/init
+app/d/posix/posix

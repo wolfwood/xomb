@@ -6,8 +6,8 @@ syscall.a: clean
 	ldc ${DFLAGS} -c ../../libos/console.d
 	ldc ${DFLAGS} -c ../../libos/fs/minfs.d
 	ldc ${DFLAGS} -c ../nativecall.d
-	# these belong in mindrt.a
-	ldc ${DFLAGS} -c ../../libos/libdeepmajik/threadscheduler.d  ../../libos/libdeepmajik/umm.d ../../runtimes/mindrt/entry.d
+	# these meet dependencies of drt0.a
+	ldc ${DFLAGS} -c ../../libos/libdeepmajik/threadscheduler.d  ../../libos/libdeepmajik/umm.d ../../user/environment.d ../../libos/keyboard.d
 	mkdir -p lib
 	ar rcs lib/syscall.a *.o
 	#	console.o  csyscall.o entry.o nativecall.o pretexttrampoline.o syscall.o threadscheduler.o umm.o

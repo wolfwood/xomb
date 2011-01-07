@@ -40,9 +40,20 @@ struct InitProcess{
 			return ErrorVal.Fail;
 		}
 
+		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
+
+		// XXX: replace fixed values with findFreeGib()
+		bottle.stdout = (cast(ubyte*)findFreeSegment!(false))[0..oneGB];
+		bottle.stdin = (cast(ubyte*)findFreeSegment!(false))[0..oneGB];
+
 		// * map in video and keyboard segments
-		VirtualMemory.mapSegment(null, Console.virtualAddress(), cast(ubyte*)(2*oneGB), AccessMode.Writable);
-		VirtualMemory.mapSegment(null, Keyboard.address, cast(ubyte*)(3*oneGB), AccessMode.Writable);
+		VirtualMemory.mapSegment(null, Console.virtualAddress(), bottle.stdout.ptr, AccessMode.Writable);
+		bottle.stdoutIsTTY = true;
+
+		VirtualMemory.mapSegment(null, Keyboard.address, bottle.stdin.ptr, AccessMode.Writable);
+		bottle.stdinIsTTY = true;
+
+		bottle.setArgv("init");
 
 		return ErrorVal.Success; 
 	}
@@ -56,9 +67,8 @@ struct InitProcess{
 		ulong myRSP = 0;
 		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
 		ulong myCS = ((9UL << 3) | 3);
-		ulong oneGB = 1024*1024*1024;
+		ulong entry = oneGB + ulong.sizeof*2;
 
-		//for(;;){}
 		asm{
 			movq R11, mySS;
 			pushq R11;
@@ -72,7 +82,7 @@ struct InitProcess{
 			movq R11, myCS;
 			pushq R11;
 
-			movq R11, oneGB;
+			movq R11, entry;
 			pushq R11;
 
 			movq RDI, 1;
@@ -87,9 +97,8 @@ struct InitProcess{
 		ulong myRSP = 0;
 		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
 		ulong myCS = ((9UL << 3) | 3);
-		ulong oneGB = 1024*1024*1024;
+		ulong entry = oneGB + ulong.sizeof*2;
 
-		//for(;;){}
 		asm{
 			movq R11, mySS;
 			pushq R11;
@@ -103,7 +112,7 @@ struct InitProcess{
 			movq R11, myCS;
 			pushq R11;
 
-			movq R11, oneGB;
+			movq R11, entry;
 			pushq R11;
 
 			movq RDI, 0;
@@ -121,8 +130,6 @@ struct InitProcess{
 	}
 
 private:
-	const ulong oneGB = 1024*1024*1024;
-
 	ubyte[] createSegmentForModule(char[] name, int segidx = -1){
 		int idx = findIndexForModuleName(name);
 
@@ -139,6 +146,9 @@ private:
 			VirtualMemory.createSegment(cast(ubyte*)(segidx*oneGB), oneGB, AccessMode.Writable);
 
 		VirtualMemory.mapRegion(segmentBytes.ptr, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
+		
+		// set module length in first ulong of segment
+		*cast(ulong*)segmentBytes.ptr = System.moduleInfo[idx].length;
 
 		return segmentBytes;
 	}

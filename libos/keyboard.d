@@ -130,7 +130,7 @@ class Keyboard {
 			if (up) trans = '<'; else trans = ',';
 		}
 		else if (scanCode == Key.Period) {
-			if (up) trans = '_'; else trans = '.';
+			if (up) trans = '>'; else trans = '.';
 		}
 		else if (scanCode == Key.Semicolon) {
 			if (up) trans = ':'; else trans = ';';

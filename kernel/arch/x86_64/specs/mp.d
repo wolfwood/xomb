@@ -19,7 +19,7 @@ import kernel.core.log;
 import kernel.core.kprintf;
 
 // Bitfield!()
-import kernel.core.util;
+import user.util;
 
 // The Info struct holds all of the information we will enumerating
 import kernel.arch.x86_64.core.info;
