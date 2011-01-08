@@ -183,8 +183,13 @@ void main(char[][] argv){
 		}
 		break;
 	default: 
-		Console.putString("Posix: command not found\n");
-		//return 1;
+		Console.putString("Posix: command '");
+		foreach(str; argv){
+			Console.putString(str);
+			Console.putString(" ");
+		}
+		Console.putString("' not found\n");
+		break;
 	}
 
 	//return 0;
