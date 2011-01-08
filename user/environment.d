@@ -47,11 +47,13 @@ struct MessageInAbottle {
 		char[] storage = (cast(char*)argv[length..length].ptr)[0..0];
 
 		foreach(i, str; parentArgv){
-			storage = storage[length..length].ptr[0..str.length];
+			storage = storage[length..length].ptr[0..(str.length+1)]; // allocate an extra space for null terminator
 
-			storage[] = str[];
+			storage[0..(str.length)] = str[];
 
-			argv[i] = storage;
+			storage[(str.length)] = '\0';  // stick on null terminator
+
+			argv[i] = storage[0..(str.length)];
 		}
 
 		// adjust pointers
