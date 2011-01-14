@@ -93,7 +93,7 @@ class MinFS{
 		}
 
 		// Global bit means this operates on the global segment table that is mapped in to all AddressSpaces. this also means we leave the AS as null
-		Syscall.map(null, file.ptr, link.ptr, AccessMode.Read | AccessMode.Global);
+		Syscall.map(null, file.ptr, link.ptr, AccessMode.Writable | AccessMode.Global);
 
 		return link;
 	}
