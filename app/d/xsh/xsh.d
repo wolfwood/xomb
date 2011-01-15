@@ -20,12 +20,6 @@ void main() {
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.Green;
 
-	Console.putString("\nWelcome to XOmB\n");
-	Console.putString(  "-=-=-=-=-=-=-=-\n\n");
-
-	Console.backcolor = Color.Black; 
-	Console.forecolor = Color.LightGray;
-
 	MinFS.initialize();
 
 	printPrompt();
