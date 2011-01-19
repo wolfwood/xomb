@@ -219,10 +219,39 @@ void interpret(char[] str) {
 				}
 			}
 
-			File f = MinFS.open("/binaries/posix", AccessMode.Writable);
+			char[64] pathNameStorage;
+			char[] pathName = pathNameStorage;
+			pathName[0..10] = "/binaries/";
+
+			uint pathNameLength = 10;
+			
+			bool fallback = false;
+			File f;
+			
+			if(arguments[0][0] != '/'){
+				uint len = arguments[0].length < pathName.length - pathNameLength ? arguments[0].length : pathName.length - pathNameLength;				
+				char[] testPathName = pathName[0..(pathNameLength+len)];
+				
+				testPathName[pathNameLength..(pathNameLength+len)] = arguments[0];
+
+				uint idx;
+				
+				if(testPathName == MinFS.findPrefix(testPathName, idx)){
+					Console.putString(testPathName);
+					
+					f = MinFS.open(testPathName, AccessMode.Writable);
+					fallback = false;
+				}
+			}
+
+			if(fallback){
+				f = MinFS.open("/binaries/posix", AccessMode.Writable);
+			}
+
+			assert(f !is null);
 
 			populateChild(arguments[0..argc], child, f, infile.ptr, outfile.ptr);
-
+			
 			yieldToAddressSpace(child);
 		}
 	}
