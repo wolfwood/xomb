@@ -129,13 +129,25 @@ void interpret(char[] str) {
 		// Open the file, parse the ELF into a new address space, and execute
 		
 		if (argument.length > 0) {
-			createArgumentPath(argument);
+			createArgumentPath(arguments[1]);
 
 			AddressSpace child = createAddressSpace();
 
 			File f = MinFS.open(argumentPath, AccessMode.Writable);
+
+			if(f is null){Console.putString("Binary Not Found!\n"); return;} 
+
+			// trim path of or binary name for argv[0]
+			int i = 0;
+			foreach(j, ch; arguments[1]){
+				if(ch == '/'){
+					i = j;
+				}
+			}
+			arguments[1] = arguments[1][(i+1)..$];
 			
-			populateChild(arguments[0..argc], child, f);
+
+			populateChild(arguments[1..argc], child, f);
 
 			yieldToAddressSpace(child);
 		}
