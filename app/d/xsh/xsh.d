@@ -237,8 +237,6 @@ void interpret(char[] str) {
 				uint idx;
 				
 				if(testPathName == MinFS.findPrefix(testPathName, idx)){
-					Console.putString(testPathName);
-					
 					f = MinFS.open(testPathName, AccessMode.Writable);
 					fallback = false;
 				}
