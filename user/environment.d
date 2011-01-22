@@ -63,9 +63,9 @@ struct MessageInAbottle {
 	void setArgv(char[] parentArgv,  ubyte[] to = (cast(ubyte*)oneGB)[0..oneGB]){
 
 		// allocate strings first, since we know how long they are
-		char[] storage = (cast(char*)this + MessageInAbottle.sizeof)[0..parentArgv.length];
+		char[] storage = (cast(char*)this + MessageInAbottle.sizeof)[0..(parentArgv.length +1)];
 		
-		storage[] = parentArgv[];
+		storage[0..($-1)] = parentArgv[];
 		
 		// determine length of array reference array
 		int substrings = 1;
@@ -76,15 +76,19 @@ struct MessageInAbottle {
 			}
 		}
 		
+		storage[($-1)] = '\0';
+
 		// allocate array reference array
 		argv = (cast(char[]*)storage[length..length].ptr)[0..substrings];
 
 		char* arg = storage.ptr;
 		int len, i;
 
-		foreach(ch; storage){
+		foreach(ref ch; storage){
 			if(ch == ' '){
+				ch = '\0';
 				argv[i] = arg[0..len];
+				len++;
 				len++;
 				arg = arg[len..len].ptr;
 				len = 0;
