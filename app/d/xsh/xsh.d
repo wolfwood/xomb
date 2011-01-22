@@ -204,7 +204,7 @@ void interpret(char[] str) {
 			}*/
 	}
 	else {
-		if (argument.length > 0) {		
+		if (str.length > 0) {		
 			AddressSpace child = createAddressSpace();
 			File infile = null, outfile = null;
 
@@ -225,7 +225,7 @@ void interpret(char[] str) {
 
 			uint pathNameLength = 10;
 			
-			bool fallback = false;
+			bool fallback = true;
 			File f;
 			
 			if(arguments[0][0] != '/'){
