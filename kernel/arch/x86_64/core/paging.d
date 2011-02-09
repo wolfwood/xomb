@@ -31,6 +31,26 @@ import architecture.mutex;
 
 import user.environment;
 
+align(1) struct StackFrame{
+	StackFrame* next;
+	ulong returnAddr;
+}
+
+void printStackTrace(StackFrame* start){
+	kprintfln!(" YOU LOOK SAD, SO I GOT YOU A STACK TRACE!")();
+
+	StackFrame* curr = start, limit = start;
+	ulong PAGESIZE = 4096;
+
+	limit += PAGESIZE;
+	limit = cast(StackFrame*) ( cast(ulong)limit & ~(PAGESIZE-1));
+
+	while(cast(ulong)curr > PAGESIZE && curr < limit){
+		kprintfln!("return addr: {x} rbp: {x}")(curr.returnAddr, curr);
+		curr = curr.next;
+	}
+}
+
 class Paging {
 static:
 
@@ -133,6 +153,8 @@ static:
 
 				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
 
+				printStackTrace(cast(StackFrame*)stack.rbp);
+
 				for(;;){}
 		}
 		else {
@@ -148,6 +170,8 @@ static:
 
 				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
 
+				printStackTrace(cast(StackFrame*)stack.rbp);
+				
 				for(;;){}
 			}
 			else {
