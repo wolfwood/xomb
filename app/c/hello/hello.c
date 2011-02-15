@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 
-int main(){
+int main(int argc, char** argv){
 	char *hello = "hello world\n";
 
 	fprintf(stdout, "%s!\n", hello);
@@ -24,8 +24,11 @@ int main(){
 
 	do{
 		err = read(fd, foo, 10);
-		foo[err+1] = '\0';
-		printf(foo);
+		
+		if(err > 0){
+			foo[err] = '\0';
+			printf(foo);
+		}
 
 	}while(err == 10);
 
@@ -36,6 +39,14 @@ int main(){
 	char* moo = "The quick brown w0lfwood jumped over the lazy cl0ckw0rk.\n";
 	
 	write(wfd, moo, strlen(moo));
+
+	int i;
+
+	for(i = 0; i < argc; i++){
+		printf(argv[i]);
+	}
+
+	printf("\n");
 
 	return 0;
 }
