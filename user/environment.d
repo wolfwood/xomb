@@ -135,6 +135,9 @@ template populateChild(T){
 
 		// map executable to default (kernel hardcoded) location in the child address space
 		ubyte* dest = cast(ubyte*)oneGB;
+
+		assert(child !is null && f !is null && dest !is null, "NULLS!!!!!\n");
+
 		map(child, f.ptr, dest, AccessMode.Writable);
 
 		// bottle to bottle transfer of stdin/out isthe default case
@@ -431,9 +434,14 @@ struct PageLevel1 {
 	PrimaryField[512] entries;
 
 	void* physicalAddress(uint idx) {
+		if(!entries[idx].present){
+			return null;
+		}
+
 		return cast(void*)(entries[idx].address << 12);
 	}
 }
+
 
 void* createAddress(ulong indexLevel1, ulong indexLevel2,	ulong indexLevel3, ulong indexLevel4) {
 	ulong vAddr = 0;
@@ -458,4 +466,61 @@ void* createAddress(ulong indexLevel1, ulong indexLevel2,	ulong indexLevel3, ulo
 	return cast(void*) vAddr;
 }
 
+bool isValidAddress(ubyte* addr){
+	ulong idx1, idx2, idx3, idx4;
+
+	translateAddress(addr, idx1, idx2, idx3, idx4);
+
+	PageLevel3* pl3 = root.getTable(idx4);
+	if(pl3 !is null){
+		PageLevel2* pl2 = pl3.getTable(idx3);
+
+		if(pl2 !is null){
+			PageLevel1* pl1 = pl2.getTable(idx2);
+			
+			if(pl1 !is null){
+				if(pl1.physicalAddress(idx1) !is null){
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 const PageLevel4* root = cast(PageLevel4*)0xFFFFFFFF_FFFFF000;
+
+// This function will get the physical address that is mapped from the
+// specified virtual address.
+/*void* translateAddress(void* virtAddress) {
+	ulong vAddr = cast(ulong)virtAddress;
+	
+	vAddr >>= 12;
+	uint indexLevel1 = vAddr & 0x1ff;
+	vAddr >>= 9;
+	uint indexLevel2 = vAddr & 0x1ff;
+	vAddr >>= 9;
+	uint indexLevel3 = vAddr & 0x1ff;
+	vAddr >>= 9;
+	uint indexLevel4 = vAddr & 0x1ff;
+	
+	return root.getTable(indexLevel4).getTable(indexLevel3).getTable(indexLevel2).physicalAddress(indexLevel1);
+}*/
+
+void translateAddress( void* virtAddress,
+											 out ulong indexLevel1,
+											 out ulong indexLevel2,
+											 out ulong indexLevel3,
+											 out ulong indexLevel4) {
+	ulong vAddr = cast(ulong)virtAddress;
+	
+	vAddr >>= 12;
+	indexLevel1 = vAddr & 0x1ff;
+	vAddr >>= 9;
+	indexLevel2 = vAddr & 0x1ff;
+	vAddr >>= 9;
+	indexLevel3 = vAddr & 0x1ff;
+	vAddr >>= 9;
+	indexLevel4 = vAddr & 0x1ff;
+}
