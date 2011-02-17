@@ -45,9 +45,13 @@ void printStackTrace(StackFrame* start){
 	limit += PAGESIZE;
 	limit = cast(StackFrame*) ( cast(ulong)limit & ~(PAGESIZE-1));
 
-	while(cast(ulong)curr > PAGESIZE && curr < limit){
+	int count = 10;
+
+	//&& curr < limit
+	while(cast(ulong)curr > PAGESIZE && count > 0 && isValidAddress(cast(ubyte*)curr)){
 		kprintfln!("return addr: {x} rbp: {x}")(curr.returnAddr, curr);
 		curr = curr.next;
+		count--;
 	}
 }
 
@@ -114,6 +118,8 @@ static:
 		// Assign the page fault handler
 		IDT.assignHandler(&faultHandler, 14);
 
+		IDT.assignHandler(&gpfHandler, 13);
+
 		// We now have the kernel mapped
 		kernelMapped = true;
 
@@ -125,6 +131,18 @@ static:
 
 		// All is well.
 		return ErrorVal.Success;
+	}
+
+	void gpfHandler(InterruptStack* stack) {
+		if (stack.rip < 0xf_0000_0000_0000) {
+			kprintfln!("User Mode General Protection Fault: instruction address {x}")(stack.rip);
+		}else{
+			kprintfln!("Kernel Mode Level 3 Page Fault: instruction address {x}")(stack.rip);
+		}
+
+		printStackTrace(cast(StackFrame*)stack.rbp);
+		
+		for(;;){}
 	}
 
 	void faultHandler(InterruptStack* stack) {
@@ -163,9 +181,9 @@ static:
 				// NOT AVAILABLE (FOR SOME REASON)
 
 				if (stack.rip < 0xf_0000_0000_0000) {
-					kprintfln!("User Mode Level 2 Page Fault {x}")(stack.rip);
+					kprintfln!("User Mode Level 2 Page Fault {x}, Error Code {x}")(stack.rip, stack.errorCode);
 				}else{
-					kprintfln!("Kernel Mode Level 2 Page Fault {x}")(stack.rip);
+					kprintfln!("Kernel Mode Level 2 Page Fault {x}, Error Code {x}")(stack.rip, stack.errorCode);
 				}
 
 				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
