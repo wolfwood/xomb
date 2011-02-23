@@ -12,9 +12,9 @@ struct EmbeddedFS{
 		// binaries
 		xsh = makeFile!("binaries/xsh", true)();
 		makeFile!("binaries/hello", true)();
-		makeFile!("binaries/chel", true)();
+//		makeFile!("binaries/chel", true)();
 //		makeFile!("binaries/fhel", true)();
-		makeFile!("binaries/posix", true)();
+//		makeFile!("binaries/posix", true)();
 		
 		// data
 		makeFile!("kernel/LICENSE", false)();

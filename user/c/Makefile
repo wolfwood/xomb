@@ -1,4 +1,4 @@
-DFLAGS = -I ../../. -I../../runtimes/mindrt -I../../runtimes -O2
+DFLAGS = -I ../../. -I../../runtimes/mindrt -I../../runtimes -O0
 
 syscall.a: clean
 	ldc ${DFLAGS} -c csyscall.d  

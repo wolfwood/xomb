@@ -1,4 +1,4 @@
-DFLAGS = -I../. -O2
+DFLAGS = -I../. -O0
 
 drt0.a: entry.d mindrt.a
 	yasm -felf64 entry.S -o dsss_objs/O/runtime.Sentry.o
