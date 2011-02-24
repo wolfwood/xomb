@@ -151,13 +151,15 @@ private:
 // -- Register Read and Write -- //
 
 	uint readRegister(uint ioApicID, Register reg) {
-		volatile *(ioApicRegisterSelect[ioApicID]) = cast(uint)reg;
+		/*volatile*/ uint* ptr = ioApicRegisterSelect[ioApicID];
+		*ptr = cast(uint)reg;
+
 		return *(ioApicWindowRegister[ioApicID]);
 	}
 
 	void writeRegister(uint ioApicID, Register reg, in uint value) {
-		volatile *(ioApicRegisterSelect[ioApicID]) = cast(uint)reg;
-		volatile *(ioApicWindowRegister[ioApicID]) = value;
+		/*volatile*/ *(ioApicRegisterSelect[ioApicID]) = cast(uint)reg;
+		/*volatile*/ *(ioApicWindowRegister[ioApicID]) = value;
 	}
 
 	ubyte getID(uint ioApicID) {

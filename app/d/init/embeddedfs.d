@@ -12,6 +12,7 @@ struct EmbeddedFS{
 		// binaries
 		xsh = makeFile!("binaries/xsh", true)();
 		makeFile!("binaries/hello", true)();
+
 		makeFile!("binaries/chel", true)();
 		//makeFile!("binaries/fhel", true)();
 		makeFile!("binaries/posix", true)();
@@ -22,7 +23,6 @@ struct EmbeddedFS{
 		MinFS.link("/binaries/posix", "/binaries/echo");
 		MinFS.link("/binaries/posix", "/binaries/ls");
 		MinFS.link("/binaries/posix", "/binaries/ln");
-
 		
 		// data
 		makeFile!("kernel/LICENSE", false)();
