@@ -51,6 +51,7 @@ import kernel.core.initprocess;
 // bootLoaderID is the unique identifier for a boot loader.
 // data is a structure given by the boot loader.
 extern(C) void kmain(int bootLoaderID, void *data) {
+	Date dt;
 
 	//first, we'll print out some fun status messages.
 	kprintfln!("{!cls!fg:White} Welcome to {!fg:Green}{}{!fg:White}! (version {}.{}.{})")("XOmB", 0,5,0);
@@ -132,7 +133,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.result(fail);	
 
 
-	Date dt;
+
 	Timing.currentDate(dt);
 	kprintfln!("\nDate: {} {} {}")(dt.day, dt.month, dt.year);
 
