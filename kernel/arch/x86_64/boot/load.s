@@ -74,10 +74,11 @@ long_entry:
 	push rsi
 	push rdi
 
+	; clear rbp
+	xor rbp, rbp
+
 	; call kmain
 	call kmain
-
-
 
 	; we should not get here
 
@@ -136,6 +137,9 @@ long_entry_ap:
 	or rax, 0x3000
 	push rax
 	popf
+
+	; clear rbp
+	xor rbp, rbp
 
 	; call kmain
 	call apEntry

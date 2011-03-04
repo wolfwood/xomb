@@ -52,6 +52,9 @@ void start(){
 	asm {
 		naked;
 
+		// zero rbp
+		xor RBP, RBP;
+
 		// load the addresses of the beginning and end of the BSS
 		mov RDX, startBSS;
 		//mov RDX, [RDX];

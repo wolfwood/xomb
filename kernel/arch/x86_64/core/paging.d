@@ -40,15 +40,14 @@ void printStackTrace(StackFrame* start){
 	kprintfln!(" YOU LOOK SAD, SO I GOT YOU A STACK TRACE!")();
 
 	StackFrame* curr = start, limit = start;
-	ulong PAGESIZE = 4096;
 
-	limit += PAGESIZE;
-	limit = cast(StackFrame*) ( cast(ulong)limit & ~(PAGESIZE-1));
+	limit += Paging.PAGESIZE;
+	limit = cast(StackFrame*) ( cast(ulong)limit & ~(Paging.PAGESIZE-1));
 
 	int count = 10;
 
 	//&& curr < limit
-	while(cast(ulong)curr > PAGESIZE && count > 0 && isValidAddress(cast(ubyte*)curr)){
+	while(cast(ulong)curr > Paging.PAGESIZE && count > 0 && isValidAddress(cast(ubyte*)curr)){
 		kprintfln!("return addr: {x} rbp: {x}")(curr.returnAddr, curr);
 		curr = curr.next;
 		count--;

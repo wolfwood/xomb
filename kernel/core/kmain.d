@@ -131,11 +131,9 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	auto fail = InitProcess.install();
 	Log.result(fail);	
 
-
 	Date dt;
 	Timing.currentDate(dt);
 	kprintfln!("\nDate: {} {} {}")(dt.day, dt.month, dt.year);
-
 
 	if(fail != ErrorVal.Fail){
 		InitProcess.enterFromBSP();
