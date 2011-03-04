@@ -677,7 +677,6 @@ private:
 		}
 
 		while(isValidAddress(cast(ubyte*)curr.next) && cast(ulong)curr.next > Paging.PAGESIZE) {
-			kprintfln!("return addr: {x} rbp: {x}")(curr.returnAddr, curr);
 			curr.next = cast(StackFrame*)(cast(ulong)curr.next & (Paging.PAGESIZE - 1));
 			curr.next = cast(StackFrame*)(cast(ulong)curr.next + stackSpace); 
 			curr = curr.next;
