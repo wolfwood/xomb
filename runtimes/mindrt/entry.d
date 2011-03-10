@@ -21,9 +21,10 @@ import libos.keyboard;
 int main(char[][]);
 
 extern(C) ubyte _edata;
+extern(C) ubyte _bss;
 extern(C) ubyte _end;
 
-ubyte* startBSS = &_edata;
+ubyte* startBSS = &_bss;
 ubyte* endBSS = &_end;
 
 // Upcall Vector Table
