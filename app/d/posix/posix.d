@@ -22,6 +22,15 @@ void main(char[][] argv){
 	MinFS.initialize();
 	MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
 
+	int last_slash = 0;
+	foreach(idx, chr; argv[0]) {
+		if (chr == '/') {
+			last_slash = idx+1;
+		}
+	}
+
+	argv[0] = argv[0][last_slash..$];
+
 	switch(argv[0]){
 	case "cat":
 		if(argv.length < 2){
