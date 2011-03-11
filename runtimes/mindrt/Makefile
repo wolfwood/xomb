@@ -1,7 +1,7 @@
-DFLAGS = -I../. -O0
+DFLAGS = -I../. -O0 -g
 
 drt0.a: entry.d mindrt.a
-	yasm -felf64 entry.S -o dsss_objs/O/runtime.Sentry.o
+	yasm -g stabs -felf64 entry.S -o dsss_objs/O/runtime.Sentry.o
 	ldc -nodefaultlib -I../../. ${DFLAGS} -c entry.d -ofdsss_objs/O/runtime.entry.o;
 	ar rcs drt0.a dsss_objs/O/*.o
 

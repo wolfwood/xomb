@@ -133,6 +133,8 @@ static:
 	}
 
 	void gpfHandler(InterruptStack* stack) {
+		stack.dump();
+
 		if (stack.rip < 0xf_0000_0000_0000) {
 			kprintfln!("User Mode General Protection Fault: instruction address {x}")(stack.rip);
 		}else{
