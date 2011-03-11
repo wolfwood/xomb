@@ -12,14 +12,24 @@ struct EmbeddedFS{
 		// binaries
 		xsh = makeFile!("binaries/xsh", true)();
 		makeFile!("binaries/hello", true)();
+
 		makeFile!("binaries/chel", true)();
+		//makeFile!("binaries/fhel", true)();
+		makeFile!("binaries/posix", true)();
+
+		// symlinks
+		MinFS.link("/binaries/posix", "/binaries/cat");
+		MinFS.link("/binaries/posix", "/binaries/cp");
+		MinFS.link("/binaries/posix", "/binaries/echo");
+		MinFS.link("/binaries/posix", "/binaries/ls");
+		MinFS.link("/binaries/posix", "/binaries/ln");
 		
 		// data
 		makeFile!("kernel/LICENSE", false)();
 	}
 
-	ubyte* shellAddr(){
-		return xsh.ptr;
+	ubyte[] shell(){
+		return xsh;
 	}
 
 private:
@@ -33,18 +43,21 @@ private:
 			ubyte[] data = cast(ubyte[])import(filename);
 
 			// create minFS file
-			File f =  MinFS.open(actualFilename, AccessMode.Writable);
+			File f =  MinFS.open(actualFilename, AccessMode.Writable, true);
 
 			// populate
 			if(exe){
 				memcpy(cast(void*)f.ptr, cast(void*)data.ptr, data.length);
 			}else{
-				ulong* size = cast(ulong*)f.ptr;
-				
-				*size = data.length;
+				int spacer = ulong.sizeof;
 
-				memcpy(cast(void*)((f.ptr)[ulong.sizeof..ulong.sizeof]).ptr, cast(void*)data.ptr, data.length);
+				memcpy(cast(void*)((f.ptr)[spacer..spacer]).ptr,
+							 cast(void*)data.ptr, data.length);
 			}
+
+			ulong* size = cast(ulong*)f.ptr;
+
+			*size = data.length;
 
 			return f;
 		}

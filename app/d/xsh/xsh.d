@@ -17,18 +17,8 @@ import libos.libdeepmajik.threadscheduler;
 import libos.fs.minfs;
 
 void main() {
-
-	Console.initialize(cast(ubyte*)(2*oneGB));
-	Keyboard.initialize(cast(ushort*)(3*oneGB));
-
 	Console.backcolor = Color.Black; 
 	Console.forecolor = Color.Green;
-
-	Console.putString("\nWelcome to XOmB\n");
-	Console.putString(  "-=-=-=-=-=-=-=-\n\n");
-
-	Console.backcolor = Color.Black; 
-	Console.forecolor = Color.LightGray;
 
 	MinFS.initialize();
 
@@ -130,188 +120,37 @@ void interpret(char[] str) {
 	if (streq(cmd, "clear")) {
 		Console.clear();
 	}
-	else if (streq(cmd, "ls")) {
-		// Open current directory
-		
-		// if there is an argument... we should parse it
-		/*char[] listDirectory;
-		if (argument.length > 0) {
-			if (argument.length == 1 && argument[0] == '.') {
-				listDirectory = workingDirectory;
-			}
-			else {
-				createArgumentPath(argument);
-				listDirectory = argumentPath;
-			}
-		}
-		else {
-			listDirectory = workingDirectory;
-		}
-
-		uint flags;
-		if (exists(listDirectory, flags)) {
-			if ((flags & Directory.Mode.Directory) == 0) {
-				Console.putString("xsh: ls: Not a directory.\n");
-				return;
-			}
-		}
-		else {
-			Console.putString("xsh: ls: Directory not found.\n");
-			return;
-		}
-
-		Directory d = Directory.open(listDirectory);
-
-		int pos = 0;
-
-		// Print items in directory
-		foreach(DirectoryEntry dirent;d) {
-			char[] f = dirent.name;
-			if ((pos + f.length) >= Console.width()) {
-				Console.putString("\n");
-				pos = 0;
-			}
-			if (dirent.flags & Directory.Mode.Directory) {
-				Console.forecolor = Color.LightBlue;
-			}
-			if (dirent.flags & Directory.Mode.Softlink) {
-				Console.forecolor = Color.LightCyan;
-			}
-			if (dirent.flags & Directory.Mode.Executable) {
-				Console.forecolor = Color.LightGreen;
-			}
-			Console.putString(f);
-			Console.forecolor = Color.LightGray;
-			if ((pos + f.length + 2) < Console.width()) {
-				Console.putString("  ");
-			}
-			pos += f.length + 2;
-		}
-		if (pos != 0) {
-			Console.putString("\n");
-		}
-
-		d.close();
-		*/
-	}
-	else if (streq(cmd, "ln")) {
-		/*if (argc != 3) {
-			Console.putString("xsh: ln: Not the right number of arguments.\n");
-			}
-		else {
-			RamFS.link(arguments[1], arguments[2], 0);
-			}*/
-	}
 	else if (streq(cmd, "pwd")) {
 		// Print working directory
 		Console.putString(workingDirectory);
 		Console.putString("\n");
 	}
-	else if (streq(cmd, "cat")) {
-		if (argument.length > 0) {
-			createArgumentPath(argument);
-
-			File f = MinFS.open(argumentPath, cast(AccessMode)0);
-
-			ulong* size = cast(ulong*)f.ptr;
-			char[] data = (cast(char*)f.ptr)[ulong.sizeof..(ulong.sizeof + *size)];
-
-			Console.putString(data);
-		}
-
-		// Open the file in the argument and print it to the screen
-		/*
-		if (argument.length > 0) {
-			createArgumentPath(argument);
-
-			uint flags;
-			if (exists(argumentPath, flags)) {
-				if ((flags & Directory.Mode.Directory) == 0) {
-					// Open this file
-					Gib g = RamFS.open(argumentPath, 0);
-
-					// Write out the stuff in this file
-					char[1] foo;
-					int i;
-					char* fooptr = cast(char*)g.ptr;
-					for (i=0; i<g.length; i++) {
-						foo[0] = *fooptr;
-						fooptr++;
-						Console.putString(foo);
-					}
-
-					g.close();
-					return;
-				}
-				else {
-					Console.putString("xsh: cat: File is a directory.\n");
-				}
-			}
-			else {
-				Console.putString("xsh: cat: File not found.\n");
-			}
-			}*/
-	}
 	else if (streq(cmd, "run")) {
 		// Open the file, parse the ELF into a new address space, and execute
 		
 		if (argument.length > 0) {
-			createArgumentPath(argument);
+			createArgumentPath(arguments[1]);
 
 			AddressSpace child = createAddressSpace();
 
 			File f = MinFS.open(argumentPath, AccessMode.Writable);
 
-			// map in code
-			map(child, f.ptr, cast(ubyte*)oneGB, AccessMode.Writable);
+			if(f is null){Console.putString("Binary Not Found!\n"); return;} 
 
-			// map in console aqnd keyboard
-			map(child, cast(ubyte*)(2*oneGB), cast(ubyte*)(2*oneGB), AccessMode.Writable);
-			map(child, cast(ubyte*)(3*oneGB), cast(ubyte*)(3*oneGB), AccessMode.Writable);
+			// trim path of or binary name for argv[0]
+			int i = 0;
+			foreach(j, ch; arguments[1]){
+				if(ch == '/'){
+					i = j;
+				}
+			}
+			arguments[1] = arguments[1][(i+1)..$];
+			
+
+			populateChild(arguments[1..argc], child, f);
 
 			yieldToAddressSpace(child);
 		}
-
-			/*
-			uint flags;
-			if (exists(argumentPath, flags)) {
-				if ((flags & Directory.Mode.Directory) == 0) {
-					// Open this file
-					//Gib g = RamFS.open(argumentPath, 0);
-
-					// create new address space
-					uint eid = createEnv(argumentPath);
-
-					// create stack gib
-					//Syscall.gibOpen
-
-					// create text gib
-
-
-					// fill text from ELF
-
-
-					// create data gib
-
-
-					// fill text from ELF
-					
-
-					//g.close();
-
-					
-					yieldCPU(eid);
-
-					return;
-				}
-				else {
-					Console.putString("xsh: run: File is a directory.\n");
-				}
-			}
-			else {
-				Console.putString("xsh: run: Executable not found.\n");
-			}
-			}*/
 	}
 	else if (streq(cmd, "exit")) {
 		exit(0);
@@ -365,9 +204,60 @@ void interpret(char[] str) {
 			}*/
 	}
 	else {
-		Console.putString("xsh: Unknown Command: ");
-		Console.putString(cmd);
-		Console.putString(".\n");
+		if (str.length > 0) {		
+			AddressSpace child = createAddressSpace();
+			File infile = null, outfile = null;
+
+			// XXX: really lame redirects
+			if(argc > 2){
+				if(arguments[argc-2] == ">"){
+					outfile = MinFS.open(arguments[argc-1], AccessMode.Writable, true);	
+					argc -= 2;
+				}else if(arguments[argc-2] == "<"){
+					infile = MinFS.open(arguments[argc-1], AccessMode.Read, true);		
+					argc -= 2;
+				}
+			}
+
+			char[64] pathNameStorage;
+			char[] pathName = pathNameStorage;
+			pathName[0..10] = "/binaries/";
+
+			uint pathNameLength = 10;
+			
+			bool fallback = true;
+			File f;
+			
+			uint idx;
+				
+			if(arguments[0][0] != '/'){
+				uint len = arguments[0].length < pathName.length - pathNameLength ? arguments[0].length : pathName.length - pathNameLength;				
+				char[] testPathName = pathName[0..(pathNameLength+len)];
+				
+				testPathName[pathNameLength..(pathNameLength+len)] = arguments[0];
+
+				if(testPathName == MinFS.findPrefix(testPathName, idx)){
+					f = MinFS.open(testPathName, AccessMode.Writable);
+					fallback = false;
+				}
+			}
+			else {
+				if(arguments[0] == MinFS.findPrefix(arguments[0], idx)){
+					f = MinFS.open(arguments[0], AccessMode.Writable);
+					fallback = false;
+				}
+			}
+
+			if(fallback){
+				f = MinFS.open("/binaries/posix", AccessMode.Writable);
+			}
+
+			assert(f !is null);
+
+			populateChild(arguments[0..argc], child, f, infile.ptr, outfile.ptr);
+			
+			yieldToAddressSpace(child);
+		}
 	}
 }
 

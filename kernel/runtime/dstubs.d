@@ -1137,8 +1137,8 @@ byte[] _d_arraycopy(size_t size, byte[] from, byte[] to)
 {
 	if(to.length != from.length)
 		assert (0, "lengths don't match for array copy");
-	else if(cast(byte *)to + to.length * size <= cast(byte *)from || cast(byte *)from + from.length * size <= cast(byte *)to)
-		memcpy(cast(byte *)to, cast(byte *)from, to.length * size);
+	else if(to.ptr + to.length * size <= from.ptr || from.ptr + from.length * size <= to.ptr)
+		memcpy(to.ptr, from.ptr, to.length * size);
 	else
 		assert (0, "overlapping array copy");
 
@@ -1158,5 +1158,7 @@ void _d_array_slice_copy(void* dst, size_t dstlen, void* src, size_t srclen)
 mixin(Stub!("Object _d_allocclass(ClassInfo ci)"));
 mixin(Stub!("void _d_throw_exception(Object e)"));
 mixin(Stub!("ubyte[] _d_arrayappendcT(TypeInfo ti, void* array, void* element)"));
+mixin(Stub!("void _d_eh_resume_unwind()"));
+mixin(Stub!("void _d_eh_personality()"));
 
 }

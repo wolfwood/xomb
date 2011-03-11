@@ -12,24 +12,30 @@ import user.syscall;
 import libos.libdeepmajik.threadscheduler;
 import libos.libdeepmajik.umm;
 
+import user.environment;
+
+import libos.console;
+import libos.keyboard;
+
 // Will be linked to the user's main function
 int main(char[][]);
 
 extern(C) ubyte _edata;
+extern(C) ubyte _bss;
 extern(C) ubyte _end;
 
-ubyte* startBSS = &_edata;
+ubyte* startBSS = &_bss;
 ubyte* endBSS = &_end;
 
 // Upcall Vector Table
 void function()[2] UVT = [&start, &_enterThreadScheduler];
-ubyte* UVTbase = cast(ubyte*)UVT.ptr;
+extern(C) ubyte* UVTbase = cast(ubyte*)UVT.ptr;
 
 ubyte[1024] tempStack;
 ubyte* tempStackTop = &tempStack[tempStack.length - 8];
 
 
-extern(C) void _start(int thing) {
+/*extern(C) void _start(int thing) {
 	asm{
 		naked;
 
@@ -39,13 +45,16 @@ extern(C) void _start(int thing) {
 		addq RSI, RDI;
 		jmp [RSI];
 	}
-}
+	}*/
 
 void start(){
 	// Zero the BSS, equivalent to start2()
 
 	asm {
 		naked;
+
+		// zero rbp
+		xor RBP, RBP;
 
 		// load the addresses of the beginning and end of the BSS
 		mov RDX, startBSS;
@@ -79,11 +88,37 @@ void start2(){
 
 void start3(){
 	//UsermodeMemoryManager.
+
+	char[][] argv = MessageInAbottle.getMyBottle().argv;
+
+	ulong argvlen = cast(ulong)argv.length;
+	ulong argvptr = cast(ulong)argv.ptr;
+	// __ENV ?
+
+	MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
+
+	if(bottle.stdoutIsTTY){
+		Console.initialize(bottle.stdout.ptr);
+	}else{
+		//assert(false);
+	}
+
+	if(bottle.stdinIsTTY){
+		Keyboard.initialize(cast(ushort*)bottle.stdin.ptr);
+	}else{
+		//assert(false);
+	}
+
 	init();
 
 	XombThread* mainThread = threadCreate(&main);
 
 	mainThread.schedule();
+
+	asm{
+		mov RDI, argvlen;
+		mov RSI, argvptr;
+	}
 
 	_enterThreadScheduler();
 }

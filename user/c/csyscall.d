@@ -31,8 +31,6 @@ void initC2D(){
 	if(!initFlag){
 		MinFS.initialize();
 
-		Console.initialize(cast(ubyte*)( 2*oneGB));
-		
 		heapStart = cast(ulong)Umm.initHeap().ptr;
 
 		initFlag = true;
@@ -60,6 +58,7 @@ int gibWrite(int fd, ubyte* buf, uint len){
 	}
 
 	if((fdTable[fd].pos + len) > *(fdTable[fd].len)){
+		// XXX: lockfree 
 		*(fdTable[fd].len) = len + fdTable[fd].pos;
 	}
 
@@ -69,7 +68,7 @@ int gibWrite(int fd, ubyte* buf, uint len){
 	return len;
 }
 
-int gibOpen(char* name, uint nameLen, bool readOnly){
+int gibOpen(char* name, uint nameLen, bool readOnly, bool append = false){
 	char[] gibName = cast(char[])name[0..nameLen];
 
 	uint i, fd = -1;
@@ -82,9 +81,16 @@ int gibOpen(char* name, uint nameLen, bool readOnly){
 	}
 
 	if(fd != -1){
-		File foo = MinFS.open(gibName, AccessMode.Writable);
+		File foo = MinFS.open(gibName, (readOnly ? AccessMode.Read : AccessMode.Writable));
 		fdTable[fd].valid = true;
+
 		fdTable[fd].len = cast(ulong*)foo.ptr;
+
+		//  append mode
+		if(!readOnly && !append){
+			*fdTable[fd].len = 0;
+		}
+
 		fdTable[fd].data = foo.ptr + ulong.sizeof;
 		fdTable[fd].pos = 0;
 	}

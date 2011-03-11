@@ -31,6 +31,29 @@ import architecture.mutex;
 
 import user.environment;
 
+align(1) struct StackFrame{
+	StackFrame* next;
+	ulong returnAddr;
+}
+
+void printStackTrace(StackFrame* start){
+	kprintfln!(" YOU LOOK SAD, SO I GOT YOU A STACK TRACE!")();
+
+	StackFrame* curr = start, limit = start;
+
+	limit += Paging.PAGESIZE;
+	limit = cast(StackFrame*) ( cast(ulong)limit & ~(Paging.PAGESIZE-1));
+
+	int count = 10;
+
+	//&& curr < limit
+	while(cast(ulong)curr > Paging.PAGESIZE && count > 0 && isValidAddress(cast(ubyte*)curr)){
+		kprintfln!("return addr: {x} rbp: {x}")(curr.returnAddr, curr);
+		curr = curr.next;
+		count--;
+	}
+}
+
 class Paging {
 static:
 
@@ -94,6 +117,8 @@ static:
 		// Assign the page fault handler
 		IDT.assignHandler(&faultHandler, 14);
 
+		IDT.assignHandler(&gpfHandler, 13);
+
 		// We now have the kernel mapped
 		kernelMapped = true;
 
@@ -105,6 +130,20 @@ static:
 
 		// All is well.
 		return ErrorVal.Success;
+	}
+
+	void gpfHandler(InterruptStack* stack) {
+		stack.dump();
+
+		if (stack.rip < 0xf_0000_0000_0000) {
+			kprintfln!("User Mode General Protection Fault: instruction address {x}")(stack.rip);
+		}else{
+			kprintfln!("Kernel Mode Level 3 Page Fault: instruction address {x}")(stack.rip);
+		}
+
+		printStackTrace(cast(StackFrame*)stack.rbp);
+		
+		for(;;){}
 	}
 
 	void faultHandler(InterruptStack* stack) {
@@ -126,10 +165,14 @@ static:
 			// NOT AVAILABLE
 
 				if (stack.rip < 0xf_0000_0000_0000) {
-					kprintfln!("User Mode Page Fault {x}")(stack.rip);
+					kprintfln!("User Mode Level 3 Page Fault: instruction address {x}")(stack.rip);
+				}else{
+					kprintfln!("Kernel Mode Level 3 Page Fault: instruction address {x}")(stack.rip);
 				}
 
 				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
+
+				printStackTrace(cast(StackFrame*)stack.rbp);
 
 				for(;;){}
 		}
@@ -139,11 +182,15 @@ static:
 				// NOT AVAILABLE (FOR SOME REASON)
 
 				if (stack.rip < 0xf_0000_0000_0000) {
-					kprintfln!("User Mode Page Fault {x}")(stack.rip);
+					kprintfln!("User Mode Level 2 Page Fault {x}, Error Code {x}")(stack.rip, stack.errorCode);
+				}else{
+					kprintfln!("Kernel Mode Level 2 Page Fault {x}, Error Code {x}")(stack.rip, stack.errorCode);
 				}
 
 				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
 
+				printStackTrace(cast(StackFrame*)stack.rbp);
+				
 				for(;;){}
 			}
 			else {
@@ -166,32 +213,6 @@ static:
 			mov CR3, RAX;
 		}
 		return ErrorVal.Success;
-	}
-
-	void* createAddress(ulong indexLevel1,
-											ulong indexLevel2,
-											ulong indexLevel3,
-											ulong indexLevel4) {
-		ulong vAddr = 0;
-
-		if(indexLevel4 >= 256){
-			vAddr = ~vAddr;
-			vAddr <<= 9;
-		}
-
-		vAddr |= indexLevel4 & 0x1ff;
-		vAddr <<= 9;
-
-		vAddr |= indexLevel3 & 0x1ff;
-		vAddr <<= 9;
-
-		vAddr |= indexLevel2 & 0x1ff;
-		vAddr <<= 9;
-
-		vAddr |= indexLevel1 & 0x1ff;
-		vAddr <<= 12;
-
-		return cast(void*) vAddr;
 	}
 
 	// This function will get the physical address that is mapped from the
@@ -337,6 +358,27 @@ static:
 	}
 
 	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, AccessMode flags) {
+
+		if(flags & AccessMode.Global){
+			ulong indexL1, indexL2, indexL3, indexL4;
+			PageLevel3* pl3 = root.getOrCreateTable(509, true);
+			PageLevel2* pl2;
+
+			translateAddress(location, indexL1, indexL2, indexL3, indexL4);
+			pl2 = pl3.getOrCreateTable(indexL4, true);
+			ubyte* locationAddr = cast(ubyte*)pl2.entries[indexL3].location();
+
+
+			indexL1 = indexL2 = indexL3 = indexL4 = 0;
+
+			translateAddress(destination, indexL1, indexL2, indexL3, indexL4);
+			pl2 = pl3.getOrCreateTable(indexL4, true);
+			pl2.setTable(indexL3, locationAddr, true);
+
+			return ErrorVal.Success;
+		}
+
+
 		PageLevel4* addressSpace;
 
 		// XXX: use switchAddressSpace() ?
@@ -723,210 +765,3 @@ private:
 	alias heapMap!(false) doHeapMap;
 
 }
-
-// -- Structures -- //
-
-	// The x86 implements a four level page table.
-	// We use the 4KB page size hierarchy
-
-	// The levels are defined here, many are the same but they need
-	// to be able to be typed differently so we don't make a stupid
-	// mistake.
-
-	struct SecondaryField {
-
-		ulong pml;
-
-		mixin(Bitfield!(pml,
-			"present", 1,
-			"rw", 1,
-			"us", 1,
-			"pwt", 1,
-			"pcd", 1,
-			"a", 1,
-			"ign", 1,
-			"mbz", 2,
-			"avl", 3,
-			"address", 41,
-			"available", 10,
-			"nx", 1));
-
-		ubyte* location() {
-			return cast(ubyte*)(cast(ulong)address() << 12);
-		}
-	}
-	
-	struct PrimaryField {
-
-		ulong pml;
-
-		mixin(Bitfield!(pml,
-			"present", 1,
-			"rw", 1,
-			"us", 1,
-			"pwt", 1,
-			"pcd", 1,
-			"a", 1,
-			"d", 1,
-			"pat", 1,
-			"g", 1,
-			"avl", 3,
-			"address", 41,
-			"available", 10,
-			"nx", 1));
-
-		ubyte* location() {
-			return cast(ubyte*)(cast(ulong)address() << 12);
-		}
-	}
-
-	struct PageLevel4 {
-		SecondaryField[512] entries;
-
-		PageLevel3* getTable(uint idx) {
-			if (entries[idx].present == 0) {
-				return null;
-			}
-			
-			// Calculate virtual address
-			return cast(PageLevel3*)(0xFFFFFF7F_BFE00000 + (idx << 12));
-		}
-
-		void setTable(uint idx, ubyte* address, bool usermode = false) {
-			entries[idx].pml = cast(ulong)address;
-			entries[idx].present = 1;
-			entries[idx].rw = 1;
-			entries[idx].us = usermode;
-		}
-
-		PageLevel3* getOrCreateTable(uint idx, bool usermode = false) {
-			PageLevel3* ret = getTable(idx);
-
-			if (ret is null) {
-				// Create Table
-				ret = cast(PageLevel3*)PageAllocator.allocPage();
-
-				// Set table entry
-				entries[idx].pml = cast(ulong)ret;
-				entries[idx].present = 1;
-				entries[idx].rw = 1;
-				entries[idx].us = usermode;
-
-				// Calculate virtual address
-				ret = cast(PageLevel3*)(0xFFFFFF7F_BFE00000 + (idx << 12));
-
-				*ret = PageLevel3.init;
-			}
-
-			return ret;
-		}
-	}
-
-	struct PageLevel3 {
-		SecondaryField[512] entries;
-
-		PageLevel2* getTable(uint idx) {
-			if (entries[idx].present == 0) {
-				return null;
-			}
-
-			ulong baseAddr = cast(ulong)this;
-			baseAddr &= 0x1FF000;
-			baseAddr >>= 3;
-			return cast(PageLevel2*)(0xFFFFFF7F_C0000000 + ((baseAddr + idx) << 12));
-		}
-
-		void setTable(uint idx, ubyte* address, bool usermode = false) {
-			entries[idx].pml = cast(ulong)address;
-			entries[idx].present = 1;
-			entries[idx].rw = 1;
-			entries[idx].us = usermode;
-		}
-
-		PageLevel2* getOrCreateTable(uint idx, bool usermode = false) {
-			PageLevel2* ret = getTable(idx);
-
-			if (ret is null) {
-				// Create Table
-				ret = cast(PageLevel2*)PageAllocator.allocPage();
-
-				// Set table entry
-				entries[idx].pml = cast(ulong)ret;
-				entries[idx].present = 1;
-				entries[idx].rw = 1;
-				entries[idx].us = usermode;
-
-				// Calculate virtual address
-				ulong baseAddr = cast(ulong)this;
-				baseAddr &= 0x1FF000;
-				baseAddr >>= 3;
-				ret = cast(PageLevel2*)(0xFFFFFF7F_C0000000 + ((baseAddr + idx) << 12));
-
-				*ret = PageLevel2.init;
-				//if (usermode) { kprintfln!("creating pl3 {}")(idx); }
-			}
-
-			return ret;
-		}
-	}
-	
-	struct PageLevel2 {
-		SecondaryField[512] entries;
-
-		PageLevel1* getTable(uint idx) {
-//			kprintfln!("getting pl2 {}?")(idx);
-			if (entries[idx].present == 0) {
-//				kprintfln!("no pl2 {}!")(idx);
-				return null;
-			}
-//			kprintfln!("getting pl2 {}!")(idx);
-
-			ulong baseAddr = cast(ulong)this;
-			baseAddr &= 0x3FFFF000;
-			baseAddr >>= 3;
-			return cast(PageLevel1*)(0xFFFFFF80_00000000 + ((baseAddr + idx) << 12));
-		}
-
-		void setTable(uint idx, ubyte* address, bool usermode = false) {
-			entries[idx].pml = cast(ulong)address;
-			entries[idx].present = 1;
-			entries[idx].rw = 1;
-			entries[idx].us = usermode;
-		}
-
-		PageLevel1* getOrCreateTable(uint idx, bool usermode = false) {
-			PageLevel1* ret = getTable(idx);
-			
-			if (ret is null) {
-				// Create Table
-//				if (usermode) { kprintfln!("creating pl2 {}?")(idx); }
-				ret = cast(PageLevel1*)PageAllocator.allocPage();
-
-				// Set table entry
-				entries[idx].pml = cast(ulong)ret;
-				entries[idx].present = 1;
-				entries[idx].rw = 1;
-				entries[idx].us = usermode;
-
-				// Calculate virtual address
-				ulong baseAddr = cast(ulong)this;
-				baseAddr &= 0x3FFFF000;
-				baseAddr >>= 3;
-				ret = cast(PageLevel1*)(0xFFFFFF80_00000000 + ((baseAddr + idx) << 12));
-
-				*ret = PageLevel1.init;
-//				if (usermode) { kprintfln!("creating pl2 {}")(idx); }
-			}
-
-			return ret;
-		}
-	}
-
-	struct PageLevel1 {
-		PrimaryField[512] entries;
-
-		void* physicalAddress(uint idx) {
-			return cast(void*)(entries[idx].address << 12);
-		}
-	}
-

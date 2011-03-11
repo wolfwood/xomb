@@ -24,13 +24,10 @@ import libos.elf.loader;
 import mindrt.util;
 
 
-void main() {
+void main(char[][] argv) {
+	MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
 
 	// create heap gib?
-
-	// initialize userspace console code
-	Console.initialize(cast(ubyte*)(2*oneGB));
-	Keyboard.initialize(cast(ushort*)(3*oneGB));
 
 	EmbeddedFS.makeFS();
 
@@ -46,11 +43,10 @@ void main() {
 
 	// yield to xsh
 	AddressSpace xshAS = createAddressSpace();	
-	
-	map(xshAS, EmbeddedFS.shellAddr(), cast(ubyte*)oneGB, AccessMode.Writable);
 
-	map(xshAS, cast(ubyte*)(2*oneGB), cast(ubyte*)(2*oneGB), AccessMode.Writable);
-	map(xshAS, cast(ubyte*)(3*oneGB), cast(ubyte*)(3*oneGB), AccessMode.Writable);
+	const char[][] args = ["xsh", "arg"];
+
+	populateChild(args, xshAS, EmbeddedFS.shell());
 
 	yieldToAddressSpace(xshAS);
 

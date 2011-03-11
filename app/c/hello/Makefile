@@ -1,3 +1,6 @@
+# ordering is important! drt0 depends on syscall and mindrt, syscall depends on mindrt
+LDFLAGS=-L../../../user/c/lib -L../../../runtimes/mindrt -l:drt0.a -l:syscall.a -l:mindrt.a
 all:
-	x86_64-pc-xomb-gcc -T../../../user/c/flat.ld -o chel -static hello.c ../../../user/c/*.o ../../../user/c/lib/mindrt.a
-	cp chel ../../../build/iso/binaries
+	x86_64-pc-xomb-gcc -T../../build/flat.ld -o chel -static hello.c ${LDFLAGS}
+	x86_64-pc-xomb-gcc -T../../build/elf.ld -o chel-elf -static hello.c ${LDFLAGS}
+	cp chel ../../../build/root/binaries

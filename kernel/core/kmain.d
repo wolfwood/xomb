@@ -123,10 +123,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	
 	//Loader.loadModules();
 
-	Date dt;
-	Timing.currentDate(dt);
-	kprintfln!("Date: {} {} {}")(dt.day, dt.month, dt.year);
-
 	//Scheduler.kmainComplete();
 
 	//Scheduler.idleLoop();
@@ -134,6 +130,10 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.print("Init Process: install()");
 	auto fail = InitProcess.install();
 	Log.result(fail);	
+
+	Date dt;
+	Timing.currentDate(dt);
+	kprintfln!("\nDate: {} {} {}")(dt.day, dt.month, dt.year);
 
 	if(fail != ErrorVal.Fail){
 		InitProcess.enterFromBSP();

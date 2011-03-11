@@ -29,6 +29,9 @@ import kernel.system.definitions;
 import architecture.syscall;
 import architecture.vm;
 
+// For stack tracing
+import user.environment;
+
 private {
 	extern(C) {
 		extern ubyte _stack;
@@ -641,7 +644,7 @@ private:
 	// Note: You have to preserve the current stack
 	ErrorVal installStack() {
 		ubyte* stackSpace = cast(ubyte*)PageAllocator.allocPage();
-		stackSpace = cast(ubyte*)VirtualMemory.mapKernelPage(stackSpace);
+		stackSpace = cast(ubyte*)VirtualMemory.mapStack(stackSpace);
 		ubyte* currentStack = cast(ubyte*)(&_stack-4096);
 
 		stackSpace[0..4096] = currentStack[0..4096];
@@ -649,18 +652,34 @@ private:
 		_stacks[identifier] = cast(void*)stackSpace + 4096;
 		TSS.table.RSP0 = cast(void*)stackSpace + 4096;
 
+		StackFrame* curr = null;
+
 		asm {
 			// Retrieve stack pointer, place in RAX
 			mov RAX, RSP;
 
 			// Get the page offset
-			and RAX, 0xFFF;
+			and RAX, Paging.PAGESIZE - 1;
 
 			// Add this to the stackspace pointer
 			add RAX, stackSpace;
 
 			// Set stack pointer
 			mov RSP, RAX;
+
+			// Do the same for frame pointer
+			mov RAX, RBP;
+			and RAX, Paging.PAGESIZE - 1;
+			add RAX, stackSpace;
+			mov RBP, RAX;
+
+			mov curr, RBP;
+		}
+
+		while(isValidAddress(cast(ubyte*)curr.next) && cast(ulong)curr.next > Paging.PAGESIZE) {
+			curr.next = cast(StackFrame*)(cast(ulong)curr.next & (Paging.PAGESIZE - 1));
+			curr.next = cast(StackFrame*)(cast(ulong)curr.next + stackSpace); 
+			curr = curr.next;
 		}
 
 		return ErrorVal.Success;
@@ -672,10 +691,10 @@ private:
 			return ErrorVal.Fail;
 		}
 
-//		uint pmu_info = cpuidAX(0xA);
-//		pmu_info &= 0xFF;
+		//		uint pmu_info = cpuidAX(0xA);
+		//		pmu_info &= 0xFF;
 
-//		kprintfln!("code: {x}\n")(pmu_info);
+		//		kprintfln!("code: {x}\n")(pmu_info);
 
 		return ErrorVal.Success;
 	}

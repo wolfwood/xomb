@@ -71,7 +71,7 @@ static:
 
 		// stash a syscall stack in GS.Base
 		void* stackPtr = PageAllocator.allocPage();
-		ulong syscallStack = cast(ulong)VirtualMemory.mapKernelPage(stackPtr) + 4096;
+		ulong syscallStack = cast(ulong)VirtualMemory.mapStack(stackPtr) + 4096;
 
 		asm{
 			pushq RAX;
