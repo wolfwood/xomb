@@ -23,7 +23,7 @@ enum AccessMode : uint {
 		MapOnce = 4,
 		CopyOnWrite = 8,
 		
-		PrivilgedGlobal = 16.
+		PrivilgedGlobal = 16,
 		PrivilegedExecutable = 32,
 
 		// use Indicators
@@ -34,7 +34,7 @@ enum AccessMode : uint {
 		// bits that are encoded in hardware defined PTE bits
 		Writable = 1<<  14,
 		Kernel = 1 << 15,
-		Executable = 1<< 16.
+		Executable = 1<< 16,
 		
 		// Size? - could be encoded w/ paging trick on address
 
