@@ -228,16 +228,22 @@ void interpret(char[] str) {
 			bool fallback = true;
 			File f;
 			
+			uint idx;
+				
 			if(arguments[0][0] != '/'){
 				uint len = arguments[0].length < pathName.length - pathNameLength ? arguments[0].length : pathName.length - pathNameLength;				
 				char[] testPathName = pathName[0..(pathNameLength+len)];
 				
 				testPathName[pathNameLength..(pathNameLength+len)] = arguments[0];
 
-				uint idx;
-				
 				if(testPathName == MinFS.findPrefix(testPathName, idx)){
 					f = MinFS.open(testPathName, AccessMode.Writable);
+					fallback = false;
+				}
+			}
+			else {
+				if(arguments[0] == MinFS.findPrefix(arguments[0], idx)){
+					f = MinFS.open(arguments[0], AccessMode.Writable);
 					fallback = false;
 				}
 			}
