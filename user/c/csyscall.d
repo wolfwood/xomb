@@ -68,7 +68,7 @@ int gibWrite(int fd, ubyte* buf, uint len){
 	return len;
 }
 
-int gibOpen(char* name, uint nameLen, bool readOnly, bool append = false){
+int gibOpen(char* name, uint nameLen, bool readOnly, bool append = false, bool create = true){
 	char[] gibName = cast(char[])name[0..nameLen];
 
 	uint i, fd = -1;
@@ -81,7 +81,7 @@ int gibOpen(char* name, uint nameLen, bool readOnly, bool append = false){
 	}
 
 	if(fd != -1){
-		File foo = MinFS.open(gibName, (readOnly ? AccessMode.Read : AccessMode.Writable));
+		File foo = MinFS.open(gibName, (readOnly ? AccessMode.Read : AccessMode.Writable), create);
 		fdTable[fd].valid = true;
 
 		fdTable[fd].len = cast(ulong*)foo.ptr;

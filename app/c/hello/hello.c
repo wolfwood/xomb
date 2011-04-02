@@ -38,15 +38,20 @@ int main(int argc, char** argv){
 	
 	char* moo = "The quick brown w0lfwood jumped over the lazy cl0ckw0rk.\n";
 	
+	printf("write to fd %d\n", wfd);
 	write(wfd, moo, strlen(moo));
 
 	int i;
 
+	printf("ARGV:\n");
+
 	for(i = 0; i < argc; i++){
-		printf(argv[i]);
+		printf("%s ", argv[i]);
 	}
 
 	printf("\n");
+
+	printf("/ARGV\n");
 
 	return 0;
 }
