@@ -79,21 +79,35 @@ static:
 		// Map entries 511 to the PML4
 		root.entries[511].pml = cast(ulong)root;
 		root.entries[511].present = 1;
-		root.entries[511].rw = 1;
 		pl3.entries[511].pml = cast(ulong)root;
 		pl3.entries[511].present = 1;
-		pl3.entries[511].rw = 1;
 		pl2.entries[511].pml = cast(ulong)root;
 		pl2.entries[511].present = 1;
-		pl2.entries[511].rw = 1;
 
 		// Map entry 510 to the next level
 		root.entries[510].pml = cast(ulong)pl3;
 		root.entries[510].present = 1;
-		root.entries[510].rw = 1;
 		pl3.entries[510].pml = cast(ulong)pl2;
 		pl3.entries[510].present = 1;
+
+		/*
+		root.entries[511].rw = 1;
+		pl3.entries[511].rw = 1;
+		pl2.entries[511].rw = 1;
+		root.entries[510].rw = 1;
 		pl3.entries[510].rw = 1;
+		*/
+
+		/* currently the kernel isn't forced to respect the rw bit. if
+			 this is enabled, the code above will also need to be enabled,
+			 and the code below becomes a giant security hole... we need a
+			 different paging trick for userspace I guess
+		 */
+		root.entries[511].us = 1;
+		pl3.entries[511].us = 1;
+		pl2.entries[511].us = 1;
+		root.entries[510].us = 1;
+		pl3.entries[510].us = 1;
 
 		// Map entry 509 to the global root
 		root.entries[509].pml = cast(ulong)globalRoot;
