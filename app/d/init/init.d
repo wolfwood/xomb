@@ -20,7 +20,6 @@ import user.keycodes;
 
 import libos.libdeepmajik.threadscheduler;
 
-import libos.elf.loader;
 import mindrt.util;
 
 
@@ -46,9 +45,13 @@ void main(char[][] argv) {
 
 	const char[][] args = ["xsh", "arg"];
 
-	populateChild(args, xshAS, EmbeddedFS.shell());
+	File xsh = EmbeddedFS.shell();
 
-	yieldToAddressSpace(xshAS);
+	if(xsh !is null){
+		populateChild(args, xshAS, xsh);
+
+		yieldToAddressSpace(xshAS);
+	}
 
 	Console.putString("Done"); for(;;){}
 }

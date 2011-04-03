@@ -1,7 +1,7 @@
 module embeddedfs;
 
 import mindrt.util;
-//import libos.elf.loader;
+import libos.elf.loader;
 import libos.fs.minfs;
 
 struct EmbeddedFS{
@@ -47,17 +47,17 @@ private:
 
 			// populate
 			if(exe){
-				memcpy(cast(void*)f.ptr, cast(void*)data.ptr, data.length);
+				Loader.load(data, f);
 			}else{
 				int spacer = ulong.sizeof;
 
 				memcpy(cast(void*)((f.ptr)[spacer..spacer]).ptr,
 							 cast(void*)data.ptr, data.length);
+
+				ulong* size = cast(ulong*)f.ptr;
+
+				*size = data.length;
 			}
-
-			ulong* size = cast(ulong*)f.ptr;
-
-			*size = data.length;
 
 			return f;
 		}

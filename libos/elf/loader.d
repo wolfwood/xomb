@@ -12,66 +12,67 @@ import mindrt.util;
 import libos.elf.elf;
 import libos.elf.segment;
 
-//import libos.console;
-
 import user.environment;
-import user.syscall;
+import Syscall = user.syscall;
 
 struct Loader {
 	static:
 	
-	bool flatLoad(ubyte[] binary, AddressSpace child) {
-		// XXX: use findFreeSegment()
-		ubyte[] here = create(cast(ubyte*)(10*oneGB), oneGB, AccessMode.Writable|AccessMode.AllocOnAccess);  
+	ubyte[] load(ubyte[] binary, ubyte[] newgib = null){
+		if(newgib is null){
+			newgib = 
+				Syscall.create(findFreeSegment!(false), oneGB, 
+											 AccessMode.Writable|AccessMode.AllocOnAccess);  
+		}
 
+		if(Elf.isValid(binary.ptr)){
+			loadElf(binary, newgib);
+		}else{
+			loadFlat(binary, newgib);
+		}
 
-		memcpy(cast(void*)here.ptr, cast(void*)binary.ptr, binary.length);
-		
-		//XXX: close(here.ptr)
-		map(child, here.ptr, cast(ubyte*)oneGB, AccessMode.Writable|AccessMode.AllocOnAccess); 
-		
-		return true;
+		return newgib;
+	}
+
+private:
+	void loadFlat(ubyte[] binary, ubyte[] newgib) {
+		memcpy(cast(void*)newgib.ptr, cast(void*)binary.ptr, binary.length);
+
+		ulong* size = cast(ulong*)newgib.ptr;
+		*size = binary.length; // -8?
 	}
 
 
 	// This function will load an executable from a module, if it can.
-	bool load(ubyte[] binary, AddressSpace child) {
+	void loadElf(ubyte[] binary, ubyte[] newgib) {
 		ubyte* binaryAddr = binary.ptr;
 
 		void* entryAddress = Elf.getentry(binaryAddr);
 		void* physAddress = Elf.getphysaddr(binaryAddr);
 		void* virtAddress = Elf.getvirtaddr(binaryAddr);
-		//kprintfln!("ELF Module : {}\n  Entry: {x} p: {x} v: {x}")(index, entryAddress, physAddress, virtAddress);
-
 
 		assert(virtAddress == cast(void*)oneGB);
-
-		// XXX: use findFreeSegment()
-		ubyte[] here = create(cast(ubyte*)(10*oneGB), oneGB, AccessMode.Writable|AccessMode.AllocOnAccess);  
+		assert(physAddress == cast(void*)oneGB);
+		assert(entryAddress == (cast(void*)oneGB + 16));
 
 		Segment curSegment;
-
 		uint numSegments = Elf.segmentCount(binaryAddr);
-
-		if (here is null) {
-			return false;
-		}
-		else {
 		
-			for(uint i; i < numSegments; i++) {
-				curSegment = Elf.segment(binaryAddr, i);
+		for(uint i; i < numSegments; i++) {
+			curSegment = Elf.segment(binaryAddr, i);
 
-				//XXX: make respect s.writable, later
-				//environ.allocSegment(curSegment);
-
+			//XXX: if there is > one non-empty program segment, this will fail
+			if(curSegment.length){
 				// Copy segment
-				memcpy(here.ptr + (curSegment.virtAddress - virtAddress), binaryAddr + curSegment.offset, curSegment.length);
+				memcpy(newgib.ptr,
+							 binaryAddr + curSegment.offset,
+							 curSegment.length);
+
+				// Convention is that first 8 bytes store the length.
+				// Required for messageInABottle to work.
+				ulong* size = cast(ulong*)newgib.ptr;
+				*size = curSegment.length; // -8?
 			}
 		}
-		
-		//XXX: close(here.ptr)
-		map(child, here.ptr, cast(ubyte*)virtAddress, AccessMode.Writable|AccessMode.AllocOnAccess); 
-
-		return true;
 	}	
 }
