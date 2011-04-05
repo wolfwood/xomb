@@ -68,7 +68,7 @@ int gibWrite(int fd, ubyte* buf, uint len){
 	return len;
 }
 
-int gibOpen(char* name, uint nameLen, bool readOnly, bool append = false, bool create = true){
+int gibOpen(char* name, uint nameLen, bool readOnly, bool append, bool create){
 	char[] gibName = cast(char[])name[0..nameLen];
 
 	uint i, fd = -1;
@@ -86,7 +86,7 @@ int gibOpen(char* name, uint nameLen, bool readOnly, bool append = false, bool c
 
 		fdTable[fd].len = cast(ulong*)foo.ptr;
 
-		//  append mode
+		//  zero file length if writing and not in append mode
 		if(!readOnly && !append){
 			*fdTable[fd].len = 0;
 		}
