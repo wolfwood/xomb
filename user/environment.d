@@ -136,7 +136,7 @@ private:
 
 	public static:
 	MessageInAbottle* getBottleForSegment(ubyte* seg){
-		return cast(MessageInAbottle*)seg + *cast(ulong*)seg;
+		return cast(MessageInAbottle*)(seg + (oneGB - 4096)); 
 	}
 
 	MessageInAbottle* getMyBottle(){
