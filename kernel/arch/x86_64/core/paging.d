@@ -301,7 +301,8 @@ static:
 
 		addressSpace.entries[511].pml = cast(ulong)newRootPhysAddr;
 		addressSpace.entries[511].present = 1;
-		addressSpace.entries[511].rw = 1;
+		//addressSpace.entries[511].rw = 1;
+		addressSpace.entries[511].us = 1;
 
 
 		// Create Level 3 and Level 2 for page trick
@@ -310,7 +311,8 @@ static:
 
 		addressSpace.entries[510].pml = cast(ulong)pl3addr;
 		addressSpace.entries[510].present = 1;
-		addressSpace.entries[510].rw = 1;
+		//addressSpace.entries[510].rw = 1;
+		addressSpace.entries[510].us = 1;
 
 		PageLevel1* fakePl3 = addressSpace.getTable(510);
 		*(cast(PageLevel3*)fakePl3) = PageLevel3.init;
@@ -319,7 +321,8 @@ static:
 		// Map entry 510 to the next level
 		fakePl3.entries[510].pml = cast(ulong)pl2addr;
 		fakePl3.entries[510].present = 1;
-		fakePl3.entries[510].rw = 1;
+		//fakePl3.entries[510].rw = 1;
+		fakePl3.entries[510].us = 1;
 
 		PageLevel2* fakePl2 = cast(PageLevel2*)createAddress(510, 510, idx, 255);//fakePl3.getTable(510);
 		*fakePl2 = PageLevel2.init;
@@ -327,11 +330,13 @@ static:
 		// Map entries 511 to the PML4
 		fakePl3.entries[511].pml = cast(ulong)newRootPhysAddr;
 		fakePl3.entries[511].present = 1;
-		fakePl3.entries[511].rw = 1;
+		//fakePl3.entries[511].rw = 1;
+		fakePl3.entries[511].us = 1;
 
 		fakePl2.entries[511].pml = cast(ulong)newRootPhysAddr;
 		fakePl2.entries[511].present = 1;
-		fakePl2.entries[511].rw = 1;
+		//fakePl2.entries[511].rw = 1;
+		fakePl2.entries[511].us = 1;
 
 		// insert parent into child
 		fakePl3 = addressSpace.getOrCreateTable(255);
