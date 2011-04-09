@@ -1,10 +1,12 @@
 module user.environment;
 
 import user.util;
-import user.syscall;
+import Syscall = user.syscall;
 
 version(KERNEL){
 	import kernel.mem.pageallocator;
+}else{
+	import libos.console;
 }
 
 typedef ubyte* AddressSpace;
@@ -153,14 +155,28 @@ template populateChild(T){
 
 		assert(child !is null && f !is null && dest !is null, "NULLS!!!!!\n");
 
-		map(child, f.ptr, dest, AccessMode.Writable);
+		version(KERNEL){
+			// kernel only executes init once, so its OK not to copy
+		}else{
+			ubyte* g = findFreeSegment!(false)();		
+
+			Syscall.create(g, oneGB, AccessMode.Writable);
+
+			// XXX: instead of copying the whole thing we should only be duping the r/w data section 
+			uint len = *(cast(ulong*)f.ptr) + ulong.sizeof;
+			g[0..len] = f.ptr[0..len];
+
+			f = g[0..f.length];
+		}
+
+		Syscall.map(child, f.ptr, dest, AccessMode.Writable);
 
 		// bottle to bottle transfer of stdin/out isthe default case
 		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
 		MessageInAbottle* childBottle = MessageInAbottle.getBottleForSegment(f.ptr);
 	
 		// XXX: use findFreeSemgent to pick gib locations in child
-		// assume default locations and non-TTY for rebound stdin/out
+		// assume default locations and non-TTY for redirected stdin/out
 		childBottle.stdout = (cast(ubyte*)(2*oneGB))[0..oneGB];
 		childBottle.stdoutIsTTY = false;
 		childBottle.stdin = (cast(ubyte*)(3*oneGB))[0..oneGB];
@@ -181,8 +197,8 @@ template populateChild(T){
 		}
 
 		// map stdin/out into child process
-		map(child, stdout, childBottle.stdout.ptr, AccessMode.Writable);
-		map(child, stdin, childBottle.stdin.ptr, AccessMode.Read);
+		Syscall.map(child, stdout, childBottle.stdout.ptr, AccessMode.Writable);
+		Syscall.map(child, stdin, childBottle.stdin.ptr, AccessMode.Read);
 	}
 }
 
