@@ -53,7 +53,7 @@ import kernel.core.initprocess;
 extern(C) void kmain(int bootLoaderID, void *data) {
 
 	//first, we'll print out some fun status messages.
-	kprintfln!("{!cls!fg:White} Welcome to {!fg:Green}{}{!fg:White}! (version {}.{}.{})")("XOmB", 0,5,0);
+	kprintfln!("{!cls!fg:White} Welcome to {!fg:Green}{}{!fg:White}! (version {}.{}.{})")("XOmB", 0,1,0);
 	for(int i; i < 80; i++) {
 		// 0xc4 -- horiz line
 		// 0xcd -- double horiz line
