@@ -62,6 +62,14 @@ else {
 	alias ulong hash_t;
 }
 
+struct PointerMap {
+	// Conservative pointer mask (one word, scan it, we don't know if it's
+	 	    // really a pointer)
+		 	    size_t[] bits = [1, 1, 0];
+	 	
+		 	    size_t size();
+}
+
 // Description: This is an internal structure hidden in the object.
 struct Monitor {
 	void delegate(Object)[] delegates;
@@ -141,6 +149,8 @@ class ClassInfo : Object {
 	void* defaultConstructor;	// default Constructor
 
 	TypeInfo typeinfo;
+
+	//PointerMap pointermap;
 
 	/*************
 	 * Search all modules for ClassInfo corresponding to classname.
@@ -255,38 +265,6 @@ struct OffsetTypeInfo {
 
 // Description: This stores information about a type. Retrieved with the typeid expression.
 class TypeInfo {
-	hash_t toHash() {
-		hash_t hash;
-
-		foreach (char c; this.toString())
-			hash = hash * 9 + c;
-		return hash;
-	}
-
-	int opCmp(Object o) {
-		if (this is o)
-			return 0;
-		TypeInfo ti = cast(TypeInfo)o;
-		if (ti is null)
-			return 1;
-
-		char[] t = this.toString();
-		char[] other = this.toString();
-
-		typeid(typeof(this.toString())).compare(&t, &other);
-	}
-
-	int opEquals(Object o) {
-		/* TypeInfo instances are singletons, but duplicates can exist
-		 * across DLL's. Therefore, comparing for a name match is
-		 * sufficient.
-		 */
-		if (this is o)
-			return 1;
-		TypeInfo ti = cast(TypeInfo)o;
-		return cast(int)(ti && this.toString() == ti.toString());
-	}
-
 	/// Returns a hash of the instance of a type.
 	hash_t getHash(void *p) { return cast(uint)p; }
 
@@ -311,18 +289,51 @@ class TypeInfo {
 		}
 	}
 
+	/// Return default initializer, null if default initialize to 0
+	void[] init() { return null; }
+
 	/// Get TypeInfo for 'next' type, as defined by what kind of type this is,
 	/// null if none.
 	TypeInfo next() { return null; }
 
-	/// Return default initializer, null if default initialize to 0
-	void[] init() { return null; }
-
 	/// Get flags for type: 1 means GC should scan for pointers
 	uint flags() { return 0; }
 
+	void pointermap() {
+	}
+
 	/// Get type information on the contents of the type; null if not available
 	OffsetTypeInfo[] offTi() { return null; }
+
+	hash_t toHash() {
+		hash_t hash;
+
+		foreach (char c; this.toString())
+			hash = hash * 9 + c;
+		return hash;
+	}
+
+	int opCmp(Object o) {
+		if (this is o)
+			return 0;
+		TypeInfo ti = cast(TypeInfo)o;
+		if (ti is null)
+			return 1;
+
+		char[] t = this.toString();
+		char[] other = this.toString();
+
+		typeid(typeof(this.toString())).compare(&t, &other);
+	}
+
+	int opEquals(Object o) {
+		if (this is o)
+			return 1;
+		TypeInfo ti = cast(TypeInfo)o;
+		return cast(int)(ti && this.toString() == ti.toString());
+	}
+
+
 }
 
 class TypeInfo_Typedef : TypeInfo {
@@ -469,6 +480,9 @@ class TypeInfo_Array : TypeInfo {
 	}
 
 	uint flags() { return 1; }
+
+	void pointermap() {
+	}
 }
 
 class TypeInfo_StaticArray : TypeInfo {

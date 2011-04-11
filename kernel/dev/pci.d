@@ -16,9 +16,6 @@ import kernel.core.kprintf;
 import kernel.system.info;
 import kernel.system.definitions;
 
-import kernel.mem.gib;
-import kernel.mem.giballocator;
-import kernel.filesystem.ramfs;
 
 	// PCI Configuration
 	// ------------------------

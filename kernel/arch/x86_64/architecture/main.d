@@ -29,9 +29,6 @@ import kernel.arch.x86_64.linker;
 // To set some values in the core table
 import kernel.system.info;
 
-// We need to set up the page allocator
-import kernel.mem.heap;
-
 struct Architecture {
 static:
 public:

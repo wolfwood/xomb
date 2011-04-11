@@ -2,6 +2,7 @@ module user.syscall;
 
 import user.nativecall;
 import user.util;
+import user.environment;
 
 // Errors
 enum SyscallError : ulong {
@@ -11,51 +12,45 @@ enum SyscallError : ulong {
 
 // IDs of the system calls
 enum SyscallID : ulong {
-	Add = 0,
-	RequestConsole,
 	AllocPage,
 	Exit,
-	Fork,
 	PerfPoll,
 	Open,
 	Create,
-	Link,
+	CreateAddressSpace,
+	Map,
+	Schedule,
+	Yield,
 }
 
 // Names of system calls
 alias Tuple! (
-	"add",				// add()
-	"requestConsole",	// requestConsole()
 	"allocPage",		// allocPage()
 	"exit",				// exit()
-	"fork",				// fork()
 	"perfPoll",			// perfPoll()
 	"open",				// open()
 	"create",			// create()
-	"link"				// link()
+	"createAddressSpace", // createAddressSpace()
+	"map",				// map()
+	"schedule",			// schedule()
+	"yield"			// yield()
 ) SyscallNames;
 
 
 // Return types for each system call
 alias Tuple! (
-	int,			// add
-	void,			// requestConsole
 	int,			// allocPage
 	void,			// exit
-	int,			// fork
 	void,			// perfPoll
-	ubyte*,			// open
-	ubyte*,			// create
-	bool			// link	
+	bool,			// open
+	ubyte[],		// create
+	AddressSpace,	// createAddressSpace
+	void,			// map
+	void,			// schedule
+	void			// yield
 ) SyscallRetTypes;
 
 // Parameters to system call
-struct AddArgs {
-	int a, b;
-}
-
-struct RequestConsoleArgs {
-}
 
 struct AllocPageArgs {
 	void* virtualAddress;
@@ -69,20 +64,40 @@ struct ForkArgs {
 }
 
 struct OpenArgs {
-	char[] path;
-	uint flags;
-	uint index;
+	ubyte* address;
+	AccessMode mode;
 }
-alias OpenArgs CreateArgs;
 
-struct LinkArgs {
-	char[] path;
-	char[] linkpath;
-	uint flags;
+struct CreateArgs {
+	ubyte* location;
+	ulong size;
+	AccessMode mode;
+}
+
+struct MapArgs {
+	AddressSpace dest;
+	ubyte* location;
+	ubyte* destination;
+	AccessMode mode;
+}
+
+struct CloseArgs {
+	ubyte* location;
 }
 
 struct PerfPollArgs {
 	uint event;
+}
+
+struct CreateAddressSpaceArgs {
+}
+
+struct ScheduleArgs {
+	AddressSpace dest;
+}
+
+struct YieldArgs {
+	AddressSpace dest;
 }
 
 // XXX: This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason

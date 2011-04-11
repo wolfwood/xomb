@@ -16,7 +16,7 @@ import architecture.vm;
 import kernel.core.kprintf;
 
 // Import BitField!()
-import kernel.core.util;
+import user.util;
 
 // Import ErrorVal
 import kernel.core.error;

@@ -10,7 +10,7 @@ module kernel.arch.x86_64.core.idt;
 
 import kernel.arch.x86_64.core.descriptor;
 
-import kernel.core.util;	// For BitField!()
+import user.util;	// For BitField!()
 import kernel.core.error;	// For ErrorVal so errors can be indicated
 import kernel.core.kprintf;	// For printing the stack dump
 

@@ -10,17 +10,6 @@
 
 module mindrt.util;
 
-version(LDC) {
-	private import ldc.intrinsics;
-
-	version(LLVM64) {
-		alias llvm_memcpy_i64 llvm_memcpy;
-	}
-	else {
-		alias llvm_memcpy_i32 llvm_memcpy;
-	}
-}
-
 /**
 This function converts an integer to a string, depending on the base passed in.
 	Params:

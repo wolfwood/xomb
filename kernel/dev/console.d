@@ -5,11 +5,6 @@ module kernel.dev.console;
 // Import system info
 import kernel.system.info;
 
-// For Gibs
-import kernel.mem.gib;
-import kernel.mem.giballocator;
-import kernel.filesystem.ramfs;
-
 // Errors
 import kernel.core.error;
 import kernel.core.kprintf;
@@ -19,6 +14,9 @@ public import user.console;
 
 import architecture.cpu;
 import architecture.mutex;
+import architecture.vm;
+
+import user.environment;
 
 // This is the true interface to the console
 class Console {
@@ -37,24 +35,33 @@ public:
 	void virtualAddress(void* addr) {
 		videoMemoryLocation = cast(ubyte*)addr;
 	}
+	
+	ubyte* virtualAddress() {
+		return videoMemoryLocation - videoInfo.videoBufferOffset;
+	}
 
 	// This will init the console driver
 	ErrorVal initialize() {
 		info.width = COLUMNS;
 		info.height = LINES;
 
-		Gib video = RamFS.create("/devices/video", Access.Kernel | Access.Read | Access.Write);
+		// XXX:get free gib addy some other way
+		ubyte* freeGib = VirtualMemory.findFreeSegment();
+		const ulong oneGB = 1024*1024*1024;
 
-		MetaData* videoMetaData = cast(MetaData*)video.ptr;
+		ubyte[] vid = VirtualMemory.createSegment(freeGib, oneGB, AccessMode.Writable | AccessMode.Kernel);
+
+		MetaData* videoMetaData = cast(MetaData*)vid.ptr;
 		*videoMetaData = info;
+		
+		videoMetaData.videoBufferOffset = 
+			VirtualMemory.pagesize * (1+ MetaData.sizeof/VirtualMemory.pagesize);
 
-		video.seekAlign();
-		videoMetaData.videoBufferOffset = (cast(ulong)video.pos - cast(ulong)video.ptr);
-		video.map(cast(ubyte*)0xB8000, 1024*1024);
-
-		videoMemoryLocation = video.ptr + videoMetaData.videoBufferOffset;
+		videoMemoryLocation = vid.ptr + videoMetaData.videoBufferOffset;
 		videoInfo = videoMetaData;
 
+		VirtualMemory.mapRegion(cast(ubyte*)(videoMemoryLocation), cast(ubyte*)0xB8000, 1024*1024);
+		
 		uint temp = LINES * COLUMNS;
 		temp++;
 

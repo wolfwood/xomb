@@ -3,24 +3,23 @@
 module kernel.core.syscall;
 
 import user.syscall;
-
-import kernel.environ.info;
-import kernel.environ.scheduler;
+import user.environment;
 
 import kernel.dev.console;
-
-import kernel.mem.heap;
-import kernel.mem.gib;
 
 import kernel.core.error;
 import kernel.core.kprintf;
 
-import kernel.filesystem.ramfs;
 
 import architecture.perfmon;
 import architecture.mutex;
 import architecture.cpu;
 import architecture.timing;
+import architecture.vm;
+
+// temporary h4x
+import kernel.core.initprocess;
+
 	
 class SyscallImplementations {
 static:
@@ -28,18 +27,11 @@ public:
 
 	// Syscall Implementations
 
-	// add two numbers, a and b, and return the result
-	// ulong add(long a, long b)
-	SyscallError add(out int ret, AddArgs* params) {
-		ret = params.a + params.b;
-		return SyscallError.OK;
-	}
-
-	SyscallError requestConsole(RequestConsoleArgs* params) {
-		return SyscallError.OK;
-	}
-
 	SyscallError allocPage(out int ret, AllocPageArgs* params) {
+
+	assert(false);
+
+	/*
 		synchronized {
 			Environment* current = Scheduler.current();
 
@@ -52,51 +44,67 @@ public:
 			ret = 0;
 
 			return SyscallError.OK;
-		}
+			}*/
 	}
 
 	// void exit(ulong retval)
 	SyscallError exit(ExitArgs* params) {
-		// Use ExitArgs* here... you won't be able to after the asm block
 
-		// ... //
+		VirtualMemory.switchAddressSpace();
 
-		// We need to switch to a kernel stack
-		ulong stackPtr = cast(ulong)Cpu.stack;
-		asm {
-			mov RAX, stackPtr;
-			mov RSP, RAX;
-		}
-
-		// Remove the environment from the scheduler
-		ErrorVal ret = Scheduler.removeEnvironment();
-
-		Scheduler.idleLoop();
+		InitProcess.enter();
 
 		// You DO NOT return from exit... NEVER
+		return SyscallError.Failcopter;
+	}
+
+	// Memory manipulation system calls
+
+	// ubyte* location = open(AddressSpace dest, ubyte* address, int mode);
+	SyscallError open(out bool ret, OpenArgs* params) {
+		// Map in the resource
+		ret = VirtualMemory.openSegment(params.address, params.mode);
+
 		return SyscallError.OK;
 	}
 
-	SyscallError fork(out int ret, ForkArgs* params) {
-		return SyscallError.OK;
+	// ubyte[] location = create(ubyte* location, ulong size, int mode);
+	SyscallError create(out ubyte[] ret, CreateArgs* params) {
+		// Create a new resource.
+		ret = VirtualMemory.createSegment(params.location, params.size, params.mode);
+
+		return SyscallError.Failcopter;
 	}
 
-	SyscallError open(out ubyte* ret, OpenArgs* params) {
-		Gib gib = RamFS.open(params.path, params.flags, params.index);
-		ret = gib.ptr;
-		return SyscallError.OK;
+	SyscallError map(MapArgs* params) {
+		VirtualMemory.mapSegment(params.dest, params.location, params.destination, params.mode);
+		return SyscallError.Failcopter;
 	}
 
-	SyscallError create(out ubyte* ret, CreateArgs* params) {
-		Gib gib = RamFS.create(params.path, params.flags, params.index);
-		ret = gib.ptr;
-		return SyscallError.OK;
+	// close(ubyte* location);
+	SyscallError close(CloseArgs* params) {
+		// Unmap the resource.
+		VirtualMemory.closeSegment(params.location);
+
+		return SyscallError.Failcopter;
 	}
 
-	SyscallError link(out bool ret, LinkArgs* params) {
-		ret = RamFS.link(params.path, params.linkpath, params.flags) == ErrorVal.Success;
-		return SyscallError.OK;
+	// Scheduling system calls
+
+	// AddressSpace space = createAddressSpace();
+	SyscallError createAddressSpace(out AddressSpace ret, CreateAddressSpaceArgs* params) {
+
+		ret = VirtualMemory.createAddressSpace();
+
+		return SyscallError.Failcopter;
 	}
+
+	// schedule(AddressSpace dest);
+	SyscallError schedule(ScheduleArgs* params) {
+		return SyscallError.Failcopter;
+	}
+
+	// Userspace performance monitoring shim
 
 	SyscallError perfPoll(PerfPollArgs* params) {
 		synchronized {
@@ -128,5 +136,38 @@ public:
 		}
 	}
 
+	SyscallError yield(YieldArgs* params){
+		if(VirtualMemory.switchAddressSpace(params.dest) == ErrorVal.Fail){
+			return SyscallError.Failcopter;
+		}
+
+		ulong mySS = ((8UL << 3) | 3);
+		ulong myRSP = 0;
+		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
+		ulong myCS = ((9UL << 3) | 3);
+		ulong entry = oneGB + ulong.sizeof*2;
+
+		asm{
+			movq R11, mySS;
+			pushq R11;
+                        
+			movq R11, myRSP;
+			pushq R11;
+
+			movq R11, myFLAGS;
+			pushq R11;
+
+			movq R11, myCS;
+			pushq R11;
+
+			movq R11, entry;
+			pushq R11;
+
+			movq RDI, 0;
+
+			iretq;
+		}
+
+	}
 }
 

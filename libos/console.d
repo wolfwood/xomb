@@ -14,11 +14,11 @@ static:
 	// The width of a tab
 	const auto TABSTOP = 4;
 
-	void initialize() {
+	void initialize(ubyte* vidgib) {
 
-		video = RamFS.open("/devices/video", 0); 
+		//video = RamFS.open("/devices/video", 0); 
 
-		videoBuffer = video.ptr;
+		videoBuffer = vidgib;
 
 		// Get video info
 		videoInfo = cast(MetaData*)videoBuffer;
@@ -163,6 +163,6 @@ private:
 
 	MetaData* videoInfo;
 	
-	Gib video;
+	//Gib video;
 	ubyte* videoBuffer;
 }

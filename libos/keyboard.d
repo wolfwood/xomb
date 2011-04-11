@@ -2,23 +2,19 @@ module libos.libkeyboard;
 
 import user.keycodes;
 
-import libos.ramfs;
 import libos.console;
 
 class Keyboard {
-static:
+	static:
 
-	void initialize() {
-		_keyboard = RamFS.open("/devices/keyboard", 0);
-
-		_writePointer = cast(ushort*)_keyboard.ptr;
-		_keyboard.seek(2);
-		_readPointer = cast(ushort*)_keyboard.pos;
-		_keyboard.seek(2);
-		_keyboard.read(_length);
+	void initialize(ushort* buffer) {
+		
+		_writePointer = buffer;
+		_readPointer = &(buffer[1]);
+		_length = buffer[2];
 		_length /= 2; // get # of shorts
 		_length -= 3; // account for pointers and length
-		_buffer = cast(short*)_keyboard.pos;
+		_buffer = cast(short[])buffer[3.._length];
 
 		*_readPointer = *_writePointer;
 	}
@@ -134,7 +130,7 @@ static:
 			if (up) trans = '<'; else trans = ',';
 		}
 		else if (scanCode == Key.Period) {
-			if (up) trans = '_'; else trans = '.';
+			if (up) trans = '>'; else trans = '.';
 		}
 		else if (scanCode == Key.Semicolon) {
 			if (up) trans = ':'; else trans = ';';
@@ -182,8 +178,7 @@ private:
 
 	static bool keyState[Key.max+1] = false;
 
-	Gib _keyboard;
-	short* _buffer;
+	short[] _buffer;
 	ushort* _writePointer;
 	ushort* _readPointer;
 	ushort _length;
