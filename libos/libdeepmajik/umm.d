@@ -5,7 +5,8 @@ import user.syscall;
 // AccessMode
 import user.environment;
 
-//struct UserspaceMemoryManager{
+class UserspaceMemoryManager{
+	static:
 	ubyte[] stacks;
 	ubyte* stackGib = cast(ubyte*)(254UL << ((9*3) + 12));
 	const uint pageSize = 4096;
@@ -55,4 +56,4 @@ ubyte[] initHeap(){
 
 	return foo;
 }
-//}
+}

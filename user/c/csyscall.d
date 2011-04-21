@@ -7,7 +7,7 @@ import libos.fs.minfs;
 
 import mindrt.util;
 
-import Umm = libos.libdeepmajik.umm;
+import libos.libdeepmajik.umm;
 
 extern(C):
 
@@ -31,7 +31,7 @@ void initC2D(){
 	if(!initFlag){
 		MinFS.initialize();
 
-		heapStart = cast(ulong)Umm.initHeap().ptr;
+		heapStart = cast(ulong)UserspaceMemoryManager.initHeap().ptr;
 
 		initFlag = true;
 	}

@@ -28,7 +28,7 @@ ubyte* startBSS = &_bss;
 ubyte* endBSS = &_end;
 
 // Upcall Vector Table
-void function()[2] UVT = [&start, &_enterThreadScheduler];
+void function()[2] UVT = [&start, &XombThread._enterThreadScheduler];
 extern(C) ubyte* UVTbase = cast(ubyte*)UVT.ptr;
 
 ubyte[1024] tempStack;
@@ -109,9 +109,9 @@ void start3(){
 		//assert(false);
 	}
 
-	init();
+	UserspaceMemoryManager.init();
 
-	XombThread* mainThread = threadCreate(&main);
+	XombThread* mainThread = XombThread.threadCreate(&main);
 
 	mainThread.schedule();
 
@@ -120,5 +120,5 @@ void start3(){
 		mov RSI, argvptr;
 	}
 
-	_enterThreadScheduler();
+	XombThread._enterThreadScheduler();
 }

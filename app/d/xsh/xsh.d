@@ -149,7 +149,7 @@ void interpret(char[] str) {
 
 			populateChild(arguments[1..argc], child, f);
 
-			yieldToAddressSpace(child);
+			XombThread.yieldToAddressSpace(child);
 		}
 	}
 	else if (streq(cmd, "exit")) {
@@ -256,7 +256,7 @@ void interpret(char[] str) {
 
 			populateChild(arguments[0..argc], child, f, infile.ptr, outfile.ptr);
 			
-			yieldToAddressSpace(child);
+			XombThread.yieldToAddressSpace(child);
 		}
 	}
 }
