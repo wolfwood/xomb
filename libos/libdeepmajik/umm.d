@@ -11,11 +11,11 @@ class UserspaceMemoryManager{
 	ubyte* stackGib = cast(ubyte*)(254UL << ((9*3) + 12));
 	const uint pageSize = 4096;
 
-	void init(){
+	synchronized void init(){
 		stacks = create(stackGib, 1024*1024*1024, AccessMode.Writable);
 	}
 
-	ubyte* getPage(bool spacer = false){
+	synchronized ubyte* getPage(bool spacer = false){
 		//pageStack -= 4096;
 	
 		//ubyte* temp = pageStack;
@@ -37,23 +37,23 @@ class UserspaceMemoryManager{
 		return stack.ptr;
 	}
 
-	void freePage(ubyte* page){
+	synchronized void freePage(ubyte* page){
 		// XXX: Actually Free Page
 		return;
 	}
 
-// XXX: heap is limited to 4 GB
-ubyte[] initHeap(){
-	ulong i;
-	ubyte[] foo 
-		= create(cast(ubyte*)(20*oneGB), 1024*1024*1024, AccessMode.Writable);
+	// XXX: heap is limited to 4 GB
+	ubyte[] initHeap(){
+		ulong i;
+		ubyte[] foo 
+			= create(cast(ubyte*)(20*oneGB), 1024*1024*1024, AccessMode.Writable);
 
-	for(i = 1; i < 4; i++){
-		create(cast(ubyte*)((20+1)*oneGB), 1024*1024*1024, AccessMode.Writable);
+		for(i = 1; i < 4; i++){
+			create(cast(ubyte*)((20+1)*oneGB), 1024*1024*1024, AccessMode.Writable);
+		}
+
+		foo = foo.ptr[0..(i*oneGB)];
+
+		return foo;
 	}
-
-	foo = foo.ptr[0..(i*oneGB)];
-
-	return foo;
-}
 }

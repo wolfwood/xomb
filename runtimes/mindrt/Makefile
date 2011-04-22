@@ -1,4 +1,4 @@
-DFLAGS = -I../. -O0 -g
+DFLAGS = -I../. -I../../. -O0 -g
 
 drt0.a: entry.d mindrt.a
 	yasm -g stabs -felf64 entry.S -o dsss_objs/O/runtime.Sentry.o
@@ -12,6 +12,7 @@ mindrt.a: object.d dinvariant.d dstubs.d util.d dstatic.d error.d exception.d
 	mkdir -p dsss_objs/O;
 	mkdir -p dsss_objs/dynamic;
 	ldc -nodefaultlib ${DFLAGS} -c object.d -ofdsss_objs/G/runtime.object.o; 
+	ldc -nodefaultlib ${DFLAGS} -c ../../user/architecture/mutex.d -ofdsss_objs/G/runtime.mutex.o; 
 	ldc -nodefaultlib ${DFLAGS} -c dinvariant.d -ofdsss_objs/G/runtime.dinvariant.o;
 	ldc -nodefaultlib ${DFLAGS} -c moduleinit.d -ofdsss_objs/G/runtime.moduleinit.o; 
 	ldc -nodefaultlib ${DFLAGS} -c dstubs.d -ofdsss_objs/G/runtime.dstubs.o; 

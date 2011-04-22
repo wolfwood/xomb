@@ -1,5 +1,6 @@
 #!/bin/sh
 cd runtimes/mindrt
+rm -r dsss* *.a
 make || exit
 cd ../..
 

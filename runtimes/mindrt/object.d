@@ -16,6 +16,8 @@ import mindrt.dstubs;
 import mindrt.exception;
 import mindrt.error;
 
+import user.architecture.mutex;
+
 //import std.moduleinit;
 
 // Based in part on object.d provided with Phobos. The original copyright is as follows:
@@ -72,7 +74,13 @@ struct PointerMap {
 
 // Description: This is an internal structure hidden in the object.
 struct Monitor {
-	void delegate(Object)[] delegates;
+	//void delegate(Object)[] delegates;
+
+	void* impl;
+	size_t devt_len;
+	void* devt;
+
+	Mutex mutex;
 
 	/* More stuff goes here defined by internal/monitor.c */
 }

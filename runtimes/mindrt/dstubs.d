@@ -13,6 +13,8 @@ import mindrt.dstatic;
 import mindrt.exception;
 import mindrt.common;
 
+import user.architecture.mutex;
+
 extern(C):
 
 /**************************************************
@@ -168,3 +170,26 @@ mixin(Stub!("int _aApplyRdw2(dchar[] aa, array_dg2_t dg)"));
 mixin(Stub!("char[] _adSortChar(char[] a)"));
 mixin(Stub!("wchar[] _adSortWchar(wchar[] a)"));
 mixin(Stub!("void _d_arrayappendcT(TypeInfo ti, void* array, void* element)"));
+
+
+mixin(Stub!("void _d_eh_resume_unwind()"));
+mixin(Stub!("void _d_eh_personality()"));
+
+void _d_monitorenter(Object h){
+//	Monitor* mon = cast(Monitor*) (cast(void**)h)[1];
+	Mutex* mon = cast(Mutex*) (cast(size_t*)(h) + 1);
+//	uint* foo = cast(uint*)(mon + 1);
+//	kprintfln!("Monitor m: {}")(mon);
+//	kprintfln!("mon h: {}")(mon);
+//	kprintfln!("val: {}")(*cast(ulong*)mon);
+//	if (*foo == 0) {
+//		*foo = 1;
+//		mon.unlock();
+//	}
+	mon.lock();
+}
+
+void _d_monitorexit(Object h){
+	Mutex* mon = cast(Mutex*) (cast(size_t*)(h) + 1);
+	mon.unlock();
+}
