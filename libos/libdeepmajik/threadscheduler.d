@@ -18,51 +18,32 @@ align(1) struct XombThread {
 	XombThread* next;
 	
 	void schedule(){
-
-		//dispUlong(cast(ulong)&schedQueueRoot);
-		//dispUlong(cast(ulong)&schedQueueTail);
-
-		//dispUlong(cast(ulong)schedQueueRoot);
-		//dispUlong(cast(ulong)schedQueueTail);
-
 		numThreads++;
 
-		// XXX: lockfree
-		next = schedQueueTail;
-		schedQueueTail = this;
+		next = schedQueue.tail;
+		schedQueue.tail = this;
+		/*		XombThread* foo = this;
 
-		//dispUlong(cast(ulong)schedQueueRoot);
-		//dispUlong(cast(ulong)schedQueueTail);
-	
-		/*
-			asm{
-			
-			// hafta preserve RBX for caller :(
-			mov R9, RBX;
-			
-			mov RCX,this;
-			mov RBX,this;
-			sar	RCX, 32;
-			
-			
-			retrySwap:
-			//next = schedQueueTail;
-			mov R11, schedQueTail;
-			mov next, R11;
-			mov 
+		asm{ 
+			lock;
+			inc numThreads;
 
-			//schedQueueTail = this;
-			
-			mov R9, RBX;
-			}
-			}
-		*/
+			mov R11, foo;
+
+		start:
+			mov RAX, [XombThread.schedQueue + schedQueue.tail.offsetof];
+
+		restart:
+			mov [R11 + XombThread.next.offsetof], RAX;
+
+			mov R9, R11;
+			// Compare RAX with r/m64. If equal, ZF is set and r64 is loaded into r/m64. Else, clear ZF and load r/m64 into RAX.
+			cmpxchg [XombThread.schedQueue + schedQueue.tail.offsetof], R9;
+			jnz restart;
+			}*/
 	}
 
 	static:
-	XombThread* schedQueueRoot = null, schedQueueTail = null;
-
-	uint numThreads = 0;
 	
 	XombThread* threadCreate(void* functionPointer){
 		ubyte* stackptr = UserspaceMemoryManager.getPage(true);
@@ -110,8 +91,8 @@ align(1) struct XombThread {
 			naked;
 		
 			//if(schedQueueRoot == schedQueueTail){return;}// super Fast (single thread) Path
-			mov R9, schedQueueRoot;
-			mov R8, schedQueueTail;
+			mov R9, [XombThread.schedQueue + schedQueue.head.offsetof];
+			mov R8, [XombThread.schedQueue + schedQueue.tail.offsetof];
 			cmp R8,R9;
 			jne skip;
 			ret;
@@ -133,13 +114,13 @@ align(1) struct XombThread {
 			mov [R11+XombThread.rsp.offsetof],RSP;
 
 			// swap root and tail if needed
-			mov R9, schedQueueRoot;
+			mov R9, [XombThread.schedQueue + schedQueue.head.offsetof];
 			mov R8, 0;
 			cmp R8,R9;
 			jne noSwap;
-			mov R9, schedQueueTail;
-			mov schedQueueRoot, R9;
-			mov schedQueueTail, R8;
+			mov R9, [XombThread.schedQueue + schedQueue.tail.offsetof];
+			mov [XombThread.schedQueue + schedQueue.head.offsetof], R9;
+			mov [XombThread.schedQueue + schedQueue.tail.offsetof], R8;
 		noSwap:
 			//}
 	
@@ -158,14 +139,14 @@ align(1) struct XombThread {
 
 			//asm{
 			// stuff old thread onto schedQueueTail
-			mov R9, schedQueueTail;
+			mov R9, [XombThread.schedQueue + schedQueue.tail.offsetof];
 			mov [R11+XombThread.next.offsetof],R9;
-			mov schedQueueTail, R11;
+			mov [XombThread.schedQueue + schedQueue.tail.offsetof], R11;
 
 			// remove node from schedQueueRoot
-			mov R11, schedQueueRoot;
+			mov R11, [XombThread.schedQueue + schedQueue.head.offsetof];
 			mov R9, [R11+XombThread.next.offsetof];
-			mov schedQueueRoot, R9;
+			mov [XombThread.schedQueue + schedQueue.head.offsetof], R9;
 
 			mov RSP,[R11+XombThread.rsp.offsetof];
 
@@ -232,13 +213,21 @@ align(1) struct XombThread {
 			pushq R15;
 		
 			//mov R11, thread;
-			mov [R11+XombThread.rsp.offsetof],RSP;
+			mov [R11+XombThread.rsp.offsetof], RSP;
 		
 			// stuff old thread onto schedQueueTail
-			mov R9, schedQueueTail;
-			mov [R11+XombThread.next.offsetof],R9;
+			mov R9, [XombThread.schedQueue + schedQueue.tail.offsetof];
+			mov [R11+XombThread.next.offsetof], R9;
+			mov [XombThread.schedQueue + schedQueue.tail.offsetof], R11;
+
+			/*
+		start:
+			mov R9, schedQueueTail;			
+
+		restart:
+			mov [R11+XombThread.next.offsetof],RAX;
 			mov schedQueueTail, R11;
-		
+			*/
 
 			jmp yield;
 		}
@@ -252,7 +241,7 @@ align(1) struct XombThread {
 
 		// schedule next thread or exit hw thread or exit if no threadsleft
 		if(numThreads == 0){
-			assert(schedQueueRoot == schedQueueTail);
+			assert(schedQueue.head == schedQueue.tail);
 
 			exit(0);
 		}else{
@@ -284,19 +273,19 @@ align(1) struct XombThread {
 			mov [R11+XombThread.rsp.offsetof],RSP;
 
 			// swap root and tail if needed
-			mov R9, schedQueueRoot;
+			mov R9, [XombThread.schedQueue + schedQueue.head.offsetof];
 			mov R8, 0;
 			cmp R8,R9;
 			jne noSwap;
-			mov R9, schedQueueTail;
-			mov schedQueueRoot, R9;
-			mov schedQueueTail, R8;
+			mov R9, [XombThread.schedQueue + schedQueue.tail.offsetof];
+			mov [XombThread.schedQueue + schedQueue.head.offsetof], R9;
+			mov [XombThread.schedQueue + schedQueue.tail.offsetof], R8;
 		noSwap:
 
 			// stuff old thread onto schedQueueTail
-			mov R9, schedQueueTail;
+			mov R9, [XombThread.schedQueue + schedQueue.tail.offsetof];
 			mov [R11+XombThread.next.offsetof],R9;
-			mov schedQueueTail, R11;
+			mov [XombThread.schedQueue + schedQueue.tail.offsetof], R11;
 
 			jmp yield;
 		}
@@ -319,13 +308,13 @@ align(1) struct XombThread {
 			naked;
 
 			// XXX: lockfree swap		
-			mov R11, schedQueueRoot;
+			mov R11, [XombThread.schedQueue + schedQueue.head.offsetof];
 		
 			cmp R11, 0;
 			jnz NoSwap;
-			mov R11, schedQueueTail;
+			mov R11, [XombThread.schedQueue + schedQueue.tail.offsetof];
 			mov RAX, 0;
-			mov schedQueueTail, RAX;
+			mov [XombThread.schedQueue + schedQueue.tail.offsetof], RAX;
 		NoSwap:
 		
 			//mov foobar, R11;
@@ -335,7 +324,7 @@ align(1) struct XombThread {
 
 			//asm{
 			mov RAX, [R11+XombThread.next.offsetof];
-			mov schedQueueRoot, RAX;
+			mov [XombThread.schedQueue + schedQueue.head.offsetof], RAX;
 
 			mov RSP,[R11+XombThread.rsp.offsetof];
 
@@ -349,7 +338,17 @@ align(1) struct XombThread {
 			ret;
 		}
 	}
-} 
+
+private:
+	//XombThread* schedQueueRoot = null, schedQueueTail = null;
+	align(16) struct Queue{
+		XombThread* head;
+		XombThread* tail;
+	}
+		
+	Queue schedQueue;
+	uint numThreads = 0;
+}
 
 align(1) struct CpuContext {
 	// Registers
