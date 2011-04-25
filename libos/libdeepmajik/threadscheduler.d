@@ -253,44 +253,6 @@ align(1) struct XombThread {
 		}
 	}
 
-	void yieldCPU(uint eid){
-		asm{
-			naked;
-
-			// save stack ready to ret
-
-			call getCurrentThread;
-			mov R11, RAX;
-
-			pushq RBX;
-			pushq RBP;
-			pushq R12;
-			pushq R13;
-			pushq R14;
-			pushq R15;
-
-			//mov R11, thread;
-			mov [R11+XombThread.rsp.offsetof],RSP;
-
-			// swap root and tail if needed
-			mov R9, [XombThread.schedQueue + schedQueue.head.offsetof];
-			mov R8, 0;
-			cmp R8,R9;
-			jne noSwap;
-			mov R9, [XombThread.schedQueue + schedQueue.tail.offsetof];
-			mov [XombThread.schedQueue + schedQueue.head.offsetof], R9;
-			mov [XombThread.schedQueue + schedQueue.tail.offsetof], R8;
-		noSwap:
-
-			// stuff old thread onto schedQueueTail
-			mov R9, [XombThread.schedQueue + schedQueue.tail.offsetof];
-			mov [R11+XombThread.next.offsetof],R9;
-			mov [XombThread.schedQueue + schedQueue.tail.offsetof], R11;
-
-			jmp yield;
-		}
-	}
-
 	// jmp to this function
 	void _enterThreadScheduler(){
 		//XXX: don't forget about Tail
