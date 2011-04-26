@@ -17,11 +17,7 @@ align(1) struct XombThread {
 	XombThread* next;
 	
 	void schedule(){
-		numThreads++;
-
-		next = schedQueue.tail;
-		schedQueue.tail = this;
-		/*		XombThread* foo = this;
+		XombThread* foo = this;
 
 		asm{ 
 			lock;
@@ -29,17 +25,20 @@ align(1) struct XombThread {
 
 			mov R11, foo;
 
-		start:
+		start_enqueue:
+			// XXX: assemble warning 1
 			mov RAX, [XombThread.schedQueue + schedQueue.tail.offsetof];
 
-		restart:
+		restart_enqueue:
 			mov [R11 + XombThread.next.offsetof], RAX;
 
 			mov R9, R11;
-			// Compare RAX with r/m64. If equal, ZF is set and r64 is loaded into r/m64. Else, clear ZF and load r/m64 into RAX.
+			// Compare RAX with m64. If equal, ZF is set and r64 is loaded into m64. Else, clear ZF and load m64 into RAX.
+			// XXX: assemble warning 2
+			lock;
 			cmpxchg [XombThread.schedQueue + schedQueue.tail.offsetof], R9;
-			jnz restart;
-			}*/
+			jnz restart_enqueue;
+		}
 	}
 
 	static:
@@ -104,14 +103,31 @@ align(1) struct XombThread {
 			mov [R11+XombThread.rsp.offsetof],RSP;
 
 			// swap root and tail if needed
+			
+			
 			mov R9, [XombThread.schedQueue + schedQueue.head.offsetof];
 			mov R8, 0;
 			cmp R8,R9;
-			jne noSwap;
+			jne start_enqueue;
+			/*
+			// RBX is callee saved for some reason
+			mov RDI, RBX;
+
+			// Compare RDX:RAX to m128. If equal, set ZF and copy RCX:RBX to m128. Otherwise, copy m128 to RDX:RAX and clear ZF.
+			mov RAX, [XombThread.schedQueue + 0];
+			mov RDX, [XombThread.schedQueue + 8];
+
+			mov RBX, RDX;
+			mov RCX, RAX;
+
+			lock;
+			cmpxch16b XombThread.schedQueue;
+			
+			mov RBX, RDI;
+			*/
 			mov R9, [XombThread.schedQueue + schedQueue.tail.offsetof];
 			mov [XombThread.schedQueue + schedQueue.head.offsetof], R9;
 			mov [XombThread.schedQueue + schedQueue.tail.offsetof], R8;
-		noSwap:
 			//}
 	
 			//XombThread* t;
@@ -129,16 +145,31 @@ align(1) struct XombThread {
 
 			//asm{
 			// stuff old thread onto schedQueueTail
-			mov R9, [XombThread.schedQueue + schedQueue.tail.offsetof];
-			mov [R11+XombThread.next.offsetof],R9;
-			mov [XombThread.schedQueue + schedQueue.tail.offsetof], R11;
+		start_enqueue:
+			mov RAX, [XombThread.schedQueue + schedQueue.tail.offsetof];
 
-			// remove node from schedQueueRoot
-			mov R11, [XombThread.schedQueue + schedQueue.head.offsetof];
-			mov R9, [R11+XombThread.next.offsetof];
-			mov [XombThread.schedQueue + schedQueue.head.offsetof], R9;
+		restart_enqueue:
+			mov [R11 + XombThread.next.offsetof], RAX;
 
-			mov RSP,[R11+XombThread.rsp.offsetof];
+			mov R9, R11;
+			lock;
+			cmpxchg [XombThread.schedQueue + schedQueue.tail.offsetof], R9;
+			jnz restart_enqueue;
+
+
+			// remove node from schedQueue.head
+		start_dequeue:
+			mov RAX, [XombThread.schedQueue + schedQueue.head.offsetof];
+
+		restart_dequeue:
+			mov R11, [RAX + XombThread.next.offsetof];
+
+			lock;
+			cmpxchg [XombThread.schedQueue + schedQueue.head.offsetof], R11;
+			jnz restart_dequeue;
+
+
+			mov RSP,[RAX+XombThread.rsp.offsetof];
 
 			popq R15;
 			popq R14;
@@ -206,18 +237,16 @@ align(1) struct XombThread {
 			mov [R11+XombThread.rsp.offsetof], RSP;
 		
 			// stuff old thread onto schedQueueTail
-			mov R9, [XombThread.schedQueue + schedQueue.tail.offsetof];
-			mov [R11+XombThread.next.offsetof], R9;
-			mov [XombThread.schedQueue + schedQueue.tail.offsetof], R11;
+		start_enqueue:
+			mov RAX, [XombThread.schedQueue + schedQueue.tail.offsetof];
 
-			/*
-		start:
-			mov R9, schedQueueTail;			
+		restart_enqueue:
+			mov [R11 + XombThread.next.offsetof], RAX;
 
-		restart:
-			mov [R11+XombThread.next.offsetof],RAX;
-			mov schedQueueTail, R11;
-			*/
+			mov R9, R11;
+			lock;
+			cmpxchg [XombThread.schedQueue + schedQueue.tail.offsetof], R9;
+			jnz restart_enqueue;
 
 			jmp yield;
 		}
@@ -227,7 +256,10 @@ align(1) struct XombThread {
 	void threadExit(){
 		XombThread* thread = getCurrentThread();
 
-		numThreads--;
+		asm{
+			lock;
+			dec numThreads;
+		}
 
 		// schedule next thread or exit hw thread or exit if no threadsleft
 		if(numThreads == 0){
@@ -255,19 +287,44 @@ align(1) struct XombThread {
 			naked;
 
 			// XXX: lockfree swap		
-			mov R11, [XombThread.schedQueue + schedQueue.head.offsetof];
+			mov RAX, [XombThread.schedQueue + schedQueue.head.offsetof];
 		
-			cmp R11, 0;
-			jnz NoSwap;
-			mov R11, [XombThread.schedQueue + schedQueue.tail.offsetof];
-			mov RAX, 0;
-			mov [XombThread.schedQueue + schedQueue.tail.offsetof], RAX;
-		NoSwap:
-		
-			mov RAX, [R11+XombThread.next.offsetof];
-			mov [XombThread.schedQueue + schedQueue.head.offsetof], RAX;
+			cmp RAX, 0;
+			jnz start_dequeue;
+			/*
+			// RBX is callee saved for some reason
+			mov RDI, RBX;
 
-			mov RSP,[R11+XombThread.rsp.offsetof];
+			// Compare RDX:RAX to m128. If equal, set ZF and copy RCX:RBX to m128. Otherwise, copy m128 to RDX:RAX and clear ZF.
+			mov RAX, [XombThread.schedQueue + 0];
+			mov RDX, [XombThread.schedQueue + 8];
+
+			mov RBX, RDX;
+			mov RCX, RAX;
+
+			lock;
+			cmpxch16b XombThread.schedQueue;
+			
+			mov RBX, RDI;
+			*/
+			mov RAX, [XombThread.schedQueue + schedQueue.tail.offsetof];
+			mov R9, 0;
+			mov [XombThread.schedQueue + schedQueue.tail.offsetof], R9;
+			mov [XombThread.schedQueue + schedQueue.head.offsetof], RAX;
+			
+
+		start_dequeue:
+			mov RAX, [XombThread.schedQueue + schedQueue.head.offsetof];
+
+		restart_dequeue:
+			mov R11, [RAX + XombThread.next.offsetof];
+
+			lock;
+			cmpxchg [XombThread.schedQueue + schedQueue.head.offsetof], R11;
+			jnz restart_dequeue;
+
+
+			mov RSP,[RAX+XombThread.rsp.offsetof];
 
 			popq R15;
 			popq R14;
