@@ -15,6 +15,7 @@ align(1) struct XombThread {
 	
 	// Scheduler Data
 	XombThread* next;
+
 	
 	void schedule(){
 		XombThread* foo = this;
@@ -42,7 +43,7 @@ align(1) struct XombThread {
 	}
 
 	static:
-	
+
 	XombThread* threadCreate(void* functionPointer){
 		ubyte* stackptr = UserspaceMemoryManager.getPage(true);
 	
@@ -88,7 +89,6 @@ align(1) struct XombThread {
 		skip:
 
 			// save stack ready to ret
-
 			call getCurrentThread;
 			mov R11, RAX;
 
@@ -99,12 +99,9 @@ align(1) struct XombThread {
 			pushq R14;
 			pushq R15;
 
-			//mov R11, thread;
 			mov [R11+XombThread.rsp.offsetof],RSP;
 
-			// swap root and tail if needed
-			
-			
+			// swap root and tail if needed			
 			mov R9, [XombThread.schedQueue + schedQueue.head.offsetof];
 			mov R8, 0;
 			cmp R8,R9;
@@ -128,22 +125,8 @@ align(1) struct XombThread {
 			mov R9, [XombThread.schedQueue + schedQueue.tail.offsetof];
 			mov [XombThread.schedQueue + schedQueue.head.offsetof], R9;
 			mov [XombThread.schedQueue + schedQueue.tail.offsetof], R8;
-			//}
-	
-			//XombThread* t;
-	
-			//if(schedQueueRoot == null){
-			//	schedQueueRoot = schedQueueTail;
-			//	schedQueueTail = null;
-			//}
-	
-			//t = schedQueueRoot;
-			//schedQueueRoot = t.next;
-	
-			//thread.next = schedQueueTail;
-			//schedQueueTail = thread;
 
-			//asm{
+
 			// stuff old thread onto schedQueueTail
 		start_enqueue:
 			mov RAX, [XombThread.schedQueue + schedQueue.tail.offsetof];
@@ -180,40 +163,6 @@ align(1) struct XombThread {
 
 			ret;
 		}
-
-		/*
-			if(schedQueueRoot != null){ // Fast (multi thread) Path
-			fastpath:
-			// XXX: lockfree
-			thread.next = schedQueueTail;
-			schedQueueTail = thread;
-
-			// XXX: lockfree
-			thread.next = schedQueueRoot;
-			schedQueueRoot = thread;
-
-			asm{
-			mov RSP,t.rsp;
-			ret;
-			}
-			}else{
-			// exchange Root and Tail
-
-			asm{
-
-			xor ECX,ECX;
-			xor EBX,EBX;
-
-			retryRootSwap:
-			mov EDX:EAX, schedQueueRoot;
-			cmpxchg8b schedQueueRoot;
-
-			jnz retryRootSwap;
-			}
-
-			goto fastpath;
-			}
-		*/
 	}
 
 
@@ -222,7 +171,6 @@ align(1) struct XombThread {
 			naked;
 		
 			// save stack ready to ret
-
 			call getCurrentThread;
 			mov R11, RAX;
 		
@@ -233,7 +181,6 @@ align(1) struct XombThread {
 			pushq R14;
 			pushq R15;
 		
-			//mov R11, thread;
 			mov [R11+XombThread.rsp.offsetof], RSP;
 		
 			// stuff old thread onto schedQueueTail
@@ -275,18 +222,12 @@ align(1) struct XombThread {
 		}
 	}
 
-	// jmp to this function
-	void _enterThreadScheduler(){
-		//XXX: don't forget about Tail
-		//if(schedQueueRoot == null){
-		//	schedQueueRoot = schedQueueTail;
-		//	schedQueueTail = null;
-		//}
-	
+	// don't call this function :) certainly, not from a thread 
+	void _enterThreadScheduler(){	
 		asm{
 			naked;
 
-			// XXX: lockfree swap		
+
 			mov RAX, [XombThread.schedQueue + schedQueue.head.offsetof];
 		
 			cmp RAX, 0;
