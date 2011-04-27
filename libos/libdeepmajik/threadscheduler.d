@@ -33,11 +33,10 @@ align(1) struct XombThread {
 		restart_enqueue:
 			mov [R11 + XombThread.next.offsetof], RAX;
 
-			mov R9, R11;
 			// Compare RAX with m64. If equal, ZF is set and r64 is loaded into m64. Else, clear ZF and load m64 into RAX.
 			// XXX: assemble warning 2
 			lock;
-			cmpxchg [XombThread.schedQueue + schedQueue.tail.offsetof], R9;
+			cmpxchg [XombThread.schedQueue + schedQueue.tail.offsetof], R11;
 			jnz restart_enqueue;
 		}
 	}
@@ -134,9 +133,8 @@ align(1) struct XombThread {
 		restart_enqueue:
 			mov [R11 + XombThread.next.offsetof], RAX;
 
-			mov R9, R11;
 			lock;
-			cmpxchg [XombThread.schedQueue + schedQueue.tail.offsetof], R9;
+			cmpxchg [XombThread.schedQueue + schedQueue.tail.offsetof], R11;
 			jnz restart_enqueue;
 
 
@@ -190,9 +188,8 @@ align(1) struct XombThread {
 		restart_enqueue:
 			mov [R11 + XombThread.next.offsetof], RAX;
 
-			mov R9, R11;
 			lock;
-			cmpxchg [XombThread.schedQueue + schedQueue.tail.offsetof], R9;
+			cmpxchg [XombThread.schedQueue + schedQueue.tail.offsetof], R11;
 			jnz restart_enqueue;
 
 			jmp yield;
