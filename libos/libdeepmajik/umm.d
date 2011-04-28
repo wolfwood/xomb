@@ -10,8 +10,8 @@ class UserspaceMemoryManager{
 	ubyte[] stacks;
 	ubyte* stackGib = cast(ubyte*)(254UL << ((9*3) + 12));
 	const uint pageSize = 4096;
-
-	synchronized void init(){
+	
+	synchronized void initialize(){
 		stacks = create(stackGib, 1024*1024*1024, AccessMode.Writable);
 	}
 
