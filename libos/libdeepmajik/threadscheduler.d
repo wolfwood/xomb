@@ -7,6 +7,157 @@ import user.environment;
 
 const ulong ThreadStackSize = 4096;
 
+/*
+	  Background:
+
+		The XOmB kernel considers an environment (AKA process) to be an
+		Address Space with an expected well-known entry point at 1GB + 16
+		(address 0x40000010).  The root page table of the address space is
+		stored in CPU register CR4 (as expected by the paging hardware --
+		TLB), and is not otherwise stored by the kernel, due to our
+		stateless design.
+
+		Similarly, no stack is established by the kernel on behalf of the
+		environment (per CPU stacks do exist, solely for use during system
+		calls; in keeping with the 'stateless' theme, they are pointed to
+		by the GS register which can only be modified in kernel mode, and
+		not otherwise stored by the kernel).  This sparsity means that
+		upon initial entry, the average program must first setup a stack
+		for itself.
+
+		Because we are lazy and value simplicity, we allocate this stack
+		by creating a thread, one which is no different than any
+		subsequent threads (this stands in opposition to some other OSes
+		and user-level threading libraries, where the main thread is
+		'special', often possessing an unbounded stack and/or terminating
+		execution upon its exit, regardless of the number of other,
+		non-blessed threads remaining).
+
+	  Theory of Operation:
+
+		In general terms, a thread's state is the full CPU state while it
+		is executing.  For our purposes, this state is limited to a stack
+		and the registers that may be modified in user-mode, including the
+		stack pointer and program counter.
+
+		The functional task of the thread scheduler is providing
+		mechanisms for the creation and destruction of thread state, along
+		with restoring and preserving thread state (context switching)
+		when CPUs are made available or relinquished, or when other
+		threads are given a chance to run.
+
+		The policy task of the thread scheduler is to decide when to
+		request or relinquish CPUs, which thread to run when a new CPU is
+		made available, and, for a preemptive scheduler, when to switch
+		from the currently executing thread to another.
+
+		The primary determinants of the of the performance (really the
+		performance cost, compared to no intervention) of a thread
+		scheduler [should be] the amount of state saved on a context
+		switch and the freqency of context switching. Other factors
+		include overhead of thread selection and requesting an CPU.
+		Hardware factors that the scheduling policy may account for are
+		cache affinity and proximity of peer threads if communication is
+		occuring.
+
+		Ignoring preemption for the moment, all interactions with the
+		thread scheduler occur through function calls.  This is key to our
+		strategy to minimize the amount of state we save and make this
+		threading library fast.  We don't have to save the program
+		counter, as it will be pushed on the thread's stack as the return
+		address for the function call.  The majority of registers, if they
+		are in use, are the responsibily if the caller to save on the
+		stack.  If they aren't in use, the compiler won't bother to push
+		them before the function call and there will be no overhead.
+		However, there are 7 registers, including the stack pointer that
+		must be saved by the callee.  These are RSP, RBP, RBX, R12, R13,
+		R14, R15.  This threading library has no way to know which of
+		these registers are actually in use, so we must save them all.
+		The last 6 can be pushed onto the stack, meaning that the only
+		piece of state that must be stored (apart from its stack) to
+		resume a suspended thread is RSP.
+
+		We store RSP along with any other scheduler metadata, such as the
+		next pointer, in the XombThread struct.  Upon thread creation we
+		allocate a page for the stack.  instead of allocating the
+		XombThread struct seperately, we stick it at the top of the stack
+		(remember, CPU stacks grow 'down'). Below that goes a 'return
+		address' pointing to threadExit(), ensuring that if/when the
+		thread's primary function exits, the thread will be properly
+		cleaned up. Below that goes another return address pointing to the
+		function indicated in thread create.  finally room for the 6
+		callee saved registers is left, so that there is no difference
+		between running a new thread and a one that has been suspended via
+		threadYield().
+
+		Note this theme of regularizing corner cases.  This simplifies
+		code, speeds up critical paths and reduces the size of the
+		programmer's mental model.
+
+		Anyhow, now lets talk about preemption.  First off, I think that
+		preemptive thread scheduling within an enviroment is a pretty
+		silly idea.  It will increase overhead (though by how much remains
+		to be seen) and inserting yields ensures that scheduling occurs
+		between logical tasks (improving secondary effects like caching)
+		and avoids holding locks while suspended.  If your code requires
+		preemption for correctness you are most certainly doing it wrong.
+		If preemption is 'required' for latency purposes sprinkling in
+		yields or employing a task queue mechanism on top of the threading
+		library are better options.
+
+		Since we expect yields to be used in this fashion, it is important
+		to have a quick exit path for the common case where the
+		environement has as many threads as CPUs, making the yield as
+		close to a no-op as possible if no switching is to occur.
+
+		Many believe that we must support preemption for scheduling
+		between enviroments.  One counter, if revocation is not
+		immediately required, is simply to define the problem away.
+		Instead of preemption, a CPU revocation message can result in a
+		flag being set, and then next time a yield occurs the CPU being
+		handed over, under the threat of aborting an environment that does
+		not comply in a timely manner.  If true preemption is desired,
+		however, the program counter (RIP) and full set of registers can
+		be pushed, followed by a shim function, obeying our traditional
+		yield mechanics, to restore these registers.  This again avoids
+		the need to distiguish between yield and preempted threads.
+
+		It may be desirable to expand threads beyond running a simple
+		function with zero arguments. Adding arguement or employing
+		delegates or closures can similarly be done using a shim function
+		and storing the relevant state in the 6 register slots that will
+		be popped from below the return address pointing to the shim.
+
+
+		Scheduling:
+
+		It is easy to implement a lock-free stack.  So, my plan for the
+		scheduler was to use 2 stacks, one, 'head', for popping threads to
+		be executed and one, 'tail', for pushing threads who have had a
+		turn.  When the head queue is empty a double width atomic swap
+		(x64's cmpxchg16b) can be used to switch head and tail, allowing
+		dequeuing to continue.
+
+		Fairness -- if the switch is done before pushing the retiring
+		thread to tail, then the first and last thread execute once for
+		every 2 executions of the other threads (draw it out with threads
+		A B and C if you don't believe me :).  This might not be a big
+		deal, but certainly defies the concept of fair. If the retiring
+		thread is pushed to tail before the swap, then it will the first
+		popped from head.  this provides fairness, in that each thread
+		will get the same number of turns, but perhaps defies fairness in
+		that sometimes a thread is scheduled back to back with itself,
+		even when others are waiting for a turn. Currently we use the
+		latter method.
+
+		Embedding dequeue in swap:
+
+		Dequeue must be guaranteed never to dequeue a null, as it
+		dereferences this pointer immediately.  For correctness we must
+		embed a dequeue in our lockfree swap.
+
+*/
+
 align(1) struct XombThread {
 	ubyte* rsp;
 	
@@ -16,14 +167,18 @@ align(1) struct XombThread {
 	// Scheduler Data
 	XombThread* next;
 
-	
+	/*
+		R11 - address for the XombThread being scheduled (this)
+		RAX - address for the XombThread pointed to by tail, belongs in R11's next pointer
+	*/
 	void schedule(){
 		XombThread* foo = this;
 
-		asm{ 
+		asm{
 			lock;
 			inc numThreads;
 
+			//  can't seem to access 'this' from an asm block, so use a local var to get around it
 			mov R11, foo;
 
 		start_enqueue:
@@ -164,6 +319,10 @@ align(1) struct XombThread {
 	}
 
 
+	/*
+		R11 - address for the XombThread being enqueued (from getCurrentThread)
+		RAX - address for the XombThread pointed to by tail, belongs in R11's next pointer
+	*/
 	void yieldToAddressSpace(AddressSpace as){
 		asm{
 			naked;
