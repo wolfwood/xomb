@@ -401,47 +401,47 @@ align(1) struct XombThread {
 		}
 	}
 
+	/*
+		R10 - base address of the SchedQueue struct
+		
+		R9  - temporary stash for RBX (even though its callee saved, do we care if RBX gets clobbered?)
+	*/
+
 	// don't call this function :) certainly, not from a thread 
 	void _enterThreadScheduler(){	
 		asm{
 			naked;
 
-			mov RCX, [queuePtr];
+			mov R10, [queuePtr];
 
-			mov RAX, [RCX + headOffset];
+			mov RAX, [R10 + headOffset];
 		
 			cmp RAX, 0;
 			jnz start_dequeue;
-			/*
+			
 			// RBX is callee saved for some reason
-			mov RDI, RBX;
+			mov R9, RBX;
 
 			// Compare RDX:RAX to m128. If equal, set ZF and copy RCX:RBX to m128. Otherwise, copy m128 to RDX:RAX and clear ZF.
-			mov RAX, [XombThread.schedQueue + 0];
-			mov RDX, [XombThread.schedQueue + 8];
+			mov RAX, [R10 + headOffset];
+			mov RDX, [R10 + tailOffset];
 
 			mov RBX, RDX;
 			mov RCX, RAX;
 
 			lock;
-			cmpxch16b XombThread.schedQueue;
+			cmpxchg16b [R10];
 			
-			mov RBX, RDI;
-			*/
-			mov RAX, [RCX + tailOffset];
-			mov R9, 0;
-			mov [RCX + tailOffset], R9;
-			mov [RCX + headOffset], RAX;
-			
+			mov R9, RDI;
 
 		start_dequeue:
-			mov RAX, [RCX + headOffset];
+			mov RAX, [R10 + headOffset];
 
 		restart_dequeue:
 			mov R11, [RAX + XombThread.next.offsetof];
 
 			lock;
-			cmpxchg [RCX + headOffset], R11;
+			cmpxchg [R10 + headOffset], R11;
 			jnz restart_dequeue;
 
 
