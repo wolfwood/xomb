@@ -404,47 +404,68 @@ align(1) struct XombThread {
 	/*
 		R10 - base address of the SchedQueue struct
 		
-		R9  - temporary stash for RBX (even though its callee saved, do we care if RBX gets clobbered?)
+		RAX - a snapshot of head -- if not null, the thread that will be dequeued
+		RDX - a snapshot of tail
+
+		R11 - thread pointed to by RAX's next -- proposed head for if dequeue succeeds
+
+		RBX - proposed head for if swap succeeds
+		RCX - proposed tail for if swap succeeds
 	*/
 
 	// don't call this function :) certainly, not from a thread 
 	void _enterThreadScheduler(){	
 		asm{
 			naked;
-
 			mov R10, [queuePtr];
 
+		load_head_and_tail:
 			mov RAX, [R10 + headOffset];
-		
-			cmp RAX, 0;
-			jnz start_dequeue;
-			
-			// RBX is callee saved for some reason
-			mov R9, RBX;
-
-			// Compare RDX:RAX to m128. If equal, set ZF and copy RCX:RBX to m128. Otherwise, copy m128 to RDX:RAX and clear ZF.
-			mov RAX, [R10 + headOffset];
+		load_tail:
 			mov RDX, [R10 + tailOffset];
+		
+			// assumes RAX and RDX are set
+		null_checks:
+			// if head is not null just dequeue, no swap is needed
+			cmp RAX, 0;
+			jnz dequeue;
+			
+			// if tail is also null, cpu is uneeded, so yield
+			// FUTURE: might decide to _create_ a thread for task queue or idle/background work
+			cmp RDX, 0;
+			jz yield;
 
+
+			// assumes RAX and RDX are set
+		swap_and_dequeue:
+			// the swap
 			mov RBX, RDX;
 			mov RCX, RAX;
 
+			// integrated dequeue -- if swap succeeds, replace proposed head with it's own next
+			mov RBX, [RBX + XombThread.next.offsetof];
+
+			// If RDX:RAX still equals tail:head, set ZF and copy RCX:RBX to tail:head. Else copy tail:head to RDX:RAX and clear ZF.
 			lock;
 			cmpxchg16b [R10];
-			
-			mov R9, RDI;
+			jnz null_checks;
+			// otherwise, we suceeded in swapping AND dequeuing what was tail and is now head
+			mov RAX, RDX;
+			jmp enter_thread;
 
-		start_dequeue:
-			mov RAX, [R10 + headOffset];
 
-		restart_dequeue:
+			// assumes RAX is set
+		dequeue:
 			mov R11, [RAX + XombThread.next.offsetof];
 
 			lock;
+			// if RAX still equals head, set head to R11 and set ZF; else, store head in RAX and unset ZF
 			cmpxchg [R10 + headOffset], R11;
-			jnz restart_dequeue;
+			jnz load_tail;
 
 
+			// assumes RAX is set
+		enter_thread:
 			mov RSP,[RAX+XombThread.rsp.offsetof];
 
 			popq R15;
