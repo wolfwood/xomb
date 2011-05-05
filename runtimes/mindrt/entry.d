@@ -110,6 +110,7 @@ void start3(){
 	}
 
 	UserspaceMemoryManager.initialize();
+	XombThread.initialize();
 
 	XombThread* mainThread = XombThread.threadCreate(&main);
 
