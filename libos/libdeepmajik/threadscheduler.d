@@ -1,7 +1,7 @@
 module libos.libdeepmajik.threadscheduler;
 
 import libos.libdeepmajik.umm;
-import user.syscall;
+import Syscall = user.syscall;
 
 import user.environment;
 
@@ -169,7 +169,7 @@ align(1) struct XombThread {
 
 	/*
 		R11 - address for the XombThread being scheduled (this)
-		RCX  - base address of the SchedQueue struct
+		R10  - base address of the SchedQueue struct
 
 		RAX - address for the XombThread pointed to by tail, belongs in R11's next pointer
 	*/
@@ -183,20 +183,18 @@ align(1) struct XombThread {
 			//  can't seem to access 'this' from an asm block, so use a local var to get around it
 			mov R11, foo;
 
-			mov RCX, [queuePtr];
+			mov R10, [queuePtr];
 			
 
 		start_enqueue:
-			// XXX: assemble warning 1
-			mov RAX, [RCX + tailOffset];
+			mov RAX, [R10 + tailOffset];
 
 		restart_enqueue:
 			mov [R11 + XombThread.next.offsetof], RAX;
 
-			// Compare RAX with m64. If equal, ZF is set and r64 is loaded into m64. Else, clear ZF and load m64 into RAX.
-			// XXX: assemble warning 2
+			// Compare RAX with m64. If equal, ZF is set and r64 is loaded into m64. Else, clear ZF and load m64 into RAX
 			lock;
-			cmpxchg [RCX + tailOffset], R11;
+			cmpxchg [R10 + tailOffset], R11;
 			jnz restart_enqueue;
 		}
 	}
@@ -236,7 +234,7 @@ align(1) struct XombThread {
 	}
 
 	/*
-		RCX - base address of the SchedQueue struct
+		R10 - base address of the SchedQueue struct
 		R11 - address for the XombThread being scheduled (this)
 
 		RAX - address for the XombThread pointed to by tail, belongs in R11's next pointer
@@ -249,11 +247,11 @@ align(1) struct XombThread {
 		asm{
 			naked;
 
-			mov RCX, [queuePtr];
+			mov R10, [queuePtr];
 
 			//if(schedQueueRoot == schedQueueTail){return;}// super Fast (single thread) Path
-			mov R9, [RCX + headOffset];
-			mov R8, [RCX + tailOffset];
+			mov R9, [R10 + headOffset];
+			mov R8, [R10 + tailOffset];
 			cmp R8,R9;
 			jne skip;
 			ret;
@@ -263,7 +261,8 @@ align(1) struct XombThread {
 			call getCurrentThread;
 			mov R11, RAX;
 
-			mov RCX, [queuePtr];
+			// R10 may get clobbered by function call, so load it again
+			mov R10, [queuePtr];
 
 			pushq RBX;
 			pushq RBP;
@@ -275,7 +274,7 @@ align(1) struct XombThread {
 			mov [R11+XombThread.rsp.offsetof],RSP;
 
 			// swap root and tail if needed			
-			mov R9, [RCX + headOffset];
+			mov R9, [R10 + headOffset];
 			mov R8, 0;
 			cmp R8,R9;
 			jne start_enqueue;
@@ -295,32 +294,32 @@ align(1) struct XombThread {
 			
 			mov RBX, RDI;
 			*/
-			mov R9, [RCX + tailOffset];
-			mov [RCX + headOffset], R9;
-			mov [RCX + tailOffset], R8;
+			mov R9, [R10 + tailOffset];
+			mov [R10 + headOffset], R9;
+			mov [R10 + tailOffset], R8;
 
 
 			// stuff old thread onto schedQueueTail
 		start_enqueue:
-			mov RAX, [RCX + tailOffset];
+			mov RAX, [R10 + tailOffset];
 
 		restart_enqueue:
 			mov [R11 + XombThread.next.offsetof], RAX;
 
 			lock;
-			cmpxchg [RCX + tailOffset], R11;
+			cmpxchg [R10 + tailOffset], R11;
 			jnz restart_enqueue;
 
 
 			// remove node from schedQueue.head
 		start_dequeue:
-			mov RAX, [RCX + headOffset];
+			mov RAX, [R10 + headOffset];
 
 		restart_dequeue:
 			mov R11, [RAX + XombThread.next.offsetof];
 
 			lock;
-			cmpxchg [RCX + headOffset], R11;
+			cmpxchg [R10 + headOffset], R11;
 			jnz restart_dequeue;
 
 
@@ -339,7 +338,7 @@ align(1) struct XombThread {
 
 
 	/*
-		RCX - base address of the SchedQueue struct
+		R10 - base address of the SchedQueue struct
 		R11 - address for the XombThread being enqueued (from getCurrentThread)
 
 		RAX - address for the XombThread pointed to by tail, belongs in R11's next pointer
@@ -352,7 +351,7 @@ align(1) struct XombThread {
 			call getCurrentThread;
 			mov R11, RAX;
 
-			mov RCX, [queuePtr];
+			mov R10, [queuePtr];
 		
 			pushq RBX;
 			pushq RBP;
@@ -365,16 +364,16 @@ align(1) struct XombThread {
 		
 			// stuff old thread onto schedQueueTail
 		start_enqueue:
-			mov RAX, [RCX + tailOffset];
+			mov RAX, [R10 + tailOffset];
 
 		restart_enqueue:
 			mov [R11 + XombThread.next.offsetof], RAX;
 
 			lock;
-			cmpxchg [RCX + tailOffset], R11;
+			cmpxchg [R10 + tailOffset], R11;
 			jnz restart_enqueue;
 
-			jmp yield;
+			jmp Syscall.yield;
 		}
 	}
 
@@ -391,7 +390,7 @@ align(1) struct XombThread {
 		if(numThreads == 0){
 			assert(schedQueueStorage.head == schedQueueStorage.tail && schedQueueStorage.tail == schedQueueStorage.tail2);
 
-			exit(0);
+			Syscall.exit(0);
 		}else{
 			//freePage(cast(ubyte*)(cast(ulong)thread & (~ 0xFFFUL)));
 		
@@ -433,7 +432,8 @@ align(1) struct XombThread {
 			// if tail is also null, cpu is uneeded, so yield
 			// FUTURE: might decide to _create_ a thread for task queue or idle/background work
 			cmp RDX, 0;
-			jz yield;
+			// XXX: requires a stack?
+			jz Syscall.yield;
 
 
 			// assumes RAX and RDX are set
@@ -479,7 +479,7 @@ align(1) struct XombThread {
 		}
 	}
 
-	// this are dumb.  should go away when alignment works properly
+	//XXX: this are dumb.  should go away when 16 byte struct alignment works properly
 	void initialize(){
 		queuePtr = (cast(ulong)(&schedQueueStorage) % 16) != 0 ? (&schedQueueStorage + 8) : (&schedQueueStorage);
 	}
@@ -495,9 +495,7 @@ private:
 
 	Queue schedQueueStorage;
 
-	//(cast(ulong)(&schedQueueStorage) % 16) ? (&schedQueueStorage + 8) : (&schedQueueStorage);
-	Queue* queuePtr;// = cast(Queue*)(cast(ulong)(&schedQueueStorage + 8) & (~(16UL-1)));
-
+	Queue* queuePtr;
 	const uint headOffset = 0, tailOffset = ulong.sizeof;
 
 	uint numThreads = 0;
