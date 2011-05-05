@@ -1,4 +1,8 @@
 #!/bin/sh
+
+mkdir -p build/root/binaries
+mkdir -p build/iso/binaries
+
 cd runtimes/mindrt
 make || exit
 cd ../..
