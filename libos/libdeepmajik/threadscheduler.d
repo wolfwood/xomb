@@ -8,7 +8,8 @@ import user.environment;
 const ulong ThreadStackSize = 4096;
 
 /*
-	  Background:
+
+	Background:
 
 		The XOmB kernel considers an environment (AKA process) to be an
 		Address Space with an expected well-known entry point at 1GB + 16
@@ -33,7 +34,8 @@ const ulong ThreadStackSize = 4096;
 		execution upon its exit, regardless of the number of other,
 		non-blessed threads remaining).
 
-	  Theory of Operation:
+
+	Theory of Operation:
 
 		In general terms, a thread's state is the full CPU state while it
 		is executing.  For our purposes, this state is limited to a stack
@@ -129,7 +131,7 @@ const ulong ThreadStackSize = 4096;
 		be popped from below the return address pointing to the shim.
 
 
-		Scheduling:
+	Scheduling:
 
 		It is easy to implement a lock-free stack.  So, my plan for the
 		scheduler was to use 2 stacks, one, 'head', for popping threads to
@@ -150,11 +152,13 @@ const ulong ThreadStackSize = 4096;
 		even when others are waiting for a turn. Currently we use the
 		latter method.
 
-		Embedding dequeue in swap:
+
+	Embedding dequeue in swap:
 
 		Dequeue must be guaranteed never to dequeue a null, as it
-		dereferences this pointer immediately.  For correctness we must
-		embed a dequeue in our lockfree swap.
+		dereferences this pointer immediately.  For easy correctness we
+		embed a dequeue in our lockfree swap, avoiding a second null
+		check, and a second atomic operation.
 
 */
 
@@ -273,31 +277,6 @@ align(1) struct XombThread {
 
 			mov [R11+XombThread.rsp.offsetof],RSP;
 
-			// swap root and tail if needed			
-			mov R9, [R10 + headOffset];
-			mov R8, 0;
-			cmp R8,R9;
-			jne start_enqueue;
-			/*
-			// RBX is callee saved for some reason
-			mov RDI, RBX;
-
-			// Compare RDX:RAX to m128. If equal, set ZF and copy RCX:RBX to m128. Otherwise, copy m128 to RDX:RAX and clear ZF.
-			mov RAX, [XombThread.schedQueue + 0];
-			mov RDX, [XombThread.schedQueue + 8];
-
-			mov RBX, RDX;
-			mov RCX, RAX;
-
-			lock;
-			cmpxch16b XombThread.schedQueue;
-			
-			mov RBX, RDI;
-			*/
-			mov R9, [R10 + tailOffset];
-			mov [R10 + headOffset], R9;
-			mov [R10 + tailOffset], R8;
-
 
 			// stuff old thread onto schedQueueTail
 		start_enqueue:
@@ -310,29 +289,7 @@ align(1) struct XombThread {
 			cmpxchg [R10 + tailOffset], R11;
 			jnz restart_enqueue;
 
-
-			// remove node from schedQueue.head
-		start_dequeue:
-			mov RAX, [R10 + headOffset];
-
-		restart_dequeue:
-			mov R11, [RAX + XombThread.next.offsetof];
-
-			lock;
-			cmpxchg [R10 + headOffset], R11;
-			jnz restart_dequeue;
-
-
-			mov RSP,[RAX+XombThread.rsp.offsetof];
-
-			popq R15;
-			popq R14;
-			popq R13;
-			popq R12;
-			popq RBP;
-			popq RBX;
-
-			ret;
+			jmp _enterThreadScheduler;
 		}
 	}
 
@@ -399,6 +356,7 @@ align(1) struct XombThread {
 			}
 		}
 	}
+
 
 	/*
 		R10 - base address of the SchedQueue struct
