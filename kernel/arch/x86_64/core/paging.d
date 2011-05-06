@@ -64,8 +64,6 @@ static:
 	ErrorVal initialize() {
 		// Create a new page table.
 		root = cast(PageLevel4*)PageAllocator.allocPage();
-		PageLevel3* pl3 = cast(PageLevel3*)PageAllocator.allocPage();
-		PageLevel2* pl2 = cast(PageLevel2*)PageAllocator.allocPage();
 		PageLevel3* globalRoot = cast(PageLevel3*)PageAllocator.allocPage();
 
 		//kprintfln!("root: {} pl3: {} pl2: {}")(root, pl3, pl2);
@@ -73,29 +71,17 @@ static:
 		// Initialize the structure. (Zero it)
 		*root = PageLevel4.init;
 		*globalRoot = PageLevel3.init;
-		*pl3 = PageLevel3.init;
-		*pl2 = PageLevel2.init;
 
 		// Map entries 511 to the PML4
 		root.entries[511].pml = cast(ulong)root;
 		root.entries[511].present = 1;
-		pl3.entries[511].pml = cast(ulong)root;
-		pl3.entries[511].present = 1;
-		pl2.entries[511].pml = cast(ulong)root;
-		pl2.entries[511].present = 1;
-
-		// Map entry 510 to the next level
-		root.entries[510].pml = cast(ulong)pl3;
-		root.entries[510].present = 1;
-		pl3.entries[510].pml = cast(ulong)pl2;
-		pl3.entries[510].present = 1;
 
 		/*
 		root.entries[511].rw = 1;
-		pl3.entries[511].rw = 1;
-		pl2.entries[511].rw = 1;
-		root.entries[510].rw = 1;
-		pl3.entries[510].rw = 1;
+		root.entries[510].rw = 0;
+		root.entries[511].us = 0;
+		root.entries[510].us = 1;
+
 		*/
 
 		/* currently the kernel isn't forced to respect the rw bit. if
@@ -104,10 +90,6 @@ static:
 			 different paging trick for userspace I guess
 		 */
 		root.entries[511].us = 1;
-		pl3.entries[511].us = 1;
-		pl2.entries[511].us = 1;
-		root.entries[510].us = 1;
-		pl3.entries[510].us = 1;
 
 		// Map entry 509 to the global root
 		root.entries[509].pml = cast(ulong)globalRoot;
@@ -305,41 +287,8 @@ static:
 		addressSpace.entries[511].us = 1;
 
 
-		// Create Level 3 and Level 2 for page trick
-		void* pl3addr = PageAllocator.allocPage();
-		void* pl2addr = PageAllocator.allocPage();
-
-		addressSpace.entries[510].pml = cast(ulong)pl3addr;
-		addressSpace.entries[510].present = 1;
-		//addressSpace.entries[510].rw = 1;
-		addressSpace.entries[510].us = 1;
-
-		PageLevel1* fakePl3 = addressSpace.getTable(510);
-		*(cast(PageLevel3*)fakePl3) = PageLevel3.init;
-
-
-		// Map entry 510 to the next level
-		fakePl3.entries[510].pml = cast(ulong)pl2addr;
-		fakePl3.entries[510].present = 1;
-		//fakePl3.entries[510].rw = 1;
-		fakePl3.entries[510].us = 1;
-
-		PageLevel2* fakePl2 = cast(PageLevel2*)createAddress(510, 510, idx, 255);//fakePl3.getTable(510);
-		*fakePl2 = PageLevel2.init;
-
-		// Map entries 511 to the PML4
-		fakePl3.entries[511].pml = cast(ulong)newRootPhysAddr;
-		fakePl3.entries[511].present = 1;
-		//fakePl3.entries[511].rw = 1;
-		fakePl3.entries[511].us = 1;
-
-		fakePl2.entries[511].pml = cast(ulong)newRootPhysAddr;
-		fakePl2.entries[511].present = 1;
-		//fakePl2.entries[511].rw = 1;
-		fakePl2.entries[511].us = 1;
-
 		// insert parent into child
-		fakePl3 = addressSpace.getOrCreateTable(255);
+		 PageLevel1* fakePl3 = addressSpace.getOrCreateTable(255);
 		fakePl3.entries[0].pml = root.entries[511].pml;
 		fakePl3.entries[0].present = 1;
 		// child should not be able to edit parent's root table
