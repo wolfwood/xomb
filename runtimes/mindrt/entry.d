@@ -112,14 +112,9 @@ void start3(){
 	UserspaceMemoryManager.initialize();
 	XombThread.initialize();
 
-	XombThread* mainThread = XombThread.threadCreate(&main);
+	XombThread* mainThread = XombThread.threadCreate(&main, argvlen, argvptr);
 
 	mainThread.schedule();
-
-	asm{
-		mov RDI, argvlen;
-		mov RSI, argvptr;
-	}
 
 	XombThread._enterThreadScheduler();
 }

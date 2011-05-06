@@ -205,6 +205,27 @@ align(1) struct XombThread {
 
 	static:
 
+	XombThread* threadCreate(void* functionPointer, ulong arg1, ulong arg2 = 0, ulong arg3 = 0, ulong arg4 = 0, ulong arg5 = 0, ulong arg6 = 0){
+		XombThread* thread = threadCreate(functionPointer);
+
+		// add another function 'return' address to the stack
+		thread.rsp -= 8;
+		(cast(void function()*)thread.rsp)[6] = &argShim;
+
+		// stick args in place of the 'callee saved' registers that get
+		// popped.  argShim will place these into the 'argument passing'
+		// registers so that functionPointer will get the intended
+		// arguments, when argShim ret's to it
+		(cast(ulong*)thread.rsp)[0] = arg1;
+		(cast(ulong*)thread.rsp)[1] = arg2;
+		(cast(ulong*)thread.rsp)[2] = arg3;
+		(cast(ulong*)thread.rsp)[3] = arg4;
+		(cast(ulong*)thread.rsp)[4] = arg5;
+		(cast(ulong*)thread.rsp)[5] = arg6;
+
+		return thread;
+	}
+
 	XombThread* threadCreate(void* functionPointer){
 		ubyte* stackptr = UserspaceMemoryManager.getPage(true);
 	
@@ -443,6 +464,22 @@ align(1) struct XombThread {
 	}
 
 private:
+	void argShim(){
+		asm{
+			naked;
+
+			// destinations are the x64 ABI's expected locations for arguments 1-6 in order
+			mov RDI, R15;
+			mov RSI, R14;
+			mov RDX, R13;
+			mov RCX, R12;
+			mov R8,  RBP;
+			mov R9,  RBX;
+
+			ret;
+		}
+	}
+
 	align(1) struct Queue{
 		XombThread* head;
 		XombThread* tail;
