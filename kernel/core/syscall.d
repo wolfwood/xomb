@@ -137,6 +137,17 @@ public:
 	}
 
 	SyscallError yield(YieldArgs* params){
+		// lol... do this BEFORE switching address spaces
+		ulong idx = params.idx;
+
+		if(idx == 0){
+			// XXX: ensure current address space is params.dest's parent
+		}
+
+		if(idx > 1){
+			return SyscallError.Failcopter;
+		}
+
 		if(VirtualMemory.switchAddressSpace(params.dest) == ErrorVal.Fail){
 			return SyscallError.Failcopter;
 		}
@@ -163,7 +174,7 @@ public:
 			movq R11, entry;
 			pushq R11;
 
-			movq RDI, 0;
+			movq RDI, idx;
 
 			iretq;
 		}

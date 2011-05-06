@@ -50,7 +50,7 @@ void main(char[][] argv) {
 	if(xsh !is null){
 		populateChild(args, xshAS, xsh);
 
-		XombThread.yieldToAddressSpace(xshAS);
+		XombThread.yieldToAddressSpace(xshAS, 0);
 	}
 
 	Console.putString("Done"); for(;;){}

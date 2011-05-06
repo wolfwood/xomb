@@ -320,14 +320,22 @@ align(1) struct XombThread {
 		R11 - address for the XombThread being enqueued (from getCurrentThread)
 
 		RAX - address for the XombThread pointed to by tail, belongs in R11's next pointer
+
+		RDI & RSI - location of arguments; shouldn't get clobbered, so they can be passed to Syscall.yield
 	*/
-	void yieldToAddressSpace(AddressSpace as){
+	void yieldToAddressSpace(AddressSpace as, ulong idx){
 		asm{
 			naked;
 		
+			pushq RDI;
+			pushq RSI;
+
 			// save stack ready to ret
 			call getCurrentThread;
 			mov R11, RAX;
+
+			popq RSI;
+			popq RDI;
 
 			mov R10, [queuePtr];
 		
