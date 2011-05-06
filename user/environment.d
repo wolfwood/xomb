@@ -322,7 +322,7 @@ struct PageLevel4 {
 		}
 			
 		// Calculate virtual address
-		return cast(PageLevel3*)(0xFFFFFF7F_BFE00000 + (idx << 12));
+		return cast(PageLevel3*)(0xFFFFFFFF_FFE00000 + (idx << 12));
 	}
 
 	version(KERNEL){
@@ -347,7 +347,7 @@ struct PageLevel4 {
 				entries[idx].us = usermode;
 				
 				// Calculate virtual address
-				ret = cast(PageLevel3*)(0xFFFFFF7F_BFE00000 + (idx << 12));
+				ret = cast(PageLevel3*)(0xFFFFFFFF_FFE00000 + (idx << 12));
 				
 				*ret = PageLevel3.init;
 			}
@@ -368,7 +368,7 @@ struct PageLevel3 {
 		ulong baseAddr = cast(ulong)this;
 		baseAddr &= 0x1FF000;
 		baseAddr >>= 3;
-		return cast(PageLevel2*)(0xFFFFFF7F_C0000000 + ((baseAddr + idx) << 12));
+		return cast(PageLevel2*)(0xFFFFFFFF_C0000000 + ((baseAddr + idx) << 12));
 	}
 
 	version(KERNEL){
@@ -396,7 +396,7 @@ struct PageLevel3 {
 				ulong baseAddr = cast(ulong)this;
 				baseAddr &= 0x1FF000;
 				baseAddr >>= 3;
-				ret = cast(PageLevel2*)(0xFFFFFF7F_C0000000 + ((baseAddr + idx) << 12));
+				ret = cast(PageLevel2*)(0xFFFFFFFF_C0000000 + ((baseAddr + idx) << 12));
 				
 				*ret = PageLevel2.init;
 				//if (usermode) { kprintfln!("creating pl3 {}")(idx); }
