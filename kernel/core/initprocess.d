@@ -187,7 +187,7 @@ private:
 			}
 		}
 
-		if(idx >= System.moduleInfo.length){
+		if(idx >= System.numModules){
 			// no match for initname was found
 			return -1;
 		}
