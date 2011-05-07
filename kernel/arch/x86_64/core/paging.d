@@ -152,6 +152,22 @@ static:
 
 		void* addr = cast(void*)cr2;
 
+		if((stack.errorCode & 7) == 7){
+			// XXX: 'kill' child and return to parent?
+			stack.dump();
+			kprintfln!("User Mode Write Fault at {x} on Read-only page {x}, Error Code {x}")(stack.rip, addr, stack.errorCode);
+			printStackTrace(cast(StackFrame*)stack.rbp);
+			for(;;){}
+		}
+
+
+		if(stack.errorCode == 3){
+			kprintfln!("Kernel Mode Write Fault at {x} on Read-only page {x}, Error Code {x}")(stack.rip, addr, stack.errorCode);
+			printStackTrace(cast(StackFrame*)stack.rbp);
+			for(;;){}
+		}
+
+
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(addr, indexL1, indexL2, indexL3, indexL4);
 
