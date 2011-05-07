@@ -131,15 +131,18 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	auto fail = InitProcess.install();
 	Log.result(fail);	
 
-	Date dt;
-	Timing.currentDate(dt);
-	kprintfln!("\nDate: {} {} {}")(dt.day, dt.month, dt.year);
-
 	if(fail != ErrorVal.Fail){
+		Date dt;
+		Timing.currentDate(dt);
+		kprintfln!("\nDate: {} {} {}")(dt.day, dt.month, dt.year);
+
 		InitProcess.enterFromBSP();
+	}else{
+		kprintfln!("\nCould not install init. I am giving up.")();
+		for(;;){}
 	}
 	// Run task
-	assert(false, "Something is VERY VERY WRONG. Scheduler.execute returned. :(");
+	assert(false, "Something is VERY VERY WRONG. entering Init returned. :(");
 	
 	for(;;){}
 }

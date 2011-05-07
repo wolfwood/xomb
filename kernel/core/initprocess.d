@@ -40,6 +40,11 @@ struct InitProcess{
 			return ErrorVal.Fail;
 		}
 
+		if(!testForMagicNumber()){
+			kprintfln!("Bad magic cookie from Init. Blech -- XOmB only work for 0xdeadbeefcafe cookies")();
+			return ErrorVal.Fail; 
+		}
+
 		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
 
 		// XXX: replace fixed values with findFreeGib()
@@ -130,6 +135,15 @@ struct InitProcess{
 	}
 
 private:
+	bool testForMagicNumber(ulong pass = oneGB){
+		ulong* addy = cast(ulong*)pass;
+
+		if(addy[1] == 0xdeadbeefcafeUL){
+			return true;
+		}
+		return false;
+	}
+
 	ubyte[] createSegmentForModule(char[] name, int segidx = -1){
 		int idx = findIndexForModuleName(name);
 

@@ -3,7 +3,7 @@ extern UVTbase
 
 header:	
 				dq 0x0
-				dq 0x0
+				dq 0xdeadbeefcafe
 				
 global _start
 _start:
