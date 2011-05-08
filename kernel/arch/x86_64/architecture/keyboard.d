@@ -16,7 +16,7 @@ class KeyboardImplementation {
 static:
 	ErrorVal initialize(void function(Key, bool) keyProc) {
 		ubyte mode;
-		ubyte status;
+		ubyte status, code;
 
 		_keyProc = keyProc;
 
@@ -27,6 +27,30 @@ static:
 		while((status & 0x1) == 1) {
 			Cpu.ioIn!(ubyte, "0x60")();
 			status = Cpu.ioIn!(ubyte, "0x64")();
+		}
+
+
+		Cpu.ioOut!(ubyte, "0x60")(0xF0);
+		Cpu.ioOut!(ubyte, "0x60")(0x0);
+
+		status = Cpu.ioIn!(ubyte, "0x64")();
+		while((status & 0x1) == 1) {
+			code = Cpu.ioIn!(ubyte, "0x60")();
+			status = Cpu.ioIn!(ubyte, "0x64")();
+		}
+
+		if(code == 0x43){ // bochs reports 2 for some silly reason
+			keyset = 1;
+		}else if(code == 0x41){
+			keyset = 2;
+		}else if(code == 0x3f){
+			keyset = 3;
+			kprintfln!("unsupported scan code")();
+			return ErrorVal.Fail;
+		}else{
+			kprintfln!("unrecognized scan code, assuming 1")();
+			keyset = 1;
+			//return ErrorVal.Fail;
 		}
 
 		// schematics of P1
@@ -75,6 +99,8 @@ private:
 
 	static void function(Key, bool) _keyProc;
 
+	uint keyset = 0;
+
 	synchronized void keyboardHandler(InterruptStack* stack) {
 		// Read in byte
 
@@ -82,6 +108,7 @@ private:
 		static bool upState = false;
 
 		ubyte data = Cpu.ioIn!(ubyte, "0x60")();
+
 		if (data == 0x00) {
 			return;
 		}
@@ -99,10 +126,18 @@ private:
 			}
 
 			if (makeState == 0) {
-				key = set2translate[data];
+				if(keyset == 1){
+					key = set1translate[data];
+				}else{
+					key = set2translate[data];
+				}
 			}
 			else if (makeState == 1) {
-				key = set2translateExtra[data];
+				if(keyset == 1){
+					key = set1translateExtra[data];
+				}else{
+					key = set2translateExtra[data];
+				}
 			}
 
 			// PUT KEY IN BUFFER
@@ -116,7 +151,7 @@ private:
 		LocalAPIC.EOI();
 	}
 
-	Key set2translate[256] =
+	Key set1translate[256] =
 		[
 		0x1E: Key.A,
 		0x30: Key.B,
@@ -205,7 +240,7 @@ private:
 		0x2B: Key.Backslash
 			];
 
-	Key set2translateExtra[256] =
+	Key set1translateExtra[256] =
 		[
 		0x5B: Key.LeftMeta,
 		0x1D: Key.RightControl,
@@ -223,6 +258,135 @@ private:
 		0x4D: Key.Right,
 		0x35: Key.KeypadSlash,
 		0x1C: Key.KeypadReturn,
+
+		/*0xff: Key.Application,
+		0x4d: Key.Next,
+		0x15: Key.Previous,
+		0x3b: Key.Stop,
+		0x34: Key.Play,
+		0x23: Key.Mute,
+		0x32: Key.VolumeUp,
+		0x21: Key.VolumeDown,
+		0x50: Key.Media,
+		0x48: Key.EMail,
+		0x2b: Key.Calculator,
+		0x40: Key.Computer,
+		0x10: Key.WebSearch,
+		0x3a: Key.WebHome,
+		0x38: Key.WebBack,
+		0x30: Key.WebForward,
+		0x28: Key.WebStop,
+		0x20: Key.WebRefresh,
+		0x18: Key.WebFavorites*/
+			];
+
+	Key set2translate[256] =
+		[
+		0x1C: Key.A,
+		0x32: Key.B,
+		0x21: Key.C,
+		0x23: Key.D,
+		0x24: Key.E,
+		0x2B: Key.F,
+		0x34: Key.G,
+		0x33: Key.H,
+		0x43: Key.I,
+		0x3B: Key.J,
+		0x42: Key.K,
+		0x4B: Key.L,
+		0x3A: Key.M,
+		0x31: Key.N,
+		0x44: Key.O,
+		0x4D: Key.P,
+		0x15: Key.Q,
+		0x2D: Key.R,
+		0x1B: Key.S,
+		0x2C: Key.T,
+		0x3C: Key.U,
+		0x2A: Key.V,
+		0x1D: Key.W,
+		0x22: Key.X,
+		0x35: Key.Y,
+		0x1A: Key.Z,
+		0x16: Key.Num1,
+		0x1e: Key.Num2,
+		0x26: Key.Num3,
+		0x25: Key.Num4,
+		0x2E: Key.Num5,
+		0x36: Key.Num6,
+		0x3D: Key.Num7,
+		0x3E: Key.Num8,
+		0x46: Key.Num9,
+		0x45: Key.Num0,
+		0x0E: Key.Quote,
+		0x4E: Key.Minus,
+		0x55: Key.Equals,
+		0x4A: Key.Slash,
+		0x66: Key.Backspace,
+		0x29: Key.Space,
+		0x0D: Key.Tab,
+		0x58: Key.Capslock,
+		0x12: Key.LeftShift,
+		0x14: Key.LeftControl,
+		0x11: Key.LeftAlt,
+		0x59: Key.RightShift,
+		0x5A: Key.Return,
+		0x76: Key.Escape,
+		0x05: Key.F1,
+		0x06: Key.F2,
+		0x04: Key.F3,
+		0x0c: Key.F4,
+		0x03: Key.F5,
+		0x0B: Key.F6,
+		0x83: Key.F7,
+		0x0A: Key.F8,
+		0x01: Key.F9,
+		0x09: Key.F10,
+		0x78: Key.F11,
+		0x07: Key.F12,
+		0x7E: Key.ScrollLock,
+		0x54: Key.LeftBracket,
+		0x5B: Key.RightBracket,
+		0x77: Key.NumLock,
+		0x7C: Key.KeypadAsterisk,
+		0x7B: Key.KeypadMinus,
+		0x79: Key.KeypadPlus,
+		0x71: Key.KeypadPeriod,
+		0x70: Key.Keypad0,
+		0x69: Key.Keypad1,
+		0x72: Key.Keypad2,
+		0x7A: Key.Keypad3,
+		0x6B: Key.Keypad4,
+		0x73: Key.Keypad5,
+		0x74: Key.Keypad6,
+		0x6C: Key.Keypad7,
+		0x75: Key.Keypad8,
+		0x7D: Key.Keypad9,
+		0x4C: Key.Semicolon,
+		0x52: Key.Apostrophe,
+		0x41: Key.Comma,
+		0x49: Key.Period,
+		0x5D: Key.Backslash
+			];
+
+	Key set2translateExtra[256] =
+		[
+		0x1F: Key.LeftMeta,
+		0x14: Key.RightControl,
+		0x27: Key.RightMeta,
+		0x11: Key.RightAlt,
+		0x70: Key.Insert,
+		0x6C: Key.Home,
+		0x7D: Key.PageUp,
+		0x71: Key.Delete,
+		0x69: Key.End,
+		0x7A: Key.PageDown,
+		0x75: Key.Up,
+		0x6B: Key.Left,
+		0x72: Key.Down,
+		0x74: Key.Right,
+		0x4A: Key.KeypadSlash,
+		0x5A: Key.KeypadReturn,
 
 		/*0xff: Key.Application,
 		0x4d: Key.Next,
