@@ -147,14 +147,24 @@ private:
 	ubyte[] createSegmentForModule(char[] name, int segidx = -1){
 		int idx = findIndexForModuleName(name);
 
+		// is it more annoying to assume a path and name for init or assume that its the first module?
+		// grub2 doesn't give us the name anymore, so we are assuming its the first module
 		if(idx == -1){
+			idx = 0;
+		}
+
+		if(idx == -1){
+			kprintfln!("Init NOT found")();
 			return null;
 		}
 
 		if(segidx == -1){
 			// XXX: find a free gib
+			kprintfln!("dunno where to stick init")();
 			return null;
 		}
+
+		//kprintfln!("Init found at module index {} with start {} and length{}")(idx, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
 
 		ubyte[] segmentBytes =
 			VirtualMemory.createSegment(cast(ubyte*)(segidx*oneGB), oneGB, AccessMode.Writable);

@@ -49,16 +49,24 @@ public:
 	void* allocPage() {
 		if (!_initialized) {
 			if (_start is null) {
+				// Make _start appear somewhere reasonable
+				// In this case, make sure it is at the start of a 16MB section of RAM
+				static const PREINITIALIZED_BUFFER_SIZE = 16 * 1024 * 1024;
+
+				// Assume first that we need to start at the end of the kernel
 				_start = System.kernel.start + System.kernel.length;
 				_start = cast(ubyte*)(cast(ulong)_start / cast(ulong)VirtualMemory.pagesize());
 				_start = cast(ubyte*)((cast(ulong)_start+1) * cast(ulong)(VirtualMemory.pagesize()));
-				// Make _start appear AFTER all modules.
+
+				// Now look for Modules that are in our way of that 16MB
 				for(size_t i = 0; i < System.numModules; i++) {
 					// Get the bounds of the module on a page alignment.
 					ubyte* regionAddr = cast(ubyte*)System.moduleInfo[i].start;
 					ubyte* regionEdge = cast(ubyte*)(cast(ulong)(regionAddr + System.moduleInfo[i].length) / cast(ulong)VirtualMemory.pagesize());
 					regionEdge = cast(ubyte*)((cast(ulong)regionEdge + 1) * cast(ulong)(VirtualMemory.pagesize()));
-					if (_start < regionEdge) {
+
+					if (_start + PREINITIALIZED_BUFFER_SIZE > regionAddr) {
+						// If it is intruding, place at the end of the Module
 						_start = regionEdge;
 					}
 				}
