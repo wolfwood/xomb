@@ -30,27 +30,55 @@ static:
 		}
 
 
-		Cpu.ioOut!(ubyte, "0x60")(0xF0);
-		Cpu.ioOut!(ubyte, "0x60")(0x0);
+		Cpu.ioOut!(ubyte, "0x60")(0xF2);
 
-		status = Cpu.ioIn!(ubyte, "0x64")();
+		// wait for keyboard to respond
+		do{
+			status = Cpu.ioIn!(ubyte, "0x64")();
+		}while((status & 0x1) == 0)
+
+
 		while((status & 0x1) == 1) {
+			
 			code = Cpu.ioIn!(ubyte, "0x60")();
+
 			status = Cpu.ioIn!(ubyte, "0x64")();
 		}
 
-		if(code == 0x43){ // bochs reports 2 for some silly reason
+		if(code == 0x41){
 			keyset = 1;
-		}else if(code == 0x41){
-			keyset = 2;
-		}else if(code == 0x3f){
-			keyset = 3;
-			kprintfln!("unsupported scan code")();
-			return ErrorVal.Fail;
 		}else{
-			kprintfln!("unrecognized scan code, assuming 1")();
-			keyset = 1;
-			//return ErrorVal.Fail;
+
+			Cpu.ioOut!(ubyte, "0x60")(0xF0);
+			Cpu.ioOut!(ubyte, "0x60")(0x0);
+
+
+			// wait for keyboard to respond
+			do{
+				status = Cpu.ioIn!(ubyte, "0x64")();
+			}while((status & 0x1) == 0)
+
+
+			status = Cpu.ioIn!(ubyte, "0x64")();
+			while((status & 0x1) == 1) {
+				code = Cpu.ioIn!(ubyte, "0x60")();
+
+				status = Cpu.ioIn!(ubyte, "0x64")();
+			}
+
+			if(code == 0x43){
+				keyset = 1;
+			}else if(code == 0x41){
+				keyset = 2;
+			}else if(code == 0x3f){
+				keyset = 3;
+				kprintfln!("unsupported scan code")();
+				return ErrorVal.Fail;
+			}else{
+				kprintfln!("unrecognized scan code, assuming 1")();
+				keyset = 1;
+				//return ErrorVal.Fail;
+			}
 		}
 
 		// schematics of P1
