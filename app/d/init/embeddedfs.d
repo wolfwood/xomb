@@ -17,6 +17,7 @@ struct EmbeddedFS{
 		makeFile!("binaries/chel", true)();
 		//makeFile!("binaries/fhel", true)();
 		makeFile!("binaries/posix", true)();
+		makeFile!("binaries/mcf", true)();
 
 		// symlinks
 		MinFS.link("/binaries/posix", "/binaries/cat");
@@ -24,9 +25,18 @@ struct EmbeddedFS{
 		MinFS.link("/binaries/posix", "/binaries/echo");
 		MinFS.link("/binaries/posix", "/binaries/ls");
 		MinFS.link("/binaries/posix", "/binaries/ln");
+		MinFS.link("/binaries/posix", "/binaries/printpcm");
+		MinFS.link("/binaries/posix", "/binaries/clearpcm");
 		
 		// data
 		makeFile!("LICENSE", false)();
+		makeFile!("data/ref.in", false)();
+		makeFile!("data/test.in", false)();
+		makeFile!("data/train.in", false)();
+		makeFile!("data/ref.out", false)();
+		makeFile!("data/test.out", false)();
+		makeFile!("data/train.out", false)();
+
 	}
 
 	ubyte[] shell(){

@@ -1,5 +1,5 @@
 romimage: file=/usr/local/share/bochs/BIOS-bochs-latest
-megs: 512
+megs: 2048
 ata1-slave:  type=cdrom, path="./xomb.iso", status=inserted
 boot: cdrom
 cpu: count=4, reset_on_triple_fault=0
