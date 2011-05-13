@@ -17,7 +17,7 @@ int main(int argc, char** argv){
 	
 	printf("Hello wizzerld!\n");
 
-	int fd =  open("/kernel/LICENSE", O_RDONLY);
+	int fd =  open("/LICENSE", O_RDONLY);
 
 	char foo[11];
 	int err;

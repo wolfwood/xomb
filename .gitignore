@@ -4,6 +4,7 @@ build/dsss.last
 build/xomb.dump
 build/xomb.iso
 build/iso/binaries
+build/iso/LICENSE
 build/iso/boot/xomb
 build/root/*
 build/dsss.conf
