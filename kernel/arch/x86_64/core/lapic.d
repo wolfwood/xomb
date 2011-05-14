@@ -152,7 +152,9 @@ private:
 		if (apicRegisters is null) {
 			return 0;
 		}
-		return apicRegisters.localApicId >> 24;
+		
+		uint ID = apicRegisters.localApicId;
+		return ID >> 24;
 	}
 
 	void startAPs() {
