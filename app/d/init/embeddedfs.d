@@ -25,7 +25,7 @@ struct EmbeddedFS{
 		MinFS.link("/binaries/posix", "/binaries/ln");
 		
 		// data
-		makeFile!("kernel/LICENSE", false)();
+		makeFile!("LICENSE", false)();
 	}
 
 	ubyte[] shell(){

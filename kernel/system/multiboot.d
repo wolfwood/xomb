@@ -139,9 +139,13 @@ ErrorVal verifyBootInformation(int id, void *data) {
 	//is command line passed?
 	if(!checkFlag(info.flags, 2)) {
 		return ErrorVal.Fail;
-	}
+	}else{
+		char* cmd = (cast(char*)info.cmdline);
+		uint len = strlen(cmd);
 
-	//kprintfln!("what")();
+		System.cmdlineStorage[0..len] = cmd[0..len];
+		System.cmdline = System.cmdlineStorage[(len-1)..len];
+	}	
 
 	//are the modules valid?
 	if(checkFlag(info.flags, 3)) {

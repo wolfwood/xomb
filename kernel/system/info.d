@@ -37,4 +37,7 @@ public:
 
 	uint numDevices;
 	Device[256] deviceInfo;
+
+	char[128] cmdlineStorage;
+	char[] cmdline;
 }
