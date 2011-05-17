@@ -144,7 +144,7 @@ ErrorVal verifyBootInformation(int id, void *data) {
 		uint len = strlen(cmd);
 
 		System.cmdlineStorage[0..len] = cmd[0..len];
-		System.cmdline = System.cmdlineStorage[(len-1)..len];
+		System.cmdline = System.cmdlineStorage[0..len];
 	}	
 
 	//are the modules valid?
