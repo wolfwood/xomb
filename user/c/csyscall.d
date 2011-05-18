@@ -11,9 +11,8 @@ import libos.libdeepmajik.umm;
 
 extern(C):
 
-bool initFlag = false;
 
-
+/* State */
 struct fdTableEntry{
 	ulong* len;
 	ubyte* data;
@@ -26,7 +25,10 @@ const uint MAX_NUM_FDS = 128;
 fdTableEntry[MAX_NUM_FDS] fdTable;
 
 ulong heapStart;
+bool initFlag = false;
 
+
+/* Setup */
 void initC2D(){
 	if(!initFlag){
 		MinFS.initialize();
@@ -37,6 +39,12 @@ void initC2D(){
 	}
 }
 
+ulong initHeap(){
+	return heapStart;
+}
+
+
+/* Filesystem */
 int gibRead(int fd, ubyte* buf, uint len){
 	if(!fdTable[fd].valid){
 		return -1;
@@ -98,11 +106,12 @@ int gibOpen(char* name, uint nameLen, bool readOnly, bool append, bool create){
 	return fd;
 }
 
-
 int gibClose(int fd){
 	return 0;
 }
 
+
+/* Misc */
 void wconsole(char* ptr, int len){
 
 	Console.putString(ptr[0..len]);
@@ -120,6 +129,30 @@ void exit(int val) {
 	return Syscalls.exit(val);
 }
 
-ulong initHeap(){
-	return heapStart;
+
+/* Directories */
+
+//int mkdir(const char *pathname, mode_t mode)
+int mkdir(char *pathname, uint mode){
+	// no-op; we don't have directories
+	return 0;
+}
+
+//int rmdir(const char *pathname)
+int rmdir(char *pathname){
+	// XXX: delete files with the give prefix
+	return 0;
+}
+
+//char *getcwd(char *buf, size_t size)
+char *getcwd(char *buf, ulong size){
+	// XXX: get CWD from key value store in bottle
+	char[] name = "/postmark";
+	
+	uint len = ((size-1) > name.length) ? name.length : size;
+
+	buf[0..len] = name[0..len];
+	buf[len] = '\0';
+
+	return buf;
 }
