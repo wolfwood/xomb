@@ -420,6 +420,8 @@ align(1) struct XombThread {
 			// FUTURE: might decide to _create_ a thread for task queue or idle/background work
 			cmp RDX, 0;
 			// XXX: requires a stack?
+			mov RDI, 0;
+			mov RSI, 1;
 			jz Syscall.yield;
 
 
