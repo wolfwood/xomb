@@ -98,6 +98,7 @@ struct ScheduleArgs {
 
 struct YieldArgs {
 	AddressSpace dest;
+	ulong idx;
 }
 
 // XXX: This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason

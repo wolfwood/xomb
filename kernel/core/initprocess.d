@@ -60,6 +60,9 @@ struct InitProcess{
 
 		bottle.setArgv("init and args");
 
+    // this page table becomes init's page table.  Init is its own [grand]mother.
+    root.getOrCreateTable(255).entries[0].pml = root.entries[511].pml;
+
 		return ErrorVal.Success; 
 	}
 
