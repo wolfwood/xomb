@@ -419,7 +419,8 @@ align(1) struct XombThread {
 			// if tail is also null, cpu is uneeded, so yield
 			// FUTURE: might decide to _create_ a thread for task queue or idle/background work
 			cmp RDX, 0;
-			// XXX: requires a stack?
+			// a temp stack, cuz syscalls use them.  XXX: only one stack :/
+			mov RSP, syscallStack.ptr;
 			mov RDI, 0;
 			mov RSI, 1;
 			jz Syscall.yield;
@@ -504,4 +505,7 @@ private:
 	const uint headOffset = 0, tailOffset = ulong.sizeof;
 
 	uint numThreads = 0;
+
+
+	ulong[16] yieldStack;
 }
