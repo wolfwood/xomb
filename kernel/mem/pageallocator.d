@@ -48,10 +48,11 @@ public:
 
 	void* allocPage() {
 		if (!_initialized) {
+		  // Make _start appear somewhere reasonable
+		  // In this case, make sure it is at the start of a 16MB section of RAM
+		  static const PREINITIALIZED_BUFFER_SIZE = 64 * 1024 * 1024;
+
 			if (_start is null) {
-				// Make _start appear somewhere reasonable
-				// In this case, make sure it is at the start of a 16MB section of RAM
-				static const PREINITIALIZED_BUFFER_SIZE = 16 * 1024 * 1024;
 
 				// Assume first that we need to start at the end of the kernel
 				_start = System.kernel.start + System.kernel.length;
@@ -76,6 +77,11 @@ public:
 			// Simply allocate the next page
 			ubyte* ret = _curpos;
 			_curpos += VirtualMemory.pagesize();
+
+			if((_start + PREINITIALIZED_BUFFER_SIZE) < _curpos){
+			  kprintfln!("{} {} {x}")(_start, _curpos, PREINITIALIZED_BUFFER_SIZE);
+			  assert(1 == 0);
+			}
 			return ret;
 		}
 
