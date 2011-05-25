@@ -36,8 +36,10 @@ ErrorVal initialize() {
 	// 8 bits per byte, 8 bytes for ulong.
 	// We can store the availability of a page for 64 pages per ulong.
 
-	bitmapPages = totalPages / 64;
-	if ((totalPages % 64) > 0) { bitmapPages++; }
+	const uint bitsPerPage = 4096 * 8;
+
+	bitmapPages = totalPages / bitsPerPage;
+	if ((totalPages % bitsPerPage) > 0) { bitmapPages++; }
 
 	ulong bitmapSize = bitmapPages * VirtualMemory.pagesize();
 	// Zero out bitmap initially
