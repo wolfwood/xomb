@@ -28,7 +28,7 @@ ubyte* startBSS = &_bss;
 ubyte* endBSS = &_end;
 
 // Upcall Vector Table
-void function()[2] UVT = [&start, &XombThread._enterThreadScheduler];
+void function()[3] UVT = [&start, &XombThread._enterThreadScheduler, &XombThread._enterThreadScheduler];
 extern(C) ubyte* UVTbase = cast(ubyte*)UVT.ptr;
 
 ubyte[1024] tempStack;

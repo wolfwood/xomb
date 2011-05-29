@@ -64,8 +64,8 @@ public:
 		return Paging.createAddressSpace();
 	}
 
-	ErrorVal switchAddressSpace(AddressSpace as = null){
-		return Paging.switchAddressSpace(as);
+	ErrorVal switchAddressSpace(AddressSpace as, out ulong oldRoot){
+		return Paging.switchAddressSpace(as, oldRoot);
 	}
 
 	public import user.environment : findFreeSegment;

@@ -53,6 +53,8 @@ struct MessageInAbottle {
 	bool stdinIsTTY, stdoutIsTTY;
 	char[][] argv;
 
+	int exitCode;
+
 	// assumes alloc on write beyond end of exe
 	void setArgv(char[][] parentArgv, ubyte[] to = (cast(ubyte*)oneGB)[0..oneGB]){
 		// assumes allocation on write region exists immediately following bottle

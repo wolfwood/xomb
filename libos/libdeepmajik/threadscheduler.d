@@ -376,7 +376,7 @@ align(1) struct XombThread {
 		if(numThreads == 0){
 			assert(schedQueueStorage.head == schedQueueStorage.tail && schedQueueStorage.tail == schedQueueStorage.tail2);
 
-			Syscall.exit(0);
+			Syscall.yield(null, 2UL);
 		}else{
 			//freePage(cast(ubyte*)(cast(ulong)thread & (~ 0xFFFUL)));
 		
@@ -504,4 +504,12 @@ private:
 	const uint headOffset = 0, tailOffset = ulong.sizeof;
 
 	uint numThreads = 0;
+}
+
+void exit(int err){
+	MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
+
+	bottle.exitCode = err;
+
+	XombThread.threadExit();
 }

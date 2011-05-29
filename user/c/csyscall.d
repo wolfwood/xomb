@@ -8,6 +8,7 @@ import libos.fs.minfs;
 import mindrt.util;
 
 import libos.libdeepmajik.umm;
+import Sched = libos.libdeepmajik.threadscheduler;
 
 extern(C):
 
@@ -117,16 +118,12 @@ void wconsole(char* ptr, int len){
 	Console.putString(ptr[0..len]);
 }
 
-int allocPage(void* virtAddr) {
-	return Syscalls.allocPage(virtAddr);
-}
-
 void perfPoll(int event) {
 	return Syscalls.perfPoll(event);
 }
 
-void exit(int val) {
-	return Syscalls.exit(val);
+void exit(ulong val) {
+	return Sched.exit(val);
 }
 
 

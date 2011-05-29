@@ -20,6 +20,9 @@ import kernel.system.info;
 // gibs!
 import architecture.vm;
 
+// enterUserspace()
+import architecture.cpu;
+
 // AccessMode, why is this here?
 import user.environment;
 
@@ -66,75 +69,22 @@ struct InitProcess{
 		return ErrorVal.Success; 
 	}
 
-
-	void enter(){
-		// use CPUid as vector index and sysret to 1 GB
-
-		// jump using sysret to 1GB for stackless entry
-		ulong mySS = ((8UL << 3) | 3);
-		ulong myRSP = 0;
-		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
-		ulong myCS = ((9UL << 3) | 3);
-		ulong entry = oneGB + ulong.sizeof*2;
-
-		asm{
-			movq R11, mySS;
-			pushq R11;
-			
-			movq R11, myRSP;
-			pushq R11;
-
-			movq R11, myFLAGS;
-			pushq R11;
-
-			movq R11, myCS;
-			pushq R11;
-
-			movq R11, entry;
-			pushq R11;
-
-			movq RDI, 1;
-
-			iretq;
-		}
-	}
-
 	void enterFromBSP(){
+		// init shouldn't care where its entered from
+		ulong physAddr = 0;
+
 		// jump using sysret to 1GB for stackless entry
-		ulong mySS = ((8UL << 3) | 3);
-		ulong myRSP = 0;
-		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
-		ulong myCS = ((9UL << 3) | 3);
-		ulong entry = oneGB + ulong.sizeof*2;
-
-		asm{
-			movq R11, mySS;
-			pushq R11;
-			
-			movq R11, myRSP;
-			pushq R11;
-
-			movq R11, myFLAGS;
-			pushq R11;
-
-			movq R11, myCS;
-			pushq R11;
-
-			movq R11, entry;
-			pushq R11;
-
-			movq RDI, 0;
-
-			iretq;
-		}
+		Cpu.enterUserspace(0, physAddr);
 	}
 
 	void enterFromAP(){
-		// wait for acknoledgement?
-
-		// jump using sysret to 1GB for stackless entry
-
+		// wait for acknowledgement?
 		for(;;){}
+
+
+		ulong physAddr = 0;
+
+		Cpu.enterUserspace(1, physAddr);
 	}
 
 private:

@@ -338,6 +338,40 @@ public:
 		return _stacks[identifier];
 	}
 
+	//noreturn
+  void enterUserspace(ulong idx, ulong calleePhysAddr){
+		// use CPUid as vector index and sysret to 1 GB
+
+		// jump using sysret to 1GB for stackless entry
+		ulong mySS = ((8UL << 3) | 3);
+		ulong myRSP = 0;
+		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
+		ulong myCS = ((9UL << 3) | 3);
+		ulong entry = oneGB + ulong.sizeof*2;
+
+		asm{
+			movq R11, mySS;
+			pushq R11;
+			
+			movq R11, myRSP;
+			pushq R11;
+
+			movq R11, myFLAGS;
+			pushq R11;
+
+			movq R11, myCS;
+			pushq R11;
+
+			movq R11, entry;
+			pushq R11;
+
+			movq RDI, idx;
+			movq RSI, calleePhysAddr;
+
+			iretq;
+		}
+  }
+			    
 private:
 
 	/*

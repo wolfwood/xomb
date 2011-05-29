@@ -313,7 +313,7 @@ static:
 		return cast(AddressSpace)addressSpace;
 	}
 
-	synchronized ErrorVal switchAddressSpace(AddressSpace as){
+	synchronized ErrorVal switchAddressSpace(AddressSpace as, out ulong oldRoot){
 
 		if(as is null){
 			// XXX - just decode phys addr directly?
@@ -331,6 +331,8 @@ static:
 		PageLevel1* pl1 = pl2.getTable(indexL2);
 
 		ulong newPhysRoot = cast(ulong)pl1.entries[indexL1].location();
+
+		oldRoot = cast(ulong)root.entries[511].location();
 
 		asm{
 			mov RAX, newPhysRoot;

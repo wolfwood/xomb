@@ -27,37 +27,6 @@ public:
 
 	// Syscall Implementations
 
-	SyscallError allocPage(out int ret, AllocPageArgs* params) {
-
-	assert(false);
-
-	/*
-		synchronized {
-			Environment* current = Scheduler.current();
-
-			if (current.alloc(params.virtualAddress, 4096, true) == ErrorVal.Fail) {
-				ret = -1;
-				kprintfln!("allocPage({}): FAIL")(params.virtualAddress);
-				return SyscallError.Failcopter;
-			}	
-
-			ret = 0;
-
-			return SyscallError.OK;
-			}*/
-	}
-
-	// void exit(ulong retval)
-	SyscallError exit(ExitArgs* params) {
-
-		VirtualMemory.switchAddressSpace();
-
-		InitProcess.enter();
-
-		// You DO NOT return from exit... NEVER
-		return SyscallError.Failcopter;
-	}
-
 	// Memory manipulation system calls
 
 	// ubyte* location = open(AddressSpace dest, ubyte* address, int mode);
@@ -82,12 +51,12 @@ public:
 	}
 
 	// close(ubyte* location);
-	SyscallError close(CloseArgs* params) {
+	/*SyscallError close(CloseArgs* params) {
 		// Unmap the resource.
 		VirtualMemory.closeSegment(params.location);
 
 		return SyscallError.Failcopter;
-	}
+		}*/
 
 	// Scheduling system calls
 
@@ -99,13 +68,7 @@ public:
 		return SyscallError.Failcopter;
 	}
 
-	// schedule(AddressSpace dest);
-	SyscallError schedule(ScheduleArgs* params) {
-		return SyscallError.Failcopter;
-	}
-
 	// Userspace performance monitoring shim
-
 	SyscallError perfPoll(PerfPollArgs* params) {
 		synchronized {
 			static ulong[256] value;
@@ -140,45 +103,21 @@ public:
 		// lol... do this BEFORE switching address spaces
 		ulong idx = params.idx;
 
-		if(idx == 0){
+		if(idx == 0 || idx == 2){
 			// XXX: ensure current address space is params.dest's parent
 		}
 
-		if(idx > 1){
+		if(idx > 2){
 			return SyscallError.Failcopter;
 		}
 
-		if(VirtualMemory.switchAddressSpace(params.dest) == ErrorVal.Fail){
+		ulong physAddr;
+
+		if(VirtualMemory.switchAddressSpace(params.dest, physAddr) == ErrorVal.Fail){
 			return SyscallError.Failcopter;
 		}
 
-		ulong mySS = ((8UL << 3) | 3);
-		ulong myRSP = 0;
-		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
-		ulong myCS = ((9UL << 3) | 3);
-		ulong entry = oneGB + ulong.sizeof*2;
-
-		asm{
-			movq R11, mySS;
-			pushq R11;
-                        
-			movq R11, myRSP;
-			pushq R11;
-
-			movq R11, myFLAGS;
-			pushq R11;
-
-			movq R11, myCS;
-			pushq R11;
-
-			movq R11, entry;
-			pushq R11;
-
-			movq RDI, idx;
-
-			iretq;
-		}
-
+		Cpu.enterUserspace(idx, physAddr);
 	}
 }
 
