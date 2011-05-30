@@ -72,14 +72,14 @@ static:
 		*root = PageLevel4.init;
 		*globalRoot = PageLevel3.init;
 
-		// Map entries 511 to the PML4
-		root.entries[511].pml = cast(ulong)root;
-		root.entries[511].present = 1;
+		// Map entries 510 to the PML4
+		root.entries[510].pml = cast(ulong)root;
+		root.entries[510].present = 1;
 
 		/*
-		root.entries[511].rw = 1;
+		root.entries[510].rw = 1;
 		root.entries[510].rw = 0;
-		root.entries[511].us = 0;
+		root.entries[510].us = 0;
 		root.entries[510].us = 1;
 
 		*/
@@ -89,7 +89,7 @@ static:
 			 and the code below becomes a giant security hole... we need a
 			 different paging trick for userspace I guess
 		 */
-		root.entries[511].us = 1;
+		root.entries[510].us = 1;
 
 		// Map entry 509 to the global root
 		root.entries[509].pml = cast(ulong)globalRoot;
@@ -122,7 +122,7 @@ static:
 		rootPhysical = cast(void*)root;
 
 		// This is the virtual address for the page table
-		root = cast(PageLevel4*)0xFFFFFFFF_FFFFF000;
+		root = cast(PageLevel4*)0xFFFFFF7F_BFDFE000;
 
 		// All is well.
 		return ErrorVal.Success;
@@ -297,15 +297,15 @@ static:
 		addressSpace.entries[256].pml = root.entries[256].pml;
 		addressSpace.entries[509].pml = root.entries[509].pml;
 
-		addressSpace.entries[511].pml = cast(ulong)newRootPhysAddr;
-		addressSpace.entries[511].present = 1;
-		//addressSpace.entries[511].rw = 1;
-		addressSpace.entries[511].us = 1;
+		addressSpace.entries[510].pml = cast(ulong)newRootPhysAddr;
+		addressSpace.entries[510].present = 1;
+		//addressSpace.entries[510].rw = 1;
+		addressSpace.entries[510].us = 1;
 
 
 		// insert parent into child
 		 PageLevel1* fakePl3 = addressSpace.getOrCreateTable(255);
-		fakePl3.entries[0].pml = root.entries[511].pml;
+		fakePl3.entries[0].pml = root.entries[510].pml;
 		fakePl3.entries[0].present = 1;
 		// child should not be able to edit parent's root table
 		fakePl3.entries[0].rw = 0;
@@ -332,7 +332,7 @@ static:
 
 		ulong newPhysRoot = cast(ulong)pl1.entries[indexL1].location();
 
-		oldRoot = cast(ulong)root.entries[511].location();
+		oldRoot = cast(ulong)root.entries[510].location();
 
 		asm{
 			mov RAX, newPhysRoot;
@@ -391,7 +391,7 @@ static:
 		PageLevel1* pl1 = pl2.getTable(indexL2);
 		ulong addr = cast(ulong)pl1.entries[indexL1].location();
 
-		ulong oldRoot = cast(ulong)root.entries[511].location();
+		ulong oldRoot = cast(ulong)root.entries[510].location();
 		
 		// Now, figure out the physical address of the gib root.
 

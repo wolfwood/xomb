@@ -324,7 +324,7 @@ struct PageLevel4 {
 		}
 			
 		// Calculate virtual address
-		return cast(PageLevel3*)(0xFFFFFFFF_FFE00000 + (idx << 12));
+		return cast(PageLevel3*)(0xFFFFFF7F_BFC00000 + (idx << 12));
 	}
 
 	version(KERNEL){
@@ -349,7 +349,7 @@ struct PageLevel4 {
 				entries[idx].us = usermode;
 				
 				// Calculate virtual address
-				ret = cast(PageLevel3*)(0xFFFFFFFF_FFE00000 + (idx << 12));
+				ret = cast(PageLevel3*)(0xFFFFFF7F_BFC00000 + (idx << 12));
 				
 				*ret = PageLevel3.init;
 			}
@@ -370,7 +370,7 @@ struct PageLevel3 {
 		ulong baseAddr = cast(ulong)this;
 		baseAddr &= 0x1FF000;
 		baseAddr >>= 3;
-		return cast(PageLevel2*)(0xFFFFFFFF_C0000000 + ((baseAddr + idx) << 12));
+		return cast(PageLevel2*)(0xFFFFFF7F_80000000 + ((baseAddr + idx) << 12));
 	}
 
 	version(KERNEL){
@@ -398,7 +398,7 @@ struct PageLevel3 {
 				ulong baseAddr = cast(ulong)this;
 				baseAddr &= 0x1FF000;
 				baseAddr >>= 3;
-				ret = cast(PageLevel2*)(0xFFFFFFFF_C0000000 + ((baseAddr + idx) << 12));
+				ret = cast(PageLevel2*)(0xFFFFFF7F_80000000 + ((baseAddr + idx) << 12));
 				
 				*ret = PageLevel2.init;
 				//if (usermode) { kprintfln!("creating pl3 {}")(idx); }
@@ -423,7 +423,7 @@ struct PageLevel2 {
 		ulong baseAddr = cast(ulong)this;
 		baseAddr &= 0x3FFFF000;
 		baseAddr >>= 3;
-		return cast(PageLevel1*)(0xFFFFFF80_00000000 + ((baseAddr + idx) << 12));
+		return cast(PageLevel1*)(0xFFFFFF00_00000000 + ((baseAddr + idx) << 12));
 	}
 
 	version(KERNEL){
@@ -452,7 +452,7 @@ struct PageLevel2 {
 				ulong baseAddr = cast(ulong)this;
 				baseAddr &= 0x3FFFF000;
 				baseAddr >>= 3;
-				ret = cast(PageLevel1*)(0xFFFFFF80_00000000 + ((baseAddr + idx) << 12));
+				ret = cast(PageLevel1*)(0xFFFFFF00_00000000 + ((baseAddr + idx) << 12));
 				
 				*ret = PageLevel1.init;
 				//				if (usermode) { kprintfln!("creating pl2 {}")(idx); }
@@ -522,7 +522,7 @@ bool isValidAddress(ubyte* addr){
 	return false;
 }
 
-const PageLevel4* root = cast(PageLevel4*)0xFFFFFFFF_FFFFF000;
+const PageLevel4* root = cast(PageLevel4*)0xFFFFFF7F_BFDFE000;
 
 // This function will get the physical address that is mapped from the
 // specified virtual address.
