@@ -49,6 +49,9 @@ public:
 		Log.print("Cpu: Verifying");
 		Log.result(verify());
 
+		// enable NX bit support
+		Cpu.writeMSR(0xC0000080, Cpu.readMSR(0xC0000080)|0x800UL);
+
 		Log.print("Cpu: Installing Page Table");
 		Log.result(Paging.install());
 
