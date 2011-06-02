@@ -300,6 +300,51 @@ struct SecondaryField {
 	ubyte* location() {
 		return cast(ubyte*)(cast(ulong)address() << 12);
 	}
+
+	AccessMode getMode(){
+		AccessMode mode;
+
+		if(present){
+			if(rw){
+				mode |= AccessMode.Writable;
+			}
+			if(us){
+				mode |= AccessMode.User;
+			}
+			if(!nx){
+				mode |= AccessMode.Executable;
+			}
+
+			mode |= available;
+		}
+
+		return mode;
+	}
+
+	version(KERNEL){
+		void setMode(AccessMode mode){
+			present = 1;
+		  available = mode & AccessMode.AvailableMask;
+
+			if(mode & AccessMode.Writable){
+				rw = 1;
+			}else{
+				rw = 0;
+			}
+
+			if(mode & AccessMode.User){
+				us = 1;
+			}else{
+				us = 0;
+			}
+
+			if(mode & AccessMode.Executable){
+				nx = 0;
+			}else{
+				nx = 1;
+			}
+		}
+	}
 }
 	
 struct PrimaryField {
@@ -323,6 +368,51 @@ struct PrimaryField {
 
 	ubyte* location() {
 		return cast(ubyte*)(cast(ulong)address() << 12);
+	}
+
+	AccessMode getMode(){
+		AccessMode mode;
+
+		if(present){
+			if(rw){
+				mode |= AccessMode.Writable;
+			}
+			if(us){
+				mode |= AccessMode.User;
+			}
+			if(!nx){
+				mode |= AccessMode.Executable;
+			}
+
+			mode |= available;
+		}
+
+		return mode;
+	}
+
+	version(KERNEL){
+		void setMode(AccessMode mode){
+			present = 1;
+		  available = mode & AccessMode.AvailableMask;			
+
+			if(mode & AccessMode.Writable){
+				rw = 1;
+			}else{
+				rw = 0;
+			}
+
+			if(mode & AccessMode.User){
+				us = 1;
+			}else{
+				us = 0;
+			}
+
+			if(mode & AccessMode.Executable){
+				nx = 0;
+			}else{
+				nx = 1;
+			}
+		}
 	}
 }
 
@@ -568,3 +658,61 @@ void translateAddress( void* virtAddress,
 	vAddr >>= 9;
 	indexLevel4 = vAddr & 0x1ff;
 }
+
+AccessMode combineModes(AccessMode a, AccessMode b){
+	AccessMode and, or;
+
+	and = a & b & ~AccessMode.AvailableMask;
+	or = (a | b) & AccessMode.AvailableMask;
+
+	return and | or;
+}
+
+AccessMode modesForAddress(ubyte* addr){
+	ulong indexL4, indexL3, indexL2, indexL1;
+	translateAddress(addr, indexL1, indexL2, indexL3, indexL4);
+
+	AccessMode flags;
+
+	// check for gib status
+	PageLevel3* pl3 = root.getTable(indexL4);
+	if (pl3 !is null) {
+		flags = root.entries[indexL4].getMode();
+
+		PageLevel2* pl2 = pl3.getTable(indexL3);
+		if (pl2 !is null) {
+			flags = combineModes(flags, pl3.entries[indexL3].getMode());
+
+			PageLevel1* pl1 = pl2.getTable(indexL2);
+			if (pl1 !is null) {
+				// Complete translation
+				flags = combineModes(flags, pl2.entries[indexL2].getMode());
+
+				if(pl1.physicalAddress(indexL1) !is null){
+					flags = combineModes(flags, pl1.entries[indexL1].getMode());
+				}
+			}
+		}
+	}
+
+	return flags;
+}
+
+/*
+template traversal(T = PageLevel4){
+	void traversal(function op!(T)(ubyte* addr, T table)){
+
+		static if(T is PageLevel4){
+			ulong indexL4, indexL3, indexL2, indexL1;
+			translateAddress(addr, indexL1, indexL2, indexL3, indexL4);
+
+			// check for gib status
+			PageLevel3* pl3 = table.getTable(indexL4);
+			if (pl3 is null) {
+				
+			}
+		}
+
+	}
+}
+*/

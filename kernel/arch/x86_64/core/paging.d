@@ -74,27 +74,16 @@ static:
 
 		// Map entries 510 to the PML4
 		root.entries[510].pml = cast(ulong)root;
-		root.entries[510].present = 1;
-
-		/*
-		root.entries[510].rw = 1;
-		root.entries[510].rw = 0;
-		root.entries[510].us = 0;
-		root.entries[510].us = 1;
-
-		*/
+		root.entries[510].setMode(AccessMode.Read|AccessMode.User);
 
 		/* currently the kernel isn't forced to respect the rw bit. if
-			 this is enabled, the code above will also need to be enabled,
-			 and the code below becomes a giant security hole... we need a
-			 different paging trick for userspace I guess
+			 this is enabled, another paging trick will be needed with
+			 Writable permission for the kernel
 		 */
-		root.entries[510].us = 1;
 
 		// Map entry 509 to the global root
 		root.entries[509].pml = cast(ulong)globalRoot;
-		root.entries[509].present = 1;
-		root.entries[509].rw = 1;
+		root.entries[509].setMode(AccessMode.Read);
 
 		// The current position of the kernel space. All gets appended to this address.
 		heapAddress = LinkerScript.kernelVMA;
@@ -279,6 +268,7 @@ static:
 		for(uint i = 1; i < 512; i++) {
 			if (addressRoot.getTable(i) is null) {
 				addressRoot.setTable(i, newRootPhysAddr, false);
+				addressRoot.entries[i].setMode(AccessMode.RootPageTable);
 				addressSpace = addressRoot.getTable(i);
 				idx = i;
 				break;
@@ -298,17 +288,15 @@ static:
 		addressSpace.entries[509].pml = root.entries[509].pml;
 
 		addressSpace.entries[510].pml = cast(ulong)newRootPhysAddr;
-		addressSpace.entries[510].present = 1;
-		//addressSpace.entries[510].rw = 1;
-		addressSpace.entries[510].us = 1;
+		addressSpace.entries[510].setMode(AccessMode.User);
 
 
 		// insert parent into child
 		 PageLevel1* fakePl3 = addressSpace.getOrCreateTable(255);
 		fakePl3.entries[0].pml = root.entries[510].pml;
-		fakePl3.entries[0].present = 1;
 		// child should not be able to edit parent's root table
-		fakePl3.entries[0].rw = 0;
+		fakePl3.entries[0].setMode(AccessMode.RootPageTable);
+
 
 		return cast(AddressSpace)addressSpace;
 	}
@@ -320,7 +308,11 @@ static:
 			as = cast(AddressSpace)root.getTable(255).getTable(0);
 		}
 
-		// XXX: error checking
+		// error checking
+		if((modesForAddress(as) & AccessMode.RootPageTable) == 0){
+			return ErrorVal.Fail;
+		}
+
 
 		ulong indexL4, indexL3, indexL2, indexL1;
 				
@@ -367,16 +359,19 @@ static:
 
 		PageLevel4* addressSpace;
 
-		// XXX: use switchAddressSpace() ?
 
-		// XXX: look for special bit or something, or that the pointer is
-		// within the AddressSpace area...
 		if(destinationRoot is null){
 			addressSpace = root;
 			destinationRoot = cast(AddressSpace)addressSpace;
 		}else{
+			// verify destinationRoot is a valid root page table
+			if((modesForAddress(destinationRoot) & AccessMode.RootPageTable) == 0){
+				return ErrorVal.Fail;
+			}
+
 			addressSpace = cast(PageLevel4*)destinationRoot;
 		}
+
 
 		// So. destinationRoot is the virtual address of the destination
 		// root page table within the source (current) page table.
@@ -400,6 +395,7 @@ static:
 		ubyte* locationAddr = cast(ubyte*)pl3.entries[indexL3].location();
 
 		// Goto the other address space
+		// XXX: use switchAddressSpace() ?
 		asm {
 			mov RAX, addr;
 			mov CR3, RAX;
