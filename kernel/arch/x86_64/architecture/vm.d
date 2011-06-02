@@ -78,7 +78,7 @@ public:
 	synchronized void* mapStack(void* physAddr) {
 		if(stackSegment is null){
 			stackSegment = findFreeSegment();
-			Paging.createGib(stackSegment, oneGB, AccessMode.Kernel|AccessMode.Writable);
+			Paging.createGib(stackSegment, oneGB, AccessMode.Writable);
 		}
 
 		stackSegment += Paging.PAGESIZE;

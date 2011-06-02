@@ -12,7 +12,7 @@ class UserspaceMemoryManager{
 	const uint pageSize = 4096;
 	
 	synchronized void initialize(){
-		stacks = create(stackGib, 1024*1024*1024, AccessMode.Writable);
+		stacks = create(stackGib, 1024*1024*1024, AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
 	}
 
 	synchronized ubyte* getPage(bool spacer = false){
@@ -46,10 +46,10 @@ class UserspaceMemoryManager{
 	ubyte[] initHeap(){
 		ulong i;
 		ubyte[] foo 
-			= create(cast(ubyte*)(20*oneGB), 1024*1024*1024, AccessMode.Writable);
+			= create(cast(ubyte*)(20*oneGB), 1024*1024*1024, AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
 
 		for(i = 1; i < 4; i++){
-			create(cast(ubyte*)((20+1)*oneGB), 1024*1024*1024, AccessMode.Writable);
+			create(cast(ubyte*)((20+1)*oneGB), 1024*1024*1024, AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
 		}
 
 		foo = foo.ptr[0..(i*oneGB)];

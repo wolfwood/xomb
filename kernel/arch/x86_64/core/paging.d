@@ -425,7 +425,7 @@ static:
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
 
-		bool usermode = (flags & AccessMode.Kernel) == 0;
+		bool usermode = (flags & AccessMode.User) != 0;
 
 		if (flags & AccessMode.Global) {
 			//XXX:  instead, getTable and isure this is created elsewhere for kernel/init
@@ -490,7 +490,7 @@ static:
 		ulong indexL4, indexL3, indexL2, indexL1;
 		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
 
-		bool usermode = (flags & AccessMode.Kernel) == 0;
+		bool usermode = (flags & AccessMode.User) != 0;
 		PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
 
 		pl3.setTable(indexL3, location, usermode);

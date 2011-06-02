@@ -25,7 +25,7 @@ enum AccessMode : uint {
 		MapOnce = 4,
 		CopyOnWrite = 8,
 		
-		PrivilgedGlobal = 16,
+		PrivilegedGlobal = 16,
 		PrivilegedExecutable = 32,
 
 		// use Indicators
@@ -33,16 +33,27 @@ enum AccessMode : uint {
 		RootPageTable = 128,
 		Device = 256, // good enough for isTTY?
 
+		// Permissions
+		Delete = 512,
 		// bits that are encoded in hardware defined PTE bits
 		Writable = 1<<  14,
-		Kernel = 1 << 15,
+		User = 1 << 15,
 		Executable = 1<< 16,
 		
 		// Size? - could be encoded w/ paging trick on address
 
 		// Default policies
-		DefaultUser = Writable,
-		DefaultKernel = Writable | AllocOnAccess | Kernel
+		DefaultUser = Writable | AllocOnAccess | User,
+		DefaultKernel = Writable | AllocOnAccess,
+
+		// flags that are always permitted in syscalls
+		SyscallStrictMask = Global | AllocOnAccess | MapOnce | CopyOnWrite | Writable 
+		  | User | Executable,
+
+		// Flags that go in the available bits
+		AvailableMask = Global | AllocOnAccess | MapOnce | CopyOnWrite | 
+		  PrivilegedGlobal | PrivilegedExecutable | Segment | RootPageTable |
+		  Device | Delete
 }
 
 
@@ -162,7 +173,7 @@ template populateChild(T){
 		}else{
 			ubyte* g = findFreeSegment!(false)();		
 
-			Syscall.create(g, oneGB, AccessMode.Writable);
+			Syscall.create(g, oneGB, AccessMode.Writable|AccessMode.User|AccessMode.Executable);
 
 			// XXX: instead of copying the whole thing we should only be duping the r/w data section 
 			uint len = *(cast(ulong*)f.ptr) + ulong.sizeof;
@@ -171,7 +182,7 @@ template populateChild(T){
 			f = g[0..f.length];
 		}
 
-		Syscall.map(child, f.ptr, dest, AccessMode.Writable);
+		Syscall.map(child, f.ptr, dest, AccessMode.Writable|AccessMode.User|AccessMode.Executable);
 
 		// bottle to bottle transfer of stdin/out isthe default case
 		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();

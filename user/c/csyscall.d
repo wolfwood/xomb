@@ -90,7 +90,7 @@ int gibOpen(char* name, uint nameLen, bool readOnly, bool append, bool create){
 	}
 
 	if(fd != -1){
-		File foo = MinFS.open(gibName, (readOnly ? AccessMode.Read : AccessMode.Writable), create);
+		File foo = MinFS.open(gibName, (readOnly ? AccessMode.Read : AccessMode.Writable) | AccessMode.User, create);
 		fdTable[fd].valid = true;
 
 		fdTable[fd].len = cast(ulong*)foo.ptr;

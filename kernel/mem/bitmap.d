@@ -30,7 +30,7 @@ ErrorVal initialize() {
 	totalPages = System.memory.length / VirtualMemory.pagesize();
 
 	// Get a gib for the page allocator
-	bitmapGib = cast(ulong*)VirtualMemory.createSegment(VirtualMemory.findFreeSegment(), oneGB, AccessMode.Kernel|AccessMode.Writable).ptr;
+	bitmapGib = cast(ulong*)VirtualMemory.createSegment(VirtualMemory.findFreeSegment(), oneGB, AccessMode.Writable).ptr;
 
 	// Calculate how much we need for the bitmap.
 	// 8 bits per byte, 8 bytes for ulong.

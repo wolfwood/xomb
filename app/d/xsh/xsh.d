@@ -133,7 +133,7 @@ void interpret(char[] str) {
 
 			AddressSpace child = createAddressSpace();
 
-			File f = MinFS.open(argumentPath, AccessMode.Writable);
+			File f = MinFS.open(argumentPath, AccessMode.User|AccessMode.Writable|AccessMode.Executable);
 
 			if(f is null){Console.putString("Binary Not Found!\n"); return;} 
 
@@ -237,19 +237,19 @@ void interpret(char[] str) {
 				testPathName[pathNameLength..(pathNameLength+len)] = arguments[0];
 
 				if(testPathName == MinFS.findPrefix(testPathName, idx)){
-					f = MinFS.open(testPathName, AccessMode.Writable);
+					f = MinFS.open(testPathName, AccessMode.User|AccessMode.Writable|AccessMode.Executable);
 					fallback = false;
 				}
 			}
 			else {
 				if(arguments[0] == MinFS.findPrefix(arguments[0], idx)){
-					f = MinFS.open(arguments[0], AccessMode.Writable);
+					f = MinFS.open(arguments[0], AccessMode.User|AccessMode.Writable|AccessMode.Executable);
 					fallback = false;
 				}
 			}
 
 			if(fallback){
-				f = MinFS.open("/binaries/posix", AccessMode.Writable);
+				f = MinFS.open("/binaries/posix", AccessMode.User|AccessMode.Writable|AccessMode.Executable);
 			}
 
 			assert(f !is null);

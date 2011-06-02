@@ -43,7 +43,7 @@ private:
 			ubyte[] data = cast(ubyte[])import(filename);
 
 			// create minFS file
-			File f =  MinFS.open(actualFilename, AccessMode.Writable, true);
+			File f =  MinFS.open(actualFilename, AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.User|AccessMode.Executable, true);
 
 			// populate
 			if(exe){

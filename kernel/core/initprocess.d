@@ -34,7 +34,7 @@ struct InitProcess{
 	ErrorVal install(){
 		uint idx, j;
 
-		char[] initname = "/binaries/init";
+		char[] initname = "init";
 				
 		// XXX: create null gib without alloc on access
 
@@ -55,10 +55,10 @@ struct InitProcess{
 		bottle.stdin = (cast(ubyte*)findFreeSegment!(false))[0..oneGB];
 
 		// * map in video and keyboard segments
-		VirtualMemory.mapSegment(null, Console.virtualAddress(), bottle.stdout.ptr, AccessMode.Writable);
+		VirtualMemory.mapSegment(null, Console.virtualAddress(), bottle.stdout.ptr, AccessMode.Writable|AccessMode.User);
 		bottle.stdoutIsTTY = true;
 
-		VirtualMemory.mapSegment(null, Keyboard.address, bottle.stdin.ptr, AccessMode.Writable);
+		VirtualMemory.mapSegment(null, Keyboard.address, bottle.stdin.ptr, AccessMode.Writable|AccessMode.User);
 		bottle.stdinIsTTY = true;
 
 		bottle.setArgv("init and args");
@@ -120,7 +120,7 @@ private:
 		//kprintfln!("Init found at module index {} with start {} and length{}")(idx, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
 
 		ubyte[] segmentBytes =
-			VirtualMemory.createSegment(cast(ubyte*)(segidx*oneGB), oneGB, AccessMode.Writable);
+			VirtualMemory.createSegment(cast(ubyte*)(segidx*oneGB), oneGB, AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Executable);
 
 		VirtualMemory.mapRegion(segmentBytes.ptr, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
 		
