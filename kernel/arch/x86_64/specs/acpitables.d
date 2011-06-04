@@ -14,7 +14,6 @@ import kernel.core.log;
 
 // The Info struct holds all of the information we will enumerating
 import kernel.arch.x86_64.core.info;
-import kernel.arch.x86_64.core.ioapic;
 import kernel.arch.x86_64.core.paging;
 
 // For memory map info
@@ -493,6 +492,24 @@ private:
 		// Set LocalAPIC Address
 		Info.localAPICAddress = cast(void*)ptrMADT.localAPICAddr;
 
+		// Initialize redirection entries to a 1-1 mapping
+
+		// The ACPI tables only show differences (that is, overrides) to
+		// this 1-1 mapping with various default settings
+
+		Info.numEntries = 16;
+		for (int i = 0; i < 16; i++) {
+			Info.redirectionEntries[i].destination = 0xff;
+			Info.redirectionEntries[i].interruptType = Info.InterruptType.Masked;
+			Info.redirectionEntries[i].triggerMode = Info.TriggerMode.EdgeTriggered;
+			Info.redirectionEntries[i].inputPinPolarity = Info.InputPinPolarity.HighActive;
+			Info.redirectionEntries[i].destinationMode = Info.DestinationMode.Logical;
+			Info.redirectionEntries[i].deliveryMode = Info.DeliveryMode.Fixed;
+			Info.redirectionEntries[i].sourceBusIRQ = i;
+		}
+
+		// For the overrides, read from the table
+
 		while(curByte < endByte) {
 			// read the type of structure it is
 			switch(*curByte) {
@@ -532,10 +549,14 @@ private:
 
 				case 2: // Interrupt Source Overrides
 					auto nmiInfo = cast(entryInterruptSourceOverride*)curByte;
+
+					Info.redirectionEntries[Info.numEntries].deliveryMode = Info.DeliveryMode.SystemManagementInterrupt;
 					break;
 
 				case 3: // NMI sources
 					auto nmiInfo = cast(entryNMISource*)curByte;
+
+					Info.redirectionEntries[Info.numEntries].deliveryMode = Info.DeliveryMode.NonMaskedInterrupt;
 					break;
 
 				case 4: // LINTn Sources (Local APIC NMI Sources)
