@@ -12,57 +12,36 @@ enum SyscallError : ulong {
 
 // IDs of the system calls
 enum SyscallID : ulong {
-	AllocPage,
-	Exit,
 	PerfPoll,
 	Open,
 	Create,
 	CreateAddressSpace,
 	Map,
-	Schedule,
 	Yield,
 }
 
 // Names of system calls
 alias Tuple! (
-	"allocPage",		// allocPage()
-	"exit",				// exit()
 	"perfPoll",			// perfPoll()
 	"open",				// open()
 	"create",			// create()
 	"createAddressSpace", // createAddressSpace()
 	"map",				// map()
-	"schedule",			// schedule()
 	"yield"			// yield()
 ) SyscallNames;
 
 
 // Return types for each system call
 alias Tuple! (
-	int,			// allocPage
-	void,			// exit
 	void,			// perfPoll
 	bool,			// open
 	ubyte[],		// create
 	AddressSpace,	// createAddressSpace
 	void,			// map
-	void,			// schedule
 	void			// yield
 ) SyscallRetTypes;
 
 // Parameters to system call
-
-struct AllocPageArgs {
-	void* virtualAddress;
-}
-
-struct ExitArgs {
-	long retVal;
-}
-
-struct ForkArgs {
-}
-
 struct OpenArgs {
 	ubyte* address;
 	AccessMode mode;
@@ -81,10 +60,6 @@ struct MapArgs {
 	AccessMode mode;
 }
 
-struct CloseArgs {
-	ubyte* location;
-}
-
 struct PerfPollArgs {
 	uint event;
 }
@@ -92,12 +67,9 @@ struct PerfPollArgs {
 struct CreateAddressSpaceArgs {
 }
 
-struct ScheduleArgs {
-	AddressSpace dest;
-}
-
 struct YieldArgs {
 	AddressSpace dest;
+	ulong idx;
 }
 
 // XXX: This template exists because of a bug in the DMDFE; something like Templ!(tuple[idx]) fails for some reason

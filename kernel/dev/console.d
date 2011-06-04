@@ -49,7 +49,7 @@ public:
 		ubyte* freeGib = VirtualMemory.findFreeSegment();
 		const ulong oneGB = 1024*1024*1024;
 
-		ubyte[] vid = VirtualMemory.createSegment(freeGib, oneGB, AccessMode.Writable | AccessMode.Kernel);
+		ubyte[] vid = VirtualMemory.createSegment(freeGib, oneGB, AccessMode.Writable);
 
 		MetaData* videoMetaData = cast(MetaData*)vid.ptr;
 		*videoMetaData = info;

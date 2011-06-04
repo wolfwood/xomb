@@ -22,7 +22,7 @@ struct Loader {
 		if(newgib is null){
 			newgib = 
 				Syscall.create(findFreeSegment!(false), oneGB, 
-											 AccessMode.Writable|AccessMode.AllocOnAccess);  
+											 AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
 		}
 
 		if(Elf.isValid(binary.ptr)){

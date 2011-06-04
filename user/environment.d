@@ -25,7 +25,7 @@ enum AccessMode : uint {
 		MapOnce = 4,
 		CopyOnWrite = 8,
 		
-		PrivilgedGlobal = 16,
+		PrivilegedGlobal = 16,
 		PrivilegedExecutable = 32,
 
 		// use Indicators
@@ -33,16 +33,27 @@ enum AccessMode : uint {
 		RootPageTable = 128,
 		Device = 256, // good enough for isTTY?
 
+		// Permissions
+		Delete = 512,
 		// bits that are encoded in hardware defined PTE bits
 		Writable = 1<<  14,
-		Kernel = 1 << 15,
+		User = 1 << 15,
 		Executable = 1<< 16,
 		
 		// Size? - could be encoded w/ paging trick on address
 
 		// Default policies
-		DefaultUser = Writable,
-		DefaultKernel = Writable | AllocOnAccess | Kernel
+		DefaultUser = Writable | AllocOnAccess | User,
+		DefaultKernel = Writable | AllocOnAccess,
+
+		// flags that are always permitted in syscalls
+		SyscallStrictMask = Global | AllocOnAccess | MapOnce | CopyOnWrite | Writable 
+		  | User | Executable,
+
+		// Flags that go in the available bits
+		AvailableMask = Global | AllocOnAccess | MapOnce | CopyOnWrite | 
+		  PrivilegedGlobal | PrivilegedExecutable | Segment | RootPageTable |
+		  Device | Delete
 }
 
 
@@ -52,6 +63,8 @@ struct MessageInAbottle {
 	ubyte[] stdout;
 	bool stdinIsTTY, stdoutIsTTY;
 	char[][] argv;
+
+	int exitCode;
 
 	// assumes alloc on write beyond end of exe
 	void setArgv(char[][] parentArgv, ubyte[] to = (cast(ubyte*)oneGB)[0..oneGB]){
@@ -160,7 +173,7 @@ template populateChild(T){
 		}else{
 			ubyte* g = findFreeSegment!(false)();		
 
-			Syscall.create(g, oneGB, AccessMode.Writable);
+			Syscall.create(g, oneGB, AccessMode.Writable|AccessMode.User|AccessMode.Executable);
 
 			// XXX: instead of copying the whole thing we should only be duping the r/w data section 
 			uint len = *(cast(ulong*)f.ptr) + ulong.sizeof;
@@ -169,7 +182,7 @@ template populateChild(T){
 			f = g[0..f.length];
 		}
 
-		Syscall.map(child, f.ptr, dest, AccessMode.Writable);
+		Syscall.map(child, f.ptr, dest, AccessMode.Writable|AccessMode.User|AccessMode.Executable);
 
 		// bottle to bottle transfer of stdin/out isthe default case
 		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
@@ -287,6 +300,51 @@ struct SecondaryField {
 	ubyte* location() {
 		return cast(ubyte*)(cast(ulong)address() << 12);
 	}
+
+	AccessMode getMode(){
+		AccessMode mode;
+
+		if(present){
+			if(rw){
+				mode |= AccessMode.Writable;
+			}
+			if(us){
+				mode |= AccessMode.User;
+			}
+			if(!nx){
+				mode |= AccessMode.Executable;
+			}
+
+			mode |= available;
+		}
+
+		return mode;
+	}
+
+	version(KERNEL){
+		void setMode(AccessMode mode){
+			present = 1;
+		  available = mode & AccessMode.AvailableMask;
+
+			if(mode & AccessMode.Writable){
+				rw = 1;
+			}else{
+				rw = 0;
+			}
+
+			if(mode & AccessMode.User){
+				us = 1;
+			}else{
+				us = 0;
+			}
+
+			if(mode & AccessMode.Executable){
+				nx = 0;
+			}else{
+				nx = 1;
+			}
+		}
+	}
 }
 	
 struct PrimaryField {
@@ -311,6 +369,51 @@ struct PrimaryField {
 	ubyte* location() {
 		return cast(ubyte*)(cast(ulong)address() << 12);
 	}
+
+	AccessMode getMode(){
+		AccessMode mode;
+
+		if(present){
+			if(rw){
+				mode |= AccessMode.Writable;
+			}
+			if(us){
+				mode |= AccessMode.User;
+			}
+			if(!nx){
+				mode |= AccessMode.Executable;
+			}
+
+			mode |= available;
+		}
+
+		return mode;
+	}
+
+	version(KERNEL){
+		void setMode(AccessMode mode){
+			present = 1;
+		  available = mode & AccessMode.AvailableMask;			
+
+			if(mode & AccessMode.Writable){
+				rw = 1;
+			}else{
+				rw = 0;
+			}
+
+			if(mode & AccessMode.User){
+				us = 1;
+			}else{
+				us = 0;
+			}
+
+			if(mode & AccessMode.Executable){
+				nx = 0;
+			}else{
+				nx = 1;
+			}
+		}
+	}
 }
 
 struct PageLevel4 {
@@ -322,7 +425,7 @@ struct PageLevel4 {
 		}
 			
 		// Calculate virtual address
-		return cast(PageLevel3*)(0xFFFFFFFF_FFE00000 + (idx << 12));
+		return cast(PageLevel3*)(0xFFFFFF7F_BFC00000 + (idx << 12));
 	}
 
 	version(KERNEL){
@@ -347,7 +450,7 @@ struct PageLevel4 {
 				entries[idx].us = usermode;
 				
 				// Calculate virtual address
-				ret = cast(PageLevel3*)(0xFFFFFFFF_FFE00000 + (idx << 12));
+				ret = cast(PageLevel3*)(0xFFFFFF7F_BFC00000 + (idx << 12));
 				
 				*ret = PageLevel3.init;
 			}
@@ -368,7 +471,7 @@ struct PageLevel3 {
 		ulong baseAddr = cast(ulong)this;
 		baseAddr &= 0x1FF000;
 		baseAddr >>= 3;
-		return cast(PageLevel2*)(0xFFFFFFFF_C0000000 + ((baseAddr + idx) << 12));
+		return cast(PageLevel2*)(0xFFFFFF7F_80000000 + ((baseAddr + idx) << 12));
 	}
 
 	version(KERNEL){
@@ -396,7 +499,7 @@ struct PageLevel3 {
 				ulong baseAddr = cast(ulong)this;
 				baseAddr &= 0x1FF000;
 				baseAddr >>= 3;
-				ret = cast(PageLevel2*)(0xFFFFFFFF_C0000000 + ((baseAddr + idx) << 12));
+				ret = cast(PageLevel2*)(0xFFFFFF7F_80000000 + ((baseAddr + idx) << 12));
 				
 				*ret = PageLevel2.init;
 				//if (usermode) { kprintfln!("creating pl3 {}")(idx); }
@@ -421,7 +524,7 @@ struct PageLevel2 {
 		ulong baseAddr = cast(ulong)this;
 		baseAddr &= 0x3FFFF000;
 		baseAddr >>= 3;
-		return cast(PageLevel1*)(0xFFFFFF80_00000000 + ((baseAddr + idx) << 12));
+		return cast(PageLevel1*)(0xFFFFFF00_00000000 + ((baseAddr + idx) << 12));
 	}
 
 	version(KERNEL){
@@ -450,7 +553,7 @@ struct PageLevel2 {
 				ulong baseAddr = cast(ulong)this;
 				baseAddr &= 0x3FFFF000;
 				baseAddr >>= 3;
-				ret = cast(PageLevel1*)(0xFFFFFF80_00000000 + ((baseAddr + idx) << 12));
+				ret = cast(PageLevel1*)(0xFFFFFF00_00000000 + ((baseAddr + idx) << 12));
 				
 				*ret = PageLevel1.init;
 				//				if (usermode) { kprintfln!("creating pl2 {}")(idx); }
@@ -520,7 +623,7 @@ bool isValidAddress(ubyte* addr){
 	return false;
 }
 
-const PageLevel4* root = cast(PageLevel4*)0xFFFFFFFF_FFFFF000;
+const PageLevel4* root = cast(PageLevel4*)0xFFFFFF7F_BFDFE000;
 
 // This function will get the physical address that is mapped from the
 // specified virtual address.
@@ -555,3 +658,61 @@ void translateAddress( void* virtAddress,
 	vAddr >>= 9;
 	indexLevel4 = vAddr & 0x1ff;
 }
+
+AccessMode combineModes(AccessMode a, AccessMode b){
+	AccessMode and, or;
+
+	and = a & b & ~AccessMode.AvailableMask;
+	or = (a | b) & AccessMode.AvailableMask;
+
+	return and | or;
+}
+
+AccessMode modesForAddress(ubyte* addr){
+	ulong indexL4, indexL3, indexL2, indexL1;
+	translateAddress(addr, indexL1, indexL2, indexL3, indexL4);
+
+	AccessMode flags;
+
+	// check for gib status
+	PageLevel3* pl3 = root.getTable(indexL4);
+	if (pl3 !is null) {
+		flags = root.entries[indexL4].getMode();
+
+		PageLevel2* pl2 = pl3.getTable(indexL3);
+		if (pl2 !is null) {
+			flags = combineModes(flags, pl3.entries[indexL3].getMode());
+
+			PageLevel1* pl1 = pl2.getTable(indexL2);
+			if (pl1 !is null) {
+				// Complete translation
+				flags = combineModes(flags, pl2.entries[indexL2].getMode());
+
+				if(pl1.physicalAddress(indexL1) !is null){
+					flags = combineModes(flags, pl1.entries[indexL1].getMode());
+				}
+			}
+		}
+	}
+
+	return flags;
+}
+
+/*
+template traversal(T = PageLevel4){
+	void traversal(function op!(T)(ubyte* addr, T table)){
+
+		static if(T is PageLevel4){
+			ulong indexL4, indexL3, indexL2, indexL1;
+			translateAddress(addr, indexL1, indexL2, indexL3, indexL4);
+
+			// check for gib status
+			PageLevel3* pl3 = table.getTable(indexL4);
+			if (pl3 is null) {
+				
+			}
+		}
+
+	}
+}
+*/

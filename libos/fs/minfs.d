@@ -33,14 +33,14 @@ class MinFS{
 	static:
 	// open the SuperSegment, allowing metadata reads and writes
 	void initialize(){
-		Syscall.create(createAddr(0,0,0,257), oneGB, AccessMode.Writable | AccessMode.Global);
+		Syscall.create(createAddr(0,0,0,257), oneGB, AccessMode.User|AccessMode.Writable|AccessMode.Global|AccessMode.AllocOnAccess);
 		
 		hdr = cast(Header*)createAddr(0,0,0,257);
 	}
 	
 	// this creates the 'SuperSegment', the super-block-like known-location which also happens to contain all the fs metadata (filenames)
 	void format(){
-		Syscall.create(createAddr(0,0,0,257), oneGB, AccessMode.Writable | AccessMode.Global);
+		Syscall.create(createAddr(0,0,0,257), oneGB, AccessMode.User|AccessMode.Writable|AccessMode.Global|AccessMode.AllocOnAccess);
 		
 		hdr = cast(Header*)createAddr(0,0,0,257);
 		
@@ -52,8 +52,14 @@ class MinFS{
 	File open(char[] name, AccessMode mode, bool createFlag = false){
 		File f = find(name);
 
+		mode |= AccessMode.User;
+
 		if((f is null) && createFlag){
 			f = alloc(name);
+
+			if(mode & AccessMode.Writable){
+				mode |= AccessMode.AllocOnAccess;
+			}
 
 			//ubyte[]
 			Syscall.create(f.ptr, f.length, mode | AccessMode.Global);
@@ -92,8 +98,10 @@ class MinFS{
 			return null;
 		}
 
+		// XXX: limit permessions to those that are allowed on the taget of the link
+
 		// Global bit means this operates on the global segment table that is mapped in to all AddressSpaces. this also means we leave the AS as null
-		Syscall.map(null, file.ptr, link.ptr, AccessMode.Writable | AccessMode.Global);
+		Syscall.map(null, file.ptr, link.ptr, AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Global);
 
 		return link;
 	}

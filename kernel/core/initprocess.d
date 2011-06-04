@@ -20,6 +20,9 @@ import kernel.system.info;
 // gibs!
 import architecture.vm;
 
+// enterUserspace()
+import architecture.cpu;
+
 // AccessMode, why is this here?
 import user.environment;
 
@@ -31,7 +34,7 @@ struct InitProcess{
 	ErrorVal install(){
 		uint idx, j;
 
-		char[] initname = "/binaries/init";
+		char[] initname = "init";
 				
 		// XXX: create null gib without alloc on access
 
@@ -52,86 +55,37 @@ struct InitProcess{
 		bottle.stdin = (cast(ubyte*)findFreeSegment!(false))[0..oneGB];
 
 		// * map in video and keyboard segments
-		VirtualMemory.mapSegment(null, Console.virtualAddress(), bottle.stdout.ptr, AccessMode.Writable);
+		VirtualMemory.mapSegment(null, Console.virtualAddress(), bottle.stdout.ptr, AccessMode.Writable|AccessMode.User);
 		bottle.stdoutIsTTY = true;
 
-		VirtualMemory.mapSegment(null, Keyboard.address, bottle.stdin.ptr, AccessMode.Writable);
+		VirtualMemory.mapSegment(null, Keyboard.address, bottle.stdin.ptr, AccessMode.Writable|AccessMode.User);
 		bottle.stdinIsTTY = true;
 
 		bottle.setArgv("init and args");
 
+    // this page table becomes init's page table.  Init is its own [grand]mother.
+    root.getOrCreateTable(255).entries[0].pml = root.entries[510].pml;
+		root.getTable(255).entries[0].setMode(AccessMode.RootPageTable);
+
 		return ErrorVal.Success; 
 	}
 
-
-	void enter(){
-		// use CPUid as vector index and sysret to 1 GB
-
-		// jump using sysret to 1GB for stackless entry
-		ulong mySS = ((8UL << 3) | 3);
-		ulong myRSP = 0;
-		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
-		ulong myCS = ((9UL << 3) | 3);
-		ulong entry = oneGB + ulong.sizeof*2;
-
-		asm{
-			movq R11, mySS;
-			pushq R11;
-			
-			movq R11, myRSP;
-			pushq R11;
-
-			movq R11, myFLAGS;
-			pushq R11;
-
-			movq R11, myCS;
-			pushq R11;
-
-			movq R11, entry;
-			pushq R11;
-
-			movq RDI, 1;
-
-			iretq;
-		}
-	}
-
 	void enterFromBSP(){
+		// init shouldn't care where its entered from
+		ulong physAddr = 0;
+
 		// jump using sysret to 1GB for stackless entry
-		ulong mySS = ((8UL << 3) | 3);
-		ulong myRSP = 0;
-		ulong myFLAGS = ((1UL << 9) | (3UL << 12));
-		ulong myCS = ((9UL << 3) | 3);
-		ulong entry = oneGB + ulong.sizeof*2;
-
-		asm{
-			movq R11, mySS;
-			pushq R11;
-			
-			movq R11, myRSP;
-			pushq R11;
-
-			movq R11, myFLAGS;
-			pushq R11;
-
-			movq R11, myCS;
-			pushq R11;
-
-			movq R11, entry;
-			pushq R11;
-
-			movq RDI, 0;
-
-			iretq;
-		}
+		Cpu.enterUserspace(0, physAddr);
 	}
 
 	void enterFromAP(){
-		// wait for acknoledgement?
-
-		// jump using sysret to 1GB for stackless entry
-
+		// wait for acknowledgement?
 		for(;;){}
+
+
+		ulong physAddr = 0;
+
+		Cpu.enterUserspace(1, physAddr);
 	}
 
 private:
@@ -167,7 +121,7 @@ private:
 		//kprintfln!("Init found at module index {} with start {} and length{}")(idx, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
 
 		ubyte[] segmentBytes =
-			VirtualMemory.createSegment(cast(ubyte*)(segidx*oneGB), oneGB, AccessMode.Writable);
+			VirtualMemory.createSegment(cast(ubyte*)(segidx*oneGB), oneGB, AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Executable);
 
 		VirtualMemory.mapRegion(segmentBytes.ptr, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
 		
