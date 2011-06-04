@@ -20,23 +20,28 @@ public:
 
 	// Information about specific memory regions
 	uint numRegions;
-	Region[25] regionInfo;
+	const uint MAX_REGIONS = 16;
+	Region[MAX_REGIONS] regionInfo;
 
 	// Information about modules that have been loaded
 	// during the boot process.
 	uint numModules;
-	Module[10] moduleInfo;
+	const uint MAX_MODULES = 16;
+	Module[MAX_MODULES] moduleInfo;
 
 	// Information about disks available to the system
 	uint numDisks;
-	Disk[10] diskInfo;
+	const uint MAX_DISKS = 16;
+	Disk[MAX_DISKS] diskInfo;
 
 	// Information about each processor available.
 	uint numProcessors = 1; // Assume at least one.
-	Processor[256] processorInfo;
+	const uint MAX_PROCESSORS = 256;
+	Processor[MAX_PROCESSORS] processorInfo;
 
 	uint numDevices;
-	Device[256] deviceInfo;
+	const uint MAX_DEVICES = 256;
+	Device[MAX_DEVICES] deviceInfo;
 
 	char[128] cmdlineStorage;
 	char[] cmdline;
