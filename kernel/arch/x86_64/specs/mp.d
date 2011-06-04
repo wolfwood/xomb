@@ -29,15 +29,13 @@ import kernel.arch.x86_64.core.ioapic;
 import kernel.system.info;
 
 // The struct for MP specification
-struct MP
-{
+struct MP {
 static:
 public:
 
 	// This function will search for the MP tables.
 	// It will return true when they have been found.
-	ErrorVal findTable()
-	{
+	ErrorVal findTable() {
 		// These two arrays define the regions to look for the table (in physical addresses)
 		static ubyte*[] checkStart	= [cast(ubyte*)0xf0000,	cast(ubyte*)0x9fc00];
 		static ulong[] checkLen = [0xffff, 0x400];
@@ -46,14 +44,12 @@ public:
 		MPFloatingPointer* tmp;
 
 		// For every region, scan for the table signature
-		foreach(i,val; checkStart)
-		{
+		foreach(i,val; checkStart) {
 			// scan() -- searches for the signature `_MP_`
 			val += cast(ulong)System.kernel.virtualStart;
 
 			tmp = scan(val, val + checkLen[i]);
-			if (tmp !is null)
-			{
+			if (tmp !is null) {
 				// The MP Table has been found, set
 				// our reference pointer.
 				mpFloating = tmp;
@@ -70,24 +66,20 @@ public:
 	// This function will utilize the table once it has been
 	// found and store the information in a convenient place
 	// for the IO APIC manager.
-	ErrorVal readTable()
-	{
+	ErrorVal readTable() {
 		// Does the MP Configuration Table exist?
-		if (mpFloating.mpFeatures1 == 0)
-		{
+		if (mpFloating.mpFeatures1 == 0) {
 			mpConfig = cast(MPConfigurationTable*)(cast(ulong)mpFloating.mpConfigPointer);
 
 			// Make sure we can read it through the paging
 			mpConfig = cast(MPConfigurationTable*)(cast(ubyte*)mpConfig + cast(ulong)System.kernel.virtualStart);
 
 			// Check the checksum of the configuration table
-			if (!isChecksumValid(cast(ubyte*)mpConfig, mpConfig.baseTableLength))
-			{
+			if (!isChecksumValid(cast(ubyte*)mpConfig, mpConfig.baseTableLength)) {
 				return ErrorVal.Fail;
 			}
 		}
-		else
-		{
+		else {
 			// This means that the configuration table is of the 'default'
 			// It is defined within the MP Specification
 
@@ -109,10 +101,8 @@ public:
 
 		uint lastState = 0;
 
-		for (uint i=0; i < mpConfig.entryCount; i++)
-		{
-			if (lastState > cast(int)(*curAddr))
-			{
+		for (uint i=0; i < mpConfig.entryCount; i++) {
+			if (lastState > cast(int)(*curAddr)) {
 				// Problem!
 
 				// The MP Specification denotes that entries appear in order.
@@ -121,8 +111,7 @@ public:
 
 			lastState = *curAddr;
 
-			switch(lastState)
-			{
+			switch(lastState) {
 				case 0: // Processor Entry
 
 					// Set the Processor Entry in the Info struct
