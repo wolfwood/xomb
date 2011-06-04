@@ -196,7 +196,6 @@ private:
 			Info.DeliveryMode deliveryMode,
 			ubyte interruptVector) {
 
-//		destinationField = 1;
 		int valuehi = destinationField;
 		valuehi <<= 24;
 

@@ -92,7 +92,12 @@ public:
 			return ErrorVal.Fail;
 		}
 
-		// read the MADT
+		// initalize Redirection Entries to a 1-1 mapping
+		if (initializeRedirectionEntries() != ErrorVal.Success) {
+			return ErrorVal.Fail;
+		}
+
+		// read the MADT for redirection overrides
 		return readMADT();
 	}
 
@@ -482,16 +487,7 @@ private:
 		// also has a null-terminated string associated with it //
 	}
 
-	ErrorVal readMADT() {
-		ubyte* curByte = (cast(ubyte*)ptrMADT) + MADT.sizeof;
-		ubyte* endByte = curByte + (ptrMADT.len - MADT.sizeof);
-
-		// account for the length byte (trust me, it is an optimization)
-		endByte--;
-
-		// Set LocalAPIC Address
-		Info.localAPICAddress = cast(void*)ptrMADT.localAPICAddr;
-
+	ErrorVal initializeRedirectionEntries() {
 		// Initialize redirection entries to a 1-1 mapping
 
 		// The ACPI tables only show differences (that is, overrides) to
@@ -507,6 +503,19 @@ private:
 			Info.redirectionEntries[i].deliveryMode = Info.DeliveryMode.Fixed;
 			Info.redirectionEntries[i].sourceBusIRQ = i;
 		}
+
+		return ErrorVal.Success;
+	}
+
+	ErrorVal readMADT() {
+		ubyte* curByte = (cast(ubyte*)ptrMADT) + MADT.sizeof;
+		ubyte* endByte = curByte + (ptrMADT.len - MADT.sizeof);
+
+		// account for the length byte (trust me, it is an optimization)
+		endByte--;
+
+		// Set LocalAPIC Address
+		Info.localAPICAddress = cast(void*)ptrMADT.localAPICAddr;
 
 		// For the overrides, read from the table
 
@@ -550,13 +559,58 @@ private:
 				case 2: // Interrupt Source Overrides
 					auto nmiInfo = cast(entryInterruptSourceOverride*)curByte;
 
-					Info.redirectionEntries[Info.numEntries].deliveryMode = Info.DeliveryMode.SystemManagementInterrupt;
+					Info.redirectionEntries[nmiInfo.globalSystemInterrupt].deliveryMode = Info.DeliveryMode.SystemManagementInterrupt;
+
+					switch (nmiInfo.el) {
+						default:
+						case 0:
+						case 1: // Edge Triggered
+							Info.redirectionEntries[nmiInfo.globalSystemInterrupt].triggerMode = Info.TriggerMode.EdgeTriggered;
+							break;
+						case 2: // Level Triggered
+							Info.redirectionEntries[nmiInfo.globalSystemInterrupt].triggerMode = Info.TriggerMode.LevelTriggered;
+							break;
+					}
+
+					switch (nmiInfo.po) {
+						default:
+						case 0:
+						case 1: // Active on a High
+							Info.redirectionEntries[nmiInfo.globalSystemInterrupt].inputPinPolarity = Info.InputPinPolarity.HighActive;
+							break;
+						case 2: // Active on a Low
+							Info.redirectionEntries[nmiInfo.globalSystemInterrupt].inputPinPolarity = Info.InputPinPolarity.LowActive;
+							break;
+					}
 					break;
 
 				case 3: // NMI sources
 					auto nmiInfo = cast(entryNMISource*)curByte;
 
-					Info.redirectionEntries[Info.numEntries].deliveryMode = Info.DeliveryMode.NonMaskedInterrupt;
+					Info.redirectionEntries[nmiInfo.globalSystemInterrupt].deliveryMode = Info.DeliveryMode.NonMaskedInterrupt;
+
+					switch (nmiInfo.el) {
+						default:
+						case 0:
+						case 1: // Edge Triggered
+							Info.redirectionEntries[nmiInfo.globalSystemInterrupt].triggerMode = Info.TriggerMode.EdgeTriggered;
+							break;
+						case 2: // Level Triggered
+							Info.redirectionEntries[nmiInfo.globalSystemInterrupt].triggerMode = Info.TriggerMode.LevelTriggered;
+							break;
+					}
+
+					switch (nmiInfo.po) {
+						default:
+						case 0:
+						case 1: // Active on a High
+							Info.redirectionEntries[nmiInfo.globalSystemInterrupt].inputPinPolarity = Info.InputPinPolarity.HighActive;
+							break;
+						case 2: // Active on a Low
+							Info.redirectionEntries[nmiInfo.globalSystemInterrupt].inputPinPolarity = Info.InputPinPolarity.LowActive;
+							break;
+					}
+
 					break;
 
 				case 4: // LINTn Sources (Local APIC NMI Sources)
