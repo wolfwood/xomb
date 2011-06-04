@@ -510,8 +510,10 @@ static:
 		// regionLength should be ceilinged to the page boundary
 		pagingLock.lock();
 		ulong curPhysAddr = cast(ulong)physAddr;
-		regionLength += (curPhysAddr % PAGESIZE);
-		curPhysAddr -= (curPhysAddr % PAGESIZE);
+		ulong diff = curPhysAddr % PAGESIZE;
+
+		regionLength += diff;
+		curPhysAddr -= diff;
 
 		// Set the new starting address
 		physAddr = cast(void*)curPhysAddr;
@@ -540,7 +542,7 @@ static:
 
 		// Return the position of this region
 		pagingLock.unlock();
-		return location;
+		return location + diff;
 	}
 
 	synchronized ulong mapRegion(PageLevel4* rootTable, void* physAddr, ulong regionLength, void* virtAddr = null, bool writeable = false) {
