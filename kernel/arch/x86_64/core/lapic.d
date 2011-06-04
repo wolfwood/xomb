@@ -118,7 +118,6 @@ private:
 	uint[256] APICIdToLogicalID = 0;
 
 	void initLocalApic(void* localAPICAddr) {
-		//kprintfln!("register space: {x}")(localAPICAddr);
 		ubyte* apicRange;
 
 		ulong MSRValue = Cpu.readMSR(0x1B);
