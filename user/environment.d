@@ -659,6 +659,13 @@ void translateAddress( void* virtAddress,
 	indexLevel4 = vAddr & 0x1ff;
 }
 
+// alternative translate address helper, good for recursive functions
+void getNextIndex(ref ulong addr, out ulong idx){
+	idx = (addr & 0xff8000000000) >> 39;
+	addr <<= 9;
+}
+
+
 AccessMode combineModes(AccessMode a, AccessMode b){
 	AccessMode and, or;
 
@@ -668,34 +675,43 @@ AccessMode combineModes(AccessMode a, AccessMode b){
 	return and | or;
 }
 
-AccessMode modesForAddress(ubyte* addr){
-	ulong indexL4, indexL3, indexL2, indexL1;
-	translateAddress(addr, indexL1, indexL2, indexL3, indexL4);
-
+AccessMode modesForAddress(ubyte* vAddr){
 	AccessMode flags;
+	
+	walk!(cm, typeof(root), AccessMode)(root, cast(ulong)vAddr, flags);
 
-	// check for gib status
-	PageLevel3* pl3 = root.getTable(indexL4);
-	if (pl3 !is null) {
-		flags = root.entries[indexL4].getMode();
+	return flags;
 
-		PageLevel2* pl2 = pl3.getTable(indexL3);
-		if (pl2 !is null) {
-			flags = combineModes(flags, pl3.entries[indexL3].getMode());
+}
 
-			PageLevel1* pl1 = pl2.getTable(indexL2);
-			if (pl1 !is null) {
-				// Complete translation
-				flags = combineModes(flags, pl2.entries[indexL2].getMode());
+template cm(T){
+	void cm(T table, uint idx, ref AccessMode flags){
+		if(!flags){
+			flags = table.entries[idx].getMode();
+		}else{
+			flags = combineModes(flags, table.entries[idx].getMode());
+		}
+	}
+}
 
-				if(pl1.physicalAddress(indexL1) !is null){
-					flags = combineModes(flags, pl1.entries[indexL1].getMode());
-				}
+
+// --- table manipulation templates ---
+template walk(alias U, T, S...){
+	void walk(T table, ulong addr, ref S s){
+		ulong idx;
+
+		getNextIndex(addr, idx);
+
+		if(table.entries[idx].present){
+			U(table, idx, s);
+
+			static if(!(is (T == PageLevel1*))){
+				auto table2 = table.getTable(idx);
+					
+				walk!(U, typeof(table2), S)(table2, addr, s);
 			}
 		}
 	}
-
-	return flags;
 }
 
 /*
