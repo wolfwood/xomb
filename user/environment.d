@@ -678,7 +678,7 @@ AccessMode combineModes(AccessMode a, AccessMode b){
 AccessMode modesForAddress(ubyte* vAddr){
 	AccessMode flags;
 	
-	walk!(cm, typeof(root), AccessMode)(root, cast(ulong)vAddr, flags);
+	walk!(cm)(root, cast(ulong)vAddr, flags);
 
 	return flags;
 
@@ -708,7 +708,7 @@ template walk(alias U, T, S...){
 			static if(!(is (T == PageLevel1*))){
 				auto table2 = table.getTable(idx);
 					
-				walk!(U, typeof(table2), S)(table2, addr, s);
+				walk!(U)(table2, addr, s);
 			}
 		}
 	}
