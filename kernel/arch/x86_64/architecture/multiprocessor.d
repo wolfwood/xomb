@@ -31,10 +31,10 @@ public:
 	// This module will conform to the interface
 	ErrorVal initialize() {
 		// 1. Look for the ACPI tables (preferred method)
-		if(ACPI.Tables.findTable() == ErrorVal.Success && ACPI.Tables.readTable() != ErrorVal.Success) {
-			return ErrorVal.Fail;
-		}
-		else {
+//		if(ACPI.Tables.findTable() == ErrorVal.Success && ACPI.Tables.readTable() == ErrorVal.Success) {
+			// ACPI tables parsed
+//		}
+//		else {
 			// 2. Fall back on looking for the MP tables
 
 			// 2a. Locate the MP Tables
@@ -47,7 +47,8 @@ public:
 			if (MP.readTable() != ErrorVal.Success) {
 				return ErrorVal.Fail;
 			}
-		}
+//			return ErrorVal.Fail;
+//		}
 
 		// 3a. Initialize Local APIC
 		Log.print("LocalAPIC: initialize()");

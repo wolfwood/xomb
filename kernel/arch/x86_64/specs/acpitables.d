@@ -502,6 +502,7 @@ private:
 			Info.redirectionEntries[i].destinationMode = Info.DestinationMode.Logical;
 			Info.redirectionEntries[i].deliveryMode = Info.DeliveryMode.Fixed;
 			Info.redirectionEntries[i].sourceBusIRQ = i;
+			Info.redirectionEntries[i].vector = 33 + i;
 		}
 
 		return ErrorVal.Success;
