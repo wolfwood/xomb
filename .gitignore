@@ -22,3 +22,4 @@ app/d/hello/hello
 app/fortran/hello/fhel
 app/d/init/init
 app/d/posix/posix
+app/c/simplymm/simplymm
