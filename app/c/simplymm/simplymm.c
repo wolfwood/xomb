@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cycle.h"
+
 #define MATRIX_DIM 2048
 
 struct bigint {
@@ -18,6 +20,11 @@ struct bigint {
 };
 
 void main() {
+	
+	ticks header_t0, header_t1, read_t0, read_t1, compute_t0, compute_t1, write_t0, write_t1;
+
+	header_t0 = getticks();
+
 	int** Y;
 	int** A;
 	int** B;
@@ -34,6 +41,9 @@ void main() {
 		B[i] = (int*)malloc(sizeof(int)*MATRIX_DIM);
 	}
 
+	header_t1 = getticks();
+
+	compute_t0 = getticks();
 	struct bigint bi;
 	for (i=0; i < MATRIX_DIM; i++) {
 		for (j=0; j < MATRIX_DIM; j++) {
@@ -42,6 +52,13 @@ void main() {
 			}
 		}
 	}
+	compute_t1 = getticks();
 
-	for(;;){}
+	read_t1 = read_t0 = 0;
+	write_t1 = write_t0 = 0;
+
+	printf("Header Elapsed : %f\n", elapsed(header_t1, header_t0));
+	printf("Read Elapsed : %f\n", elapsed(read_t1, read_t0));
+	printf("Compute Elapsed : %f\n", elapsed(compute_t1, compute_t0));
+	printf("Write Elapsed : %f\n", elapsed(write_t1, write_t0));
 }
