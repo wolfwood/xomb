@@ -12,8 +12,11 @@ cd user/c
 make || exit
 cd ../..
 
-
 cd app/c/hello
+make || exit
+cd ../../..
+
+cd app/c/simplymm
 make || exit
 cd ../../..
 
