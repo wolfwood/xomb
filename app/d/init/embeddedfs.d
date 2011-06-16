@@ -12,6 +12,7 @@ struct EmbeddedFS{
 		// binaries
 		xsh = makeFile!("binaries/xsh", true)();
 		makeFile!("binaries/hello", true)();
+		makeFile!("binaries/simplymm", true)();
 
 		makeFile!("binaries/chel", true)();
 		//makeFile!("binaries/fhel", true)();
