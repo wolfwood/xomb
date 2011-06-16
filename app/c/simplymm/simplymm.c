@@ -17,8 +17,6 @@ struct bigint {
 	int b;
 };
 
-void perfPoll(int);
-
 void main() {
 	int** Y;
 	int** A;
@@ -37,8 +35,6 @@ void main() {
 	}
 
 	struct bigint bi;
-	perfPoll(0);
-
 	for (i=0; i < MATRIX_DIM; i++) {
 		for (j=0; j < MATRIX_DIM; j++) {
 			for (k=0; k < MATRIX_DIM; k++) {
@@ -47,6 +43,5 @@ void main() {
 		}
 	}
 
-	perfPoll(0);
 	for(;;){}
 }
