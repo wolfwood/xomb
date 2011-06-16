@@ -1,8 +1,8 @@
 CC = x86_64-pc-xomb-gcc
+LDFLAGS=-L../../../user/c/lib -L../../../runtimes/mindrt -l:drt0.a -l:syscall.a -l:mindrt.a
 
 all: clean
-	$(CC) -c simplymm.c -I../../../user/c/include/.
-	$(CC) -o simplymm simplymm.o ../../../user/c/lib/syscall.a ../../../runtimes/mindrt/mindrt.a
+	$(CC) -T../../build/elf.ld -o simplymm -static simplymm.c ${LDFLAGS}
 	cp simplymm ../../../build/root/binaries/.
 
 clean:
