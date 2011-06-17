@@ -1,4 +1,4 @@
-DFLAGS = -I../. -I../../. -O0 -g
+DFLAGS = -I../. -I../../. -O2 -release
 
 drt0.a: entry.d mindrt.a
 	yasm -g stabs -felf64 entry.S -o dsss_objs/O/runtime.Sentry.o
