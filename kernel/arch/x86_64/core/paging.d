@@ -576,10 +576,6 @@ static:
 		return regionLength;
 	}
 
-	PageLevel4* kernelPageTable() {
-		return cast(PageLevel4*)0xfffffffffffff000;
-	}
-
 private:
 
 
