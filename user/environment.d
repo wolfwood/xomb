@@ -416,166 +416,83 @@ struct PrimaryField {
 	}
 }
 
-struct PageLevel4 {
-	SecondaryField[512] entries;
+alias PageLevel!(4) PageLevel4;
+alias PageLevel!(3) PageLevel3;
+alias PageLevel!(2) PageLevel2;
+alias PageLevel!(1) PageLevel1;
 
-	PageLevel3* getTable(uint idx) {
-		if (entries[idx].present == 0) {
-			return null;
-		}
-			
-		// Calculate virtual address
-		return cast(PageLevel3*)(0xFFFFFF7F_BFC00000 + (idx << 12));
-	}
+template PageLevel(ushort L){
+	struct PageLevel{
+		static if(L == 1){
+			PrimaryField[512] entries;
 
-	version(KERNEL){
-		void setTable(uint idx, ubyte* address, bool usermode = false) {
-			entries[idx].pml = cast(ulong)address;
-			entries[idx].present = 1;
-			entries[idx].rw = 1;
-			entries[idx].us = usermode;
-		}
+			void* physicalAddress(uint idx) {
+				if(!entries[idx].present){
+					return null;
+				}
 
-		PageLevel3* getOrCreateTable(uint idx, bool usermode = false) {
-			PageLevel3* ret = getTable(idx);
-			
-			if (ret is null) {
-				// Create Table
-				ret = cast(PageLevel3*)PageAllocator.allocPage();
-
-				// Set table entry
-				entries[idx].pml = cast(ulong)ret;
-				entries[idx].present = 1;
-				entries[idx].rw = 1;
-				entries[idx].us = usermode;
-				
-				// Calculate virtual address
-				ret = cast(PageLevel3*)(0xFFFFFF7F_BFC00000 + (idx << 12));
-				
-				*ret = PageLevel3.init;
+				return cast(void*)(entries[idx].address << 12);
 			}
+		}else{
+			SecondaryField[512] entries;
+
+			PageLevel!(L-1)* getTable(uint idx) {
+				if (entries[idx].present == 0) {
+					return null;
+				}
 			
-			return ret;
-		}
-	}
-}
-
-struct PageLevel3 {
-	SecondaryField[512] entries;
-
-	PageLevel2* getTable(uint idx) {
-		if (entries[idx].present == 0) {
-			return null;
-		}
-
-		ulong baseAddr = cast(ulong)this;
-		baseAddr &= 0x1FF000;
-		baseAddr >>= 3;
-		return cast(PageLevel2*)(0xFFFFFF7F_80000000 + ((baseAddr + idx) << 12));
-	}
-
-	version(KERNEL){
-		void setTable(uint idx, ubyte* address, bool usermode = false) {
-			entries[idx].pml = cast(ulong)address;
-			entries[idx].present = 1;
-			entries[idx].rw = 1;
-			entries[idx].us = usermode;
-		}
-		
-		PageLevel2* getOrCreateTable(uint idx, bool usermode = false) {
-			PageLevel2* ret = getTable(idx);
-			
-			if (ret is null) {
-				// Create Table
-				ret = cast(PageLevel2*)PageAllocator.allocPage();
-				
-				// Set table entry
-				entries[idx].pml = cast(ulong)ret;
-				entries[idx].present = 1;
-				entries[idx].rw = 1;
-				entries[idx].us = usermode;
-				
-				// Calculate virtual address
-				ulong baseAddr = cast(ulong)this;
-				baseAddr &= 0x1FF000;
-				baseAddr >>= 3;
-				ret = cast(PageLevel2*)(0xFFFFFF7F_80000000 + ((baseAddr + idx) << 12));
-				
-				*ret = PageLevel2.init;
-				//if (usermode) { kprintfln!("creating pl3 {}")(idx); }
+				return calculateVirtualAddress(idx);
 			}
 
-			return ret;
-		}
-	}
-}
-	
-struct PageLevel2 {
-	SecondaryField[512] entries;
+			version(KERNEL){
+				void setTable(uint idx, ubyte* address, bool usermode = false) {
+					entries[idx].pml = cast(ulong)address;
+					entries[idx].present = 1;
+					entries[idx].rw = 1;
+					entries[idx].us = usermode;
+				}
 
-	PageLevel1* getTable(uint idx) {
-		//			kprintfln!("getting pl2 {}?")(idx);
-		if (entries[idx].present == 0) {
-			//				kprintfln!("no pl2 {}!")(idx);
-			return null;
-		}
-		//			kprintfln!("getting pl2 {}!")(idx);
-
-		ulong baseAddr = cast(ulong)this;
-		baseAddr &= 0x3FFFF000;
-		baseAddr >>= 3;
-		return cast(PageLevel1*)(0xFFFFFF00_00000000 + ((baseAddr + idx) << 12));
-	}
-
-	version(KERNEL){
-		void setTable(uint idx, ubyte* address, bool usermode = false) {
-			entries[idx].pml = cast(ulong)address;
-			entries[idx].present = 1;
-			entries[idx].rw = 1;
-			entries[idx].us = usermode;
-		}
-		
-		PageLevel1* getOrCreateTable(uint idx, bool usermode = false) {
-			PageLevel1* ret = getTable(idx);
+				PageLevel!(L-1)* getOrCreateTable(uint idx, bool usermode = false) {
+					PageLevel!(L-1)* ret = getTable(idx);
 			
-			if (ret is null) {
-				// Create Table
-				//				if (usermode) { kprintfln!("creating pl2 {}?")(idx); }
-				ret = cast(PageLevel1*)PageAllocator.allocPage();
+					if (ret is null) {
+						// Create Table
+						ret = cast(PageLevel!(L-1)*)PageAllocator.allocPage();
+
+						// Set table entry
+						entries[idx].pml = cast(ulong)ret;
+						entries[idx].present = 1;
+						entries[idx].rw = 1;
+						entries[idx].us = usermode;
 				
-				// Set table entry
-				entries[idx].pml = cast(ulong)ret;
-				entries[idx].present = 1;
-				entries[idx].rw = 1;
-				entries[idx].us = usermode;
+						ret = calculateVirtualAddress(idx);
 				
-				// Calculate virtual address
-				ulong baseAddr = cast(ulong)this;
-				baseAddr &= 0x3FFFF000;
-				baseAddr >>= 3;
-				ret = cast(PageLevel1*)(0xFFFFFF00_00000000 + ((baseAddr + idx) << 12));
-				
-				*ret = PageLevel1.init;
-				//				if (usermode) { kprintfln!("creating pl2 {}")(idx); }
+						*ret = (PageLevel!(L-1)).init;
+					}
+			
+					return ret;
+				}
 			}
-			
-			return ret;
-		}
+
+		private:
+			PageLevel!(L-1)* calculateVirtualAddress(uint idx){
+				static if(L == 4){
+					return cast(PageLevel!(L-1)*)(0xFFFFFF7F_BFC00000 + (idx << 12));
+				}else static if(L == 3){
+						ulong baseAddr = cast(ulong)this;
+						baseAddr &= 0x1FF000;
+						baseAddr >>= 3;
+						return cast(PageLevel!(L-1)*)(0xFFFFFF7F_80000000 + ((baseAddr + idx) << 12));
+				}else static if(L == 2){
+						ulong baseAddr = cast(ulong)this;
+						baseAddr &= 0x3FFFF000;
+						baseAddr >>= 3;
+						return cast(PageLevel!(L-1)*)(0xFFFFFF00_00000000 + ((baseAddr + idx) << 12));
+				}
+			}
+		} // end static if
 	}
 }
-
-struct PageLevel1 {
-	PrimaryField[512] entries;
-
-	void* physicalAddress(uint idx) {
-		if(!entries[idx].present){
-			return null;
-		}
-
-		return cast(void*)(entries[idx].address << 12);
-	}
-}
-
 
 void* createAddress(ulong indexLevel1, ulong indexLevel2,	ulong indexLevel3, ulong indexLevel4) {
 	ulong vAddr = 0;
