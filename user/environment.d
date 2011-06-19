@@ -625,22 +625,6 @@ bool isValidAddress(ubyte* addr){
 
 const PageLevel4* root = cast(PageLevel4*)0xFFFFFF7F_BFDFE000;
 
-// This function will get the physical address that is mapped from the
-// specified virtual address.
-/*void* translateAddress(void* virtAddress) {
-	ulong vAddr = cast(ulong)virtAddress;
-	
-	vAddr >>= 12;
-	uint indexLevel1 = vAddr & 0x1ff;
-	vAddr >>= 9;
-	uint indexLevel2 = vAddr & 0x1ff;
-	vAddr >>= 9;
-	uint indexLevel3 = vAddr & 0x1ff;
-	vAddr >>= 9;
-	uint indexLevel4 = vAddr & 0x1ff;
-	
-	return root.getTable(indexLevel4).getTable(indexLevel3).getTable(indexLevel2).physicalAddress(indexLevel1);
-}*/
 
 void translateAddress( void* virtAddress,
 											 out ulong indexLevel1,
@@ -678,14 +662,14 @@ AccessMode combineModes(AccessMode a, AccessMode b){
 AccessMode modesForAddress(ubyte* vAddr){
 	AccessMode flags;
 	
-	walk!(cm)(root, cast(ulong)vAddr, flags);
+	walk!(modesForAddressHelper)(root, cast(ulong)vAddr, flags);
 
 	return flags;
 
 }
 
-template cm(T){
-	void cm(T table, uint idx, ref AccessMode flags){
+template modesForAddressHelper(T){
+	void modesForAddressHelper(T table, uint idx, ref AccessMode flags){
 		if(!flags){
 			flags = table.entries[idx].getMode();
 		}else{

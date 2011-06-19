@@ -17,19 +17,16 @@ import kernel.mem.pageallocator;
 
 // Import some arch-dependent modules
 import kernel.arch.x86_64.linker;	// want linker info
-
 import kernel.arch.x86_64.core.idt;
 
 // Import information about the system
 // (we need to know where the kernel is)
 import kernel.system.info;
 
-// We need to restart the console driver
-import kernel.dev.console;
-
 import architecture.mutex;
 
 import user.environment;
+
 
 align(1) struct StackFrame{
 	StackFrame* next;
@@ -123,7 +120,7 @@ static:
 		if (stack.rip < 0xf_0000_0000_0000) {
 			kprintfln!("User Mode General Protection Fault: instruction address {x}")(stack.rip);
 		}else{
-			kprintfln!("Kernel Mode Level 3 Page Fault: instruction address {x}")(stack.rip);
+			kprintfln!("Kernel Mode General Protection Fault: instruction address {x}")(stack.rip);
 		}
 
 		printStackTrace(cast(StackFrame*)stack.rbp);
@@ -214,40 +211,6 @@ static:
 			mov CR3, RAX;
 		}
 		return ErrorVal.Success;
-	}
-
-	// This function will get the physical address that is mapped from the
-	// specified virtual address.
-	void* translateAddress(void* virtAddress) {
-		ulong vAddr = cast(ulong)virtAddress;
-
-		vAddr >>= 12;
-		uint indexLevel1 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		uint indexLevel2 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		uint indexLevel3 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		uint indexLevel4 = vAddr & 0x1ff;
-
-		return root.getTable(indexLevel4).getTable(indexLevel3).getTable(indexLevel2).physicalAddress(indexLevel1);
-	}
-
-	void translateAddress( void* virtAddress,
-							out ulong indexLevel1,
-							out ulong indexLevel2,
-							out ulong indexLevel3,
-							out ulong indexLevel4) {
-		ulong vAddr = cast(ulong)virtAddress;
-
-		vAddr >>= 12;
-		indexLevel1 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		indexLevel2 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		indexLevel3 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		indexLevel4 = vAddr & 0x1ff;
 	}
 
 	Mutex pagingLock;
