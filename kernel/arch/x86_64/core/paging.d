@@ -468,19 +468,6 @@ static:
 	const ulong MAX_GIB = (512 * 512);
 	const ulong GIB_SIZE = (512 * 512 * PAGESIZE);
 
-	ubyte* gibAddress(uint gibIndex) {
-		// Find initial address of gib
-		ubyte* gibAddr = cast(ubyte*)0x0;
-		gibAddr += (GIB_SIZE * cast(ulong)gibIndex);
-
-		// Make Canonical
-		if (cast(ulong)gibAddr >= 0x800000000000UL) {
-			gibAddr = cast(ubyte*)(cast(ulong)gibAddr | 0xffff000000000000UL);
-		}
-
-		return gibAddr;
-	}
-
 	bool openGib(ubyte* location, uint flags) {
 		// Find page translation
 		ulong indexL4, indexL3, indexL2, indexL1;
