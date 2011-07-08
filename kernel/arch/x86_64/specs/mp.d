@@ -170,8 +170,7 @@ public:
 							break;
 					}
 
-					switch (ioentry.el)
-					{
+					switch (ioentry.el) {
 						case 0:
 							// Conforms to the bus (dumb!)
 						case 1:

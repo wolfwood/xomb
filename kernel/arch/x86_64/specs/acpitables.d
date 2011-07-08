@@ -34,13 +34,12 @@ public:
 		}
 
 		auto foo = cast(char*)ptrRSDP;
-		kprintfln!("{} @ {} rev {} len {}")(foo[0..8], ptrRSDP, ptrRSDP.revision, ptrRSDP.len);
+
 		// check checksum
 		if (!isChecksumValid(cast(ubyte*)ptrRSDP, 20)) {
 			kprintfln!("Failed due to incorrect checksum of RSDP (legacy): {}")(ptrRSDP);
 			return ErrorVal.Fail;
 		}
-		kprintfln!("Passed initial checksum")();
 
 		if (!isLegacyRSDP) {
 			if (!isChecksumValid(cast(ubyte*)ptrRSDP, ptrRSDP.len)) {
@@ -68,7 +67,6 @@ public:
 		else {
 			// Map in RSDT into kernel virtual memory space
 			ptrRSDT = cast(RSDT*)Paging.mapRegion(cast(void*)ptrRSDP.ptrRSDT, RSDT.sizeof);
-			kprintfln!("RSDT: {x} -> {}")(ptrRSDP.ptrRSDT, ptrRSDT);
 
 			// validate the RSDT
 			if (validateRSDT() == ErrorVal.Fail) {
@@ -230,7 +228,6 @@ private:
 
 		for (; curByte < endByte; curByte++) {
 			DescriptorHeader* curTable = cast(DescriptorHeader*)Paging.mapRegion(cast(void*)(*curByte), MADT.sizeof);
-			kprintfln!("Descriptor: {} @ {x} -> {}")(curTable.signature, *curByte, curTable);
 
 			if (curTable.signature[0] == 'A' &&
 					curTable.signature[1] == 'P' &&
@@ -500,9 +497,9 @@ private:
 			Info.redirectionEntries[i].triggerMode = Info.TriggerMode.EdgeTriggered;
 			Info.redirectionEntries[i].inputPinPolarity = Info.InputPinPolarity.HighActive;
 			Info.redirectionEntries[i].destinationMode = Info.DestinationMode.Logical;
-			Info.redirectionEntries[i].deliveryMode = Info.DeliveryMode.Fixed;
+			Info.redirectionEntries[i].deliveryMode = Info.DeliveryMode.LowestPriority;
 			Info.redirectionEntries[i].sourceBusIRQ = i;
-			Info.redirectionEntries[i].vector = 33 + i;
+			Info.redirectionEntries[i].vector = 32 + i;
 		}
 
 		return ErrorVal.Success;
@@ -619,7 +616,7 @@ private:
 					break;
 
 				default: // ignore
-					kprintfln!("unknown: {}")(*curByte);
+					kprintfln!("Unknown MADT entry: type: {}")(*curByte);
 
 					break;
 			}
