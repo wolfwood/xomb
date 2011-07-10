@@ -12,7 +12,7 @@ version(KERNEL){
 typedef ubyte* AddressSpace;
 
 const ulong oneGB = 1024*1024*1024UL;
-//const ubyte[] squareGB = (cast(ubyte*)oneGB)[0..oneGB];
+const PageLevel!(4)* root = cast(PageLevel!(4)*)0xFFFFFF7F_BFDFE000;
 
 // XXX make this a ulong alligned with PTE bits?
 enum AccessMode : uint {
@@ -171,7 +171,7 @@ template populateChild(T){
 		version(KERNEL){
 			// kernel only executes init once, so its OK not to copy
 		}else{
-			ubyte* g = findFreeSegment!(false)();		
+			ubyte* g = findFreeSegment(false).ptr;
 
 			Syscall.create(g, oneGB, AccessMode.Writable|AccessMode.User|AccessMode.Executable);
 
@@ -277,154 +277,100 @@ template findFreeSegment(bool upperhalf = true, bool global = false, uint size =
 // to be able to be typed differently so we don't make a stupid
 // mistake.
 
+template PageTableEntry(char[] T){
+	struct PageTableEntry{
+		ulong pml;
 
-
-struct SecondaryField {
-
-	ulong pml;
-
-	mixin(Bitfield!(pml,
-									"present", 1,
-									"rw", 1,
-									"us", 1,
-									"pwt", 1,
-									"pcd", 1,
-									"a", 1,
-									"ign", 1,
-									"mbz", 2,
-									"avl", 3,
-									"address", 41,
-									"available", 10,
-									"nx", 1));
-
-	ubyte* location() {
-		return cast(ubyte*)(cast(ulong)address() << 12);
-	}
-
-	AccessMode getMode(){
-		AccessMode mode;
-
-		if(present){
-			if(rw){
-				mode |= AccessMode.Writable;
+		static if(T == "primary"){
+			mixin(Bitfield!(pml,
+											"present", 1,
+											"rw", 1,
+											"us", 1,
+											"pwt", 1,
+											"pcd", 1,
+											"a", 1,
+											"d", 1,
+											"pat", 1,
+											"g", 1,
+											"avl", 3,
+											"address", 41,
+											"available", 10,
+											"nx", 1));
+		}else static if(T == "secondary"){
+				mixin(Bitfield!(pml,
+												"present", 1,
+												"rw", 1,
+												"us", 1,
+												"pwt", 1,
+												"pcd", 1,
+												"a", 1,
+												"ign", 1,
+												"mbz", 2,
+												"avl", 3,
+												"address", 41,
+												"available", 10,
+												"nx", 1));
+			}else{
+				static assert(false);
 			}
-			if(us){
-				mode |= AccessMode.User;
-			}
-			if(!nx){
-				mode |= AccessMode.Executable;
-			}
 
-			mode |= available;
+		ubyte* location() {
+			return cast(ubyte*)(cast(ulong)address() << 12);
 		}
 
-		return mode;
-	}
+		AccessMode getMode(){
+			AccessMode mode;
 
-	version(KERNEL){
-		void setMode(AccessMode mode){
-			present = 1;
-		  available = mode & AccessMode.AvailableMask;
+			if(present){
+				if(rw){
+					mode |= AccessMode.Writable;
+				}
+				if(us){
+					mode |= AccessMode.User;
+				}
+				if(!nx){
+					mode |= AccessMode.Executable;
+				}
 
-			if(mode & AccessMode.Writable){
-				rw = 1;
-			}else{
-				rw = 0;
+				mode |= available;
 			}
 
-			if(mode & AccessMode.User){
-				us = 1;
-			}else{
-				us = 0;
-			}
-
-			if(mode & AccessMode.Executable){
-				nx = 0;
-			}else{
-				nx = 1;
-			}
-		}
-	}
-}
-	
-struct PrimaryField {
-
-	ulong pml;
-
-	mixin(Bitfield!(pml,
-									"present", 1,
-									"rw", 1,
-									"us", 1,
-									"pwt", 1,
-									"pcd", 1,
-									"a", 1,
-									"d", 1,
-									"pat", 1,
-									"g", 1,
-									"avl", 3,
-									"address", 41,
-									"available", 10,
-									"nx", 1));
-
-	ubyte* location() {
-		return cast(ubyte*)(cast(ulong)address() << 12);
-	}
-
-	AccessMode getMode(){
-		AccessMode mode;
-
-		if(present){
-			if(rw){
-				mode |= AccessMode.Writable;
-			}
-			if(us){
-				mode |= AccessMode.User;
-			}
-			if(!nx){
-				mode |= AccessMode.Executable;
-			}
-
-			mode |= available;
+			return mode;
 		}
 
-		return mode;
-	}
+		version(KERNEL){
+			void setMode(AccessMode mode){
+				present = 1;
+				available = mode & AccessMode.AvailableMask;
 
-	version(KERNEL){
-		void setMode(AccessMode mode){
-			present = 1;
-		  available = mode & AccessMode.AvailableMask;			
+				if(mode & AccessMode.Writable){
+					rw = 1;
+				}else{
+					rw = 0;
+				}
 
-			if(mode & AccessMode.Writable){
-				rw = 1;
-			}else{
-				rw = 0;
-			}
+				if(mode & AccessMode.User){
+					us = 1;
+				}else{
+					us = 0;
+				}
 
-			if(mode & AccessMode.User){
-				us = 1;
-			}else{
-				us = 0;
-			}
-
-			if(mode & AccessMode.Executable){
-				nx = 0;
-			}else{
-				nx = 1;
+				if(mode & AccessMode.Executable){
+					nx = 0;
+				}else{
+					nx = 1;
+				}
 			}
 		}
 	}
 }
-
-alias PageLevel!(4) PageLevel4;
-alias PageLevel!(3) PageLevel3;
-alias PageLevel!(2) PageLevel2;
-alias PageLevel!(1) PageLevel1;
 
 template PageLevel(ushort L){
 	struct PageLevel{
+		alias L level;
+
 		static if(L == 1){
-			PrimaryField[512] entries;
+			PageTableEntry!("primary")[512] entries;
 
 			void* physicalAddress(uint idx) {
 				if(!entries[idx].present){
@@ -433,8 +379,26 @@ template PageLevel(ushort L){
 
 				return cast(void*)(entries[idx].address << 12);
 			}
+
+			ubyte* startingAddressForSegment(uint idx){
+				auto tableAddr = this;
+
+				ulong vAddr = (cast(ulong)tableAddr) >> 3;
+
+				vAddr += idx;
+
+				vAddr <<= 12;
+
+				// ensure address is canonical, sign extend the highest meaningful bit
+				if(vAddr & 0x00008000_00000000){
+					vAddr |= 0xFFFF0000_00000000;
+				}else{
+					vAddr &= 0x0000FFFF_FFFFFFFF;
+				}
+				return cast(ubyte*)vAddr;
+			}
 		}else{
-			SecondaryField[512] entries;
+			PageTableEntry!("secondary")[512] entries;
 
 			PageLevel!(L-1)* getTable(uint idx) {
 				if (entries[idx].present == 0) {
@@ -474,6 +438,20 @@ template PageLevel(ushort L){
 				}
 			}
 
+			ubyte* startingAddressForSegment(uint idx){
+				auto tableAddr = calculateVirtualAddress(idx);
+
+				ulong vAddr = (cast(ulong)tableAddr) << ((L-1) * 9);
+
+				// ensure address is canonical, sign extend the highest meaningful bit
+				if(vAddr & 0x00008000_00000000){
+					vAddr |= 0xFFFF0000_00000000;
+				}else{
+					vAddr &= 0x0000FFFF_FFFFFFFF;
+				}
+				return cast(ubyte*)vAddr;
+			}
+
 		private:
 			PageLevel!(L-1)* calculateVirtualAddress(uint idx){
 				static if(L == 4){
@@ -494,7 +472,18 @@ template PageLevel(ushort L){
 	}
 }
 
-void* createAddress(ulong indexLevel1, ulong indexLevel2,	ulong indexLevel3, ulong indexLevel4) {
+
+// --- Arch-dependent Helper Functions ---
+AccessMode combineModes(AccessMode a, AccessMode b){
+	AccessMode and, or;
+
+	and = a & b & ~AccessMode.AvailableMask;
+	or = (a | b) & AccessMode.AvailableMask;
+
+	return and | or;
+}
+
+ubyte* createAddress(ulong indexLevel1, ulong indexLevel2, ulong indexLevel3, ulong indexLevel4) {
 	ulong vAddr = 0;
 
 	if(indexLevel4 >= 256){
@@ -514,50 +503,7 @@ void* createAddress(ulong indexLevel1, ulong indexLevel2,	ulong indexLevel3, ulo
 	vAddr |= indexLevel1 & 0x1ff;
 	vAddr <<= 12;
 
-	return cast(void*) vAddr;
-}
-
-bool isValidAddress(ubyte* addr){
-	ulong idx1, idx2, idx3, idx4;
-
-	translateAddress(addr, idx1, idx2, idx3, idx4);
-
-	PageLevel3* pl3 = root.getTable(idx4);
-	if(pl3 !is null){
-		PageLevel2* pl2 = pl3.getTable(idx3);
-
-		if(pl2 !is null){
-			PageLevel1* pl1 = pl2.getTable(idx2);
-			
-			if(pl1 !is null){
-				if(pl1.physicalAddress(idx1) !is null){
-					return true;
-				}
-			}
-		}
-	}
-
-	return false;
-}
-
-const PageLevel4* root = cast(PageLevel4*)0xFFFFFF7F_BFDFE000;
-
-
-void translateAddress( void* virtAddress,
-											 out ulong indexLevel1,
-											 out ulong indexLevel2,
-											 out ulong indexLevel3,
-											 out ulong indexLevel4) {
-	ulong vAddr = cast(ulong)virtAddress;
-	
-	vAddr >>= 12;
-	indexLevel1 = vAddr & 0x1ff;
-	vAddr >>= 9;
-	indexLevel2 = vAddr & 0x1ff;
-	vAddr >>= 9;
-	indexLevel3 = vAddr & 0x1ff;
-	vAddr >>= 9;
-	indexLevel4 = vAddr & 0x1ff;
+	return cast(ubyte*) vAddr;
 }
 
 // alternative translate address helper, good for recursive functions
@@ -567,13 +513,23 @@ void getNextIndex(ref ulong addr, out ulong idx){
 }
 
 
-AccessMode combineModes(AccessMode a, AccessMode b){
-	AccessMode and, or;
+// --- Templated Helpers ---
+bool isValidAddress(ubyte* vAddr){
+	bool valid = true;
 
-	and = a & b & ~AccessMode.AvailableMask;
-	or = (a | b) & AccessMode.AvailableMask;
+	walk!(isValidAddressHelper)(root, cast(ulong)vAddr, valid);
 
-	return and | or;
+	return valid;
+}
+
+template isValidAddressHelper(T){
+	bool isValidAddressHelper(T table, uint idx, ref bool valid){
+		if(table.entries[idx].present){
+			return true;
+		}
+		valid = false;
+		return false;
+	}
 }
 
 AccessMode modesForAddress(ubyte* vAddr){
@@ -582,19 +538,103 @@ AccessMode modesForAddress(ubyte* vAddr){
 	walk!(modesForAddressHelper)(root, cast(ulong)vAddr, flags);
 
 	return flags;
-
 }
 
 template modesForAddressHelper(T){
-	void modesForAddressHelper(T table, uint idx, ref AccessMode flags){
-		if(!flags){
-			flags = table.entries[idx].getMode();
-		}else{
-			flags = combineModes(flags, table.entries[idx].getMode());
+	bool modesForAddressHelper(T table, uint idx, ref AccessMode flags){
+		if(table.entries[idx].present){
+			if(!flags){
+				flags = table.entries[idx].getMode();
+			}else{
+				flags = combineModes(flags, table.entries[idx].getMode());
+			}
+			return true;
 		}
+		return false;
 	}
 }
 
+
+ubyte[] findFreeSegment(bool upperhalf = true, ulong size = oneGB){
+	ubyte* vAddr;
+	ulong startAddr, endAddr;
+
+	uint pagelevel;
+	ulong limit;
+	for(pagelevel = 1, limit = 4096; ; pagelevel++, limit *= 512){
+		if(pagelevel == 4){
+			// size is too big
+			return null;
+		}
+
+		if(size <= limit){
+			break;
+		}
+	}
+
+	if(upperhalf){
+		// only search kernel's segment
+		startAddr = cast(ulong)createAddress(0,0,0,256);
+		endAddr = cast(ulong)createAddress(511,511,511,256);
+	}else{
+		startAddr = cast(ulong)createAddress(0,0,1,0);
+		endAddr = cast(ulong)createAddress(511,511,511,255);
+	}
+
+	// global
+	//startAddr = createAddr(0,0,0,257);
+	//endAddr = createAddr(511,511,511,508);
+
+	switch(pagelevel){
+	case 1:
+		PageLevel!(1)* table;
+		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, table);
+		break;
+	case 2:
+		PageLevel!(2)* table;
+		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, table);
+		break;
+	case 3:
+		PageLevel!(3)* table;
+		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, table);
+		break;
+	}
+	return vAddr[0..size];
+}
+
+template preorderFindFreeSegmentHelper(T, PL){
+	TraversalDirective preorderFindFreeSegmentHelper(T table, uint idx, uint startIdx, uint endIdx, ref ubyte* vAddr, ref PL selectedTable){
+		// are we at the proper depth to allocate the desired segment?
+		static if(is(T == PL)){
+			// is present?
+			if(!table.entries[idx].present){
+				vAddr = table.startingAddressForSegment(idx);
+				return TraversalDirective.Stop;
+			}
+
+			return TraversalDirective.Skip;
+		}else{
+			static if(T.level != 1){
+				auto next = table.getTable(idx);
+
+				// we can't allocate page tables in userspace (and don't need
+				// to), so instead of descending we assume 0 for the remaining
+				// indexes and stop
+				if(next is null){
+					vAddr = table.startingAddressForSegment(idx);
+					return TraversalDirective.Stop;
+				}
+			}
+
+			// if entry is for a gib, we can't allocate inside
+			if(table.entries[idx].getMode() & AccessMode.Segment){
+				return TraversalDirective.Skip;
+			}
+
+			return TraversalDirective.Descend;
+		}
+	}
+}
 
 // --- table manipulation templates ---
 template walk(alias U, T, S...){
@@ -603,10 +643,9 @@ template walk(alias U, T, S...){
 
 		getNextIndex(addr, idx);
 
-		if(table.entries[idx].present){
-			U(table, idx, s);
+		if(U(table, idx, s)){
 
-			static if(!(is (T == PageLevel1*))){
+			static if(!(is (T == PageLevel!(1)*))){
 				auto table2 = table.getTable(idx);
 					
 				walk!(U)(table2, addr, s);
@@ -615,21 +654,63 @@ template walk(alias U, T, S...){
 	}
 }
 
-/*
-template traversal(T = PageLevel4){
-	void traversal(function op!(T)(ubyte* addr, T table)){
+template traverse(alias PRE, alias POST, T, S...){
+	bool traverse(T table, ulong startAddr, ulong endAddr, ref S s){
+		ulong startIdx, endIdx;
 
-		static if(T is PageLevel4){
-			ulong indexL4, indexL3, indexL2, indexL1;
-			translateAddress(addr, indexL1, indexL2, indexL3, indexL4);
+		getNextIndex(startAddr, startIdx);
+		getNextIndex(endAddr, endIdx);
 
-			// check for gib status
-			PageLevel3* pl3 = table.getTable(indexL4);
-			if (pl3 is null) {
-				
+		for(uint i = startIdx; i <= endIdx; i++){
+			ulong frontAddr, backAddr;
+
+			if(i == startIdx){
+				frontAddr = startAddr;
+			}else{
+				frontAddr = 0;
+			}
+
+			if(i == endIdx){
+				backAddr = endAddr;
+			}else{
+				backAddr = ~0UL;
+			}
+
+			TraversalDirective directive = TraversalDirective.Descend;
+			static if(!is(PRE == noop)){
+				directive = PRE(table, i, startIdx, endIdx, s);
+			}
+
+			static if(T.level != 1){
+				if(directive == TraversalDirective.Descend){
+					auto childTable = table.getTable(i);
+
+					if(childTable !is null){
+						bool stop = traverse!(PRE,POST)(childTable, frontAddr, backAddr, s);
+
+						if(stop){
+							return true;
+						}
+					}
+				}else if(directive == TraversalDirective.Stop){
+					return true;
+				}
+			}
+
+			static if(!is(POST == noop)){
+				POST(table, i, startIdx, endIdx, s);
 			}
 		}
 
-	}
+		return false;
+	}// end travesal()
 }
-*/
+
+// use this to skip pre or post traversal execution
+template noop(K...){TraversalDirective noop(K k){return TraversalDirective.Descend;}}
+
+enum TraversalDirective {
+	Descend,
+	Skip,
+	Stop
+}

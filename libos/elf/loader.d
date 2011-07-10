@@ -21,7 +21,7 @@ struct Loader {
 	ubyte[] load(ubyte[] binary, ubyte[] newgib = null){
 		if(newgib is null){
 			newgib = 
-				Syscall.create(findFreeSegment!(false), oneGB, 
+				Syscall.create(findFreeSegment(false).ptr, oneGB, 
 											 AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
 		}
 

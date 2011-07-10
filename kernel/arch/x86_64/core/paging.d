@@ -51,6 +51,11 @@ void printStackTrace(StackFrame* start){
 	}
 }
 
+alias PageLevel!(4) PageLevel4;
+alias PageLevel!(3) PageLevel3;
+alias PageLevel!(2) PageLevel2;
+alias PageLevel!(1) PageLevel1;
+
 class Paging {
 static:
 
@@ -211,6 +216,23 @@ static:
 			mov CR3, RAX;
 		}
 		return ErrorVal.Success;
+	}
+
+	void translateAddress( void* virtAddress,
+												 out ulong indexLevel1,
+												 out ulong indexLevel2,
+												 out ulong indexLevel3,
+												 out ulong indexLevel4) {
+		ulong vAddr = cast(ulong)virtAddress;
+
+		vAddr >>= 12;
+		indexLevel1 = vAddr & 0x1ff;
+		vAddr >>= 9;
+		indexLevel2 = vAddr & 0x1ff;
+		vAddr >>= 9;
+		indexLevel3 = vAddr & 0x1ff;
+		vAddr >>= 9;
+		indexLevel4 = vAddr & 0x1ff;
 	}
 
 	Mutex pagingLock;
@@ -693,5 +715,4 @@ private:
 	}
 
 	alias heapMap!(false) doHeapMap;
-
 }

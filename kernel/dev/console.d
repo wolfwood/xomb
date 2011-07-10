@@ -46,7 +46,7 @@ public:
 		info.height = LINES;
 
 		// XXX:get free gib addy some other way
-		ubyte* freeGib = VirtualMemory.findFreeSegment();
+		ubyte* freeGib = VirtualMemory.findFreeSegment().ptr;
 		const ulong oneGB = 1024*1024*1024;
 
 		ubyte[] vid = VirtualMemory.createSegment(freeGib, oneGB, AccessMode.Writable);
