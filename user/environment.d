@@ -18,42 +18,42 @@ const PageLevel!(4)* root = cast(PageLevel!(4)*)0xFFFFFF7F_BFDFE000;
 enum AccessMode : uint {
 	Read = 0,
 
-		// bits that get encoded in the available bits
-		Global = 1,
-		AllocOnAccess = 2,
+	// bits that get encoded in the available bits
+	Global = 1,
+	AllocOnAccess = 2,
 	 
-		MapOnce = 4,
-		CopyOnWrite = 8,
-		
-		PrivilegedGlobal = 16,
-		PrivilegedExecutable = 32,
+	MapOnce = 4,
+	CopyOnWrite = 8,
 
-		// use Indicators
-		Segment = 64,
-		RootPageTable = 128,
-		Device = 256, // good enough for isTTY?
+	PrivilegedGlobal = 16,
+	PrivilegedExecutable = 32,
 
-		// Permissions
-		Delete = 512,
-		// bits that are encoded in hardware defined PTE bits
-		Writable = 1<<  14,
-		User = 1 << 15,
-		Executable = 1<< 16,
-		
-		// Size? - could be encoded w/ paging trick on address
+	// use Indicators
+	Segment = 64,
+	RootPageTable = 128,
+	Device = 256, // good enough for isTTY?
 
-		// Default policies
-		DefaultUser = Writable | AllocOnAccess | User,
-		DefaultKernel = Writable | AllocOnAccess,
+	// Permissions
+	Delete = 512,
+	// bits that are encoded in hardware defined PTE bits
+	Writable = 1 <<  14,
+	User = 1 << 15,
+	Executable = 1 << 16,
 
-		// flags that are always permitted in syscalls
-		SyscallStrictMask = Global | AllocOnAccess | MapOnce | CopyOnWrite | Writable 
-		  | User | Executable,
+	// Size? - could be encoded w/ paging trick on address
 
-		// Flags that go in the available bits
-		AvailableMask = Global | AllocOnAccess | MapOnce | CopyOnWrite | 
-		  PrivilegedGlobal | PrivilegedExecutable | Segment | RootPageTable |
-		  Device | Delete
+	// Default policies
+	DefaultUser = Writable | AllocOnAccess | User,
+	DefaultKernel = Writable | AllocOnAccess,
+
+	// flags that are always permitted in syscalls
+	SyscallStrictMask = Global | AllocOnAccess | MapOnce | CopyOnWrite | Writable 
+	  | User | Executable,
+
+	// Flags that go in the available bits
+	AvailableMask = Global | AllocOnAccess | MapOnce | CopyOnWrite | 
+	  PrivilegedGlobal | PrivilegedExecutable | Segment | RootPageTable |
+	  Device | Delete
 }
 
 
@@ -215,60 +215,8 @@ template populateChild(T){
 	}
 }
 
-// find free gib magic
-// XXX: handle global and different sizes!
-template findFreeSegment(bool upperhalf = true, bool global = false, uint size = 1024*1024*1024){
-	ubyte* findFreeSegment(){
-		const uint dividingLine = 256;
-		static uint last1 = (upperhalf ? dividingLine : 0), last2 = (upperhalf ? 0 : 1);
-			
-		bool foundFree;
-		void* addy;
 
-		while(!foundFree){
-			PageLevel3* pl3 = root.getTable(last1);
-
-			if(pl3 is null){
-				addy = createAddress(0, 0, ((!upperhalf && (last1== 0))? 1 : 0), last1);
-				last2 = 1;
-				break;
-			}
-
-			while(!foundFree && (last2 < pl3.entries.length)){
-				if(pl3.entries[last2].pml == 0){
-					foundFree = true;
-					addy = createAddress(0, 0, last2, last1);
-				}
-				last2++;
-			}
-
-			if(last2 >= pl3.entries.length){
-				last1++;
-				last2 = 0;
-			}
-
-			if(upperhalf){
-				if(last1 >= root.entries.length){
-					last1 = dividingLine;
-				}
-			}else{
-				if(last1 >= dividingLine){
-					last1 = 0;
-					last2 = 1;
-				}
-
-			}
-
-		}
-			
-		assert(addy !is null, "null gib find fail\n");
-
-		return cast(ubyte*)addy;
-	}
-}
-
-
-// -- Paging Structures -- //
+// --- Paging Structures ---
 
 // The x86 implements a four level page table.
 // We use the 4KB page size hierarchy
