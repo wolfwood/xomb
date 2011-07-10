@@ -390,6 +390,7 @@ static:
 		translateAddress(destination, indexL1, indexL2, indexL3, indexL4);
 		pl3 = root.getOrCreateTable(indexL4, true);
 		pl3.setTable(indexL3, locationAddr, true);
+		pl3.entries[indexL3].setMode(pl3.entries[indexL3].getMode() | AccessMode.Segment);
 
 		// Return to our old address space
 		asm {
@@ -415,15 +416,19 @@ static:
 			PageLevel2* global_pl3 = globalRoot.getOrCreateTable(indexL4, usermode);
 			PageLevel1* global_pl2 = global_pl3.getOrCreateTable(indexL3, usermode);
 
+			global_pl3.entries[indexL3].setMode(global_pl3.entries[indexL3].getMode() | AccessMode.Segment);
+
 			// Now, global_pl2 is the global root of the gib!!!
 
 			// Allocate paging structures
 			PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
 			pl3.setTable(indexL3, cast(ubyte*)global_pl3.entries[indexL3].location(), usermode);
+			pl3.entries[indexL3].setMode(pl3.entries[indexL3].getMode() | AccessMode.Segment);
 		}
 		else {
 			PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
 			PageLevel2* pl2 = pl3.getOrCreateTable(indexL3, usermode);
+			pl3.entries[indexL3].setMode(pl3.entries[indexL3].getMode() | AccessMode.Segment);
 		}
 
 		// XXX: Check for errors, maybe handle flags?!
