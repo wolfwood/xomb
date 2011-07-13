@@ -3,7 +3,6 @@ module libos.console;
 private import user.syscall;
 
 import user.console;
-import libos.ramfs;
 
 struct Console {
 static:
