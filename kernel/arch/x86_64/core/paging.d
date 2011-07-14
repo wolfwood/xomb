@@ -458,19 +458,6 @@ static:
 	const ulong MAX_GIB = (512 * 512);
 	const ulong GIB_SIZE = (512 * 512 * PAGESIZE);
 
-	bool openGib(ubyte* location, uint flags) {
-		// Find page translation
-		ulong indexL4, indexL3, indexL2, indexL1;
-		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
-
-		bool usermode = (flags & AccessMode.User) != 0;
-		PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
-
-		pl3.setTable(indexL3, location, usermode);
-
-		return true;
-	}
-
 	ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
 		mapRegion(null, physAddr, regionLength, gib, true);
 		return ErrorVal.Success;

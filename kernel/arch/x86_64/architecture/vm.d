@@ -41,13 +41,6 @@ public:
 		return location[0 .. size];
 	}
 
-	// Open a segment indicated by location into the
-	// virtual address space of dest.
-	bool openSegment(ubyte* location, AccessMode flags) {
-		// We should open this in our address space.
-		return Paging.openGib(location, flags);
-	}
-
 	bool mapSegment(AddressSpace dest, ubyte* location, ubyte* destination, AccessMode flags) {
 		Paging.mapGib(dest, location, destination, flags);
 		return false;

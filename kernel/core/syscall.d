@@ -24,18 +24,7 @@ import kernel.core.initprocess;
 class SyscallImplementations {
 static:
 public:
-
-	// Syscall Implementations
-
-	// Memory manipulation system calls
-
-	// ubyte* location = open(AddressSpace dest, ubyte* address, int mode);
-	SyscallError open(out bool ret, OpenArgs* params) {
-		// Map in the resource
-		ret = VirtualMemory.openSegment(params.address, params.mode);
-
-		return SyscallError.OK;
-	}
+	// --- Memory manipulation system calls ---
 
 	// ubyte[] location = create(ubyte* location, ulong size, int mode);
 	SyscallError create(out ubyte[] ret, CreateArgs* params) {
@@ -58,7 +47,7 @@ public:
 		return SyscallError.Failcopter;
 		}*/
 
-	// Scheduling system calls
+	// --- Scheduling system calls ---
 
 	// AddressSpace space = createAddressSpace();
 	SyscallError createAddressSpace(out AddressSpace ret, CreateAddressSpaceArgs* params) {
@@ -68,7 +57,29 @@ public:
 		return SyscallError.Failcopter;
 	}
 
-	// Userspace performance monitoring shim
+	SyscallError yield(YieldArgs* params){
+		// lol... do this BEFORE switching address spaces
+		ulong idx = params.idx;
+
+		if(idx == 0 || idx == 2){
+			// XXX: ensure current address space is params.dest's parent
+		}
+
+		if(idx > 2){
+			return SyscallError.Failcopter;
+		}
+
+		ulong physAddr;
+
+		if(VirtualMemory.switchAddressSpace(params.dest, physAddr) == ErrorVal.Fail){
+			return SyscallError.Failcopter;
+		}
+
+		Cpu.enterUserspace(idx, physAddr);
+	}
+
+
+	// --- Userspace performance monitoring shim ---
 	SyscallError perfPoll(PerfPollArgs* params) {
 		synchronized {
 			static ulong[256] value;
@@ -97,27 +108,6 @@ public:
 
 			return SyscallError.OK;
 		}
-	}
-
-	SyscallError yield(YieldArgs* params){
-		// lol... do this BEFORE switching address spaces
-		ulong idx = params.idx;
-
-		if(idx == 0 || idx == 2){
-			// XXX: ensure current address space is params.dest's parent
-		}
-
-		if(idx > 2){
-			return SyscallError.Failcopter;
-		}
-
-		ulong physAddr;
-
-		if(VirtualMemory.switchAddressSpace(params.dest, physAddr) == ErrorVal.Fail){
-			return SyscallError.Failcopter;
-		}
-
-		Cpu.enterUserspace(idx, physAddr);
 	}
 }
 
