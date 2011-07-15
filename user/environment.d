@@ -460,6 +460,21 @@ void getNextIndex(ref ulong addr, out ulong idx){
 	addr <<= 9;
 }
 
+uint sizeToPageLevel(ulong size){
+	uint pagelevel;
+	ulong limit;
+	for(pagelevel = 1, limit = 4096; ; pagelevel++, limit *= 512){
+		if(pagelevel > 4){
+			// size is too big
+			return 0;
+		}
+
+		if(size <= limit){
+			return pagelevel;
+		}
+	}
+}
+
 
 // --- Templated Helpers ---
 bool isValidAddress(ubyte* vAddr){
@@ -507,17 +522,10 @@ ubyte[] findFreeSegment(bool upperhalf = true, ulong size = oneGB){
 	ubyte* vAddr;
 	ulong startAddr, endAddr;
 
-	uint pagelevel;
-	ulong limit;
-	for(pagelevel = 1, limit = 4096; ; pagelevel++, limit *= 512){
-		if(pagelevel == 4){
-			// size is too big
-			return null;
-		}
+	uint pagelevel = sizeToPageLevel(size);
 
-		if(size <= limit){
-			break;
-		}
+	if(pagelevel == 0){
+		return null;
 	}
 
 	if(upperhalf){
@@ -535,23 +543,27 @@ ubyte[] findFreeSegment(bool upperhalf = true, ulong size = oneGB){
 
 	switch(pagelevel){
 	case 1:
-		PageLevel!(1)* table;
-		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, table);
+		PageLevel!(1)* segmentParent;
+		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, segmentParent);
 		break;
 	case 2:
-		PageLevel!(2)* table;
-		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, table);
+		PageLevel!(2)* segmentParent;
+		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, segmentParent);
 		break;
 	case 3:
-		PageLevel!(3)* table;
-		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, table);
+		PageLevel!(3)* segmentParent;
+		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, segmentParent);
+		break;
+	case 4:
+		PageLevel!(4)* segmentParent;
+		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, segmentParent);
 		break;
 	}
 	return vAddr[0..size];
 }
 
 template preorderFindFreeSegmentHelper(T, PL){
-	TraversalDirective preorderFindFreeSegmentHelper(T table, uint idx, uint startIdx, uint endIdx, ref ubyte* vAddr, ref PL selectedTable){
+	TraversalDirective preorderFindFreeSegmentHelper(T table, uint idx, uint startIdx, uint endIdx, ref ubyte* vAddr, ref PL segmentParent){
 		// are we at the proper depth to allocate the desired segment?
 		static if(is(T == PL)){
 			// is present?
