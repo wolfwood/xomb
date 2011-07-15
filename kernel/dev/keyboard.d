@@ -19,15 +19,15 @@ class Keyboard {
 	ErrorVal initialize() {
 		address = VirtualMemory.findFreeSegment().ptr;
 
-		_buffer = cast(short[])VirtualMemory.createSegment(address, 2*1024*1024, AccessMode.DefaultKernel);
+		_buffer = cast(short[])VirtualMemory.createSegment(address, BUFFER_SIZE, AccessMode.DefaultKernel);
 
 		_writeOffset = cast(ushort*)_buffer.ptr;
 		*_writeOffset = 0;
 		_readOffset = &((cast(ushort*)_buffer)[1]);
 		*_readOffset = 0;
 		
-		((cast(ushort*)_buffer)[2]) = cast(ushort)(3 * VirtualMemory.pagesize());
-		_maxOffset = ((3 * VirtualMemory.pagesize()) / 2) - 3;
+		((cast(ushort*)_buffer)[2]) = cast(ushort)BUFFER_SIZE;
+		_maxOffset = (BUFFER_SIZE / ushort.sizeof) - 3;
 
 		_buffer = _buffer[3..	_maxOffset];
 		ErrorVal ret = KeyboardImplementation.initialize(&putKey);
@@ -61,4 +61,6 @@ private:
 	ushort* _writeOffset;
 	ushort* _readOffset;
 	ushort _maxOffset;
+
+	const uint BUFFER_SIZE = 3 * VirtualMemory.pagesize();
 }
