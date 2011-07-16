@@ -426,9 +426,7 @@ static:
 			pl3.entries[indexL3].setMode(pl3.entries[indexL3].getMode() | AccessMode.Segment);
 		}
 		else {
-			PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
-			PageLevel2* pl2 = pl3.getOrCreateTable(indexL3, usermode);
-			pl3.entries[indexL3].setMode(pl3.entries[indexL3].getMode() | AccessMode.Segment);
+			return cG(location, oneGB, flags);
 		}
 
 		// XXX: Check for errors, maybe handle flags?!
@@ -436,6 +434,79 @@ static:
 		return true;
 	}
 	
+	bool cG(ubyte* location, ulong size, AccessMode flags) {
+		uint pagelevel = sizeToPageLevel(size);
+
+		if(flags & AccessMode.Global){
+			pagelevel--;
+		}
+
+		ulong vAddr = cast(ulong)location;
+		bool success;
+		switch(pagelevel){
+		case 1:
+			PageLevel!(1)* segmentParent;
+			walk!(createSegmentHelper)(root, vAddr, flags, success, segmentParent);
+			break;
+		case 2:
+			PageLevel!(2)* segmentParent;
+			walk!(createSegmentHelper)(root, vAddr, flags, success, segmentParent);
+			break;
+		case 3:
+			PageLevel!(3)* segmentParent;
+			walk!(createSegmentHelper)(root, vAddr, flags, success, segmentParent);
+			break;
+		case 4:
+			PageLevel!(4)* segmentParent;
+			walk!(createSegmentHelper)(root, vAddr, flags, success, segmentParent);
+			break;
+		}
+
+		assert(success);
+
+		return success;
+	}
+
+	template createSegmentHelper(U, T){
+		bool createSegmentHelper(T table, uint idx, ref AccessMode flags, ref bool success, ref U segmentParent){
+			static if(is(T == U)){
+				if(table.entries[idx].present)
+					return false;
+
+				static if(U.level == 1){
+					void* page = PageAllocator.allocPage();
+
+					if(page is null)
+						return false;
+
+					table.entries[idx].pml = cast(ulong)page;
+				}else{
+					auto segment = table.getOrCreateTable(idx, false);
+
+					if(segment is null)
+						return false;
+				}
+
+				table.entries[idx].setMode(AccessMode.Segment | flags);
+				success = true;
+
+				return false;
+			}else{
+				static if(T.level != 1){
+					auto intermediate = table.getOrCreateTable(idx, true);
+
+					if(intermediate is null)
+						return false;
+
+				return true;
+				}else{
+					// will nevar happen
+					return false;
+				}
+			}
+		}
+	}
+
 	// XXX support multiple sizes
 	bool closeGib(ubyte* location) {
 		// Find page translation

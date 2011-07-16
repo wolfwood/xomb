@@ -36,9 +36,11 @@ public:
 	// Create a new segment that will fit the indicated size
 	// into the global address space.
 	ubyte[] createSegment(ubyte* location, ulong size, AccessMode flags) {
-		Paging.createGib(location, size, flags);
-
-		return location[0 .. size];
+		if(Paging.createGib(location, size, flags)){
+			return location[0 .. size];
+		}else{
+			return null;
+		}
 	}
 
 	bool mapSegment(AddressSpace dest, ubyte* location, ubyte* destination, AccessMode flags) {
