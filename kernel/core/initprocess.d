@@ -56,7 +56,7 @@ struct InitProcess{
 		bottle.stdoutIsTTY = true;
 
 		bottle.stdin = findFreeSegment(false);
-		VirtualMemory.mapSegment(null, Keyboard.address, bottle.stdin.ptr, AccessMode.Writable|AccessMode.User);
+		VirtualMemory.mapSegment(null, Keyboard.segment.ptr, bottle.stdin.ptr, AccessMode.Writable|AccessMode.User);
 		bottle.stdinIsTTY = true;
 
 		bottle.setArgv("init and args");

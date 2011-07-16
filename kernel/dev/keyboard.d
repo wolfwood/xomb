@@ -17,9 +17,9 @@ class Keyboard {
 	static:
 
 	ErrorVal initialize() {
-		address = VirtualMemory.findFreeSegment().ptr;
+		segment = VirtualMemory.findFreeSegment(true, oneGB);
 
-		_buffer = cast(short[])VirtualMemory.createSegment(address, BUFFER_SIZE, AccessMode.DefaultKernel);
+		_buffer = cast(short[])VirtualMemory.createSegment(segment.ptr, oneGB, AccessMode.DefaultKernel);
 
 		_writeOffset = cast(ushort*)_buffer.ptr;
 		*_writeOffset = 0;
@@ -34,7 +34,7 @@ class Keyboard {
 		return ret;
 	}
 	
-	ubyte* address;
+	ubyte[] segment;
 private:
 
 	void putKey(Key nextKey, bool released) {
