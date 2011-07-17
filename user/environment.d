@@ -10,6 +10,7 @@ version(KERNEL){
 }
 
 typedef ubyte* AddressSpace;
+typedef ubyte* PhysicalAddress;
 
 const ulong oneGB = 1024*1024*1024UL;
 const PageLevel!(4)* root = cast(PageLevel!(4)*)0xFFFFFF7F_BFDFE000;
@@ -262,8 +263,8 @@ template PageTableEntry(char[] T){
 				static assert(false);
 			}
 
-		ubyte* location() {
-			return cast(ubyte*)(cast(ulong)address() << 12);
+		PhysicalAddress location() {
+			return cast(PhysicalAddress)(cast(ulong)address() << 12);
 		}
 
 		AccessMode getMode(){
@@ -357,7 +358,7 @@ template PageLevel(ushort L){
 			}
 
 			version(KERNEL){
-				void setTable(uint idx, ubyte* address, bool usermode = false) {
+				void setTable(uint idx, PhysicalAddress address, bool usermode = false) {
 					entries[idx].pml = cast(ulong)address;
 					entries[idx].present = 1;
 					entries[idx].rw = 1;

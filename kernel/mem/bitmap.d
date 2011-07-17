@@ -131,11 +131,11 @@ ErrorVal reportCore() {
 	return ErrorVal.Success;
 }
 
-void* allocPage() {
+PhysicalAddress allocPage() {
 	return allocPage(null);
 }
 
-void* allocPage(void * virtAddr) {
+PhysicalAddress allocPage(void * virtAddr) {
 	// Find a page
 	ulong index = findPage(virtAddr);
 
@@ -144,10 +144,10 @@ void* allocPage(void * virtAddr) {
 	}
 
 	// Return the address
-	return cast(void*)(index * VirtualMemory.pagesize());
+	return cast(PhysicalAddress)(index * VirtualMemory.pagesize());
 }
 
-ErrorVal freePage(void* address) {
+ErrorVal freePage(PhysicalAddress address) {
 	// Find the page index
 	ulong pageIndex = cast(ulong)address;
 

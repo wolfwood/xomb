@@ -110,7 +110,7 @@ static:
 		kernelMapped = true;
 
 		// Save the physical address for later
-		rootPhysical = cast(void*)root;
+		rootPhysical = cast(PhysicalAddress)root;
 
 		// This is the virtual address for the page table
 		root = cast(PageLevel4*)0xFFFFFF7F_BFDFE000;
@@ -242,7 +242,7 @@ static:
 		// and now it is going to be hardcoded here :(
 
 		// Make a new root pagetable
-		ubyte* newRootPhysAddr = cast(ubyte*)PageAllocator.allocPage();
+		PhysicalAddress newRootPhysAddr = PageAllocator.allocPage();
 
 		PageLevel3* addressRoot = root.getOrCreateTable(255);
 
@@ -329,7 +329,7 @@ static:
 
 			translateAddress(location, indexL1, indexL2, indexL3, indexL4);
 			pl2 = pl3.getOrCreateTable(indexL4, true);
-			ubyte* locationAddr = cast(ubyte*)pl2.entries[indexL3].location();
+			PhysicalAddress locationAddr = pl2.entries[indexL3].location();
 
 
 			indexL1 = indexL2 = indexL3 = indexL4 = 0;
@@ -377,7 +377,7 @@ static:
 
 		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
 		pl3 = root.getTable(indexL4);
-		ubyte* locationAddr = cast(ubyte*)pl3.entries[indexL3].location();
+		PhysicalAddress locationAddr = pl3.entries[indexL3].location();
 
 		// Goto the other address space
 		// XXX: use switchAddressSpace() ?
@@ -422,7 +422,7 @@ static:
 
 			// Allocate paging structures
 			PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
-			pl3.setTable(indexL3, cast(ubyte*)global_pl3.entries[indexL3].location(), usermode);
+			pl3.setTable(indexL3, global_pl3.entries[indexL3].location(), usermode);
 			pl3.entries[indexL3].setMode(pl3.entries[indexL3].getMode() | AccessMode.Segment);
 		}
 		else {
@@ -633,7 +633,7 @@ private:
 
 
 	PageLevel4* root;
-	void* rootPhysical;
+	PhysicalAddress rootPhysical;
 
 
 // -- Mapping Functions -- //
