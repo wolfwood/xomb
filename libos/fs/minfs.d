@@ -33,7 +33,7 @@ class MinFS{
 	static:
 	// open the SuperSegment, allowing metadata reads and writes
 	void initialize(){
-		Syscall.create(createAddr(0,0,0,257), oneGB, AccessMode.User|AccessMode.Writable|AccessMode.Global|AccessMode.AllocOnAccess);
+		Syscall.map(null, null, createAddr(0,0,0,257), AccessMode.User|AccessMode.Writable|AccessMode.Global|AccessMode.AllocOnAccess);
 		
 		hdr = cast(Header*)createAddr(0,0,0,257);
 	}
@@ -64,8 +64,7 @@ class MinFS{
 			//ubyte[]
 			Syscall.create(f.ptr, f.length, mode | AccessMode.Global);
 		}else{
-			//XXX: don't use create as open
-			Syscall.create(f.ptr, f.length, mode | AccessMode.Global);
+			Syscall.map(null, null, f.ptr, mode | AccessMode.Global);
 		}
 
 		return f;

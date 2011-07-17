@@ -324,20 +324,32 @@ static:
 
 		if(flags & AccessMode.Global){
 			ulong indexL1, indexL2, indexL3, indexL4;
-			PageLevel3* pl3 = root.getOrCreateTable(509, true);
 			PageLevel2* pl2;
 
-			translateAddress(location, indexL1, indexL2, indexL3, indexL4);
-			pl2 = pl3.getOrCreateTable(indexL4, true);
-			PhysicalAddress locationAddr = pl2.entries[indexL3].location();
+			if(location is null){
+				PageLevel3* pl3 = root.getOrCreateTable(509, true);
+
+				translateAddress(destination, indexL1, indexL2, indexL3, indexL4);
+
+				pl2 = pl3.getOrCreateTable(indexL4, true);
+				PhysicalAddress locationAddr = pl2.entries[indexL3].location();
+
+				pl3 = root.getOrCreateTable(indexL4, true);
+				pl3.setTable(indexL3, locationAddr, true);
+			}else{
+				PageLevel3* pl3 = root.getOrCreateTable(509, true);
+
+				translateAddress(location, indexL1, indexL2, indexL3, indexL4);
+				pl2 = pl3.getOrCreateTable(indexL4, true);
+				PhysicalAddress locationAddr = pl2.entries[indexL3].location();
 
 
-			indexL1 = indexL2 = indexL3 = indexL4 = 0;
+				indexL1 = indexL2 = indexL3 = indexL4 = 0;
 
-			translateAddress(destination, indexL1, indexL2, indexL3, indexL4);
-			pl2 = pl3.getOrCreateTable(indexL4, true);
-			pl2.setTable(indexL3, locationAddr, true);
-
+				translateAddress(destination, indexL1, indexL2, indexL3, indexL4);
+				pl2 = pl3.getOrCreateTable(indexL4, true);
+				pl2.setTable(indexL3, locationAddr, true);
+			}
 			return ErrorVal.Success;
 		}
 
