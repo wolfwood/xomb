@@ -420,52 +420,48 @@ static:
 
 		ulong vAddr = cast(ulong)location;
 		bool success;
-		uint segmentIndex;
-		PhysicalAddress phys = null;
+		PhysicalAddress phys = PageAllocator.allocPage();
 
 		switch(pagelevel){
 		case 1:
 			// create the segment in the AddressSpace
 			PageLevel!(1)* segmentParent;
-			walk!(createSegmentHelper)(root, vAddr, flags, success, segmentParent, segmentIndex, phys);
+			walk!(mapSegmentHelper)(root, vAddr, flags, success, segmentParent, phys);
 			break;
 		case 2:
 			PageLevel!(2)* segmentParent;
-			walk!(createSegmentHelper)(root, vAddr, flags, success, segmentParent, segmentIndex, phys);
+			walk!(mapSegmentHelper)(root, vAddr, flags, success, segmentParent, phys);
 
 			// 'map' the segment into the Global Space
 			if(success && global){
 				PageLevel!(1)* globalSegmentParent;
 				success = false;
-				phys = segmentParent.entries[segmentIndex].location();
 
-				walk!(createSegmentHelper)(root, getGlobalAddress(vAddr), flags, success, globalSegmentParent, segmentIndex, phys);
+				walk!(mapSegmentHelper)(root, getGlobalAddress(vAddr), flags, success, globalSegmentParent, phys);
 			}
 			break;
 		case 3:
 			PageLevel!(3)* segmentParent;
-			walk!(createSegmentHelper)(root, vAddr, flags, success, segmentParent, segmentIndex, phys);
+			walk!(mapSegmentHelper)(root, vAddr, flags, success, segmentParent, phys);
 
 			// 'map' the segment into the Global Space
 			if(success && global){
 				PageLevel!(2)* globalSegmentParent;
 				success = false;
-				phys = segmentParent.entries[segmentIndex].location();
 
-				walk!(createSegmentHelper)(root, getGlobalAddress(vAddr), flags, success, globalSegmentParent, segmentIndex, phys);
+				walk!(mapSegmentHelper)(root, getGlobalAddress(vAddr), flags, success, globalSegmentParent, phys);
 			}
 			break;
 		case 4:
 			PageLevel!(4)* segmentParent;
-			walk!(createSegmentHelper)(root, vAddr, flags, success, segmentParent, segmentIndex, phys);
+			walk!(mapSegmentHelper)(root, vAddr, flags, success, segmentParent, phys);
 
 			// 'map' the segment into the Global Space
 			if(success && global){
 				PageLevel!(3)* globalSegmentParent;
 				success = false;
-				phys = segmentParent.entries[segmentIndex].location();
 
-				walk!(createSegmentHelper)(root, getGlobalAddress(vAddr), flags, success, globalSegmentParent, segmentIndex, phys);
+				walk!(mapSegmentHelper)(root, getGlobalAddress(vAddr), flags, success, globalSegmentParent, phys);
 			}
 			break;
 		}
@@ -475,39 +471,22 @@ static:
 		return success;
 	}
 
-	template createSegmentHelper(U, T){
-		bool createSegmentHelper(T table, uint idx, ref AccessMode flags, ref bool success, ref U segmentParent, ref uint segmentIndex, ref PhysicalAddress phys){
+	template mapSegmentHelper(U, T){
+		bool mapSegmentHelper(T table, uint idx, ref AccessMode flags, ref bool success, ref U segmentParent, ref PhysicalAddress phys){
 			static if(is(T == U)){
 				if(table.entries[idx].present)
 					return false;
 
-				if(phys is null){
-					static if(U.level == 1){
-						void* page = PageAllocator.allocPage();
-
-						if(page is null)
-							return false;
-
-						table.entries[idx].pml = cast(ulong)page;
-					}else{
-						auto segment = table.getOrCreateTable(idx, false);
-
-						if(segment is null)
-							return false;
-					}
+				static if(U.level == 1){
+					table.entries[idx].pml = cast(ulong)phys;
 				}else{
-					static if(U.level == 1){
-						table.entries[idx].pml = cast(ulong)phys;
-					}else{
-						table.setTable(idx, phys, false);
-					}
+					table.setTable(idx, phys, false);
 				}
 
 				table.entries[idx].setMode(AccessMode.Segment | flags);
 				success = true;
 
 				segmentParent = table;
-				segmentIndex = idx;
 
 				return false;
 			}else{
