@@ -11,6 +11,7 @@ version(KERNEL){
 
 typedef ubyte* AddressSpace;
 typedef ubyte* PhysicalAddress;
+alias ulong AddressFragment;
 
 const ulong oneGB = 1024*1024*1024UL;
 const PageLevel!(4)* root = cast(PageLevel!(4)*)0xFFFFFF7F_BFDFE000;
@@ -456,9 +457,18 @@ ubyte* createAddress(ulong indexLevel1, ulong indexLevel2, ulong indexLevel3, ul
 }
 
 // alternative translate address helper, good for recursive functions
-void getNextIndex(ref ulong addr, out ulong idx){
+void getNextIndex(ref AddressFragment addr, out ulong idx){
 	idx = (addr & 0xff8000000000) >> 39;
 	addr <<= 9;
+}
+
+// turn a normal address into a global address
+AddressFragment getGlobalAddress(AddressFragment addr){
+	addr >>= 9;
+	addr &= ~0xff8000000000UL;
+	addr |= (509UL << 39);
+
+	return addr;
 }
 
 uint sizeToPageLevel(ulong size){
