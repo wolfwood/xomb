@@ -342,7 +342,7 @@ public:
 	}
 
 	//noreturn
-  void enterUserspace(ulong idx, ulong calleePhysAddr){
+  void enterUserspace(ulong idx, PhysicalAddress calleePhysAddr){
 		// use CPUid as vector index and sysret to 1 GB
 
 		// jump using sysret to 1GB for stackless entry

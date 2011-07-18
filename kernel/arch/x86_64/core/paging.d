@@ -286,7 +286,7 @@ static:
 		return cast(AddressSpace)addressSpace;
 	}
 
-	synchronized ErrorVal switchAddressSpace(AddressSpace as, out ulong oldRoot){
+	synchronized ErrorVal switchAddressSpace(AddressSpace as, out PhysicalAddress oldRoot){
 
 		if(as is null){
 			// XXX - just decode phys addr directly?
@@ -307,9 +307,9 @@ static:
 		PageLevel2* pl2 = pl3.getTable(indexL3);
 		PageLevel1* pl1 = pl2.getTable(indexL2);
 
-		ulong newPhysRoot = cast(ulong)pl1.entries[indexL1].location();
+		PhysicalAddress newPhysRoot = pl1.entries[indexL1].location();
 
-		oldRoot = cast(ulong)root.entries[510].location();
+		oldRoot = root.entries[510].location();
 
 		asm{
 			mov RAX, newPhysRoot;
@@ -381,9 +381,9 @@ static:
 		PageLevel3* pl3 = root.getTable(indexL4);
 		PageLevel2* pl2 = pl3.getTable(indexL3);
 		PageLevel1* pl1 = pl2.getTable(indexL2);
-		ulong addr = cast(ulong)pl1.entries[indexL1].location();
+		PhysicalAddress addr = pl1.entries[indexL1].location();
 
-		ulong oldRoot = cast(ulong)root.entries[510].location();
+		PhysicalAddress oldRoot = root.entries[510].location();
 		
 		// Now, figure out the physical address of the gib root.
 

@@ -69,7 +69,7 @@ public:
 			return SyscallError.Failcopter;
 		}
 
-		ulong physAddr;
+		PhysicalAddress physAddr;
 
 		if(VirtualMemory.switchAddressSpace(params.dest, physAddr) == ErrorVal.Fail){
 			return SyscallError.Failcopter;

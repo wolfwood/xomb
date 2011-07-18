@@ -70,7 +70,7 @@ struct InitProcess{
 
 	void enterFromBSP(){
 		// init shouldn't care where its entered from
-		ulong physAddr = 0;
+		PhysicalAddress physAddr;
 
 		// jump using sysret to 1GB for stackless entry
 		Cpu.enterUserspace(0, physAddr);
@@ -81,7 +81,7 @@ struct InitProcess{
 		for(;;){}
 
 
-		ulong physAddr = 0;
+		PhysicalAddress physAddr;
 
 		Cpu.enterUserspace(1, physAddr);
 	}

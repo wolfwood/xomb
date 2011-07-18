@@ -59,7 +59,7 @@ public:
 		return Paging.createAddressSpace();
 	}
 
-	ErrorVal switchAddressSpace(AddressSpace as, out ulong oldRoot){
+	ErrorVal switchAddressSpace(AddressSpace as, out PhysicalAddress oldRoot){
 		return Paging.switchAddressSpace(as, oldRoot);
 	}
 
