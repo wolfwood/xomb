@@ -286,7 +286,7 @@ static:
 		return cast(AddressSpace)addressSpace;
 	}
 
-	ErrorVal switchAddressSpace(AddressSpace as, out PhysicalAddress oldRoot){
+	synchronized ErrorVal switchAddressSpace(AddressSpace as, out PhysicalAddress oldRoot){
 
 		if(as is null){
 			// XXX - just decode phys addr directly?
@@ -312,7 +312,8 @@ static:
 		return ErrorVal.Success;
 	}
 
-	synchronized PhysicalAddress switchAddressSpace(PhysicalAddress newRoot){
+private:
+	PhysicalAddress switchAddressSpace(PhysicalAddress newRoot){
 		PhysicalAddress oldRoot = root.entries[510].location();
 
 		asm{
@@ -322,6 +323,7 @@ static:
 
 		return oldRoot;
 	}
+public:
 
 	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, AccessMode flags) {
 
@@ -386,8 +388,6 @@ static:
 		PageLevel1* pl1 = pl2.getTable(indexL2);
 		PhysicalAddress addr = pl1.entries[indexL1].location();
 
-		PhysicalAddress oldRoot = root.entries[510].location();
-		
 		// Now, figure out the physical address of the gib root.
 
 		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
@@ -395,11 +395,7 @@ static:
 		PhysicalAddress locationAddr = pl3.entries[indexL3].location();
 
 		// Goto the other address space
-		// XXX: use switchAddressSpace() ?
-		asm {
-			mov RAX, addr;
-			mov CR3, RAX;
-		}
+		PhysicalAddress oldRoot = switchAddressSpace(addr);
 
 		// Add an entry into the new address space that shares the gib of the old
 		translateAddress(destination, indexL1, indexL2, indexL3, indexL4);
@@ -408,10 +404,7 @@ static:
 		pl3.entries[indexL3].setMode(pl3.entries[indexL3].getMode() | AccessMode.Segment);
 
 		// Return to our old address space
-		asm {
-			mov RAX, oldRoot;
-			mov CR3, RAX;
-		}
+		switchAddressSpace(oldRoot);
 
 		return ErrorVal.Success;
 	}
