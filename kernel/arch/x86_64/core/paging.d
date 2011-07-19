@@ -330,6 +330,7 @@ public:
 		if(flags & AccessMode.Global){
 			ulong indexL1, indexL2, indexL3, indexL4;
 			PageLevel2* pl2;
+			bool success;
 
 			if(location is null){
 				PageLevel3* pl3 = root.getOrCreateTable(509, true);
@@ -339,8 +340,8 @@ public:
 				pl2 = pl3.getOrCreateTable(indexL4, true);
 				PhysicalAddress locationAddr = pl2.entries[indexL3].location();
 
-				pl3 = root.getOrCreateTable(indexL4, true);
-				pl3.setTable(indexL3, locationAddr, true);
+				PageLevel!(3)* segmentParent;
+				walk!(mapSegmentHelper)(root, cast(ulong)destination, flags, success, segmentParent, locationAddr);
 			}else{
 				PageLevel3* pl3 = root.getOrCreateTable(509, true);
 
@@ -349,13 +350,15 @@ public:
 				PhysicalAddress locationAddr = pl2.entries[indexL3].location();
 
 
-				indexL1 = indexL2 = indexL3 = indexL4 = 0;
-
-				translateAddress(destination, indexL1, indexL2, indexL3, indexL4);
-				pl2 = pl3.getOrCreateTable(indexL4, true);
-				pl2.setTable(indexL3, locationAddr, true);
+				PageLevel!(2)* segmentParent;
+				walk!(mapSegmentHelper)(root, getGlobalAddress(cast(ulong)destination), flags, success, segmentParent, locationAddr);
 			}
-			return ErrorVal.Success;
+
+			if(success){
+				return ErrorVal.Success;
+			}else{
+				return ErrorVal.Fail;
+			}
 		}
 
 
