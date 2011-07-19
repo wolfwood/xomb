@@ -286,7 +286,7 @@ static:
 		return cast(AddressSpace)addressSpace;
 	}
 
-	synchronized ErrorVal switchAddressSpace(AddressSpace as, out PhysicalAddress oldRoot){
+	ErrorVal switchAddressSpace(AddressSpace as, out PhysicalAddress oldRoot){
 
 		if(as is null){
 			// XXX - just decode phys addr directly?
@@ -307,17 +307,20 @@ static:
 		PageLevel2* pl2 = pl3.getTable(indexL3);
 		PageLevel1* pl1 = pl2.getTable(indexL2);
 
-		PhysicalAddress newPhysRoot = pl1.entries[indexL1].location();
-
-		oldRoot = root.entries[510].location();
-
-		asm{
-			mov RAX, newPhysRoot;
-			mov CR3, RAX;
-		}
-		
+		oldRoot = switchAddressSpace(pl1.entries[indexL1].location());
 
 		return ErrorVal.Success;
+	}
+
+	synchronized PhysicalAddress switchAddressSpace(PhysicalAddress newRoot){
+		PhysicalAddress oldRoot = root.entries[510].location();
+
+		asm{
+			mov RAX, newRoot;
+			mov CR3, RAX;
+		}
+
+		return oldRoot;
 	}
 
 	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, AccessMode flags) {
