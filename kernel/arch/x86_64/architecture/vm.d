@@ -36,7 +36,26 @@ public:
 	// Create a new segment that will fit the indicated size
 	// into the global address space.
 	ubyte[] createSegment(ubyte* location, ulong size, AccessMode flags) {
-		if(Paging.createGib(location, size, flags)){
+		bool success;
+		uint pagelevel = sizeToPageLevel(size);
+
+		switch(pagelevel){
+		case 1:
+			// create the segment in the AddressSpace
+			success = Paging.createGib!(PageLevel!(1))(location, flags);
+			break;
+		case 2:
+			success = Paging.createGib!(PageLevel!(2))(location, flags);
+			break;
+		case 3:
+			success = Paging.createGib!(PageLevel!(3))(location, flags);
+			break;
+		case 4:
+			success = Paging.createGib!(PageLevel!(4))(location, flags);
+			break;
+		}
+
+		if(success){
 			return location[0 .. size];
 		}else{
 			return null;
@@ -73,7 +92,7 @@ public:
 	synchronized void* mapStack(void* physAddr) {
 		if(stackSegment is null){
 			stackSegment = findFreeSegment().ptr;
-			Paging.createGib(stackSegment, oneGB, AccessMode.Writable|AccessMode.AllocOnAccess);
+			createSegment(stackSegment, oneGB, AccessMode.Writable|AccessMode.AllocOnAccess);
 		}
 
 		stackSegment += Paging.PAGESIZE;

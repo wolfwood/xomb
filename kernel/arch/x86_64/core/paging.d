@@ -383,62 +383,29 @@ public:
 		}
 	}
 
-	bool createGib(ubyte* location, ulong size, AccessMode flags) {
-		uint pagelevel = sizeToPageLevel(size);
+	template createGib(T){
+		bool createGib(ubyte* location, AccessMode flags){
+			bool global = (flags & AccessMode.Global) != 0;
 
-		bool global = (flags & AccessMode.Global) != 0;
+			ulong vAddr = cast(ulong)location;
+			bool success;
+			PhysicalAddress phys = PageAllocator.allocPage();
 
-		ulong vAddr = cast(ulong)location;
-		bool success;
-		PhysicalAddress phys = PageAllocator.allocPage();
-
-		switch(pagelevel){
-		case 1:
-			// create the segment in the AddressSpace
-			PageLevel!(1)* segmentParent;
-			walk!(mapSegmentHelper)(root, vAddr, flags, success, segmentParent, phys);
-			break;
-		case 2:
-			PageLevel!(2)* segmentParent;
+			T* segmentParent;
 			walk!(mapSegmentHelper)(root, vAddr, flags, success, segmentParent, phys);
 
-			// 'map' the segment into the Global Space
-			if(success && global){
-				PageLevel!(1)* globalSegmentParent;
-				success = false;
+			static if(T.level != 1){
+				// 'map' the segment into the Global Space
+				if(success && global){
+					PageLevel!(T.level -1)* globalSegmentParent;
+					success = false;
 
-				walk!(mapSegmentHelper)(root, getGlobalAddress(vAddr), flags, success, globalSegmentParent, phys);
+					walk!(mapSegmentHelper)(root, getGlobalAddress(vAddr), flags, success, globalSegmentParent, phys);
+				}
 			}
-			break;
-		case 3:
-			PageLevel!(3)* segmentParent;
-			walk!(mapSegmentHelper)(root, vAddr, flags, success, segmentParent, phys);
 
-			// 'map' the segment into the Global Space
-			if(success && global){
-				PageLevel!(2)* globalSegmentParent;
-				success = false;
-
-				walk!(mapSegmentHelper)(root, getGlobalAddress(vAddr), flags, success, globalSegmentParent, phys);
-			}
-			break;
-		case 4:
-			PageLevel!(4)* segmentParent;
-			walk!(mapSegmentHelper)(root, vAddr, flags, success, segmentParent, phys);
-
-			// 'map' the segment into the Global Space
-			if(success && global){
-				PageLevel!(3)* globalSegmentParent;
-				success = false;
-
-				walk!(mapSegmentHelper)(root, getGlobalAddress(vAddr), flags, success, globalSegmentParent, phys);
-			}
-			break;
+			return success;
 		}
-
-		assert(success);
-
-		return success;
 	}
 
 	template mapSegmentHelper(U, T){
