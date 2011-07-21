@@ -212,8 +212,8 @@ template populateChild(T){
 		}
 
 		// map stdin/out into child process
-		Syscall.map(child, stdout, childBottle.stdout.ptr, AccessMode.Writable);
-		Syscall.map(child, stdin, childBottle.stdin.ptr, AccessMode.Read);
+		Syscall.map(child, stdout, childBottle.stdout.ptr, AccessMode.Writable|AccessMode.User);
+		Syscall.map(child, stdin, childBottle.stdin.ptr, AccessMode.Writable|AccessMode.User);
 	}
 }
 
