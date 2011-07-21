@@ -326,11 +326,11 @@ private:
 public:
 
 	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, AccessMode flags) {
+		bool success;
 
 		if(flags & AccessMode.Global){
 			ulong indexL1, indexL2, indexL3, indexL4;
 			PageLevel2* pl2;
-			bool success;
 
 			if(location is null){
 				PageLevel3* pl3 = root.getOrCreateTable(509, true);
@@ -353,63 +353,58 @@ public:
 				PageLevel!(2)* segmentParent;
 				walk!(mapSegmentHelper)(root, getGlobalAddress(cast(ulong)destination), flags, success, segmentParent, locationAddr);
 			}
-
-			if(success){
-				return ErrorVal.Success;
-			}else{
-				return ErrorVal.Fail;
-			}
-		}
-
-
-		PageLevel4* addressSpace;
-
-
-		if(destinationRoot is null){
-			addressSpace = root;
-			destinationRoot = cast(AddressSpace)addressSpace;
 		}else{
-			// verify destinationRoot is a valid root page table
-			if((modesForAddress(destinationRoot) & AccessMode.RootPageTable) == 0){
-				return ErrorVal.Fail;
+			PageLevel4* addressSpace;
+
+
+			if(destinationRoot is null){
+				addressSpace = root;
+				destinationRoot = cast(AddressSpace)addressSpace;
+			}else{
+				// verify destinationRoot is a valid root page table
+				if((modesForAddress(destinationRoot) & AccessMode.RootPageTable) == 0){
+					return ErrorVal.Fail;
+				}
+
+				addressSpace = cast(PageLevel4*)destinationRoot;
 			}
 
-			addressSpace = cast(PageLevel4*)destinationRoot;
+
+			// So. destinationRoot is the virtual address of the destination
+			// root page table within the source (current) page table.
+			// Due to paging trick magic.
+		
+			ulong indexL4, indexL3, indexL2, indexL1;
+				
+			translateAddress(cast(ubyte*)destinationRoot, indexL1, indexL2, indexL3, indexL4);
+
+			PageLevel3* pl3 = root.getTable(indexL4);
+			PageLevel2* pl2 = pl3.getTable(indexL3);
+			PageLevel1* pl1 = pl2.getTable(indexL2);
+			PhysicalAddress addr = pl1.entries[indexL1].location();
+
+			// Now, figure out the physical address of the gib root.
+
+			translateAddress(location, indexL1, indexL2, indexL3, indexL4);
+			pl3 = root.getTable(indexL4);
+			PhysicalAddress locationAddr = pl3.entries[indexL3].location();
+
+			// Goto the other address space
+			PhysicalAddress oldRoot = switchAddressSpace(addr);
+
+
+			PageLevel!(3)* segmentParent;
+			walk!(mapSegmentHelper)(root, cast(ulong)destination, flags, success, segmentParent, locationAddr);
+
+			// Return to our old address space
+			switchAddressSpace(oldRoot);
 		}
 
-
-		// So. destinationRoot is the virtual address of the destination
-		// root page table within the source (current) page table.
-		// Due to paging trick magic.
-		
-		ulong indexL4, indexL3, indexL2, indexL1;
-				
-		translateAddress(cast(ubyte*)destinationRoot, indexL1, indexL2, indexL3, indexL4);
-
-		PageLevel3* pl3 = root.getTable(indexL4);
-		PageLevel2* pl2 = pl3.getTable(indexL3);
-		PageLevel1* pl1 = pl2.getTable(indexL2);
-		PhysicalAddress addr = pl1.entries[indexL1].location();
-
-		// Now, figure out the physical address of the gib root.
-
-		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
-		pl3 = root.getTable(indexL4);
-		PhysicalAddress locationAddr = pl3.entries[indexL3].location();
-
-		// Goto the other address space
-		PhysicalAddress oldRoot = switchAddressSpace(addr);
-
-		// Add an entry into the new address space that shares the gib of the old
-		translateAddress(destination, indexL1, indexL2, indexL3, indexL4);
-		pl3 = root.getOrCreateTable(indexL4, true);
-		pl3.setTable(indexL3, locationAddr, true);
-		pl3.entries[indexL3].setMode(pl3.entries[indexL3].getMode() | AccessMode.Segment);
-
-		// Return to our old address space
-		switchAddressSpace(oldRoot);
-
-		return ErrorVal.Success;
+		if(success){
+			return ErrorVal.Success;
+		}else{
+			return ErrorVal.Fail;
+		}
 	}
 
 	bool createGib(ubyte* location, ulong size, AccessMode flags) {
