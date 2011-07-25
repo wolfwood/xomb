@@ -287,7 +287,6 @@ static:
 	}
 
 	ErrorVal switchAddressSpace(AddressSpace as, out PhysicalAddress oldRoot){
-
 		if(as is null){
 			// XXX - just decode phys addr directly?
 			as = cast(AddressSpace)root.getTable(255).getTable(0);
@@ -298,16 +297,7 @@ static:
 			return ErrorVal.Fail;
 		}
 
-
-		ulong indexL4, indexL3, indexL2, indexL1;
-				
-		translateAddress(cast(ubyte*)as, indexL1, indexL2, indexL3, indexL4);
-
-		PageLevel3* pl3 = root.getTable(indexL4);
-		PageLevel2* pl2 = pl3.getTable(indexL3);
-		PageLevel1* pl1 = pl2.getTable(indexL2);
-
-		oldRoot = switchAddressSpace(pl1.entries[indexL1].location());
+		oldRoot = switchAddressSpace(getPhysicalAddressOfSegment(as));
 
 		return ErrorVal.Success;
 	}
@@ -326,25 +316,16 @@ private:
 public:
 
 	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, AccessMode flags) {
-		ulong indexL1, indexL2, indexL3, indexL4;
 		bool success;
-		PageLevel3* pl3;
 
 		if(flags & AccessMode.Global){
-			PageLevel2* pl2;
-			pl3 = root.getOrCreateTable(509, true);
-
 			if(location is null){
-				translateAddress(destination, indexL1, indexL2, indexL3, indexL4);
-				pl2 = pl3.getOrCreateTable(indexL4, true);
-				PhysicalAddress locationAddr = pl2.entries[indexL3].location();
+				PhysicalAddress locationAddr = getPhysicalAddressOfSegment(cast(ubyte*)getGlobalAddress(cast(AddressFragment)destination));
 
 				PageLevel!(3)* segmentParent;
 				walk!(mapSegmentHelper)(root, cast(ulong)destination, flags, success, segmentParent, locationAddr);
 			}else{
-				translateAddress(location, indexL1, indexL2, indexL3, indexL4);
-				pl2 = pl3.getOrCreateTable(indexL4, true);
-				PhysicalAddress locationAddr = pl2.entries[indexL3].location();
+				PhysicalAddress locationAddr = getPhysicalAddressOfSegment(cast(ubyte*)getGlobalAddress(cast(AddressFragment)location));
 
 				PageLevel!(2)* segmentParent;
 				walk!(mapSegmentHelper)(root, getGlobalAddress(cast(ulong)destination), flags, success, segmentParent, locationAddr);
@@ -355,15 +336,10 @@ public:
 				return ErrorVal.Fail;
 			}
 
-			// Now, figure out the physical address of the gib root.
-			translateAddress(location, indexL1, indexL2, indexL3, indexL4);
-			pl3 = root.getTable(indexL4);
-			PhysicalAddress locationAddr = pl3.entries[indexL3].location();
-
-			// Goto the other address space
-			PhysicalAddress oldRoot;
+			PhysicalAddress locationAddr = getPhysicalAddressOfSegment(location), oldRoot;
 
 			if(destinationRoot !is null){
+				// Goto the other address space
 				switchAddressSpace(destinationRoot, oldRoot);
 			}
 
@@ -385,10 +361,9 @@ public:
 
 	template createGib(T){
 		bool createGib(ubyte* location, AccessMode flags){
-			bool global = (flags & AccessMode.Global) != 0;
+			bool global = (flags & AccessMode.Global) != 0, success;
 
 			ulong vAddr = cast(ulong)location;
-			bool success;
 			PhysicalAddress phys = PageAllocator.allocPage();
 
 			T* segmentParent;
@@ -414,17 +389,10 @@ public:
 				if(table.entries[idx].present)
 					return false;
 
-				static if(U.level == 1){
-					table.entries[idx].pml = cast(ulong)phys;
-				}else{
-					table.setTable(idx, phys, false);
-				}
-
+				table.entries[idx].pml = cast(ulong)phys;
 				table.entries[idx].setMode(AccessMode.Segment | flags);
+
 				success = true;
-
-				segmentParent = table;
-
 				return false;
 			}else{
 				static if(T.level != 1){
@@ -444,16 +412,6 @@ public:
 
 	// XXX support multiple sizes
 	bool closeGib(ubyte* location) {
-		// Find page translation
-		ulong indexL4, indexL3, indexL2, indexL1;
-		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
-
-		PageLevel3* pl3 = root.getTable(indexL4);
-		if (pl3 is null) {
-			return false;
-		}
-
-		pl3.setTable(indexL3, null, false);
 		return true;
 	}
 

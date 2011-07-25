@@ -528,6 +528,27 @@ template modesForAddressHelper(T){
 	}
 }
 
+PhysicalAddress getPhysicalAddressOfSegment(ubyte* vAddr){
+	PhysicalAddress physAddr = null;
+
+	walk!(physicalAddressOfSegmentHelper)(root, cast(AddressFragment)vAddr, physAddr);
+
+	return physAddr;
+}
+
+template physicalAddressOfSegmentHelper(T){
+	bool physicalAddressOfSegmentHelper(T table, uint idx, ref PhysicalAddress physAddr){
+		if(table.entries[idx].present){
+			if(table.entries[idx].getMode() & (AccessMode.Segment|AccessMode.RootPageTable)){
+				physAddr = table.entries[idx].location();
+				return false;
+			}else{
+				return true;
+			}
+		}
+		return false;
+	}
+}
 
 ubyte[] findFreeSegment(bool upperhalf = true, ulong size = oneGB){
 	ubyte* vAddr;
