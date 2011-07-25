@@ -54,15 +54,17 @@ class MinFS{
 
 		mode |= AccessMode.User;
 
-		if((f is null) && createFlag){
-			f = alloc(name);
+		if(f is null){
+			if(createFlag){
+				f = alloc(name);
 
-			if(mode & AccessMode.Writable){
-				mode |= AccessMode.AllocOnAccess;
+				if(mode & AccessMode.Writable){
+					mode |= AccessMode.AllocOnAccess;
+				}
+
+				//ubyte[]
+				Syscall.create(f.ptr, f.length, mode | AccessMode.Global);
 			}
-
-			//ubyte[]
-			Syscall.create(f.ptr, f.length, mode | AccessMode.Global);
 		}else{
 			Syscall.map(null, null, f.ptr, mode | AccessMode.Global);
 		}
