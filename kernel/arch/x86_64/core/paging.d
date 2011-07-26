@@ -141,70 +141,80 @@ static:
 			mov cr2, RAX;
 		}
 
-		void* addr = cast(void*)cr2;
+		ubyte* vAddr = cast(ubyte*)cr2;
 
 		if((stack.errorCode & 7) == 7){
 			// XXX: 'kill' child and return to parent?
 			stack.dump();
-			kprintfln!("User Mode Write Fault at {x} on Read-only page {x}, Error Code {x}")(stack.rip, addr, stack.errorCode);
+			kprintfln!("User Mode Write Fault at {x} on Read-only page {x}, Error Code {x}")(stack.rip, vAddr, stack.errorCode);
 			printStackTrace(cast(StackFrame*)stack.rbp);
 			for(;;){}
 		}
-
 
 		if(stack.errorCode == 3){
-			kprintfln!("Kernel Mode Write Fault at {x} on Read-only page {x}, Error Code {x}")(stack.rip, addr, stack.errorCode);
+			kprintfln!("Kernel Mode Write Fault at {x} on Read-only page {x}, Error Code {x}")(stack.rip, vAddr, stack.errorCode);
 			printStackTrace(cast(StackFrame*)stack.rbp);
 			for(;;){}
 		}
 
+		bool allocate;
+		walk!(pageFaultHelper)(root, cr2, allocate, vAddr);
 
-		ulong indexL4, indexL3, indexL2, indexL1;
-		translateAddress(addr, indexL1, indexL2, indexL3, indexL4);
-
-		// check for gib status
-		PageLevel3* pl3 = root.getTable(indexL4);
-		if (pl3 is null) {
-			// NOT AVAILABLE
-
-				if (stack.rip < 0xf_0000_0000_0000) {
-					kprintfln!("User Mode Level 3 Page Fault: instruction address {x}")(stack.rip);
-				}else{
-					kprintfln!("Kernel Mode Level 3 Page Fault: instruction address {x}")(stack.rip);
-				}
-
-				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
-
-				printStackTrace(cast(StackFrame*)stack.rbp);
-
-				for(;;){}
-		}
-		else {
-			PageLevel2* pl2 = pl3.getTable(indexL3);
-			if (pl2 is null) {
-				// NOT AVAILABLE (FOR SOME REASON)
-
-				if (stack.rip < 0xf_0000_0000_0000) {
-					kprintfln!("User Mode Level 2 Page Fault {x}, Error Code {x}")(stack.rip, stack.errorCode);
-				}else{
-					kprintfln!("Kernel Mode Level 2 Page Fault {x}, Error Code {x}")(stack.rip, stack.errorCode);
-				}
-
-				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
-
-				printStackTrace(cast(StackFrame*)stack.rbp);
-				
-				for(;;){}
+		if(!allocate){
+			if (stack.rip < 0xf_0000_0000_0000) {
+				kprintf!("User Mode")();
+			}else{
+				kprintf!("Kernel Mode")();
 			}
-			else {
+			kprintfln!(" Page Fault on a non-allocate on access page.  Rip: {x}, Error Code: {x}, CR2: {}")(stack.rip, stack.errorCode, vAddr);
 
-				// Allocate Page 
-				// XXX: only if gib is allocate on access!!
-				addr = cast(void*)(cast(ulong)addr & 0xffff_ffff_ffff_f000UL);
+			printStackTrace(cast(StackFrame*)stack.rbp);
 
-				void* page = PageAllocator.allocPage();
+			for(;;){}
+		}
+	}
 
-				mapRegion(null, page, PAGESIZE, addr, true);
+	template pageFaultHelper(T){
+		bool pageFaultHelper(T table, uint idx, ref bool allocate, ref ubyte* vAddr){
+			const AccessMode allocatingSegment = AccessMode.AllocOnAccess | AccessMode.Segment;
+
+			if(table.entries[idx].present){
+				if((table.entries[idx].getMode() & allocatingSegment) == allocatingSegment){
+					allocate = true;
+				}
+				
+				return true;
+			}else{
+				if(allocate){
+					/*static if(T.level == 1){
+						ubyte* page = PageAllocator.allocPage();
+
+						if(page is null){
+							allocate = false;
+						}else{
+							table.entries[idx].pml = cast(ulong)page;
+							table.entries[idx].pat = 1;
+							table.entries[idx].setMode(AccessMode.User|AccessMode.Writable|AccessMode.Executable);
+						}
+
+						return false;
+					}else{
+						auto intermediate = table.getOrCreateTable(idx);
+
+						if(intermediate is null){
+							allocate = false;
+							return false;
+						}
+						return true;
+						}*/
+
+					ubyte* page = PageAllocator.allocPage();
+					mapRegion(null, page, PAGESIZE, vAddr, true);
+
+					return false;
+				}else{
+					return false;
+				}
 			}
 		}
 	}

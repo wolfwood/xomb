@@ -175,7 +175,7 @@ template populateChild(T){
 		}else{
 			ubyte* g = findFreeSegment(false).ptr;
 
-			Syscall.create(g, oneGB, AccessMode.Writable|AccessMode.User|AccessMode.Executable);
+			Syscall.create(g, oneGB, AccessMode.Writable|AccessMode.User|AccessMode.Executable|AccessMode.AllocOnAccess);
 
 			// XXX: instead of copying the whole thing we should only be duping the r/w data section 
 			uint len = *(cast(ulong*)f.ptr) + ulong.sizeof;
@@ -184,7 +184,7 @@ template populateChild(T){
 			f = g[0..f.length];
 		}
 
-		Syscall.map(child, f.ptr, dest, AccessMode.Writable|AccessMode.User|AccessMode.Executable);
+		Syscall.map(child, f.ptr, dest, AccessMode.Writable|AccessMode.User|AccessMode.Executable|AccessMode.AllocOnAccess);
 
 		// bottle to bottle transfer of stdin/out isthe default case
 		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
@@ -200,10 +200,16 @@ template populateChild(T){
 
 		childBottle.setArgv(argv);
 		
+		AccessMode stdoutMode = AccessMode.Writable|AccessMode.User;
+
 		// if no stdin/out is specified, us the same buffer as parent
 		if(stdout is null){
 			stdout = bottle.stdout.ptr;
 			childBottle.stdoutIsTTY =	bottle.stdoutIsTTY;
+		}
+
+		if(!childBottle.stdoutIsTTY){
+			stdoutMode |= AccessMode.AllocOnAccess;
 		}
 
 		if(stdin is null){
@@ -212,7 +218,7 @@ template populateChild(T){
 		}
 
 		// map stdin/out into child process
-		Syscall.map(child, stdout, childBottle.stdout.ptr, AccessMode.Writable|AccessMode.User);
+		Syscall.map(child, stdout, childBottle.stdout.ptr, stdoutMode);
 		Syscall.map(child, stdin, childBottle.stdin.ptr, AccessMode.Writable|AccessMode.User);
 	}
 }
