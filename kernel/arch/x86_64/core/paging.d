@@ -186,7 +186,7 @@ static:
 				return true;
 			}else{
 				if(allocate){
-					/*static if(T.level == 1){
+					static if(T.level == 1){
 						ubyte* page = PageAllocator.allocPage();
 
 						if(page is null){
@@ -199,17 +199,14 @@ static:
 
 						return false;
 					}else{
-						auto intermediate = table.getOrCreateTable(idx);
+						auto intermediate = table.getOrCreateTable(idx, true);
 
 						if(intermediate is null){
 							allocate = false;
 							return false;
 						}
 						return true;
-						}*/
-
-					ubyte* page = PageAllocator.allocPage();
-					mapRegion(null, page, PAGESIZE, vAddr, true);
+					}
 
 					return false;
 				}else{
