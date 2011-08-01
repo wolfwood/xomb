@@ -133,9 +133,9 @@ template BitfieldImpl(char[] typeStr, char[] nameStr, int offset, Args...)
 		const Name = Args[0];
 		const Size = Args[1];
 		const Mask = Bitmask!(Size);
-		
+
 		const char[] Getter = "public " ~ typeStr ~ " " ~ Name ~ "() { return ( " ~ nameStr ~ " >> " ~ Itoh!(offset) ~ " ) & " ~ Itoh!(Mask) ~ "; }";
-		
+
 		const char[] Setter = "public void " ~ Name ~ "(" ~ typeStr ~ " val) { " ~ nameStr ~ " = (" ~ nameStr ~ " & " ~ Itoh!(~(Mask << offset)) ~ ") | ((val & " ~ Itoh!(Mask) ~ ") << " ~ Itoh!(offset) ~ "); }";
 
 		const char[] Ret = Getter ~ Setter ~ BitfieldImpl!(typeStr, nameStr, offset + Size, Args[2 .. $]).Ret;

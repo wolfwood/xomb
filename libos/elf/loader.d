@@ -17,11 +17,11 @@ import Syscall = user.syscall;
 
 struct Loader {
 	static:
-	
+
 	ubyte[] load(ubyte[] binary, ubyte[] newgib = null){
 		if(newgib is null){
-			newgib = 
-				Syscall.create(findFreeSegment(false).ptr, oneGB, 
+			newgib =
+				Syscall.create(findFreeSegment(false).ptr, oneGB,
 											 AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
 		}
 
@@ -57,7 +57,7 @@ private:
 
 		Segment curSegment;
 		uint numSegments = Elf.segmentCount(binaryAddr);
-		
+
 		for(uint i; i < numSegments; i++) {
 			curSegment = Elf.segment(binaryAddr, i);
 
@@ -74,5 +74,5 @@ private:
 				*size = curSegment.length; // -8?
 			}
 		}
-	}	
+	}
 }

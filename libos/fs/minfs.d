@@ -34,20 +34,20 @@ class MinFS{
 	// open the SuperSegment, allowing metadata reads and writes
 	void initialize(){
 		Syscall.map(null, null, createAddr(0,0,0,257), AccessMode.User|AccessMode.Writable|AccessMode.Global|AccessMode.AllocOnAccess);
-		
+
 		hdr = cast(Header*)createAddr(0,0,0,257);
 	}
-	
+
 	// this creates the 'SuperSegment', the super-block-like known-location which also happens to contain all the fs metadata (filenames)
 	void format(){
 		Syscall.create(createAddr(0,0,0,257), oneGB, AccessMode.User|AccessMode.Writable|AccessMode.Global|AccessMode.AllocOnAccess);
-		
+
 		hdr = cast(Header*)createAddr(0,0,0,257);
-		
+
 		hdr.entries = (cast(char[]*)createAddr(0,0,0,257))[Header.sizeof .. Header.sizeof];
 		hdr.strTable = (cast(char*)createAddr(0,1,0,257))[0..0];
 	}
-	
+
 	// maps a segment's page tables (currently mapped in at a lower level in the tree under the global segment) into the root page tabel at a known location
 	File open(char[] name, AccessMode mode, bool createFlag = false){
 		File f = find(name);
@@ -84,7 +84,7 @@ class MinFS{
 				break;
 			}
 		}
-		
+
 		return val;
 	}
 
@@ -113,7 +113,7 @@ private:
 		char[][] entries;
 		char[] strTable;
 	}
-	
+
 	Header* hdr;
 
 	File find(char[] name){
@@ -122,36 +122,36 @@ private:
 				return (cast(ubyte*)(cast(ulong)hdr + ((i+1) * oneGB)))[0..oneGB];
 			}
 		}
-		
+
 		return null;
 	}
-	
+
 	File alloc(char[] name){
 		char[][] entries = hdr.entries;
 		char[][] entries2 = entries.ptr[0..(entries.length+1)];
-		
+
 		// XXX: lockfree
 		hdr.entries = entries2;
-		
+
 		char[] strTable = hdr.strTable;
 
 		char[] strTable2 = (strTable.ptr - name.length)[0..0];
-		
+
 		// XXX: lockfree
 		hdr.strTable = strTable2;
-		
+
 		entries2[$-1] = strTable2.ptr[0..name.length];
-		
+
 		entries2[$-1][] = name[];
-		
+
 		return (cast(ubyte*)(cast(ulong)hdr + (entries2.length * oneGB)))[0..oneGB];
 	}
-	
+
 	/*
 		File grow(File f, uint bytes){
-		
+
 		}*/
-	
+
 	// XXX: these helpers should be defined elsewhere
 	ubyte* createAddr(ulong indexLevel1,
 											 ulong indexLevel2,

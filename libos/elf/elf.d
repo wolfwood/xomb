@@ -447,13 +447,13 @@ static:
 	  this function takes in the pointer to a name of a section
 	  or symbol and translates it into a useful hash value (long).
 	  this hash value is then returned.
-	
+
 	params:
-	
+
 	  name = a pointer to the value you wish to hash.
 		returns: the hashed value (ulong value)
 	 */
-	ulong elf64_hash(char *name) { 
+	ulong elf64_hash(char *name) {
 		ulong h = 0;
 		ulong g;
 		while (*name) {
@@ -472,7 +472,7 @@ static:
 	  an expected value, the elf file was compiled or loaded improperly.
 	  this method returns a 1 if the magic number is acceptable, or 0 if there is
 	  problem.
-	
+
 	params:
 
 		elf_start = a pointer to the beginning of the elf header.
@@ -535,7 +535,7 @@ static:
 	  jumps to it, thus beginning execution.
 
 	params:
-	
+
 	modulenumber = the number of the module the kernel wishes to execute. integer value.
 	mbi = a pointer to the multiboot information structure, allowing this function
 		to interperet the module data properly.
@@ -593,7 +593,7 @@ static:
 
 	Segment segment(void* address, uint index) {
 		elf64_ehdr* header = cast(elf64_ehdr*)address;
-	
+
 		elf64_phdr* prog = cast(elf64_phdr*)(address + header.e_phoff + (elf64_phdr.sizeof * index));
 
 		Segment s;

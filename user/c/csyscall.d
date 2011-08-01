@@ -67,7 +67,7 @@ int gibWrite(int fd, ubyte* buf, uint len){
 	}
 
 	if((fdTable[fd].pos + len) > *(fdTable[fd].len)){
-		// XXX: lockfree 
+		// XXX: lockfree
 		*(fdTable[fd].len) = len + fdTable[fd].pos;
 	}
 
@@ -145,7 +145,7 @@ int rmdir(char *pathname){
 char *getcwd(char *buf, ulong size){
 	// XXX: get CWD from key value store in bottle
 	char[] name = "/postmark";
-	
+
 	uint len = ((size-1) > name.length) ? name.length : size;
 
 	buf[0..len] = name[0..len];

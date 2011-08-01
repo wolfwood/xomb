@@ -24,7 +24,7 @@ _trampoline_start:
 	cli
 
 	; establish a stack
-	mov sp, (trampoline_stack_end - trampoline_start) 
+	mov sp, (trampoline_stack_end - trampoline_start)
 
 	; clear segment registers
 	mov ax, cs

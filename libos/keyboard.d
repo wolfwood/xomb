@@ -8,7 +8,7 @@ class Keyboard {
 	static:
 
 	void initialize(ushort* buffer) {
-		
+
 		_writePointer = buffer;
 		_readPointer = &(buffer[1]);
 		_length = buffer[2];

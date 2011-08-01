@@ -147,7 +147,7 @@ ErrorVal verifyBootInformation(int id, void *data) {
 
 		System.cmdlineStorage[0..len] = cmd[0..len];
 		System.cmdline = System.cmdlineStorage[0..len];
-	}	
+	}
 
 	//are the modules valid?
 	if(checkFlag(info.flags, 3)) {

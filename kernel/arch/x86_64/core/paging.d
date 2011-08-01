@@ -94,7 +94,7 @@ static:
 		mapRegion(System.kernel.start, System.kernel.length);
 
 		void* bitmapLocation = heapAddress;
-		
+
 		// The first gib for the kernel
 		nextGib++;
 
@@ -126,7 +126,7 @@ static:
 		}
 
 		printStackTrace(cast(StackFrame*)stack.rbp);
-		
+
 		for(;;){}
 	}
 
@@ -179,7 +179,7 @@ static:
 				if((table.entries[idx].getMode() & allocatingSegment) == allocatingSegment){
 					allocate = true;
 				}
-				
+
 				return true;
 			}else{
 				if(allocate){

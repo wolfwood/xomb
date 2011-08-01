@@ -71,7 +71,7 @@ void start(){
 
 		// now set the stack
 		movq RSP, tempStackTop;
-		
+
 		call start3;
 	}
 }

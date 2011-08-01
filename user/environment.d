@@ -23,7 +23,7 @@ enum AccessMode : uint {
 	// bits that get encoded in the available bits
 	Global = 1,
 	AllocOnAccess = 2,
-	 
+
 	MapOnce = 4,
 	CopyOnWrite = 8,
 
@@ -49,11 +49,11 @@ enum AccessMode : uint {
 	DefaultKernel = Writable | AllocOnAccess,
 
 	// flags that are always permitted in syscalls
-	SyscallStrictMask = Global | AllocOnAccess | MapOnce | CopyOnWrite | Writable 
+	SyscallStrictMask = Global | AllocOnAccess | MapOnce | CopyOnWrite | Writable
 	  | User | Executable,
 
 	// Flags that go in the available bits
-	AvailableMask = Global | AllocOnAccess | MapOnce | CopyOnWrite | 
+	AvailableMask = Global | AllocOnAccess | MapOnce | CopyOnWrite |
 	  PrivilegedGlobal | PrivilegedExecutable | Segment | RootPageTable |
 	  Device | Delete
 }
@@ -74,8 +74,8 @@ struct MessageInAbottle {
 
 		// allocate argv's array reference array first, since we know how long it is
 		argv = (cast(char[]*)this + MessageInAbottle.sizeof)[0..parentArgv.length];
-		
-		// this will be a sliding window for the strngs themselves, allocated after the argv array reference array 
+
+		// this will be a sliding window for the strngs themselves, allocated after the argv array reference array
 		char[] storage = (cast(char*)argv[length..length].ptr)[0..0];
 
 		foreach(i, str; parentArgv){
@@ -91,14 +91,14 @@ struct MessageInAbottle {
 		// adjust pointers
 		adjustArgvPointers(to);
 	}
-	
+
 	void setArgv(char[] parentArgv,  ubyte[] to = (cast(ubyte*)oneGB)[0..oneGB]){
 
 		// allocate strings first, since we know how long they are
 		char[] storage = (cast(char*)this + MessageInAbottle.sizeof)[0..(parentArgv.length +1)];
-		
+
 		storage[0..($-1)] = parentArgv[];
-		
+
 		// determine length of array reference array
 		int substrings = 1;
 
@@ -107,7 +107,7 @@ struct MessageInAbottle {
 				substrings++;
 			}
 		}
-		
+
 		storage[($-1)] = '\0';
 
 		// allocate array reference array
@@ -137,7 +137,7 @@ struct MessageInAbottle {
 
 		adjustArgvPointers(to);
 	}
-	
+
 private:
 	void adjustArgvPointers(ubyte[] to){
 		// exploits fact that all argv pointers are intra-segment, so it
@@ -153,7 +153,7 @@ private:
 
 	public static:
 	MessageInAbottle* getBottleForSegment(ubyte* seg){
-		return cast(MessageInAbottle*)(seg + (oneGB - 4096)); 
+		return cast(MessageInAbottle*)(seg + (oneGB - 4096));
 	}
 
 	MessageInAbottle* getMyBottle(){
@@ -177,7 +177,7 @@ template populateChild(T){
 
 			Syscall.create(g, oneGB, AccessMode.Writable|AccessMode.User|AccessMode.Executable|AccessMode.AllocOnAccess);
 
-			// XXX: instead of copying the whole thing we should only be duping the r/w data section 
+			// XXX: instead of copying the whole thing we should only be duping the r/w data section
 			uint len = *(cast(ulong*)f.ptr) + ulong.sizeof;
 			g[0..len] = f.ptr[0..len];
 
@@ -189,17 +189,17 @@ template populateChild(T){
 		// bottle to bottle transfer of stdin/out isthe default case
 		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
 		MessageInAbottle* childBottle = MessageInAbottle.getBottleForSegment(f.ptr);
-	
+
 		// XXX: use findFreeSemgent to pick gib locations in child
 		// assume default locations and non-TTY for redirected stdin/out
 		childBottle.stdout = (cast(ubyte*)(2*oneGB))[0..oneGB];
 		childBottle.stdoutIsTTY = false;
 		childBottle.stdin = (cast(ubyte*)(3*oneGB))[0..oneGB];
 		childBottle.stdinIsTTY = false;
-		
+
 
 		childBottle.setArgv(argv);
-		
+
 		AccessMode stdoutMode = AccessMode.Writable|AccessMode.User;
 
 		// if no stdin/out is specified, us the same buffer as parent
@@ -360,7 +360,7 @@ template PageLevel(ushort L){
 				if (entries[idx].present == 0) {
 					return null;
 				}
-			
+
 				return calculateVirtualAddress(idx);
 			}
 
@@ -374,7 +374,7 @@ template PageLevel(ushort L){
 
 				PageLevel!(L-1)* getOrCreateTable(uint idx, bool usermode = false) {
 					PageLevel!(L-1)* ret = getTable(idx);
-			
+
 					if (ret is null) {
 						// Create Table
 						ret = cast(PageLevel!(L-1)*)PageAllocator.allocPage();
@@ -384,12 +384,12 @@ template PageLevel(ushort L){
 						entries[idx].present = 1;
 						entries[idx].rw = 1;
 						entries[idx].us = usermode;
-				
+
 						ret = calculateVirtualAddress(idx);
-				
+
 						*ret = (PageLevel!(L-1)).init;
 					}
-			
+
 					return ret;
 				}
 			}
@@ -514,7 +514,7 @@ template isValidAddressHelper(T){
 
 AccessMode modesForAddress(ubyte* vAddr){
 	AccessMode flags;
-	
+
 	walk!(modesForAddressHelper)(root, cast(ulong)vAddr, flags);
 
 	return flags;
@@ -645,7 +645,7 @@ template walk(alias U, T, S...){
 
 			static if(!(is (T == PageLevel!(1)*))){
 				auto table2 = table.getTable(idx);
-					
+
 				walk!(U)(table2, addr, s);
 			}
 		}

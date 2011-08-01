@@ -164,10 +164,10 @@ const ulong ThreadStackSize = 4096;
 
 align(1) struct XombThread {
 	ubyte* rsp;
-	
+
 	//void *threadLocalStorage;
 	//void * syscallBatchFrame;
-	
+
 	// Scheduler Data
 	XombThread* next;
 
@@ -188,7 +188,7 @@ align(1) struct XombThread {
 			mov R11, foo;
 
 			mov R10, [queuePtr];
-			
+
 
 		start_enqueue:
 			mov RAX, [R10 + tailOffset];
@@ -228,15 +228,15 @@ align(1) struct XombThread {
 
 	XombThread* threadCreate(void* functionPointer){
 		ubyte* stackptr = UserspaceMemoryManager.getPage(true);
-	
+
 		XombThread* thread = cast(XombThread*)(stackptr + 4096 - XombThread.sizeof);
-	
+
 		thread.rsp = cast(ubyte*)thread - ulong.sizeof;
 		*(cast(ulong*)thread.rsp) = cast(ulong) &threadExit;
-	
+
 		// decrement sp and write arg
 		thread.rsp = cast(ubyte*)thread.rsp - ulong.sizeof;
-		*(cast(ulong*)thread.rsp) = cast(ulong) functionPointer;	
+		*(cast(ulong*)thread.rsp) = cast(ulong) functionPointer;
 
 		// space for 6 callee saved registers so new threads look like any other
 		thread.rsp = cast(ubyte*)thread.rsp - (6*ulong.sizeof);
@@ -252,9 +252,9 @@ align(1) struct XombThread {
 		asm{
 			mov thread,RSP;
 		}
-	
+
 		thread = cast(XombThread*)( (cast(ulong)thread & ~0xFFFUL) | (4096 - XombThread.sizeof) );
-	
+
 		return thread;
 	}
 
@@ -326,7 +326,7 @@ align(1) struct XombThread {
 	void yieldToAddressSpace(AddressSpace as, ulong idx){
 		asm{
 			naked;
-		
+
 			pushq RDI;
 			pushq RSI;
 
@@ -338,16 +338,16 @@ align(1) struct XombThread {
 			popq RDI;
 
 			mov R10, [queuePtr];
-		
+
 			pushq RBX;
 			pushq RBP;
 			pushq R12;
 			pushq R13;
 			pushq R14;
 			pushq R15;
-		
+
 			mov [R11+XombThread.rsp.offsetof], RSP;
-		
+
 			// stuff old thread onto schedQueueTail
 		start_enqueue:
 			mov RAX, [R10 + tailOffset];
@@ -379,7 +379,7 @@ align(1) struct XombThread {
 			Syscall.yield(null, 2UL);
 		}else{
 			//freePage(cast(ubyte*)(cast(ulong)thread & (~ 0xFFFUL)));
-		
+
 			asm{
 				jmp _enterThreadScheduler;
 			}
@@ -389,7 +389,7 @@ align(1) struct XombThread {
 
 	/*
 		R10 - base address of the SchedQueue struct
-		
+
 		RAX - a snapshot of head -- if not null, the thread that will be dequeued
 		RDX - a snapshot of tail
 
@@ -399,8 +399,8 @@ align(1) struct XombThread {
 		RCX - proposed tail for if swap succeeds
 	*/
 
-	// don't call this function :) certainly, not from a thread 
-	void _enterThreadScheduler(){	
+	// don't call this function :) certainly, not from a thread
+	void _enterThreadScheduler(){
 		asm{
 			naked;
 			mov R10, [queuePtr];
@@ -409,13 +409,13 @@ align(1) struct XombThread {
 			mov RAX, [R10 + headOffset];
 		load_tail:
 			mov RDX, [R10 + tailOffset];
-		
+
 			// assumes RAX and RDX are set
 		null_checks:
 			// if head is not null just dequeue, no swap is needed
 			cmp RAX, 0;
 			jnz dequeue;
-			
+
 			// if tail is also null, cpu is uneeded, so yield
 			// FUTURE: might decide to _create_ a thread for task queue or idle/background work
 			cmp RDX, 0;
@@ -495,7 +495,7 @@ private:
 		XombThread* tail;
 		XombThread* tail2;
 	}
-		
+
 	static assert(schedQueueStorage.head.alignof >= 8);
 
 	Queue schedQueueStorage;

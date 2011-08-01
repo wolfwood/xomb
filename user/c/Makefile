@@ -2,7 +2,7 @@ DFLAGS = -I ../../. -I../../runtimes/mindrt -I../../runtimes -O0 --stack-alignme
 
 
 syscall.a: clean
-	ldc ${DFLAGS} -c csyscall.d  
+	ldc ${DFLAGS} -c csyscall.d
 	ldc ${DFLAGS} -c ../syscall.d
 	ldc ${DFLAGS} -c ../../libos/console.d
 	ldc ${DFLAGS} -c ../../libos/fs/minfs.d
