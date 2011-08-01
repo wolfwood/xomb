@@ -90,9 +90,6 @@ static:
 		// The current position of the kernel space. All gets appended to this address.
 		heapAddress = LinkerScript.kernelVMA;
 
-		// We need to map the kernel
-		kernelAddress = heapAddress;
-
 		//kprintfln!("About to map kernel")();
 		mapRegion(System.kernel.start, System.kernel.length);
 
@@ -515,29 +512,19 @@ private:
 
 
 // -- Flags -- //
-
-
-	bool systemMapped;
 	bool kernelMapped;
 
 
 // -- Positions -- //
-
-
-	void* systemAddress;
-	void* kernelAddress;
 	void* heapAddress;
 
 
 // -- Main Page Table -- //
-
-
 	PageLevel4* root;
 	PhysicalAddress rootPhysical;
 
 
 // -- Mapping Functions -- //
-
 	template heapMap(bool initialMapping = false, bool kernelLevel = true) {
 		void heapMap(void* physAddr, void* endAddr, void* virtAddr = heapAddress, bool writeable = true) {
 
