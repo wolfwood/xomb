@@ -32,7 +32,7 @@ import kernel.system.info;
 struct Architecture {
 static:
 public:
-	
+
 	// This function will initialize the architecture upon boot
 	ErrorVal initialize() {
 		// Reading from the linker script

@@ -120,7 +120,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	// 7. Schedule
 	//Scheduler.initialize();
-	
+
 	//Loader.loadModules();
 
 	//Scheduler.kmainComplete();
@@ -129,7 +129,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	Log.print("Init Process: install()");
 	auto fail = InitProcess.install();
-	Log.result(fail);	
+	Log.result(fail);
 
 	if(fail != ErrorVal.Fail){
 		Date dt;
@@ -143,7 +143,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	}
 	// Run task
 	assert(false, "Something is VERY VERY WRONG. entering Init returned. :(");
-	
+
 	for(;;){}
 }
 

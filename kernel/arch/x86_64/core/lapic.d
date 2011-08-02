@@ -151,7 +151,7 @@ private:
 		if (apicRegisters is null) {
 			return 0;
 		}
-		
+
 		uint ID = apicRegisters.localApicId;
 		return ID >> 24;
 	}
