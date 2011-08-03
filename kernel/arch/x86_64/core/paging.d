@@ -254,23 +254,6 @@ static:
 		return ErrorVal.Success;
 	}
 
-	void translateAddress( void* virtAddress,
-												 out ulong indexLevel1,
-												 out ulong indexLevel2,
-												 out ulong indexLevel3,
-												 out ulong indexLevel4) {
-		ulong vAddr = cast(ulong)virtAddress;
-
-		vAddr >>= 12;
-		indexLevel1 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		indexLevel2 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		indexLevel3 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		indexLevel4 = vAddr & 0x1ff;
-	}
-
 	Mutex pagingLock;
 
 	AddressSpace createAddressSpace() {
@@ -490,18 +473,17 @@ public:
 		// This region will be located at the current heapAddress
 		void* location = heapAddress;
 
+		ubyte* endAddr = cast(ubyte*)location + (curPhysAddr - cast(ulong)physAddr);
+		PhysicalAddress pAddr = cast(PhysicalAddress)physAddr;
+
 		bool failed;
 		if (kernelMapped) {
-			ubyte* endAddr = cast(ubyte*)location + (curPhysAddr - cast(ulong)physAddr);
-			PhysicalAddress pAddr = cast(PhysicalAddress)physAddr;
-
 			traverse!(preorderMapPhysicalAddressHelper, noop)(root, cast(ulong)location, cast(ulong)endAddr, pAddr, failed);
-
-			heapAddress = endAddr;
 		}else{
-			void* endAddr = cast(void*)curPhysAddr;
-			heapMap!(true)(physAddr, endAddr);
+			traverseInitialMapping!(preorderInitialMapPhysicalAddressHelper, noop)(root, cast(ulong)location, cast(ulong)endAddr, pAddr, failed);
 		}
+
+		heapAddress = endAddr;
 
 		// Return the position of this region
 		pagingLock.unlock();
@@ -591,145 +573,88 @@ private:
 	PhysicalAddress rootPhysical;
 
 
-// -- Mapping Functions -- //
-	template heapMap(bool initialMapping = false, bool kernelLevel = true) {
-		void heapMap(void* physAddr, void* endAddr, void* virtAddr = heapAddress, bool writeable = true) {
+	template preorderInitialMapPhysicalAddressHelper(T){
+		TraversalDirective preorderInitialMapPhysicalAddressHelper(T table, uint idx, uint startIdx, uint endIdx, ref PhysicalAddress physAddr, ref bool failed){
+			static if(T.level != 1){
 
-			// Do the mapping
-			PageLevel3* pl3;
-			PageLevel2* pl2;
-			PageLevel1* pl1;
-			ulong indexL1, indexL2, indexL3, indexL4;
+				if(!table.entries[idx].present){
+					auto next = PageAllocator.allocPage();
 
-			void* startAddr = physAddr;
-
-			// Find the initial page
-			translateAddress(virtAddr, indexL1, indexL2, indexL3, indexL4);
-
-			// From there, map the region
-			ulong done = 0;
-			for ( ; indexL4 < 512 && physAddr < endAddr ; indexL4++ )
-			{
-				// get the L3 table
-				static if (initialMapping) {
-					if (root.entries[indexL4].present) {
-						pl3 = cast(PageLevel3*)(root.entries[indexL4].address << 12);
+					if(next is null){
+						failed = true;
+						return TraversalDirective.Stop;
 					}
-					else {
-						pl3 = cast(PageLevel3*)PageAllocator.allocPage();
-						*pl3 = PageLevel3.init;
-						root.entries[indexL4].pml = cast(ulong)pl3;
-						root.entries[indexL4].present = 1;
-						root.entries[indexL4].rw = 1;
-						static if (!kernelLevel) {
-							root.entries[indexL4].us = 1;
-						}
-					}
+
+					table.entries[idx].pml = cast(ulong)next;
+					table.entries[idx].setMode(AccessMode.User|AccessMode.Writable|AccessMode.Executable);
+					*cast(PageLevel!(T.level-1)*)table.entries[idx].location = (PageLevel!(T.level-1)).init;
 				}
-				else {
-					pl3 = root.getOrCreateTable(indexL4, !kernelLevel);
-					//static if (!kernelLevel) { kprintfln!("pl3 {}")(indexL4); }
-				}
+				return TraversalDirective.Descend;
+			}else{
+				table.entries[idx].pml = cast(ulong)physAddr;
+				table.entries[idx].pat = 1;
+				table.entries[idx].setMode(AccessMode.User|AccessMode.Writable|AccessMode.Executable);
 
-				for ( ; indexL3 < 512 ; indexL3++ )
-				{
-					// get the L2 table
-					static if (initialMapping) {
-						if (pl3.entries[indexL3].present) {
-							pl2 = cast(PageLevel2*)(pl3.entries[indexL3].address << 12);
-						}
-						else {
-							pl2 = cast(PageLevel2*)PageAllocator.allocPage();
-							*pl2 = PageLevel2.init;
-							pl3.entries[indexL3].pml = cast(ulong)pl2;
-							pl3.entries[indexL3].present = 1;
-							pl3.entries[indexL3].rw = 1;
-							static if (!kernelLevel) {
-								pl3.entries[indexL3].us = 1;
-							}
-						}
-					}
-					else {
-						pl2 = pl3.getOrCreateTable(indexL3, !kernelLevel);
-//						static if (!kernelLevel) { kprintfln!("pl2 {}")(indexL3); }
-					}
+				physAddr += PAGESIZE;
 
-					for ( ; indexL2 < 512 ; indexL2++ )
-					{
-						// get the L1 table
-						static if (initialMapping) {
-							if (pl2.entries[indexL2].present) {
-								pl1 = cast(PageLevel1*)(pl2.entries[indexL2].address << 12);
-							}
-							else {
-								pl1 = cast(PageLevel1*)PageAllocator.allocPage();
-								*pl1 = PageLevel1.init;
-								pl2.entries[indexL2].pml = cast(ulong)pl1;
-								pl2.entries[indexL2].present = 1;
-								pl2.entries[indexL2].rw = 1;
-								static if (!kernelLevel) {
-									pl2.entries[indexL2].us = 1;
-								}
-							}
-						}
-						else {
-							//static if (!kernelLevel) { kprintfln!("attempting pl1 {}")(indexL2); }
-							pl1 = pl2.getOrCreateTable(indexL2, !kernelLevel);
-							//static if (!kernelLevel) { kprintfln!("pl1 {}")(indexL2); }
-						}
-
-						for ( ; indexL1 < 512 ; indexL1++ )
-						{
-							// set the address
-							if (pl1.entries[indexL1].present) {
-								// Page already allocated
-								// XXX: Fail
-							}
-
-							pl1.entries[indexL1].pml = cast(ulong)physAddr;
-
-							pl1.entries[indexL1].present = 1;
-							pl1.entries[indexL1].rw = writeable;
-							pl1.entries[indexL1].pat = 1;
-							static if (!kernelLevel) {
-								pl1.entries[indexL1].us = 1;
-							}
-
-							physAddr += PAGESIZE;
-							done += PAGESIZE;
-
-							if (physAddr >= endAddr)
-							{
-								indexL2 = 512;
-								indexL3 = 512;
-								break;
-							}
-						}
-
-						indexL1 = 0;
-					}
-
-					indexL2 = 0;
-				}
-
-				indexL3 = 0;
-			}
-
-			if (indexL4 >= 512)
-			{
-				// we have depleted our table!
-				assert(false, "Virtual Memory depleted");
-			}
-
-			// Recalculate the region length
-			ulong regionLength = cast(ulong)endAddr - cast(ulong)startAddr;
-
-			// Relocate heap address
-			static if (kernelLevel) {
-				heapAddress += regionLength;
+				return TraversalDirective.Skip;
 			}
 		}
 	}
 
-	alias heapMap!(false) doHeapMap;
+
+	template traverseInitialMapping(alias PRE, alias POST, T, S...){
+		bool traverseInitialMapping(T table, ulong startAddr, ulong endAddr, ref S s){
+			ulong startIdx, endIdx;
+
+			getNextIndex(startAddr, startIdx);
+			getNextIndex(endAddr, endIdx);
+
+			for(uint i = startIdx; i <= endIdx; i++){
+				ulong frontAddr, backAddr;
+
+				if(i == startIdx){
+					frontAddr = startAddr;
+				}else{
+					frontAddr = 0;
+				}
+
+				if(i == endIdx){
+					backAddr = endAddr;
+				}else{
+					backAddr = ~0UL;
+				}
+
+				TraversalDirective directive = TraversalDirective.Descend;
+				static if(!is(PRE == noop)){
+					directive = PRE(table, i, startIdx, endIdx, s);
+				}
+				static if(T.level != 1){
+					if(directive == TraversalDirective.Descend){
+						auto childTable = cast(PageLevel!(T.level-1)*)table.entries[i].location();
+
+						if(childTable !is null){
+							bool stop = traverseInitialMapping!(PRE,POST)(childTable, frontAddr, backAddr, s);
+
+							if(stop){
+								return true;
+							}
+						}
+					}else if(directive == TraversalDirective.Stop){
+						return true;
+					}
+				}else{
+					if(directive == TraversalDirective.Stop){
+						return true;
+					}
+				}
+
+				static if(!is(POST == noop)){
+					POST(table, i, startIdx, endIdx, s);
+				}
+			}
+
+			return false;
+		}// end travesal()
+	}
 }
