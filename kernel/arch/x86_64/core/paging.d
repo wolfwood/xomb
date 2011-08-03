@@ -457,22 +457,30 @@ public:
 			curPhysAddr += PAGESIZE - (curPhysAddr % PAGESIZE);
 		}
 
-		// Define the end address
-		void* endAddr = cast(void*)curPhysAddr;
-
 		// This region will be located at the current heapAddress
 		void* location = heapAddress;
 
+		bool failed;
 		if (kernelMapped) {
-			doHeapMap(physAddr, endAddr);
-		}
-		else {
+			ubyte* endAddr = cast(ubyte*)location + (curPhysAddr - cast(ulong)physAddr);
+			PhysicalAddress pAddr = cast(PhysicalAddress)physAddr;
+
+			traverse!(preorderMapPhysicalAddressHelper, noop)(root, cast(ulong)location, cast(ulong)endAddr, pAddr, failed);
+
+			heapAddress = endAddr;
+		}else{
+			void* endAddr = cast(void*)curPhysAddr;
 			heapMap!(true)(physAddr, endAddr);
 		}
 
 		// Return the position of this region
 		pagingLock.unlock();
-		return location + diff;
+
+		if(failed){
+			return null;
+		}else{
+			return location + diff;
+		}
 	}
 
 	synchronized ulong mapRegion(PageLevel4* rootTable, void* physAddr, ulong regionLength, void* virtAddr = null, bool writeable = false) {
@@ -500,16 +508,45 @@ public:
 		}
 
 		// Define the end address
-		void* endAddr = cast(void*)curPhysAddr;
+		ubyte* endAddr = cast(ubyte*)virtAddr + (curPhysAddr - cast(ulong)physAddr);
 
-		heapMap!(false, false)(physAddr, endAddr, virtAddr, writeable);
+		bool failed;
+		PhysicalAddress pAddr = cast(PhysicalAddress)physAddr;
+		traverse!(preorderMapPhysicalAddressHelper, noop)(root, cast(ulong)virtAddr, cast(ulong)endAddr, pAddr, failed);
+
 		pagingLock.unlock();
 
-		return regionLength;
+		if(failed){
+			return 0;
+		}else{
+			return regionLength;
+		}
+	}
+
+	template preorderMapPhysicalAddressHelper(T){
+		TraversalDirective preorderMapPhysicalAddressHelper(T table, uint idx, uint startIdx, uint endIdx, ref PhysicalAddress physAddr, ref bool failed){
+			static if(T.level != 1){
+				auto next = table.getOrCreateTable(idx, true);
+
+				if(next is null){
+					failed = true;
+					return TraversalDirective.Stop;
+				}
+
+				return TraversalDirective.Descend;
+			}else{
+				table.entries[idx].pml = cast(ulong)physAddr;
+				table.entries[idx].pat = 1;
+				table.entries[idx].setMode(AccessMode.User|AccessMode.Writable|AccessMode.Executable);
+
+				physAddr += PAGESIZE;
+
+				return TraversalDirective.Skip;
+			}
+		}
 	}
 
 private:
-
 
 // -- Flags -- //
 	bool kernelMapped;

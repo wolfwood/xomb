@@ -693,6 +693,10 @@ template traverse(alias PRE, alias POST, T, S...){
 				}else if(directive == TraversalDirective.Stop){
 					return true;
 				}
+			}else{
+				if(directive == TraversalDirective.Stop){
+					return true;
+				}
 			}
 
 			static if(!is(POST == noop)){
