@@ -25,6 +25,9 @@ import kernel.system.info;
 
 import architecture.mutex;
 
+// for reporting userspacepage fault errors to parent
+import architecture.cpu;
+
 import user.environment;
 
 
@@ -99,9 +102,9 @@ static:
 		nextGib++;
 
 		// Assign the page fault handler
-		IDT.assignHandler(&faultHandler, 14);
+		IDT.assignHandler(&pageFaultHandler, 14);
 
-		IDT.assignHandler(&gpfHandler, 13);
+		IDT.assignHandler(&generalProtectionFaultHandler, 13);
 
 		// We now have the kernel mapped
 		kernelMapped = true;
@@ -116,21 +119,37 @@ static:
 		return ErrorVal.Success;
 	}
 
-	void gpfHandler(InterruptStack* stack) {
-		stack.dump();
+	void generalProtectionFaultHandler(InterruptStack* stack) {
+		bool recoverable;
 
 		if (stack.rip < 0xf_0000_0000_0000) {
-			kprintfln!("User Mode General Protection Fault: instruction address {x}")(stack.rip);
+			kprintf!("User Mode ")();
+			recoverable = true;
 		}else{
-			kprintfln!("Kernel Mode General Protection Fault: instruction address {x}")(stack.rip);
+			kprintf!("Kernel Mode ")();
 		}
 
+
+		kprintfln!("General Protection Fault: instruction address {x}")(stack.rip);
+
+		stack.dump();
 		printStackTrace(cast(StackFrame*)stack.rbp);
 
-		for(;;){}
+
+		if(recoverable){
+			PhysicalAddress deadChild;
+
+			switchAddressSpace(null, deadChild);
+
+			Cpu.enterUserspace(3, deadChild);
+		}else{
+			for(;;){}
+		}
+
+		// >>> Never reached <<<
 	}
 
-	void faultHandler(InterruptStack* stack) {
+	void pageFaultHandler(InterruptStack* stack) {
 		ulong cr2;
 
 		asm {
@@ -138,41 +157,63 @@ static:
 			mov cr2, RAX;
 		}
 
-		ubyte* vAddr = cast(ubyte*)cr2;
 
-		if((stack.errorCode & 7) == 7){
-			// XXX: 'kill' child and return to parent?
-			stack.dump();
-			kprintfln!("User Mode Write Fault at {x} on Read-only page {x}, Error Code {x}")(stack.rip, vAddr, stack.errorCode);
-			printStackTrace(cast(StackFrame*)stack.rbp);
-			for(;;){}
-		}
+		// page not present or privilege violation?
+		if((stack.errorCode & 1) == 0){
+			bool allocate;
+			walk!(pageFaultHelper)(root, cr2, allocate);
 
-		if(stack.errorCode == 3){
-			kprintfln!("Kernel Mode Write Fault at {x} on Read-only page {x}, Error Code {x}")(stack.rip, vAddr, stack.errorCode);
-			printStackTrace(cast(StackFrame*)stack.rbp);
-			for(;;){}
-		}
-
-		bool allocate;
-		walk!(pageFaultHelper)(root, cr2, allocate, vAddr);
-
-		if(!allocate){
-			if (stack.rip < 0xf_0000_0000_0000) {
-				kprintf!("User Mode")();
+			if(allocate){
+				return;
 			}else{
-				kprintf!("Kernel Mode")();
+				kprintf!("found incomplete page mapping without Alloc-On-Access permission on a ")();
 			}
-			kprintfln!(" Page Fault on a non-allocate on access page.  Rip: {x}, Error Code: {x}, CR2: {}")(stack.rip, stack.errorCode, vAddr);
 
-			printStackTrace(cast(StackFrame*)stack.rbp);
+		}
 
+		// --- an error has occured ---
+		bool recoverable;
+
+		if(stack.errorCode & 8){
+			kprintf!("Reserved bit ")();
+		}else{
+			if(stack.errorCode & 4){
+				kprintf!("User Mode ")();
+				recoverable = true;
+			}else{
+				kprintf!("Kernel Mode ")();
+			}
+			if(stack.errorCode & 16){
+				kprintf!("Instruction Fetch ")();
+			}else{
+				if(stack.errorCode & 2){
+					kprintf!("Write ")();
+				}else{
+					kprintf!("Read ")();
+				}
+			}
+		}
+
+		kprintfln!("Fault at instruction {x} to address {x}")(stack.rip, cast(ubyte*)cr2);
+
+		stack.dump();
+		printStackTrace(cast(StackFrame*)stack.rbp);
+
+		if(recoverable){
+			PhysicalAddress deadChild;
+
+			switchAddressSpace(null, deadChild);
+
+			Cpu.enterUserspace(3, deadChild);
+		}else{
 			for(;;){}
 		}
+
+		// >>> Never reached <<<
 	}
 
 	template pageFaultHelper(T){
-		bool pageFaultHelper(T table, uint idx, ref bool allocate, ref ubyte* vAddr){
+		bool pageFaultHelper(T table, uint idx, ref bool allocate){
 			const AccessMode allocatingSegment = AccessMode.AllocOnAccess | AccessMode.Segment;
 
 			if(table.entries[idx].present){
