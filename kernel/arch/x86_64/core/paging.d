@@ -145,7 +145,6 @@ static:
 		}else{
 			for(;;){}
 		}
-
 		// >>> Never reached <<<
 	}
 
@@ -157,7 +156,6 @@ static:
 			mov cr2, RAX;
 		}
 
-
 		// page not present or privilege violation?
 		if((stack.errorCode & 1) == 0){
 			bool allocate;
@@ -168,7 +166,6 @@ static:
 			}else{
 				kprintf!("found incomplete page mapping without Alloc-On-Access permission on a ")();
 			}
-
 		}
 
 		// --- an error has occured ---
@@ -208,7 +205,6 @@ static:
 		}else{
 			for(;;){}
 		}
-
 		// >>> Never reached <<<
 	}
 
@@ -234,8 +230,6 @@ static:
 							table.entries[idx].pat = 1;
 							table.entries[idx].setMode(AccessMode.User|AccessMode.Writable|AccessMode.Executable);
 						}
-
-						return false;
 					}else{
 						auto intermediate = table.getOrCreateTable(idx, true);
 
@@ -245,11 +239,8 @@ static:
 						}
 						return true;
 					}
-
-					return false;
-				}else{
-					return false;
 				}
+				return false;
 			}
 		}
 	}
@@ -283,9 +274,6 @@ static:
 	Mutex pagingLock;
 
 	AddressSpace createAddressSpace() {
-		// XXX: the place where the address foo is stored is hard coded in context :(
-		// and now it is going to be hardcoded here :(
-
 		// Make a new root pagetable
 		PhysicalAddress newRootPhysAddr = PageAllocator.allocPage();
 
