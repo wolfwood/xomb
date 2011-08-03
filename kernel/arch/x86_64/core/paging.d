@@ -277,28 +277,27 @@ static:
 		// Make a new root pagetable
 		PhysicalAddress newRootPhysAddr = PageAllocator.allocPage();
 
-		PageLevel3* addressRoot = root.getOrCreateTable(255);
+		bool success;
+		ulong idx, addrFrag;
+		ubyte* vAddr;
+		PageLevel!(3)* segmentParent;
+		AccessMode flags = AccessMode.RootPageTable|AccessMode.Writable;
 
-		PageLevel2* addressSpace;
+		// --- find a free slot to store the child's root, then map it in ---
+		traverse!(preorderFindFreeSegmentHelper, noop)(root, cast(ulong)createAddress(0,0,1,255), cast(ulong)createAddress(0,0,255,255), vAddr, segmentParent);
 
-
-		uint idx = 0;
-		for(uint i = 1; i < 512; i++) {
-			if (addressRoot.getTable(i) is null) {
-				addressRoot.setTable(i, newRootPhysAddr, false);
-				addressRoot.entries[i].setMode(AccessMode.RootPageTable);
-				addressSpace = addressRoot.getTable(i);
-				idx = i;
-				break;
-			}
-		}
-
-		if(idx == 0){
+		if(vAddr is null)
 			return null;
-		}
 
+		addrFrag = cast(ulong)vAddr;
+		walk!(mapSegmentHelper)(root, addrFrag, flags, success, segmentParent, newRootPhysAddr);
 
-		// Initialize the address space root page table
+		getNextIndex(addrFrag, idx);
+		getNextIndex(addrFrag, idx);
+
+		PageLevel2* addressSpace = root.getTable(255).getTable(idx);
+
+		// --- initialize root ---
 		*(cast(PageLevel4*)addressSpace) = PageLevel4.init;
 
 		// Map in kernel pages
@@ -308,13 +307,15 @@ static:
 		addressSpace.entries[510].pml = cast(ulong)newRootPhysAddr;
 		addressSpace.entries[510].setMode(AccessMode.User);
 
-
 		// insert parent into child
-		 PageLevel1* fakePl3 = addressSpace.getOrCreateTable(255);
+		PageLevel1* fakePl3 = addressSpace.getOrCreateTable(255);
+
+		if(fakePl3 is null)
+			return null;
+
 		fakePl3.entries[0].pml = root.entries[510].pml;
 		// child should not be able to edit parent's root table
 		fakePl3.entries[0].setMode(AccessMode.RootPageTable);
-
 
 		return cast(AddressSpace)addressSpace;
 	}
