@@ -54,11 +54,6 @@ void printStackTrace(StackFrame* start){
 	}
 }
 
-alias PageLevel!(4) PageLevel4;
-alias PageLevel!(3) PageLevel3;
-alias PageLevel!(2) PageLevel2;
-alias PageLevel!(1) PageLevel1;
-
 class Paging {
 static:
 
@@ -67,19 +62,19 @@ static:
 
 	// This function will initialize paging and install a core page table.
 	ErrorVal initialize() {
+		// Save the physical address for later
+		rootPhysical = PageAllocator.allocPage();
 		// Create a new page table.
-		root = cast(PageLevel4*)PageAllocator.allocPage();
-		PageLevel3* globalRoot = cast(PageLevel3*)PageAllocator.allocPage();
-
-		//kprintfln!("root: {} pl3: {} pl2: {}")(root, pl3, pl2);
+		PageLevel!(4)* newRoot = cast(PageLevel!(4)*)rootPhysical;
+		PageLevel!(3)* globalRoot = cast(PageLevel!(3)*)PageAllocator.allocPage();
 
 		// Initialize the structure. (Zero it)
-		*root = PageLevel4.init;
-		*globalRoot = PageLevel3.init;
+		*newRoot = (PageLevel!(4)).init;
+		*globalRoot = (PageLevel!(3)).init;
 
 		// Map entries 510 to the PML4
-		root.entries[510].pml = cast(ulong)root;
-		root.entries[510].setMode(AccessMode.Read|AccessMode.User);
+		newRoot.entries[510].pml = cast(ulong)rootPhysical;
+		newRoot.entries[510].setMode(AccessMode.Read|AccessMode.User);
 
 		/* currently the kernel isn't forced to respect the rw bit. if
 			 this is enabled, another paging trick will be needed with
@@ -87,33 +82,25 @@ static:
 		 */
 
 		// Map entry 509 to the global root
-		root.entries[509].pml = cast(ulong)globalRoot;
-		root.entries[509].setMode(AccessMode.Read);
+		newRoot.entries[509].pml = cast(ulong)globalRoot;
+		newRoot.entries[509].setMode(AccessMode.Read);
 
 		// The current position of the kernel space. All gets appended to this address.
-		heapAddress = LinkerScript.kernelVMA;
+		heapAddress = cast(ubyte*)LinkerScript.kernelVMA + System.kernel.length;
 
-		//kprintfln!("About to map kernel")();
-		mapRegion(System.kernel.start, System.kernel.length);
+		// map kernel into bootstrap root page table, so we can use paging trick
+		ubyte* addr = findFreeSegment(true, 512*oneGB).ptr;
+		createGib!(PageLevel!(3))(addr, AccessMode.Writable|AccessMode.Executable);
+		mapRegion(null, System.kernel.start, System.kernel.length, addr);
 
-		void* bitmapLocation = heapAddress;
-
-		// The first gib for the kernel
-		nextGib++;
+		// copy physical address to new root
+		ulong idx, frag = cast(ulong)addr;
+		getNextIndex(frag, idx);
+		newRoot.entries[256].pml = root.entries[idx].pml;
 
 		// Assign the page fault handler
 		IDT.assignHandler(&pageFaultHandler, 14);
-
 		IDT.assignHandler(&generalProtectionFaultHandler, 13);
-
-		// We now have the kernel mapped
-		kernelMapped = true;
-
-		// Save the physical address for later
-		rootPhysical = cast(PhysicalAddress)root;
-
-		// This is the virtual address for the page table
-		root = cast(PageLevel4*)0xFFFFFF7F_BFDFE000;
 
 		// All is well.
 		return ErrorVal.Success;
@@ -140,7 +127,6 @@ static:
 			PhysicalAddress deadChild;
 
 			switchAddressSpace(null, deadChild);
-
 			Cpu.enterUserspace(3, deadChild);
 		}else{
 			for(;;){}
@@ -200,7 +186,6 @@ static:
 			PhysicalAddress deadChild;
 
 			switchAddressSpace(null, deadChild);
-
 			Cpu.enterUserspace(3, deadChild);
 		}else{
 			for(;;){}
@@ -251,6 +236,21 @@ static:
 			mov RAX, rootAddr;
 			mov CR3, RAX;
 		}
+
+		/*
+		if(heapAddress is null){
+
+			// put mapRegion heap into its own segment
+			heapAddress = findFreeSegment().ptr;
+
+			assert(heapAddress !is null);
+
+			bool success = createGib!(PageLevel!(3))(heapAddress, AccessMode.Writable);
+
+			assert(success);
+		}
+		*/
+
 		return ErrorVal.Success;
 	}
 
@@ -278,10 +278,10 @@ static:
 		getNextIndex(addrFrag, idx);
 		getNextIndex(addrFrag, idx);
 
-		PageLevel2* addressSpace = root.getTable(255).getTable(idx);
+		PageLevel!(2)* addressSpace = root.getTable(255).getTable(idx);
 
 		// --- initialize root ---
-		*(cast(PageLevel4*)addressSpace) = PageLevel4.init;
+		*(cast(PageLevel!(4)*)addressSpace) = (PageLevel!(4)).init;
 
 		// Map in kernel pages
 		addressSpace.entries[256].pml = root.entries[256].pml;
@@ -291,7 +291,7 @@ static:
 		addressSpace.entries[510].setMode(AccessMode.User);
 
 		// insert parent into child
-		PageLevel1* fakePl3 = addressSpace.getOrCreateTable(255);
+		PageLevel!(1)* fakePl3 = addressSpace.getOrCreateTable(255);
 
 		if(fakePl3 is null)
 			return null;
@@ -434,11 +434,6 @@ public:
 
 
 	// OLD
-	// Return an address to a new gib (kernel)
-	ulong nextGib = (256 * 512);
-	const ulong MAX_GIB = (512 * 512);
-	const ulong GIB_SIZE = (512 * 512 * PAGESIZE);
-
 	ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
 		mapRegion(null, physAddr, regionLength, gib, true);
 		return ErrorVal.Success;
@@ -471,17 +466,14 @@ public:
 		}
 
 		// This region will be located at the current heapAddress
-		void* location = heapAddress;
+		ubyte* location = heapAddress;
 
-		ubyte* endAddr = cast(ubyte*)location + (curPhysAddr - cast(ulong)physAddr);
+		ubyte* endAddr = location + (curPhysAddr - cast(ulong)physAddr);
 		PhysicalAddress pAddr = cast(PhysicalAddress)physAddr;
 
 		bool failed;
-		if (kernelMapped) {
-			traverse!(preorderMapPhysicalAddressHelper, noop)(root, cast(ulong)location, cast(ulong)endAddr, pAddr, failed);
-		}else{
-			traverseInitialMapping!(preorderInitialMapPhysicalAddressHelper, noop)(root, cast(ulong)location, cast(ulong)endAddr, pAddr, failed);
-		}
+
+		traverse!(preorderMapPhysicalAddressHelper, noop)(root, cast(ulong)location, cast(ulong)endAddr, pAddr, failed);
 
 		heapAddress = endAddr;
 
@@ -495,7 +487,7 @@ public:
 		}
 	}
 
-	synchronized ulong mapRegion(PageLevel4* rootTable, void* physAddr, ulong regionLength, void* virtAddr = null, bool writeable = false) {
+	synchronized ulong mapRegion(PageLevel!(4)* rootTable, void* physAddr, ulong regionLength, void* virtAddr = null, bool writeable = false) {
 		if (virtAddr is null) {
 			virtAddr = physAddr;
 		}
@@ -560,101 +552,12 @@ public:
 
 private:
 
-// -- Flags -- //
-	bool kernelMapped;
-
-
 // -- Positions -- //
-	void* heapAddress;
-
+	// XXX: should be an array, so we can check for overflow
+	ubyte* heapAddress;
 
 // -- Main Page Table -- //
-	PageLevel4* root;
+	// This is the virtual address for the page table
+	const PageLevel!(4)* root = cast(PageLevel!(4)*)0xFFFFFF7F_BFDFE000;
 	PhysicalAddress rootPhysical;
-
-
-	template preorderInitialMapPhysicalAddressHelper(T){
-		TraversalDirective preorderInitialMapPhysicalAddressHelper(T table, uint idx, uint startIdx, uint endIdx, ref PhysicalAddress physAddr, ref bool failed){
-			static if(T.level != 1){
-
-				if(!table.entries[idx].present){
-					auto next = PageAllocator.allocPage();
-
-					if(next is null){
-						failed = true;
-						return TraversalDirective.Stop;
-					}
-
-					table.entries[idx].pml = cast(ulong)next;
-					table.entries[idx].setMode(AccessMode.User|AccessMode.Writable|AccessMode.Executable);
-					*cast(PageLevel!(T.level-1)*)table.entries[idx].location = (PageLevel!(T.level-1)).init;
-				}
-				return TraversalDirective.Descend;
-			}else{
-				table.entries[idx].pml = cast(ulong)physAddr;
-				table.entries[idx].pat = 1;
-				table.entries[idx].setMode(AccessMode.User|AccessMode.Writable|AccessMode.Executable);
-
-				physAddr += PAGESIZE;
-
-				return TraversalDirective.Skip;
-			}
-		}
-	}
-
-
-	template traverseInitialMapping(alias PRE, alias POST, T, S...){
-		bool traverseInitialMapping(T table, ulong startAddr, ulong endAddr, ref S s){
-			ulong startIdx, endIdx;
-
-			getNextIndex(startAddr, startIdx);
-			getNextIndex(endAddr, endIdx);
-
-			for(uint i = startIdx; i <= endIdx; i++){
-				ulong frontAddr, backAddr;
-
-				if(i == startIdx){
-					frontAddr = startAddr;
-				}else{
-					frontAddr = 0;
-				}
-
-				if(i == endIdx){
-					backAddr = endAddr;
-				}else{
-					backAddr = ~0UL;
-				}
-
-				TraversalDirective directive = TraversalDirective.Descend;
-				static if(!is(PRE == noop)){
-					directive = PRE(table, i, startIdx, endIdx, s);
-				}
-				static if(T.level != 1){
-					if(directive == TraversalDirective.Descend){
-						auto childTable = cast(PageLevel!(T.level-1)*)table.entries[i].location();
-
-						if(childTable !is null){
-							bool stop = traverseInitialMapping!(PRE,POST)(childTable, frontAddr, backAddr, s);
-
-							if(stop){
-								return true;
-							}
-						}
-					}else if(directive == TraversalDirective.Stop){
-						return true;
-					}
-				}else{
-					if(directive == TraversalDirective.Stop){
-						return true;
-					}
-				}
-
-				static if(!is(POST == noop)){
-					POST(table, i, startIdx, endIdx, s);
-				}
-			}
-
-			return false;
-		}// end travesal()
-	}
 }
