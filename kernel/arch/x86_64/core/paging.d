@@ -306,7 +306,7 @@ static:
 			return ErrorVal.Fail;
 		}
 
-		oldRoot = switchAddressSpace(getPhysicalAddressOfSegment(as));
+		oldRoot = switchAddressSpace(findPhysicalAddressOfSegment(as));
 
 		return ErrorVal.Success;
 	}
@@ -326,20 +326,29 @@ public:
 
 
 	// --- Segment Manipulation ---
-	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, AccessMode flags) {
+
+	// dropped synchronized because of an ldc bug w/ templates
+	ErrorVal mapGib(T)(AddressSpace destinationRoot, ubyte* location, ubyte* destination, AccessMode flags) {
 		bool success;
 
 		if(flags & AccessMode.Global){
-			if(location is null){
-				PhysicalAddress locationAddr = getPhysicalAddressOfSegment(cast(ubyte*)getGlobalAddress(cast(AddressFragment)destination));
+			PageLevel!(T.level -1)* globalSegmentParent;
 
-				PageLevel!(3)* segmentParent;
+			if(location is null){ // our open, segment mapped from global space to destination address
+				PhysicalAddress locationAddr = getPhysicalAddressOfSegment!(typeof(globalSegmentParent))(cast(ubyte*)getGlobalAddress(cast(AddressFragment)destination));
+
+				if(locationAddr is null)
+					return ErrorVal.Fail;
+
+				T* segmentParent;
 				walk!(mapSegmentHelper)(root, cast(ulong)destination, flags, success, segmentParent, locationAddr);
 			}else{
-				PhysicalAddress locationAddr = getPhysicalAddressOfSegment(cast(ubyte*)getGlobalAddress(cast(AddressFragment)location));
+				PhysicalAddress locationAddr = getPhysicalAddressOfSegment!(typeof(globalSegmentParent))(cast(ubyte*)getGlobalAddress(cast(AddressFragment)location));
 
-				PageLevel!(2)* segmentParent;
-				walk!(mapSegmentHelper)(root, getGlobalAddress(cast(ulong)destination), flags, success, segmentParent, locationAddr);
+				if(locationAddr is null)
+					return ErrorVal.Fail;
+
+				walk!(mapSegmentHelper)(root, getGlobalAddress(cast(ulong)destination), flags, success, globalSegmentParent, locationAddr);
 			}
 		}else{
 			// verify destinationRoot is a valid root page table (or null for a local operation)
@@ -347,14 +356,14 @@ public:
 				return ErrorVal.Fail;
 			}
 
-			PhysicalAddress locationAddr = getPhysicalAddressOfSegment(location), oldRoot;
+			T* segmentParent;
+			PhysicalAddress locationAddr = getPhysicalAddressOfSegment!(typeof(segmentParent))(location), oldRoot;
 
 			if(destinationRoot !is null){
 				// Goto the other address space
 				switchAddressSpace(destinationRoot, oldRoot);
 			}
 
-			PageLevel!(3)* segmentParent;
 			walk!(mapSegmentHelper)(root, cast(ulong)destination, flags, success, segmentParent, locationAddr);
 
 			if(destinationRoot !is null){
@@ -370,6 +379,7 @@ public:
 		}
 	}
 
+	// dropped synchronized because of an ldc bug w/ templates
 	template createGib(T){
 		bool createGib(ubyte* location, AccessMode flags){
 			bool global = (flags & AccessMode.Global) != 0, success;

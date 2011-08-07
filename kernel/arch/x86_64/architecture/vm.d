@@ -63,7 +63,7 @@ public:
 	}
 
 	bool mapSegment(AddressSpace dest, ubyte* location, ubyte* destination, AccessMode flags) {
-		Paging.mapGib(dest, location, destination, flags);
+		Paging.mapGib!(PageLevel!(3))(dest, location, destination, flags);
 		return false;
 	}
 
@@ -101,7 +101,7 @@ public:
 			return null;
 		}else{
 			return stackSegment;
-		} 
+		}
 	}
 
 	// --- OLD --- //

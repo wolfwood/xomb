@@ -16,6 +16,7 @@ alias ulong AddressFragment;
 const ulong oneGB = 1024*1024*1024UL;
 const PageLevel!(4)* root = cast(PageLevel!(4)*)0xFFFFFF7F_BFDFE000;
 
+
 // XXX make this a ulong alligned with PTE bits?
 enum AccessMode : uint {
 	Read = 0,
@@ -534,16 +535,44 @@ template modesForAddressHelper(T){
 	}
 }
 
-PhysicalAddress getPhysicalAddressOfSegment(ubyte* vAddr){
-	PhysicalAddress physAddr = null;
+// gets the physical address of a segment of a known size (regardless of nesting)
+template getPhysicalAddressOfSegment(T){
+	PhysicalAddress getPhysicalAddressOfSegment(ubyte* vAddr){
+		PhysicalAddress physAddr;
+		T levelOfSegment;
 
-	walk!(physicalAddressOfSegmentHelper)(root, cast(AddressFragment)vAddr, physAddr);
+		walk!(getPhysicalAddressOfSegmentHelper)(root, cast(AddressFragment)vAddr, physAddr, levelOfSegment);
+
+		return physAddr;
+	}
+}
+
+template getPhysicalAddressOfSegmentHelper(T, U){
+	bool getPhysicalAddressOfSegmentHelper(T table, uint idx, ref PhysicalAddress physAddr, ref U levelOfSegment){
+		if(table.entries[idx].present){
+			static if(is(T == U)){
+				if(table.entries[idx].getMode() & (AccessMode.Segment|AccessMode.RootPageTable)){
+					physAddr = table.entries[idx].location();
+				}
+				return false;
+			}
+			return true;
+		}
+		return false;
+	}
+}
+
+// return the physical address of the first (largest) segment it stumbles upon
+PhysicalAddress findPhysicalAddressOfSegment(ubyte* vAddr){
+	PhysicalAddress physAddr;
+
+	walk!(findPhysicalAddressOfSegmentHelper)(root, cast(AddressFragment)vAddr, physAddr);
 
 	return physAddr;
 }
 
-template physicalAddressOfSegmentHelper(T){
-	bool physicalAddressOfSegmentHelper(T table, uint idx, ref PhysicalAddress physAddr){
+template findPhysicalAddressOfSegmentHelper(T){
+	bool findPhysicalAddressOfSegmentHelper(T table, uint idx, ref PhysicalAddress physAddr){
 		if(table.entries[idx].present){
 			if(table.entries[idx].getMode() & (AccessMode.Segment|AccessMode.RootPageTable)){
 				physAddr = table.entries[idx].location();
