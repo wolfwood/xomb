@@ -37,31 +37,21 @@ align(1) struct StackFrame{
 }
 
 void printStackTrace(StackFrame* start){
-	kprintfln!(" YOU LOOK SAD, SO I GOT YOU A STACK TRACE!")();
-
-	StackFrame* curr = start, limit = start;
-
-	limit += Paging.PAGESIZE;
-	limit = cast(StackFrame*) ( cast(ulong)limit & ~(Paging.PAGESIZE-1));
-
 	int count = 10;
 
-	//&& curr < limit
-	while(cast(ulong)curr > Paging.PAGESIZE && count > 0 && isValidAddress(cast(ubyte*)curr)){
-		kprintfln!("return addr: {x} rbp: {x}")(curr.returnAddr, curr);
-		curr = curr.next;
+	kprintfln!(" YOU LOOK SAD, SO I GOT YOU A STACK TRACE!")();
+
+	while(count > 0 && isValidAddress(cast(ubyte*)start)){
+		kprintfln!("return addr: {x} rbp: {x}")(start.returnAddr, start);
+		start = start.next;
 		count--;
 	}
 }
 
 class Paging {
 static:
-
-	// The page size we are using
-	const auto PAGESIZE = 4096;
-
-	// This function will initialize paging and install a core page table.
-	ErrorVal initialize() {
+  // --- Set Up ---
+	ErrorVal initialize(){
 		// Save the physical address for later
 		rootPhysical = PageAllocator.allocPage();
 		// Create a new page table.
@@ -91,7 +81,7 @@ static:
 		// map kernel into bootstrap root page table, so we can use paging trick
 		ubyte* addr = findFreeSegment(true, 512*oneGB).ptr;
 		createGib!(PageLevel!(3))(addr, AccessMode.Writable|AccessMode.Executable);
-		mapRegion(null, System.kernel.start, System.kernel.length, addr);
+		mapRegion(addr, System.kernel.start, System.kernel.length);
 
 		// copy physical address to new root
 		ulong idx, frag = cast(ulong)addr;
@@ -106,6 +96,32 @@ static:
 		return ErrorVal.Success;
 	}
 
+	ErrorVal install() {
+		ulong rootAddr = cast(ulong)rootPhysical;
+		asm {
+			mov RAX, rootAddr;
+			mov CR3, RAX;
+		}
+
+		/*
+		if(heapAddress is null){
+
+			// put mapRegion heap into its own segment
+			heapAddress = findFreeSegment().ptr;
+
+			assert(heapAddress !is null);
+
+			bool success = createGib!(PageLevel!(3))(heapAddress, AccessMode.Writable);
+
+			assert(success);
+		}
+		*/
+
+		return ErrorVal.Success;
+	}
+
+
+  // --- Handlers ---
 	void generalProtectionFaultHandler(InterruptStack* stack) {
 		bool recoverable;
 
@@ -230,32 +246,8 @@ static:
 		}
 	}
 
-	ErrorVal install() {
-		ulong rootAddr = cast(ulong)rootPhysical;
-		asm {
-			mov RAX, rootAddr;
-			mov CR3, RAX;
-		}
 
-		/*
-		if(heapAddress is null){
-
-			// put mapRegion heap into its own segment
-			heapAddress = findFreeSegment().ptr;
-
-			assert(heapAddress !is null);
-
-			bool success = createGib!(PageLevel!(3))(heapAddress, AccessMode.Writable);
-
-			assert(success);
-		}
-		*/
-
-		return ErrorVal.Success;
-	}
-
-	Mutex pagingLock;
-
+	// --- AddressSpace Manipulation ---
 	AddressSpace createAddressSpace() {
 		// Make a new root pagetable
 		PhysicalAddress newRootPhysAddr = PageAllocator.allocPage();
@@ -332,6 +324,8 @@ private:
 	}
 public:
 
+
+	// --- Segment Manipulation ---
 	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, AccessMode flags) {
 		bool success;
 
@@ -433,97 +427,62 @@ public:
 	}
 
 
-	// OLD
+	// --- Making Specific Physical Addresses Available ---
+
+	void* mapRegion(void* physAddr, ulong regionLength) {
+		return cast(void*)mapRegion(cast(PhysicalAddress)physAddr, regionLength).ptr;
+	}
+
 	ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
-		mapRegion(null, physAddr, regionLength, gib, true);
+		mapRegion(cast(ubyte*)gib, cast(PhysicalAddress)physAddr, regionLength);
 		return ErrorVal.Success;
 	}
 
 	// Using heapAddress, this will add a region to the kernel space
-	// It returns the virtual address to this region.
-	synchronized void* mapRegion(void* physAddr, ulong regionLength) {
-		// Sanitize inputs
+	// It returns the virtual address to this region. Use sparingly
+	ubyte[] mapRegion(PhysicalAddress physAddr, ulong regionLength) {
 
-		// physAddr should be floored to the page boundary
-		// regionLength should be ceilinged to the page boundary
-		pagingLock.lock();
-		ulong curPhysAddr = cast(ulong)physAddr;
-		ulong diff = curPhysAddr % PAGESIZE;
-
-		regionLength += diff;
-		curPhysAddr -= diff;
-
-		// Set the new starting address
-		physAddr = cast(void*)curPhysAddr;
-
-		// Get the end address
-		curPhysAddr += regionLength;
-
-		// Align the end address
-		if ((curPhysAddr % PAGESIZE) > 0)
-		{
-			curPhysAddr += PAGESIZE - (curPhysAddr % PAGESIZE);
-		}
+		heapLock.lock();
 
 		// This region will be located at the current heapAddress
 		ubyte* location = heapAddress;
 
-		ubyte* endAddr = location + (curPhysAddr - cast(ulong)physAddr);
-		PhysicalAddress pAddr = cast(PhysicalAddress)physAddr;
+		ubyte[] result = mapRegion(location, physAddr, regionLength);
 
-		bool failed;
-
-		traverse!(preorderMapPhysicalAddressHelper, noop)(root, cast(ulong)location, cast(ulong)endAddr, pAddr, failed);
-
-		heapAddress = endAddr;
-
-		// Return the position of this region
-		pagingLock.unlock();
-
-		if(failed){
-			return null;
-		}else{
-			return location + diff;
+		if(result !is null){
+			heapAddress = result[$..$].ptr;
 		}
+
+		heapLock.unlock();
+
+		return result;
 	}
 
-	synchronized ulong mapRegion(PageLevel!(4)* rootTable, void* physAddr, ulong regionLength, void* virtAddr = null, bool writeable = false) {
-		if (virtAddr is null) {
-			virtAddr = physAddr;
-		}
-		// Sanitize inputs
+	synchronized ubyte[] mapRegion(ubyte* virtAddr, PhysicalAddress physAddr, ulong regionLength) {
+		assert((cast(ulong)virtAddr % PAGESIZE) == 0);
 
-		pagingLock.lock();
 		// physAddr should be floored to the page boundary
 		// regionLength should be ceilinged to the page boundary
-		ulong curPhysAddr = cast(ulong)physAddr;
-		regionLength += (curPhysAddr % PAGESIZE);
-		curPhysAddr -= (curPhysAddr % PAGESIZE);
-
-		// Set the new starting address
-		physAddr = cast(void*)curPhysAddr;
-
-		// Get the end address
-		curPhysAddr += regionLength;
+		ulong diff = cast(ulong)physAddr % PAGESIZE;
+		regionLength += diff;
+		physAddr = physAddr - diff;
 
 		// Align the end address
-		if ((curPhysAddr % PAGESIZE) > 0) {
-			curPhysAddr += PAGESIZE - (curPhysAddr % PAGESIZE);
+		if ((regionLength % PAGESIZE) > 0) {
+			regionLength += PAGESIZE - (regionLength % PAGESIZE);
 		}
 
 		// Define the end address
-		ubyte* endAddr = cast(ubyte*)virtAddr + (curPhysAddr - cast(ulong)physAddr);
+		ubyte* endAddr = virtAddr + regionLength;
 
 		bool failed;
 		PhysicalAddress pAddr = cast(PhysicalAddress)physAddr;
 		traverse!(preorderMapPhysicalAddressHelper, noop)(root, cast(ulong)virtAddr, cast(ulong)endAddr, pAddr, failed);
 
-		pagingLock.unlock();
-
 		if(failed){
-			return 0;
+			return null;
 		}else{
-			return regionLength;
+			return (virtAddr)[diff..regionLength];
 		}
 	}
 
@@ -550,14 +509,13 @@ public:
 		}
 	}
 
-private:
+	const auto PAGESIZE = 4096;
 
-// -- Positions -- //
+private:
 	// XXX: should be an array, so we can check for overflow
 	ubyte* heapAddress;
+	Mutex heapLock;
 
-// -- Main Page Table -- //
-	// This is the virtual address for the page table
-	const PageLevel!(4)* root = cast(PageLevel!(4)*)0xFFFFFF7F_BFDFE000;
+	// This is the physical address for the page table
 	PhysicalAddress rootPhysical;
 }
