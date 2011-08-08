@@ -189,7 +189,7 @@ public:
 	}
 
 	T ioIn(T)(uint port) {
-		// The argument is passed as RDI 
+		// The argument is passed as RDI
 		asm {
 			naked;
 			mov EDX, EDI;
@@ -264,7 +264,7 @@ public:
 		asm {
 			// move the MSR index to ECX
 			mov ECX, MSR;
-			
+
 			// read MSR
 			rdmsr;
 
@@ -279,7 +279,7 @@ public:
 
 		return ret;
 	}
-	
+
 	/*
 		added by pmcclory.
 		calls cpuid with EAX set as 0x2.
@@ -328,7 +328,7 @@ public:
 		 	ebx_ret = getBX();
 			ecx_ret = getCX();
 			edx_ret = getDX();
-		    i++;	     	     
+		    i++;
 	     } while (i < count);
 
 
@@ -355,7 +355,7 @@ public:
 		asm{
 			movq R11, mySS;
 			pushq R11;
-			
+
 			movq R11, myRSP;
 			pushq R11;
 
@@ -374,7 +374,7 @@ public:
 			iretq;
 		}
   }
-			    
+
 private:
 
 	/*
@@ -385,7 +385,7 @@ private:
 	void examineRegister(uint reg) {
 	     uint i;
 	     uint temp;
-	
+
 	     for(i=0; i<4; i++) {
 	     	  temp = reg >> (8 * i);
 		      temp = temp & 0xFF;
@@ -715,7 +715,7 @@ private:
 
 		while(isValidAddress(cast(ubyte*)curr.next) && cast(ulong)curr.next > Paging.PAGESIZE) {
 			curr.next = cast(StackFrame*)(cast(ulong)curr.next & (Paging.PAGESIZE - 1));
-			curr.next = cast(StackFrame*)(cast(ulong)curr.next + stackSpace); 
+			curr.next = cast(StackFrame*)(cast(ulong)curr.next + stackSpace);
 			curr = curr.next;
 		}
 

@@ -20,7 +20,7 @@ struct bigint {
 };
 
 void main() {
-	
+
 	ticks header_t0, header_t1, read_t0, read_t1, compute_t0, compute_t1, write_t0, write_t1;
 
 	header_t0 = getticks();

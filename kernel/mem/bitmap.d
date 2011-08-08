@@ -45,7 +45,7 @@ ErrorVal initialize() {
 	// Zero out bitmap initially
 	for (size_t i = 0; i < bitmapSize; i++) {
 		bitmapGib[i] = 0;
-	}	
+	}
 
 	kprintfln!("BITMAP CREATED")();
 
@@ -287,5 +287,5 @@ package {
 
 		return 0xffffffffffffffffUL;
 	}
-	
+
 }

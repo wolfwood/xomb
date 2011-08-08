@@ -93,7 +93,7 @@ public:
 		PhysicalAddress ptr = PageAllocatorImplementation.allocPage();
 
 		//VirtualMemory.mapRegion(null, ptr, 4096, mapping, true);
-		
+
 		//VirtualMemory.mapPage(ptr, mapping);
 
 		//void* mapping = VirtualMemory.mapKernelPage(ptr);

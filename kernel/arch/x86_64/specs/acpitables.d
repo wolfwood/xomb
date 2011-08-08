@@ -262,7 +262,7 @@ private:
 		char[4] signature;	// should be the name of the table
 
 		// the length of the table (in bytes)
-		uint length;		
+		uint length;
 	}
 
 	align(1) struct RSDP {
@@ -270,22 +270,22 @@ private:
 		ubyte checksum;		// should allow the sum of all entries to be zero
 
 		// OEM supplied string
-		ubyte[6] OEMID;		
+		ubyte[6] OEMID;
 
 		// The revision of this structure.
-		ubyte revision;		
+		ubyte revision;
 
 		// Pointer (32bit) to the RSDT structure.
-		uint ptrRSDT;		
+		uint ptrRSDT;
 
 		// length of the table (including header)
-		uint len;			
+		uint len;
 
 		// Pointer (64bit) to the XSDT structure.
-		ulong ptrXSDT;		
+		ulong ptrXSDT;
 
 		// Extended checksum (sum of all values including both checksums)
-		ubyte extChecksum;	
+		ubyte extChecksum;
 
 		ubyte[3] reserved;
 	}
@@ -294,23 +294,23 @@ private:
 		char[4] signature;	// should be "RSDT"
 
 		// length of the table (including all descriptor tables following)
-		uint len;			
+		uint len;
 
 		ubyte revision;		// = 1
 		ubyte checksum;		// see RSDP
 		ubyte[6] OEMID;		// see RSDP
 
 		// this is the manufacture model ID, must match the ID in the FADT
-		ulong OEMTableID;	
+		ulong OEMTableID;
 
 		// OEM revision of the table
-		uint OEMRevision;	
+		uint OEMRevision;
 
 		// Vender ID of utility that created the table
-		uint creatorID;		
+		uint creatorID;
 
 		// Revision of this utility
-		uint creatorRevision;	
+		uint creatorRevision;
 
 		// followed by (n) 32 bit addresses to other descriptor headers
 	}
@@ -319,23 +319,23 @@ private:
 		char[4] signature;	// should be "XSDT"
 
 		// length of the table (including all descriptor tables following)
-		uint len;			
+		uint len;
 
 		ubyte revision;		// = 1
 		ubyte checksum;		// see RSDP
 		ubyte[6] OEMID;		// see RSDP
 
 		// This is the manufacture model ID, must match the ID in the FADT
-		ulong OEMTableID;	
+		ulong OEMTableID;
 
 		// OEM revision of the table
-		uint OEMRevision;	
+		uint OEMRevision;
 
 		// Vender ID of utility that created the table
-		uint creatorID;		
+		uint creatorID;
 
 		// Revision of this utility
-		uint creatorRevision;	
+		uint creatorRevision;
 
 		// followed by (n) 64 bit addresses to other descriptor headers
 	}
@@ -353,7 +353,7 @@ private:
 		uint creatorRevision;
 
 		// 32-bit physical address of the local APIC
-		uint localAPICAddr;	
+		uint localAPICAddr;
 
 		// flags (only one bit, bit 0: indicates the
 		//			the system has n 8259 that must
@@ -370,14 +370,14 @@ private:
 		// the ProcessorId for which this processor is
 		//   listed in the ACPI Processor declaration
 		//   operator.
-		ubyte ACPICPUID;	
+		ubyte ACPICPUID;
 
 		// the processor's local APIC ID
-		ubyte APICID;		
+		ubyte APICID;
 
 		// flags (only one bit, bit 0: indicates whether
 		//			the local APIC is useable)
-		uint flags;			
+		uint flags;
 	}
 
 	align(1) struct entryIOAPIC {
@@ -385,17 +385,17 @@ private:
 		ubyte len;			// = 12
 
 		// The IO APIC's ID
-		ubyte IOAPICID;		
+		ubyte IOAPICID;
 
 		ubyte reserved;		// = 0
 
 		// The 32-bit physical address to access this I/O APIC
-		uint IOAPICAddr;	
+		uint IOAPICAddr;
 
-		// The global system interrupt number where this IO 
-		// APIC's interrupt inputs start. The number of 
+		// The global system interrupt number where this IO
+		// APIC's interrupt inputs start. The number of
 		// interrupt inputs is determined by the IO APIC's Max Redir Entry register.
-		uint globalSystemInterruptBase;	
+		uint globalSystemInterruptBase;
 	}
 
 	align(1) struct entryInterruptSourceOverride {
@@ -405,7 +405,7 @@ private:
 		ubyte source;		// IRQ
 
 		// The GSI that this bus-relative irq will signal
-		uint globalSystemInterrupt;	
+		uint globalSystemInterrupt;
 		ushort flags;
 
 		mixin(Bitfield!(flags, "po", 2, "el", 2, "reserved", 12));
@@ -420,7 +420,7 @@ private:
 		ushort flags;		// same as MPS INTI flags
 
 		// the GSI this NMI will signal
-		uint globalSystemInterrupt; 
+		uint globalSystemInterrupt;
 
 		mixin(Bitfield!(flags, "po", 2, "el", 2, "reserved", 12));
 	}
@@ -432,15 +432,15 @@ private:
 		ubyte type;			// = 4
 		ubyte len;			// = 6
 
-		// Processor ID corresponding to the ID listed in the 
+		// Processor ID corresponding to the ID listed in the
 		// Processor/Local APIC structure
-		ubyte ACPICPUID;	
+		ubyte ACPICPUID;
 
 		// MPS INTI flags
-		ushort flags;		
+		ushort flags;
 
 		// the LINTn input to which NMI is connected
-		ubyte localAPICLINT;	
+		ubyte localAPICLINT;
 
 		mixin(Bitfield!(flags, "polarity", 2, "trigger", 2, "reserved", 12));
 	}
@@ -450,9 +450,9 @@ private:
 		ubyte len;			// = 12
 		ushort reserved;	// = 0
 
-		// Physical address of the Local APIC. (or for Itanium systems, 
+		// Physical address of the Local APIC. (or for Itanium systems,
 		// the starting address of the Processor Interrupt Block)
-		ulong localAPICAddr;	
+		ulong localAPICAddr;
 	}
 
 	// Very similar to the IOAPIC entry.  If both IOAPIC and IOSAPIC exist, the
@@ -464,10 +464,10 @@ private:
 		ubyte reserved;		// = 0
 
 		// The GSI # where the IO SAPIC interrupt inputs start.
-		uint globalSystemInterruptBase; 
+		uint globalSystemInterruptBase;
 
 		// The 64-bit physical address to access this IO SAPIC.
-		ulong IOSAPICAddr;	
+		ulong IOSAPICAddr;
 	}
 
 	// Again, similar to the Local APIC entry.

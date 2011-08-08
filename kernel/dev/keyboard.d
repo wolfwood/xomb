@@ -25,7 +25,7 @@ class Keyboard {
 		*_writeOffset = 0;
 		_readOffset = &((cast(ushort*)_buffer)[1]);
 		*_readOffset = 0;
-		
+
 		((cast(ushort*)_buffer)[2]) = cast(ushort)BUFFER_SIZE;
 		_maxOffset = (BUFFER_SIZE / ushort.sizeof) - 3;
 
@@ -33,7 +33,7 @@ class Keyboard {
 		ErrorVal ret = KeyboardImplementation.initialize(&putKey);
 		return ret;
 	}
-	
+
 	ubyte[] segment;
 private:
 

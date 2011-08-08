@@ -20,7 +20,7 @@ import architecture.vm;
 // temporary h4x
 import kernel.core.initprocess;
 
-	
+
 class SyscallImplementations {
 static:
 public:

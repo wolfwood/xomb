@@ -35,7 +35,7 @@ public:
 	void virtualAddress(void* addr) {
 		videoMemoryLocation = cast(ubyte*)addr;
 	}
-	
+
 	ubyte* virtualAddress() {
 		return videoMemoryLocation - videoInfo.videoBufferOffset;
 	}
@@ -53,15 +53,15 @@ public:
 
 		MetaData* videoMetaData = cast(MetaData*)vid.ptr;
 		*videoMetaData = info;
-		
-		videoMetaData.videoBufferOffset = 
+
+		videoMetaData.videoBufferOffset =
 			VirtualMemory.pagesize * (1+ MetaData.sizeof/VirtualMemory.pagesize);
 
 		videoMemoryLocation = vid.ptr + videoMetaData.videoBufferOffset;
 		videoInfo = videoMetaData;
 
 		VirtualMemory.mapRegion(cast(ubyte*)(videoMemoryLocation), cast(ubyte*)0xB8000, 1024*1024);
-		
+
 		uint temp = LINES * COLUMNS;
 		temp++;
 

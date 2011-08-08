@@ -29,13 +29,13 @@ import user.environment;
 struct InitProcess{
 	static:
 
-	// rather than creating a new AddressSpace, since the kernel is mapped in to all, 
+	// rather than creating a new AddressSpace, since the kernel is mapped in to all,
 	// we instead map init into the lower half of the current AddressSpace
 	ErrorVal install(){
 		uint idx, j;
 
 		char[] initname = "init";
-				
+
 		// XXX: create null gib without alloc on access
 
 		// --- * turn module into segment ---
@@ -45,7 +45,7 @@ struct InitProcess{
 
 		if(!testForMagicNumber()){
 			kprintfln!("Bad magic cookie from Init. Blech -- XOmB only work for 0xdeadbeefcafe cookies")();
-			return ErrorVal.Fail; 
+			return ErrorVal.Fail;
 		}
 
 		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
@@ -65,7 +65,7 @@ struct InitProcess{
     root.getOrCreateTable(255).entries[0].pml = root.entries[510].pml;
 		root.getTable(255).entries[0].setMode(AccessMode.RootPageTable);
 
-		return ErrorVal.Success; 
+		return ErrorVal.Success;
 	}
 
 	void enterFromBSP(){
@@ -122,7 +122,7 @@ private:
 			VirtualMemory.createSegment(cast(ubyte*)(segidx*oneGB), oneGB, AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Executable);
 
 		VirtualMemory.mapRegion(segmentBytes.ptr, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
-		
+
 		// set module length in first ulong of segment
 		*cast(ulong*)segmentBytes.ptr = System.moduleInfo[idx].length;
 

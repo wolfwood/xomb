@@ -56,7 +56,7 @@ int _aaApply2(AA aa, size_t keysize, aa_dg2_t dg) {
 	return 0;
 }
 
-BB* _d_assocarrayliteralTp(TypeInfo_AssociativeArray ti, size_t length, 
+BB* _d_assocarrayliteralTp(TypeInfo_AssociativeArray ti, size_t length,
 		void* keys, void* values) {
 	return null;
 }

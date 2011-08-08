@@ -37,14 +37,14 @@ ErrorVal initialize() {
 
 
 	 kprintfln!("PageColor: num_sets: {}")(num_sets);
-	 	 
+
 	 uint set_bits = 0;
 	 uint temp = num_sets;
 	 while(temp > 1) {
 	 	    set_bits++;
 		    temp = temp/2;
 	 }
-	 
+
 	 uint block_bits = 0;
 	 temp = System.processorInfo[Cpu.identifier].L2Cache.blockSize;	 while(temp > 1) {
 	 	    block_bits++;
@@ -155,7 +155,7 @@ private {
 	ulong findPage(void * virtAddr) {
 		ulong* curPtr = Bitmap.bitmap;
 		ulong curIndex = 0;
-		
+
 		ulong offset = (1 << color_bits)/System.numProcessors;
 		//kprintfln!("num Processors: {}, offset: {}")(System.numProcessors, offset);
 		ulong mask = (1 << color_bits) -1;
@@ -200,5 +200,5 @@ private {
 
 		return 0xffffffffffffffffUL;
 	}
-	
+
 }

@@ -24,7 +24,7 @@ public:
 		L2WriteRequests,
 		L2Locks,
 	}
-	
+
 	ErrorVal initialize() {
 		// Determine capabilites
 		ulong ia32_misc_enable = Cpu.readMSR(0x1A0);
@@ -136,7 +136,7 @@ private:
 	//			: to this value
 	// 23		: Invert flag - used with CMASK, makes CMASK operate as less than
 	// 22		: * Enable Counters - 1=counting is enabled
-	// 20		: INT (APIC int enable) - 1=processor will generate 
+	// 20		: INT (APIC int enable) - 1=processor will generate
 	//			: local APIC exception on counter overflow
 	// 19		: PC (pin control)
 	// 18		: Edge Detect

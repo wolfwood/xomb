@@ -31,17 +31,17 @@ void main(char[][] argv) {
 	EmbeddedFS.makeFS();
 
 	// say hello
-	Console.backcolor = Color.Black; 
+	Console.backcolor = Color.Black;
 	Console.forecolor = Color.Green;
 
 	Console.putString("\nWelcome to XOmB\n");
 	Console.putString(  "-=-=-=-=-=-=-=-\n\n");
-	
-	Console.backcolor = Color.Black; 
+
+	Console.backcolor = Color.Black;
 	Console.forecolor = Color.LightGray;
 
 	// yield to xsh
-	AddressSpace xshAS = createAddressSpace();	
+	AddressSpace xshAS = createAddressSpace();
 
 	const char[][] args = ["xsh", "arg"];
 

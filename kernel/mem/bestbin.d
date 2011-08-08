@@ -40,14 +40,14 @@ ErrorVal initialize() {
 
 
 	 kprintfln!("PageColor: num_sets: {}")(num_sets);
-	 	 
+
 	 uint set_bits = 0;
 	 uint temp = num_sets;
 	 while(temp > 1) {
 	 	    set_bits++;
 		    temp = temp/2;
 	 }
-	 
+
 	 uint block_bits = 0;
 	 temp = System.processorInfo[Cpu.identifier].L2Cache.blockSize;	 while(temp > 1) {
 	 	    block_bits++;
@@ -65,12 +65,12 @@ ErrorVal initialize() {
 	color_bits = set_bits + block_bits - page_bits;
 	color_mask = (((1 << color_bits)-1) << page_bits);
 
-		
+
 	ErrorVal rv = Bitmap.initialize();
 	if(rv != ErrorVal.Success)
-	      return rv;	
-	     
-	//have to do this stuff after initialize b/c that's where Bitmap.totalPages gets defined	
+	      return rv;
+
+	//have to do this stuff after initialize b/c that's where Bitmap.totalPages gets defined
 	uint i, j;
 	for(i=0; i<(1 << color_bits); i++) {
 		kprintfln!("{}")(i);
@@ -125,7 +125,7 @@ void virtualStart(void* newAddr) {
 private {
 	uint color_bits; //defines the #of color_bits
 	ulong color_mask;
-	
+
 	uint[17][1024] bin_info; //cheating, assuming there's no more than 512 colors, and 16 processors
 	ulong treeHeight;
 
@@ -175,13 +175,13 @@ private {
 	ulong findPage(void * virtAddr) {
 	        //loop to find the best bin
 		uint i, j;
-		
+
 		uint best_index=0;
-		
+
 		for(i=1; i<(1 << color_bits); i++) {
 			 //compare the used values
 			 if(bin_info[i][Cpu.identifier+1] < bin_info[best_index][Cpu.identifier+1]) {
-			 	
+
 				//make sure  there is a free page in this bin
 				if(bin_info[i][0] > 0)
 					best_index = i;
@@ -190,14 +190,14 @@ private {
 			      if(bin_info[i][0] < bin_info[best_index][0])
 			      		best_index=i;
 			 }
-			 
-			 	 	 
+
+
 		}
 
 		//decrement free, and increment used
 		//kprintfln!("The best index is {} which has used: {} and free: {}")(best_index, bin_info[best_index][Cpu.identifier+1], bin_info[best_index][0]);
 		bin_info[best_index][0]--;
-		bin_info[best_index][Cpu.identifier+1]++;			
+		bin_info[best_index][Cpu.identifier+1]++;
 		ulong* curPtr = Bitmap.bitmap;
 		ulong curIndex = 0;
 		//ulong color = cast(ulong) virtAddr & color_mask;
@@ -241,5 +241,5 @@ private {
 
 		return 0xffffffffffffffffUL;
 	}
-	
+
 }

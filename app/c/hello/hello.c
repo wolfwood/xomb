@@ -11,10 +11,10 @@ int main(int argc, char** argv){
 	char *hello = "hello world\n";
 
 	fprintf(stdout, "%s!\n", hello);
-	
+
 	wconsole(hello, 11);
 
-	
+
 	printf("Hello wizzerld!\n");
 
 	int fd =  open("/LICENSE", O_RDONLY);
@@ -24,7 +24,7 @@ int main(int argc, char** argv){
 
 	do{
 		err = read(fd, foo, 10);
-		
+
 		if(err > 0){
 			foo[err] = '\0';
 			printf(foo);
@@ -35,9 +35,9 @@ int main(int argc, char** argv){
 	printf("\n");
 
 	int wfd =  open("/out", O_WRONLY);
-	
+
 	char* moo = "The quick brown w0lfwood jumped over the lazy cl0ckw0rk.\n";
-	
+
 	printf("write to fd %d\n", wfd);
 	write(wfd, moo, strlen(moo));
 

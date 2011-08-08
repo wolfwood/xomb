@@ -13,8 +13,8 @@ import kernel.mem.pageallocator;
 import architecture.vm;
 import kernel.core.kprintf;
 
-const ulong FSBASE_MSR = 0xc000_0100;                                                                                   
-const ulong GSBASE_MSR = 0xc000_0101;  
+const ulong FSBASE_MSR = 0xc000_0100;
+const ulong GSBASE_MSR = 0xc000_0101;
 
 
 struct Syscall {
@@ -103,7 +103,7 @@ void syscallHandler() {
 		swapgs;
 		mov R8, 0;
 		lea R8, GS:[R8];
-		
+
 		// new stack
 		mov RSP, R8;
 		*/

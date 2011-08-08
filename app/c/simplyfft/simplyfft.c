@@ -5,7 +5,7 @@
  * Code computes fft of an array of complex doubles and mutates
  * in-place this array to give a complex double result.
  *
- * Code is from a module by Dmitry Karasik, and available: 
+ * Code is from a module by Dmitry Karasik, and available:
  *   http://cpansearch.perl.org/src/KARASIK/IPA-1.07/Global/fft.c
  *
  */
