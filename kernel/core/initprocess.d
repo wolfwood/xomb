@@ -52,11 +52,11 @@ struct InitProcess{
 
 		// * map in video and keyboard segments
 		bottle.stdout = findFreeSegment(false);
-		VirtualMemory.mapSegment(null, Console.virtualAddress(), bottle.stdout.ptr, AccessMode.Writable|AccessMode.User);
+		VirtualMemory.mapSegment(null, Console.segment, bottle.stdout.ptr, AccessMode.Writable|AccessMode.User);
 		bottle.stdoutIsTTY = true;
 
 		bottle.stdin = findFreeSegment(false);
-		VirtualMemory.mapSegment(null, Keyboard.segment.ptr, bottle.stdin.ptr, AccessMode.Writable|AccessMode.User);
+		VirtualMemory.mapSegment(null, Keyboard.segment, bottle.stdin.ptr, AccessMode.Writable|AccessMode.User);
 		bottle.stdinIsTTY = true;
 
 		bottle.setArgv("init and args");

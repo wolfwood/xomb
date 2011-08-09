@@ -163,7 +163,7 @@ private:
 }
 
 template populateChild(T){
-	void populateChild(T argv, AddressSpace child, ubyte[] f, ubyte* stdin = null, ubyte* stdout = null){
+	void populateChild(T argv, AddressSpace child, ubyte[] f, ubyte[] stdin = null, ubyte[] stdout = null){
 		// XXX: restrict T to char[] and char[][]
 
 		// map executable to default (kernel hardcoded) location in the child address space
@@ -185,7 +185,7 @@ template populateChild(T){
 			f = g[0..f.length];
 		}
 
-		Syscall.map(child, f.ptr, dest, AccessMode.Writable|AccessMode.User|AccessMode.Executable|AccessMode.AllocOnAccess);
+		Syscall.map(child, f, dest, AccessMode.Writable|AccessMode.User|AccessMode.Executable|AccessMode.AllocOnAccess);
 
 		// bottle to bottle transfer of stdin/out isthe default case
 		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
@@ -205,8 +205,8 @@ template populateChild(T){
 
 		// if no stdin/out is specified, us the same buffer as parent
 		if(stdout is null){
-			stdout = bottle.stdout.ptr;
-			childBottle.stdoutIsTTY =	bottle.stdoutIsTTY;
+			stdout = bottle.stdout;
+			childBottle.stdoutIsTTY = bottle.stdoutIsTTY;
 		}
 
 		if(!childBottle.stdoutIsTTY){
@@ -214,7 +214,7 @@ template populateChild(T){
 		}
 
 		if(stdin is null){
-			stdin = bottle.stdin.ptr;
+			stdin = bottle.stdin;
 			childBottle.stdinIsTTY = bottle.stdinIsTTY;
 		}
 

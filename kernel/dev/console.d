@@ -36,8 +36,8 @@ public:
 		videoMemoryLocation = cast(ubyte*)addr;
 	}
 
-	ubyte* virtualAddress() {
-		return videoMemoryLocation - videoInfo.videoBufferOffset;
+	ubyte[] segment() {
+		return (videoMemoryLocation - videoInfo.videoBufferOffset)[0..oneGB];
 	}
 
 	// This will init the console driver
@@ -49,7 +49,7 @@ public:
 		ubyte* freeGib = VirtualMemory.findFreeSegment().ptr;
 		const ulong oneGB = 1024*1024*1024;
 
-		ubyte[] vid = VirtualMemory.createSegment(freeGib, oneGB, AccessMode.Writable|AccessMode.AllocOnAccess);
+		ubyte[] vid = VirtualMemory.createSegment(freeGib, oneGB, AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Device);
 
 		MetaData* videoMetaData = cast(MetaData*)vid.ptr;
 		*videoMetaData = info;

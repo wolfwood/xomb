@@ -48,7 +48,7 @@ struct CreateArgs {
 
 struct MapArgs {
 	AddressSpace dest;
-	ubyte* location;
+	ubyte[] location;
 	ubyte* destination;
 	AccessMode mode;
 }

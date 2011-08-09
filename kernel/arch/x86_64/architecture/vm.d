@@ -62,9 +62,36 @@ public:
 		}
 	}
 
-	bool mapSegment(AddressSpace dest, ubyte* location, ubyte* destination, AccessMode flags) {
-		Paging.mapGib!(PageLevel!(3))(dest, location, destination, flags);
-		return false;
+	bool mapSegment(AddressSpace dest, ubyte[] location, ubyte* destination, AccessMode flags) {
+		if(location is null){
+			return false;
+		}
+
+		ErrorVal result;
+		uint pagelevel = sizeToPageLevel(location.length);
+
+		switch(pagelevel){
+			//case 1:
+			//result = Paging.mapGib!(PageLevel!(1))(dest, location.ptr, destination, flags);
+			//break;
+		case 2:
+			result = Paging.mapGib!(PageLevel!(2))(dest, location.ptr, destination, flags);
+			break;
+		case 3:
+			result = Paging.mapGib!(PageLevel!(3))(dest, location.ptr, destination, flags);
+			break;
+		case 4:
+			result = Paging.mapGib!(PageLevel!(4))(dest, location.ptr, destination, flags);
+			break;
+		default:
+			return false;
+		}
+
+		if(result == ErrorVal.Success){
+			return true;
+		}else{
+			return false;
+		}
 	}
 
 	bool closeSegment(ubyte* location) {

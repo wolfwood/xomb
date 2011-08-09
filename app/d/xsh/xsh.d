@@ -254,7 +254,7 @@ void interpret(char[] str) {
 
 			assert(f !is null);
 
-			populateChild(arguments[0..argc], child, f, infile.ptr, outfile.ptr);
+			populateChild(arguments[0..argc], child, f, infile, outfile);
 
 			XombThread.yieldToAddressSpace(child,0);
 		}

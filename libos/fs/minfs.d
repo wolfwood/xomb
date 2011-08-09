@@ -33,7 +33,7 @@ class MinFS{
 	static:
 	// open the SuperSegment, allowing metadata reads and writes
 	void initialize(){
-		Syscall.map(null, createAddr(0,0,0,257), null, AccessMode.User|AccessMode.Writable|AccessMode.Global|AccessMode.AllocOnAccess);
+		Syscall.map(null, createAddr(0,0,0,257)[0..oneGB], null, AccessMode.User|AccessMode.Writable|AccessMode.Global|AccessMode.AllocOnAccess);
 
 		hdr = cast(Header*)createAddr(0,0,0,257);
 	}
@@ -66,7 +66,7 @@ class MinFS{
 				Syscall.create(f.ptr, f.length, mode | AccessMode.Global);
 			}
 		}else{
-			Syscall.map(null, f.ptr, null, mode | AccessMode.Global);
+			Syscall.map(null, f, null, mode | AccessMode.Global);
 		}
 
 		return f;
@@ -102,7 +102,7 @@ class MinFS{
 		// XXX: limit permessions to those that are allowed on the taget of the link
 
 		// Global bit means this operates on the global segment table that is mapped in to all AddressSpaces. this also means we leave the AS as null
-		Syscall.map(null, file.ptr, link.ptr, AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Global);
+		Syscall.map(null, file, link.ptr, AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Global);
 
 		return link;
 	}
