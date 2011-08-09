@@ -334,20 +334,15 @@ public:
 		if(flags & AccessMode.Global){
 			PageLevel!(T.level -1)* globalSegmentParent;
 
-			if(location is null){ // our open, segment mapped from global space to destination address
-				PhysicalAddress locationAddr = getPhysicalAddressOfSegment!(typeof(globalSegmentParent))(cast(ubyte*)getGlobalAddress(cast(AddressFragment)destination));
+			PhysicalAddress locationAddr = getPhysicalAddressOfSegment!(typeof(globalSegmentParent))(cast(ubyte*)getGlobalAddress(cast(AddressFragment)location));
 
-				if(locationAddr is null)
-					return ErrorVal.Fail;
+			if(locationAddr is null)
+				return ErrorVal.Fail;
 
+			if(destination is null){ // our open, segment mapped from global space to destination address
 				T* segmentParent;
-				walk!(mapSegmentHelper)(root, cast(ulong)destination, flags, success, segmentParent, locationAddr);
+				walk!(mapSegmentHelper)(root, cast(ulong)location, flags, success, segmentParent, locationAddr);
 			}else{
-				PhysicalAddress locationAddr = getPhysicalAddressOfSegment!(typeof(globalSegmentParent))(cast(ubyte*)getGlobalAddress(cast(AddressFragment)location));
-
-				if(locationAddr is null)
-					return ErrorVal.Fail;
-
 				walk!(mapSegmentHelper)(root, getGlobalAddress(cast(ulong)destination), flags, success, globalSegmentParent, locationAddr);
 			}
 		}else{
