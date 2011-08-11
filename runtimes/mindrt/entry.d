@@ -27,8 +27,8 @@ extern(C) ubyte _end;
 ubyte* startBSS = &_bss;
 ubyte* endBSS = &_end;
 
-// Upcall Vector Table
-void function()[3] UVT = [&start, &XombThread._enterThreadScheduler, &XombThread._enterThreadScheduler];
+// Upcall Vector Table -- first entry, cpu allocation, child exit, child error (from kernel)
+void function()[4] UVT = [&start, &XombThread._enterThreadScheduler, &XombThread._enterThreadScheduler, &XombThread._enterThreadScheduler];
 extern(C) ubyte* UVTbase = cast(ubyte*)UVT.ptr;
 
 ubyte[1024] tempStack;
