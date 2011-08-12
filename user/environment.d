@@ -380,6 +380,11 @@ template PageLevel(ushort L){
 						// Create Table
 						ret = cast(PageLevel!(L-1)*)PageAllocator.allocPage();
 
+						if(ret is null){
+							return null;
+						}
+
+
 						// Set table entry
 						entries[idx].pml = cast(ulong)ret;
 						entries[idx].present = 1;
