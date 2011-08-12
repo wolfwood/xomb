@@ -32,12 +32,12 @@ public:
 	// The width of a tab
 	const auto TABSTOP = 4;
 
-	void virtualAddress(void* addr) {
-		videoMemoryLocation = cast(ubyte*)addr;
+	void switchToHigherHalfVirtualAddress() {
+		videoMemoryLocation = System.kernel.virtualStart + cast(ulong)videoMemoryPhysLocation;
 	}
 
 	ubyte[] segment() {
-		return (videoMemoryLocation - videoInfo.videoBufferOffset)[0..oneGB];
+		return _segment;
 	}
 
 	// This will init the console driver
@@ -45,22 +45,24 @@ public:
 		info.width = COLUMNS;
 		info.height = LINES;
 
-		// XXX:get free gib addy some other way
-		ubyte* freeGib = VirtualMemory.findFreeSegment().ptr;
-		const ulong oneGB = 1024*1024*1024;
+		// metadata is in RAM page(s)
+		uint ramSize = VirtualMemory.pagesize * (1+ MetaData.sizeof/VirtualMemory.pagesize);
+		// memory mapped device size
+		uint vramSize = 1024*1024;
 
-		ubyte[] vid = VirtualMemory.createSegment(freeGib, oneGB, AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Device);
+		_segment = VirtualMemory.findFreeSegment(true, oneGB);
+
+		ubyte[] vid = VirtualMemory.createSegment(_segment.ptr, _segment.length, AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Device);
 
 		MetaData* videoMetaData = cast(MetaData*)vid.ptr;
 		*videoMetaData = info;
 
-		videoMetaData.videoBufferOffset =
-			VirtualMemory.pagesize * (1+ MetaData.sizeof/VirtualMemory.pagesize);
+		videoMetaData.videoBufferOffset = ramSize;
 
 		videoMemoryLocation = vid.ptr + videoMetaData.videoBufferOffset;
 		videoInfo = videoMetaData;
 
-		VirtualMemory.mapRegion(cast(ubyte*)(videoMemoryLocation), cast(ubyte*)0xB8000, 1024*1024);
+		VirtualMemory.mapRegion(cast(ubyte*)(videoMemoryLocation), cast(ubyte*)videoMemoryPhysLocation, vramSize);
 
 		uint temp = LINES * COLUMNS;
 		temp++;
@@ -145,10 +147,6 @@ public:
 		_scrollDisplay(numLines);
 	}
 
-	void* physicalLocation() {
-		return videoMemoryPhysLocation;
-	}
-
 	uint width() {
 		return COLUMNS;
 	}
@@ -174,8 +172,10 @@ private:
 	MetaData* videoInfo = &info;
 
 	// Where the video memory lives (can be changed)
-	ubyte* videoMemoryLocation = cast(ubyte*)0xB8000UL;
-	const ubyte* videoMemoryPhysLocation = cast(ubyte*)0xB8000UL;
+	ubyte* videoMemoryLocation = cast(ubyte*)videoMemoryPhysLocation;
+	const PhysicalAddress videoMemoryPhysLocation = cast(PhysicalAddress)0xB8000UL;
+
+	ubyte[] _segment;
 
 	void _putChar(char c) {
 		if (c == '\t') {

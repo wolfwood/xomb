@@ -56,7 +56,7 @@ public:
 		Log.print("Cpu: Polling Cache Info");
 		Log.result(Cpu.getCacheInfo());
 
-		Console.virtualAddress = cast(void*)(cast(ubyte*)System.kernel.virtualStart + 0xB8000);
+		Console.switchToHigherHalfVirtualAddress();
 
 		// Everything must have succeeded
 		return ErrorVal.Success;
