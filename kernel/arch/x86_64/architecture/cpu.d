@@ -334,7 +334,7 @@ public:
 		 return ErrorVal.Success;
 	}
 
-	void* stack() {
+	ubyte* stack() {
 		return _stacks[identifier];
 	}
 
@@ -672,7 +672,7 @@ private:
 		}
 	}
 
-	private void* _stacks[256];
+	private ubyte* _stacks[256];
 
 	// Will create and install a new kernel stack
 	// Note: You have to preserve the current stack
@@ -682,8 +682,8 @@ private:
 
 		stackSpace[0..4096] = currentStack[0..4096];
 
-		_stacks[identifier] = cast(void*)stackSpace + 4096;
-		TSS.table.RSP0 = cast(void*)stackSpace + 4096;
+		_stacks[identifier] = cast(ubyte*)stackSpace + 4096;
+		TSS.table.RSP0 = cast(ubyte*)stackSpace + 4096;
 
 		StackFrame* curr = null;
 
