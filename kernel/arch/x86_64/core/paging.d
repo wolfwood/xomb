@@ -259,7 +259,7 @@ static:
 		AccessMode flags = AccessMode.RootPageTable|AccessMode.Writable;
 
 		// --- find a free slot to store the child's root, then map it in ---
-		traverse!(preorderFindFreeSegmentHelper, noop)(root, cast(ulong)createAddress(0,0,1,255), cast(ulong)createAddress(0,0,255,255), vAddr, segmentParent);
+		root.traverse!(preorderFindFreeSegmentHelper, noop)(cast(ulong)createAddress(0,0,1,255), cast(ulong)createAddress(0,0,255,255), vAddr, segmentParent);
 
 		if(vAddr is null)
 			return null;
@@ -476,7 +476,7 @@ public:
 
 		bool failed;
 		PhysicalAddress pAddr = cast(PhysicalAddress)physAddr;
-		traverse!(preorderMapPhysicalAddressHelper, noop)(root, cast(ulong)virtAddr, cast(ulong)endAddr, pAddr, failed);
+		root.traverse!(preorderMapPhysicalAddressHelper, noop)(cast(ulong)virtAddr, cast(ulong)endAddr, pAddr, failed);
 
 		if(failed){
 			return null;

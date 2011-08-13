@@ -242,6 +242,61 @@ template PageLevel(ushort L){
 			}
 		}
 
+		template traverse(alias PRE, alias POST, S...){
+			bool traverse(ulong startAddr, ulong endAddr, ref S s){
+				ulong startIdx, endIdx;
+
+				getNextIndex(startAddr, startIdx);
+				getNextIndex(endAddr, endIdx);
+
+				for(uint i = startIdx; i <= endIdx; i++){
+					ulong frontAddr, backAddr;
+
+					if(i == startIdx){
+						frontAddr = startAddr;
+					}else{
+						frontAddr = 0;
+					}
+
+					if(i == endIdx){
+						backAddr = endAddr;
+					}else{
+						backAddr = ~0UL;
+					}
+
+					TraversalDirective directive = TraversalDirective.Descend;
+					static if(!is(PRE == noop)){
+						directive = PRE(this, i, startIdx, endIdx, s);
+					}
+
+					static if(L != 1){
+						if(directive == TraversalDirective.Descend){
+							auto childTable = this.getTable(i);
+
+							if(childTable !is null){
+								bool stop = childTable.traverse!(PRE,POST)(frontAddr, backAddr, s);
+
+								if(stop){
+									return true;
+								}
+							}
+						}else if(directive == TraversalDirective.Stop){
+							return true;
+						}
+					}else{
+						if(directive == TraversalDirective.Stop){
+							return true;
+						}
+					}
+
+					static if(!is(POST == noop)){
+						POST(this, i, startIdx, endIdx, s);
+					}
+				}
+
+				return false;
+			}// end travesal()
+		}
 
 	}
 }
@@ -428,19 +483,19 @@ ubyte[] findFreeSegment(bool upperhalf = true, ulong size = oneGB){
 	switch(pagelevel){
 	case 1:
 		PageLevel!(1)* segmentParent;
-		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, segmentParent);
+		root.traverse!(preorderFindFreeSegmentHelper, noop)(startAddr, endAddr, vAddr, segmentParent);
 		break;
 	case 2:
 		PageLevel!(2)* segmentParent;
-		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, segmentParent);
+		root.traverse!(preorderFindFreeSegmentHelper, noop)(startAddr, endAddr, vAddr, segmentParent);
 		break;
 	case 3:
 		PageLevel!(3)* segmentParent;
-		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, segmentParent);
+		root.traverse!(preorderFindFreeSegmentHelper, noop)(startAddr, endAddr, vAddr, segmentParent);
 		break;
 	case 4:
 		PageLevel!(4)* segmentParent;
-		traverse!(preorderFindFreeSegmentHelper, noop)(root, startAddr, endAddr, vAddr, segmentParent);
+		root.traverse!(preorderFindFreeSegmentHelper, noop)(startAddr, endAddr, vAddr, segmentParent);
 		break;
 	}
 	return vAddr[0..size];
@@ -481,62 +536,6 @@ template preorderFindFreeSegmentHelper(T, PL){
 }
 
 // --- table manipulation templates ---
-
-template traverse(alias PRE, alias POST, T, S...){
-	bool traverse(T table, ulong startAddr, ulong endAddr, ref S s){
-		ulong startIdx, endIdx;
-
-		getNextIndex(startAddr, startIdx);
-		getNextIndex(endAddr, endIdx);
-
-		for(uint i = startIdx; i <= endIdx; i++){
-			ulong frontAddr, backAddr;
-
-			if(i == startIdx){
-				frontAddr = startAddr;
-			}else{
-				frontAddr = 0;
-			}
-
-			if(i == endIdx){
-				backAddr = endAddr;
-			}else{
-				backAddr = ~0UL;
-			}
-
-			TraversalDirective directive = TraversalDirective.Descend;
-			static if(!is(PRE == noop)){
-				directive = PRE(table, i, startIdx, endIdx, s);
-			}
-
-			static if(T.level != 1){
-				if(directive == TraversalDirective.Descend){
-					auto childTable = table.getTable(i);
-
-					if(childTable !is null){
-						bool stop = traverse!(PRE,POST)(childTable, frontAddr, backAddr, s);
-
-						if(stop){
-							return true;
-						}
-					}
-				}else if(directive == TraversalDirective.Stop){
-					return true;
-				}
-			}else{
-				if(directive == TraversalDirective.Stop){
-					return true;
-				}
-			}
-
-			static if(!is(POST == noop)){
-				POST(table, i, startIdx, endIdx, s);
-			}
-		}
-
-		return false;
-	}// end travesal()
-}
 
 // use this to skip pre or post traversal execution
 template noop(K...){TraversalDirective noop(K k){return TraversalDirective.Descend;}}
