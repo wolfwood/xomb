@@ -6,7 +6,7 @@ module kernel.system.definitions;
 
 import kernel.dev.pci;
 
-import user.environment;
+import user.types;
 
 // This structure keeps track of information pertaining to onboard memory.
 struct Memory {

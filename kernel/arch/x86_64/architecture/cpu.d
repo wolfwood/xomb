@@ -29,9 +29,6 @@ import kernel.system.definitions;
 import architecture.syscall;
 import architecture.vm;
 
-// For stack tracing
-import user.environment;
-
 private {
 	extern(C) {
 		extern ubyte _stack;

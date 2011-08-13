@@ -12,17 +12,15 @@ import mindrt.util;
 import libos.elf.elf;
 import libos.elf.segment;
 
-import user.environment;
-import Syscall = user.syscall;
+import user.types;
+
 
 struct Loader {
 	static:
 
 	ubyte[] load(ubyte[] binary, ubyte[] newgib = null){
 		if(newgib is null){
-			newgib =
-				Syscall.create(findFreeSegment(false).ptr, oneGB,
-											 AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
+			return null;
 		}
 
 		if(Elf.isValid(binary.ptr)){

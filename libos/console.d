@@ -1,8 +1,7 @@
 module libos.console;
 
-private import user.syscall;
-
 import user.console;
+
 
 struct Console {
 static:

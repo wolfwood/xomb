@@ -10,9 +10,7 @@ import libos.keyboard;
 import libos.libdeepmajik.threadscheduler;
 import libos.fs.minfs;
 
-// exit
-import user.syscall;
-import user.environment;
+import user.ipc;
 
 void main(char[][] argv){
 	if(argv.length < 1){

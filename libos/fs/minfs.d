@@ -1,6 +1,10 @@
 module libos.fs.minfs;
 
-public import user.environment;
+public import user.types;
+
+// createAddress()
+import user.environment;
+
 import Syscall = user.syscall;
 
 import libos.console;

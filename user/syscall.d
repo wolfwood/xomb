@@ -2,7 +2,7 @@ module user.syscall;
 
 import user.nativecall;
 import user.util;
-import user.environment;
+import user.types;
 
 // Errors
 enum SyscallError : ulong {

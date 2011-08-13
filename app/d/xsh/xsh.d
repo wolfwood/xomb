@@ -6,7 +6,7 @@
 
 module xsh;
 
-import user.syscall;
+import Syscall = user.syscall;
 
 import console;
 import libos.keyboard;
@@ -15,6 +15,8 @@ import user.keycodes;
 import libos.libdeepmajik.threadscheduler;
 
 import libos.fs.minfs;
+import user.ipc;
+
 
 void main() {
 	Console.backcolor = Color.Black;
@@ -131,7 +133,7 @@ void interpret(char[] str) {
 		if (argument.length > 0) {
 			createArgumentPath(arguments[1]);
 
-			AddressSpace child = createAddressSpace();
+			AddressSpace child = Syscall.createAddressSpace();
 
 			File f = MinFS.open(argumentPath, AccessMode.User|AccessMode.Writable|AccessMode.Executable);
 
@@ -205,7 +207,7 @@ void interpret(char[] str) {
 	}
 	else {
 		if (str.length > 0) {
-			AddressSpace child = createAddressSpace();
+			AddressSpace child = Syscall.createAddressSpace();
 			File infile = null, outfile = null;
 
 			// XXX: really lame redirects

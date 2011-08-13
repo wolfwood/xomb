@@ -1,8 +1,13 @@
 module user.types;
 
+// --- Constants ---
+const ulong oneGB = 1024*1024*1024UL;
 
+// --- Special Types, casting to one of these means you are doing it wrong :) ---
 typedef ubyte* AddressSpace;
 typedef ubyte* PhysicalAddress;
+
+// no longer a ubyte* as it is digested by a page walk or traversal
 alias ulong AddressFragment;
 
 

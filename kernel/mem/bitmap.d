@@ -22,7 +22,6 @@ import kernel.core.kprintf;
 // Import arch foo
 import architecture.vm;
 
-import user.environment;
 
 ErrorVal initialize() {
 
@@ -49,53 +48,6 @@ ErrorVal initialize() {
 
 	kprintfln!("BITMAP CREATED")();
 
-	//ulong* bitmapEdge = bitmap + (bitmapSize >> 3);
-
-/*	//kprintfln!("bitmap: {x} for {x} pages : totalpages {x}")(bitmap, bitmapPages, totalPages);
-
-	// Now, check to see if the bitmap can fit here
-	bool bitmapOk = false;
-	while(!bitmapOk) {
-		uint i;
-		for (i = 0; i < System.numRegions; i++) {
-			ulong* regionAddr = cast(ulong*)System.regionInfo[i].start;
-			ulong* regionEdge = cast(ulong*)(System.regionInfo[i].start + System.regionInfo[i].length);
-			if ((bitmap < regionEdge) && (bitmapEdge > regionAddr)) {
-				// overlap...
-				// move bitmap
-				//kprintfln!("Region Overlaps! Moving Heap")();
-				bitmap = regionEdge;
-				// align to page size
-				bitmap = cast(ulong*)(cast(ubyte*)bitmap + VirtualMemory.pagesize() - (cast(ulong)bitmap % VirtualMemory.pagesize()));
-				bitmapEdge = bitmap + (bitmapSize >> 3);
-				break;
-			}
-		}
-		if (i < System.numRegions) {
-			continue;
-		}
-
-		for (i = 0; i < System.numModules; i++) {
-			ulong* regionAddr = cast(ulong*)System.moduleInfo[i].start;
-			ulong* regionEdge = cast(ulong*)(System.moduleInfo[i].start + System.moduleInfo[i].length);
-			if ((bitmap < regionEdge) && (bitmapEdge > regionAddr)) {
-				// overlap...
-				// move bitmap
-				//kprintfln!("Module Overlaps! Moving Heap")();
-				bitmap = regionEdge;
-				// align to page size
-				bitmap = cast(ulong*)(cast(ubyte*)bitmap + VirtualMemory.pagesize() - (cast(ulong)bitmap % VirtualMemory.pagesize()));
-				bitmapEdge = bitmap + (bitmapSize >> 3);
-				//kprintfln!("(NEW) Bitmap location: {x}")(bitmap);
-				break;
-			}
-		}
-		if (i == System.numModules) {
-			bitmapOk = true;
-		}
-	}*/
-	//kprintfln!("Bitmap location: {x}")(bitmap);
-
 	// Set up the bitmap for the regions used by the system.
 
 	// The kernel...
@@ -116,12 +68,6 @@ ErrorVal initialize() {
 		markOffRegion(System.moduleInfo[i].start, System.moduleInfo[i].length);
 	}
 
-	// Virtual Address for the heap is relative to the kernel
-//	bitmapPhys = bitmap;
-	//	kprintfln!("findPage: {x}")(allocPageNoMap());
-	//kprintfln!("findPage: {x}")(findPage());
-	//		kprintfln!("findPage: {x}")(findPage());
-	//		kprintfln!("findPage: {x}")(findPage());
 	kprintfln!("Success : ")();
 	// It succeeded!
 	return ErrorVal.Success;

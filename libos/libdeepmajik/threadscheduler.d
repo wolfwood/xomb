@@ -3,7 +3,10 @@ module libos.libdeepmajik.threadscheduler;
 import libos.libdeepmajik.umm;
 import Syscall = user.syscall;
 
-import user.environment;
+import user.types;
+
+// bottle for error code
+import user.ipc;
 
 const ulong ThreadStackSize = 4096;
 

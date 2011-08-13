@@ -2,6 +2,8 @@ module user.ipc;
 
 import user.environment;
 
+import Syscall = user.syscall;
+
 // place to store values that must be communicated to the child process from the parent
 struct MessageInAbottle {
 	ubyte[] stdin;

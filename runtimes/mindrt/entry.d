@@ -7,12 +7,10 @@
  *
  */
 
-import user.syscall;
-
 import libos.libdeepmajik.threadscheduler;
 import libos.libdeepmajik.umm;
 
-import user.environment;
+import user.ipc;
 
 import libos.console;
 import libos.keyboard;
@@ -34,18 +32,6 @@ extern(C) ubyte* UVTbase = cast(ubyte*)UVT.ptr;
 ubyte[1024] tempStack;
 ubyte* tempStackTop = &tempStack[tempStack.length - 8];
 
-
-/*extern(C) void _start(int thing) {
-	asm{
-		naked;
-
-		//stackless equivalent of "UVT[thing]();"
-		movq RSI, UVTbase;
-		sal RDI, 3;
-		addq RSI, RDI;
-		jmp [RSI];
-	}
-	}*/
 
 void start(){
 	// Zero the BSS, equivalent to start2()
@@ -76,19 +62,7 @@ void start(){
 	}
 }
 
-void start2(){
-	ubyte* startBSS = &_edata;
-	ubyte* endBSS = &_end;
-
-	for( ; startBSS != endBSS; startBSS++) {
-		*startBSS = 0x00;
-	}
-	start3();
-}
-
 void start3(){
-	//UsermodeMemoryManager.
-
 	char[][] argv = MessageInAbottle.getMyBottle().argv;
 
 	ulong argvlen = cast(ulong)argv.length;
@@ -99,14 +73,10 @@ void start3(){
 
 	if(bottle.stdoutIsTTY){
 		Console.initialize(bottle.stdout.ptr);
-	}else{
-		//assert(false);
 	}
 
 	if(bottle.stdinIsTTY){
 		Keyboard.initialize(cast(ushort*)bottle.stdin.ptr);
-	}else{
-		//assert(false);
 	}
 
 	UserspaceMemoryManager.initialize();

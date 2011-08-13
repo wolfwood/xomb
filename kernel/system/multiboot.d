@@ -9,7 +9,7 @@ import kernel.core.util;
 import kernel.system.definitions;
 import kernel.system.info;
 
-import user.environment;
+import user.types;
 
 /* These two magic numbers are
  * defined in the multiboot spec, we use them

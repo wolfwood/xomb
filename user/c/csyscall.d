@@ -1,6 +1,7 @@
 module user.c.csyscall;
 
-import Syscalls = user.syscall;
+import Syscall = user.syscall;
+
 import libos.console;
 
 import libos.fs.minfs;
@@ -119,7 +120,7 @@ void wconsole(char* ptr, int len){
 }
 
 void perfPoll(int event) {
-	return Syscalls.perfPoll(event);
+	return Syscall.perfPoll(event);
 }
 
 void exit(ulong val) {

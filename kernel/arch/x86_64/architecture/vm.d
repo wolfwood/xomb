@@ -14,7 +14,7 @@ import kernel.arch.x86_64.core.paging;
 // Normal kernel modules
 import kernel.core.error;
 
-import user.environment;
+public import user.environment;
 
 class VirtualMemory {
 static:

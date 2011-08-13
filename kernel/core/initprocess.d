@@ -23,8 +23,9 @@ import architecture.vm;
 // enterUserspace()
 import architecture.cpu;
 
-// AccessMode, why is this here?
-import user.environment;
+// bottle
+import user.ipc;
+
 
 struct InitProcess{
 	static:

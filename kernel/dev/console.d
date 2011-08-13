@@ -16,7 +16,6 @@ import architecture.cpu;
 import architecture.mutex;
 import architecture.vm;
 
-import user.environment;
 
 // This is the true interface to the console
 class Console {

@@ -7,11 +7,9 @@ import kernel.core.util;
 import kernel.core.syscall;
 
 import user.syscall;
-import user.environment;
 
 import kernel.mem.pageallocator;
 import architecture.vm;
-import kernel.core.kprintf;
 
 const ulong FSBASE_MSR = 0xc000_0100;
 const ulong GSBASE_MSR = 0xc000_0101;

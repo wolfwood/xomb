@@ -3,7 +3,7 @@
 module kernel.core.syscall;
 
 import user.syscall;
-import user.environment;
+import user.types;
 
 import kernel.dev.console;
 

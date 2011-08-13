@@ -22,17 +22,8 @@ import kernel.core.error;
 // Import the configurable allocator
 import kernel.config : PageAllocatorImplementation;
 
-// for definition of PhysicalAddress
-import user.environment;
-
 /*
 extern(C) void memset(void*, int, uint);
-
-align(4096) struct Bogo{
-	ubyte[4096*2] data;
-}
-
-Bogo foo;
 */
 
 struct PageAllocator {
@@ -88,16 +79,7 @@ public:
 			return ret;
 		}
 
-		//void* mapping = cast(void*)((cast(ulong)foo.data.ptr + 4096UL) & (0xFFFFFFFF_FFFFF000UL));
-
 		PhysicalAddress ptr = PageAllocatorImplementation.allocPage();
-
-		//VirtualMemory.mapRegion(null, ptr, 4096, mapping, true);
-
-		//VirtualMemory.mapPage(ptr, mapping);
-
-		//void* mapping = VirtualMemory.mapKernelPage(ptr);
-		//memset(mapping, 0, 4096);
 
 		return ptr;
 	}

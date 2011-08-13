@@ -6,12 +6,10 @@
 
 module hello;
 
-import user.syscall;
-
 import console;
-import libos.keyboard;
-import user.environment;
 
+// requied by entry.
+import libos.keyboard;
 import libos.libdeepmajik.threadscheduler;
 
 void main(char[][] argv) {

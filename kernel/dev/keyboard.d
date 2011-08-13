@@ -3,7 +3,6 @@ module kernel.dev.keyboard;
 // Import the architecture specific keyboard driver
 import architecture.keyboard;
 import architecture.vm;
-import user.environment;
 
 import kernel.core.error;
 
@@ -11,7 +10,6 @@ import kernel.config;
 
 import user.keycodes;
 
-import kernel.dev.console;
 
 class Keyboard {
 	static:

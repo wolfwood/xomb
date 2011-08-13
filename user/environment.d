@@ -1,9 +1,7 @@
 module user.environment;
 
 import user.util;
-import Syscall = user.syscall;
 
-public import user.ipc;
 public import user.types;
 
 version(KERNEL){
@@ -14,7 +12,6 @@ version(KERNEL){
 
 
 // --- Constants ---
-const ulong oneGB = 1024*1024*1024UL;
 const PageLevel!(4)* root = cast(PageLevel!(4)*)0xFFFFFF7F_BFDFE000;
 
 
