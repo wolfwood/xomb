@@ -1,0 +1,49 @@
+module user.types;
+
+
+typedef ubyte* AddressSpace;
+typedef ubyte* PhysicalAddress;
+alias ulong AddressFragment;
+
+
+// XXX: make this a ulong aligned with PTE bits?
+enum AccessMode : uint {
+	Read = 0,
+
+	// bits that get encoded in the available bits
+	Global = 1,
+	AllocOnAccess = 2,
+
+	MapOnce = 4,
+	CopyOnWrite = 8,
+
+	PrivilegedGlobal = 16,
+	PrivilegedExecutable = 32,
+
+	// use Indicators
+	Segment = 64,
+	RootPageTable = 128,
+	Device = 256, // good enough for isTTY?
+
+	// Permissions
+	Delete = 512,
+	// bits that are encoded in hardware defined PTE bits
+	Writable = 1 <<  14,
+	User = 1 << 15,
+	Executable = 1 << 16,
+
+	// Size?
+
+	// Default policies
+	DefaultUser = Writable | AllocOnAccess | User,
+	DefaultKernel = Writable | AllocOnAccess,
+
+	// flags that are always permitted in syscalls
+	SyscallStrictMask = Global | AllocOnAccess | MapOnce | CopyOnWrite | Writable
+	  | User | Executable,
+
+	// Flags that go in the available bits
+	AvailableMask = Global | AllocOnAccess | MapOnce | CopyOnWrite |
+	  PrivilegedGlobal | PrivilegedExecutable | Segment | RootPageTable |
+	  Device | Delete
+}
