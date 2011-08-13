@@ -68,7 +68,7 @@ static:
 		Cpu.writeMSR(SFMASK_MSR, 0);
 
 		// stash a syscall stack in GS.Base
-		void* stackPtr = PageAllocator.allocPage();
+		PhysicalAddress stackPtr = PageAllocator.allocPage();
 		ulong syscallStack = cast(ulong)VirtualMemory.mapStack(stackPtr) + 4096;
 
 		asm{

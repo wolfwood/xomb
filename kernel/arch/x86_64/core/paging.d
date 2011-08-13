@@ -434,15 +434,6 @@ public:
 
 	// --- Making Specific Physical Addresses Available ---
 
-	void* mapRegion(void* physAddr, ulong regionLength) {
-		return cast(void*)mapRegion(cast(PhysicalAddress)physAddr, regionLength).ptr;
-	}
-
-	ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
-		mapRegion(cast(ubyte*)gib, cast(PhysicalAddress)physAddr, regionLength);
-		return ErrorVal.Success;
-	}
-
 	// Using heapAddress, this will add a region to the kernel space
 	// It returns the virtual address to this region. Use sparingly
 	ubyte[] mapRegion(PhysicalAddress physAddr, ulong regionLength) {

@@ -61,7 +61,7 @@ public:
 		videoMemoryLocation = vid.ptr + videoMetaData.videoBufferOffset;
 		videoInfo = videoMetaData;
 
-		VirtualMemory.mapRegion(cast(ubyte*)(videoMemoryLocation), cast(ubyte*)videoMemoryPhysLocation, vramSize);
+		VirtualMemory.mapRegion(videoMemoryLocation, videoMemoryPhysLocation, vramSize);
 
 		uint temp = LINES * COLUMNS;
 		temp++;

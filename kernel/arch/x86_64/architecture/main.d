@@ -37,7 +37,7 @@ public:
 	ErrorVal initialize() {
 		// Reading from the linker script
 		// We want the length of the kernel module
-		System.kernel.start = cast(ubyte*)0x0;
+		System.kernel.start = null;
 		System.kernel.length = LinkerScript.ekernel - LinkerScript.kernelVMA;
 		System.kernel.virtualStart = cast(ubyte*)LinkerScript.kernelVMA;
 

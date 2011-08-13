@@ -116,7 +116,7 @@ public:
 		return Paging.PAGESIZE;
 	}
 
-	synchronized void* mapStack(void* physAddr) {
+	synchronized ubyte* mapStack(PhysicalAddress physAddr) {
 		if(stackSegment is null){
 			stackSegment = findFreeSegment().ptr;
 			createSegment(stackSegment, oneGB, AccessMode.Writable|AccessMode.AllocOnAccess);
@@ -124,16 +124,16 @@ public:
 
 		stackSegment += Paging.PAGESIZE;
 
-		if(Paging.mapRegion(stackSegment, physAddr, Paging.PAGESIZE) == ErrorVal.Fail){
-			return null;
-		}else{
-			return stackSegment;
-		}
+		return Paging.mapRegion(stackSegment, physAddr, Paging.PAGESIZE).ptr;
 	}
 
 	// --- OLD --- //
-	synchronized ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
-		return Paging.mapRegion(gib, physAddr, regionLength);
+	synchronized ErrorVal mapRegion(ubyte* gib, PhysicalAddress physAddr, ulong regionLength) {
+		if(Paging.mapRegion(gib, physAddr, regionLength) !is null){
+			return ErrorVal.Fail;
+		}
+
+		return ErrorVal.Success;
 	}
 
 private:

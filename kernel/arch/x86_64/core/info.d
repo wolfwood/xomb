@@ -9,6 +9,9 @@
 
 module kernel.arch.x86_64.core.info;
 
+import user.types;
+
+
 struct Info {
 static:
 public:
@@ -68,8 +71,8 @@ public:
 		// Whether or not this IO APIC is enabled
 		bool enabled;
 
-		// Virtual address of the IO APIC register
-		void* address;
+		// address of the IO APIC register
+		PhysicalAddress address;
 	}
 
 	IOAPICInfo[16] IOAPICs;
@@ -88,7 +91,7 @@ public:
 	}
 
 	// The address of the apic registers
-	void* localAPICAddress;
+	PhysicalAddress localAPICAddress;
 
 	LAPICInfo[256] LAPICs;
 	uint numLAPICs;

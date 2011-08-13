@@ -45,7 +45,7 @@ enum RegionType: ubyte {
 // This structure keeps track of special memory regions.
 struct Region {
 	// The location and length of the region
-	ubyte* start;
+	PhysicalAddress start;
 	ulong length;
 
 	// The virtual location of the region

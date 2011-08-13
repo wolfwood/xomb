@@ -20,6 +20,7 @@ import kernel.arch.x86_64.core.paging;
 import kernel.system.info;
 
 import user.util : Bitfield;
+import user.types;
 
 struct Tables {
 static:
@@ -56,7 +57,7 @@ public:
 		// (lets assume the XSDT is there, it will be there if this is not a legacy RSDP... revision=1)
 		if (ptrRSDP.revision >= 1 && ptrRSDP.ptrXSDT != 0) {
 			// Map in XSDT into kernel virtual memory space
-			ptrXSDT = cast(XSDT*)Paging.mapRegion(cast(void*)ptrRSDP.ptrRSDT, RSDT.sizeof);
+			ptrXSDT = cast(XSDT*)Paging.mapRegion(cast(PhysicalAddress)ptrRSDP.ptrRSDT, RSDT.sizeof);
 
 			// validate the XSDT
 			if (validateXSDT() == ErrorVal.Fail) {
@@ -66,7 +67,7 @@ public:
 		}
 		else {
 			// Map in RSDT into kernel virtual memory space
-			ptrRSDT = cast(RSDT*)Paging.mapRegion(cast(void*)ptrRSDP.ptrRSDT, RSDT.sizeof);
+			ptrRSDT = cast(RSDT*)Paging.mapRegion(cast(PhysicalAddress)ptrRSDP.ptrRSDT, RSDT.sizeof);
 
 			// validate the RSDT
 			if (validateRSDT() == ErrorVal.Fail) {
@@ -227,7 +228,7 @@ private:
 		uint* curByte = cast(uint*)(ptrRSDT + 1);
 
 		for (; curByte < endByte; curByte++) {
-			DescriptorHeader* curTable = cast(DescriptorHeader*)Paging.mapRegion(cast(void*)(*curByte), MADT.sizeof);
+			DescriptorHeader* curTable = cast(DescriptorHeader*)Paging.mapRegion(cast(PhysicalAddress)(*curByte), MADT.sizeof);
 
 			if (curTable.signature[0] == 'A' &&
 					curTable.signature[1] == 'P' &&
@@ -513,7 +514,7 @@ private:
 		endByte--;
 
 		// Set LocalAPIC Address
-		Info.localAPICAddress = cast(void*)ptrMADT.localAPICAddr;
+		Info.localAPICAddress = cast(PhysicalAddress)ptrMADT.localAPICAddr;
 
 		// For the overrides, read from the table
 
@@ -548,7 +549,7 @@ private:
 					Info.IOAPICs[Info.numIOAPICs].enabled = true;
 
 					// Get the IOAPIC address
-					Info.IOAPICs[Info.numIOAPICs].address = cast(void*)ioapicInfo.IOAPICAddr;
+					Info.IOAPICs[Info.numIOAPICs].address = cast(PhysicalAddress)ioapicInfo.IOAPICAddr;
 
 					// increment the count
 					Info.numIOAPICs++;

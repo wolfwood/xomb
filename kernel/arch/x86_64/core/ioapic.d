@@ -25,6 +25,9 @@ import kernel.core.error;
 import kernel.core.log;
 import kernel.core.kprintf;
 
+import user.types;
+
+
 struct IOAPIC
 {
 static:
@@ -112,7 +115,7 @@ private:
 
 // -- Setup -- //
 
-	void initUnit(ubyte ioAPICID, void* ioAPICAddress, bool hasIMCR) {
+	void initUnit(ubyte ioAPICID, PhysicalAddress ioAPICAddress, bool hasIMCR) {
 
 		// disable the IMCR
 		if (hasIMCR) {
@@ -124,7 +127,7 @@ private:
 
 		// map IOAPIC region
 		//kprintfln!("IOAPIC Addr {x}")(ioAPICAddress);
-		void* IOAPICVirtAddr = Paging.mapRegion(ioAPICAddress, 4096);
+		ubyte* IOAPICVirtAddr = Paging.mapRegion(ioAPICAddress, 4096).ptr;
 		//kprintfln!("IOAPIC Addr {x}")(IOAPICVirtAddr);
 
 		// set the addresses for the data register and window

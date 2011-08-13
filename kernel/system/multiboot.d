@@ -197,7 +197,7 @@ ErrorVal verifyBootInformation(int id, void *data) {
 			else {
 				// This is a reserved region
 				if (System.numRegions < System.regionInfo.length) {
-					System.regionInfo[System.numRegions].start = cast(ubyte*)baseAddr;
+					System.regionInfo[System.numRegions].start = cast(PhysicalAddress)baseAddr;
 					System.regionInfo[System.numRegions].length = length;
 					System.numRegions++;
 				}
