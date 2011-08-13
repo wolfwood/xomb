@@ -50,7 +50,7 @@ public:
 		// memory mapped device size
 		uint vramSize = 1024*1024;
 
-		_segment = VirtualMemory.findFreeSegment(true, oneGB);
+		_segment = VirtualMemory.findFreeSegment(true, ramSize+vramSize);
 
 		ubyte[] vid = VirtualMemory.createSegment(_segment.ptr, _segment.length, AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Device);
 

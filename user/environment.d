@@ -191,13 +191,9 @@ template populateChild(T){
 		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
 		MessageInAbottle* childBottle = MessageInAbottle.getBottleForSegment(f.ptr);
 
-		// XXX: use findFreeSemgent to pick gib locations in child
-		// assume default locations and non-TTY for redirected stdin/out
-		childBottle.stdout = (cast(ubyte*)(2*oneGB))[0..oneGB];
-		childBottle.stdoutIsTTY = false;
-		childBottle.stdin = (cast(ubyte*)(3*oneGB))[0..oneGB];
-		childBottle.stdinIsTTY = false;
 
+		childBottle.stdoutIsTTY = false;
+		childBottle.stdinIsTTY = false;
 
 		childBottle.setArgv(argv);
 
@@ -217,6 +213,10 @@ template populateChild(T){
 			stdin = bottle.stdin;
 			childBottle.stdinIsTTY = bottle.stdinIsTTY;
 		}
+
+		// XXX: use findFreeSemgent to pick gib locations in child
+		childBottle.stdout = (cast(ubyte*)(2*oneGB))[0..stdout.length];
+		childBottle.stdin = (cast(ubyte*)(3*oneGB))[0..stdin.length];
 
 		// map stdin/out into child process
 		Syscall.map(child, stdout, childBottle.stdout.ptr, stdoutMode);
