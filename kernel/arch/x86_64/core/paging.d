@@ -354,6 +354,9 @@ public:
 			T* segmentParent;
 			PhysicalAddress locationAddr = getPhysicalAddressOfSegment!(typeof(segmentParent))(location), oldRoot;
 
+			if(locationAddr is null)
+				return ErrorVal.Fail;
+
 			if(destinationRoot !is null){
 				// Goto the other address space
 				switchAddressSpace(destinationRoot, oldRoot);
