@@ -161,7 +161,7 @@ static:
 		// page not present or privilege violation?
 		if((stack.errorCode & 1) == 0){
 			bool allocate;
-			walk!(pageFaultHelper)(root, cr2, allocate);
+			root.walk!(pageFaultHelper)(cr2, allocate);
 
 			if(allocate){
 				return;
@@ -265,7 +265,7 @@ static:
 			return null;
 
 		addrFrag = cast(ulong)vAddr;
-		walk!(mapSegmentHelper)(root, addrFrag, flags, success, segmentParent, newRootPhysAddr);
+		root.walk!(mapSegmentHelper)(addrFrag, flags, success, segmentParent, newRootPhysAddr);
 
 		getNextIndex(addrFrag, idx);
 		getNextIndex(addrFrag, idx);
@@ -341,9 +341,9 @@ public:
 
 			if(destination is null){ // our open, segment mapped from global space to destination address
 				T* segmentParent;
-				walk!(mapSegmentHelper)(root, cast(ulong)location, flags, success, segmentParent, locationAddr);
+				root.walk!(mapSegmentHelper)(cast(ulong)location, flags, success, segmentParent, locationAddr);
 			}else{
-				walk!(mapSegmentHelper)(root, getGlobalAddress(cast(ulong)destination), flags, success, globalSegmentParent, locationAddr);
+				root.walk!(mapSegmentHelper)(getGlobalAddress(cast(ulong)destination), flags, success, globalSegmentParent, locationAddr);
 			}
 		}else{
 			// verify destinationRoot is a valid root page table (or null for a local operation)
@@ -359,7 +359,7 @@ public:
 				switchAddressSpace(destinationRoot, oldRoot);
 			}
 
-			walk!(mapSegmentHelper)(root, cast(ulong)destination, flags, success, segmentParent, locationAddr);
+			root.walk!(mapSegmentHelper)(cast(ulong)destination, flags, success, segmentParent, locationAddr);
 
 			if(destinationRoot !is null){
 				// Return to our old address space
@@ -383,7 +383,7 @@ public:
 			PhysicalAddress phys = PageAllocator.allocPage();
 
 			T* segmentParent;
-			walk!(mapSegmentHelper)(root, vAddr, flags, success, segmentParent, phys);
+			root.walk!(mapSegmentHelper)(vAddr, flags, success, segmentParent, phys);
 
 			static if(T.level != 1){
 				// 'map' the segment into the Global Space
@@ -391,7 +391,7 @@ public:
 					PageLevel!(T.level -1)* globalSegmentParent;
 					success = false;
 
-					walk!(mapSegmentHelper)(root, getGlobalAddress(vAddr), flags, success, globalSegmentParent, phys);
+					root.walk!(mapSegmentHelper)(getGlobalAddress(vAddr), flags, success, globalSegmentParent, phys);
 				}
 			}
 

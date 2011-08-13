@@ -117,8 +117,6 @@ template PageLevel(ushort L){
 		alias L level;
 
 		static if(L == 1){
-			PageTableEntry!("primary")[512] entries;
-
 			void* physicalAddress(uint idx) {
 				if(!entries[idx].present){
 					return null;
@@ -144,9 +142,11 @@ template PageLevel(ushort L){
 				}
 				return cast(ubyte*)vAddr;
 			}
-		}else{
-			PageTableEntry!("secondary")[512] entries;
 
+			//private:
+			PageTableEntry!("primary")[512] entries;
+
+		}else{
 			PageLevel!(L-1)* getTable(uint idx) {
 				if (entries[idx].present == 0) {
 					return null;
@@ -204,6 +204,9 @@ template PageLevel(ushort L){
 				return cast(ubyte*)vAddr;
 			}
 
+
+			PageTableEntry!("secondary")[512] entries;
+
 		private:
 			PageLevel!(L-1)* calculateVirtualAddress(uint idx){
 				static if(L == 4){
@@ -221,6 +224,25 @@ template PageLevel(ushort L){
 				}
 			}
 		} // end static if
+
+
+	public:
+		template walk(alias U, S...){
+			void walk(ulong addr, ref S s){
+				ulong idx;
+
+				getNextIndex(addr, idx);
+
+				if(U(this, idx, s)){
+
+					static if(L != 1){
+						this.getTable(idx).walk!(U)(addr, s);
+					}
+				}
+			}
+		}
+
+
 	}
 }
 
@@ -293,7 +315,7 @@ uint sizeToPageLevel(ulong size){
 bool isValidAddress(ubyte* vAddr){
 	bool valid = true;
 
-	walk!(isValidAddressHelper)(root, cast(ulong)vAddr, valid);
+	root.walk!(isValidAddressHelper)(cast(ulong)vAddr, valid);
 
 	return valid;
 }
@@ -311,7 +333,7 @@ template isValidAddressHelper(T){
 AccessMode modesForAddress(ubyte* vAddr){
 	AccessMode flags;
 
-	walk!(modesForAddressHelper)(root, cast(ulong)vAddr, flags);
+	root.walk!(modesForAddressHelper)(cast(ulong)vAddr, flags);
 
 	return flags;
 }
@@ -336,7 +358,7 @@ template getPhysicalAddressOfSegment(T){
 		PhysicalAddress physAddr;
 		T levelOfSegment;
 
-		walk!(getPhysicalAddressOfSegmentHelper)(root, cast(AddressFragment)vAddr, physAddr, levelOfSegment);
+		root.walk!(getPhysicalAddressOfSegmentHelper)(cast(AddressFragment)vAddr, physAddr, levelOfSegment);
 
 		return physAddr;
 	}
@@ -361,7 +383,7 @@ template getPhysicalAddressOfSegmentHelper(T, U){
 PhysicalAddress findPhysicalAddressOfSegment(ubyte* vAddr){
 	PhysicalAddress physAddr;
 
-	walk!(findPhysicalAddressOfSegmentHelper)(root, cast(AddressFragment)vAddr, physAddr);
+	root.walk!(findPhysicalAddressOfSegmentHelper)(cast(AddressFragment)vAddr, physAddr);
 
 	return physAddr;
 }
@@ -459,22 +481,6 @@ template preorderFindFreeSegmentHelper(T, PL){
 }
 
 // --- table manipulation templates ---
-template walk(alias U, T, S...){
-	void walk(T table, ulong addr, ref S s){
-		ulong idx;
-
-		getNextIndex(addr, idx);
-
-		if(U(table, idx, s)){
-
-			static if(!(is (T == PageLevel!(1)*))){
-				auto table2 = table.getTable(idx);
-
-				walk!(U)(table2, addr, s);
-			}
-		}
-	}
-}
 
 template traverse(alias PRE, alias POST, T, S...){
 	bool traverse(T table, ulong startAddr, ulong endAddr, ref S s){
