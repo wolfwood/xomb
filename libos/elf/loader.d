@@ -18,7 +18,7 @@ import user.types;
 struct Loader {
 	static:
 
-	ubyte[] load(ubyte[] binary, ubyte[] newgib = null){
+	ubyte[] load(ubyte[] binary, ubyte[] newgib){
 		if(newgib is null){
 			return null;
 		}
