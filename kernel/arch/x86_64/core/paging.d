@@ -175,6 +175,10 @@ static:
 		bool recoverable;
 
 		if(stack.errorCode & 8){
+			kprintfln!("You look angry that I wrote some bits in a reserved field.  Have some PTEs.")();
+			uint depth = 4;
+			root.walk!(pageEntryPrinter)(cr2, depth);
+
 			kprintf!("Reserved bit ")();
 		}else{
 			if(stack.errorCode & 4){
@@ -245,6 +249,16 @@ static:
 				return false;
 			}
 		}
+	}
+
+	bool pageEntryPrinter(T)(T table, uint idx, ref uint depth){
+		if(table.entries[idx].present){
+			kprintfln!("Level {}: {x}")(depth--, table.entries[idx].pml);
+
+			return true;
+		}
+
+		return false;
 	}
 
 
@@ -385,6 +399,9 @@ public:
 
 			ulong vAddr = cast(ulong)location;
 			PhysicalAddress phys = PageAllocator.allocPage();
+
+			if(phys is null)
+				return false;
 
 			T* segmentParent;
 			root.walk!(mapSegmentHelper)(vAddr, flags, success, segmentParent, phys);
