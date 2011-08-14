@@ -79,7 +79,8 @@ static:
 		heapAddress = cast(ubyte*)LinkerScript.kernelVMA + System.kernel.length;
 
 		// map kernel into bootstrap root page table, so we can use paging trick
-		ubyte* addr = findFreeSegment(true, 512*oneGB).ptr;
+		ubyte* addr = createAddress(0, 0, 0, 257);//findFreeSegment(true, 512*oneGB).ptr;
+
 		createGib!(PageLevel!(3))(addr, AccessMode.Writable|AccessMode.Executable);
 		mapRegion(addr, System.kernel.start, System.kernel.length);
 
