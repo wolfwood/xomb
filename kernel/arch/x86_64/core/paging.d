@@ -323,7 +323,12 @@ static:
 			return ErrorVal.Fail;
 		}
 
-		oldRoot = switchAddressSpace(findPhysicalAddressOfSegment(as));
+		PhysicalAddress newRoot = findPhysicalAddressOfAddressSpace(as);
+
+		if(newRoot is null)
+			return ErrorVal.Fail;
+
+		oldRoot = switchAddressSpace(newRoot);
 
 		return ErrorVal.Success;
 	}

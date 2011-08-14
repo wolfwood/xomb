@@ -435,18 +435,18 @@ template getPhysicalAddressOfSegmentHelper(T, U){
 }
 
 // return the physical address of the first (largest) segment it stumbles upon
-PhysicalAddress findPhysicalAddressOfSegment(ubyte* vAddr){
+PhysicalAddress findPhysicalAddressOfAddressSpace(ubyte* vAddr){
 	PhysicalAddress physAddr;
 
-	root.walk!(findPhysicalAddressOfSegmentHelper)(cast(AddressFragment)vAddr, physAddr);
+	root.walk!(findPhysicalAddressOfAddressSpaceHelper)(cast(AddressFragment)vAddr, physAddr);
 
 	return physAddr;
 }
 
-template findPhysicalAddressOfSegmentHelper(T){
-	bool findPhysicalAddressOfSegmentHelper(T table, uint idx, ref PhysicalAddress physAddr){
+template findPhysicalAddressOfAddressSpaceHelper(T){
+	bool findPhysicalAddressOfAddressSpaceHelper(T table, uint idx, ref PhysicalAddress physAddr){
 		if(table.entries[idx].present){
-			if(table.entries[idx].getMode() & (AccessMode.Segment|AccessMode.RootPageTable)){
+			if(table.entries[idx].getMode() & AccessMode.RootPageTable){
 				physAddr = table.entries[idx].location();
 				return false;
 			}else{
