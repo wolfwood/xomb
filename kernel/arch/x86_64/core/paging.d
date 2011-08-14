@@ -282,6 +282,8 @@ static:
 		addrFrag = cast(ulong)vAddr;
 		root.walk!(mapSegmentHelper)(addrFrag, flags, success, segmentParent, newRootPhysAddr);
 
+		root.walk!(zeroPageTableHelper)(addrFrag, segmentParent);
+
 		getNextIndex(addrFrag, idx);
 		getNextIndex(addrFrag, idx);
 
@@ -406,6 +408,8 @@ public:
 			T* segmentParent;
 			root.walk!(mapSegmentHelper)(vAddr, flags, success, segmentParent, phys);
 
+			root.walk!(zeroPageTableHelper)(vAddr, segmentParent);
+
 			static if(T.level != 1){
 				// 'map' the segment into the Global Space
 				if(success && global){
@@ -444,6 +448,29 @@ public:
 					return false;
 				}
 			}
+		}
+	}
+
+	bool zeroPageTableHelper(U, T)(T table, uint idx, ref U segmentParent){
+		static if(is(T == U)){
+			static if(U.level > 1){
+				auto zeroTarget = table.getTable(idx);
+
+				if(zeroTarget !is null)
+					*zeroTarget = typeof(*zeroTarget).init;
+			}else{
+				// only matters if we allow 4k segment
+			}
+
+			return false;
+		}else{
+				static if(T.level != 1){
+					auto intermediate = table.getOrCreateTable(idx, true);
+
+					if(intermediate is null)
+						return false;
+				}
+				return true;
 		}
 	}
 
