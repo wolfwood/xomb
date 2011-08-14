@@ -35,28 +35,28 @@ public:
 
 	// Create a new segment that will fit the indicated size
 	// into the global address space.
-	ubyte[] createSegment(ubyte* location, ulong size, AccessMode flags) {
+	ubyte[] createSegment(ubyte[] location, AccessMode flags) {
 		bool success;
-		uint pagelevel = sizeToPageLevel(size);
+		uint pagelevel = sizeToPageLevel(location.length);
 
 		switch(pagelevel){
 		case 1:
 			// create the segment in the AddressSpace
-			success = Paging.createGib!(PageLevel!(1))(location, flags);
+			success = Paging.createGib!(PageLevel!(1))(location.ptr, flags);
 			break;
 		case 2:
-			success = Paging.createGib!(PageLevel!(2))(location, flags);
+			success = Paging.createGib!(PageLevel!(2))(location.ptr, flags);
 			break;
 		case 3:
-			success = Paging.createGib!(PageLevel!(3))(location, flags);
+			success = Paging.createGib!(PageLevel!(3))(location.ptr, flags);
 			break;
 		case 4:
-			success = Paging.createGib!(PageLevel!(4))(location, flags);
+			success = Paging.createGib!(PageLevel!(4))(location.ptr, flags);
 			break;
 		}
 
 		if(success){
-			return location[0 .. size];
+			return location;
 		}else{
 			return null;
 		}
@@ -118,13 +118,13 @@ public:
 
 	synchronized ubyte* mapStack(PhysicalAddress physAddr) {
 		if(stackSegment is null){
-			stackSegment = findFreeSegment().ptr;
-			createSegment(stackSegment, oneGB, AccessMode.Writable|AccessMode.AllocOnAccess);
+			stackSegment = findFreeSegment();
+			createSegment(stackSegment, AccessMode.Writable|AccessMode.AllocOnAccess);
 		}
 
-		stackSegment += Paging.PAGESIZE;
+		stackSegment = stackSegment[Paging.PAGESIZE..$];
 
-		return Paging.mapRegion(stackSegment, physAddr, Paging.PAGESIZE).ptr;
+		return Paging.mapRegion(stackSegment.ptr, physAddr, Paging.PAGESIZE).ptr;
 	}
 
 	// --- OLD --- //
@@ -137,5 +137,5 @@ public:
 	}
 
 private:
-	ubyte* stackSegment;
+	ubyte[] stackSegment;
 }

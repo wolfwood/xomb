@@ -119,8 +119,9 @@ private:
 
 		//kprintfln!("Init found at module index {} with start {} and length{}")(idx, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
 
-		ubyte[] segmentBytes =
-			VirtualMemory.createSegment(cast(ubyte*)(segidx*oneGB), oneGB, AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Executable);
+		ubyte[] segmentBytes = (cast(ubyte*)(segidx*oneGB))[0..oneGB];
+
+		VirtualMemory.createSegment(segmentBytes, AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Executable);
 
 		VirtualMemory.mapRegion(segmentBytes.ptr, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
 

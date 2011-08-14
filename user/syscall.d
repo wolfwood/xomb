@@ -41,8 +41,7 @@ alias Tuple! (
 ) SyscallRetTypes;
 
 struct CreateArgs {
-	ubyte* location;
-	ulong size;
+	ubyte[] location;
 	AccessMode mode;
 }
 

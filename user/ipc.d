@@ -119,9 +119,9 @@ template populateChild(T){
 		version(KERNEL){
 			// kernel only executes init once, so its OK not to copy
 		}else{
-			ubyte* g = findFreeSegment(false).ptr;
+			ubyte[] g = findFreeSegment(false);
 
-			Syscall.create(g, oneGB, AccessMode.Writable|AccessMode.User|AccessMode.Executable|AccessMode.AllocOnAccess);
+			Syscall.create(g, AccessMode.Writable|AccessMode.User|AccessMode.Executable|AccessMode.AllocOnAccess);
 
 			// XXX: instead of copying the whole thing we should only be duping the r/w data section
 			uint len = *(cast(ulong*)f.ptr) + ulong.sizeof;

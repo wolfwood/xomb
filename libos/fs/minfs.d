@@ -44,7 +44,7 @@ class MinFS{
 
 	// this creates the 'SuperSegment', the super-block-like known-location which also happens to contain all the fs metadata (filenames)
 	void format(){
-		Syscall.create(createAddr(0,0,0,257), oneGB, AccessMode.User|AccessMode.Writable|AccessMode.Global|AccessMode.AllocOnAccess);
+		Syscall.create(createAddr(0,0,0,257)[0..oneGB], AccessMode.User|AccessMode.Writable|AccessMode.Global|AccessMode.AllocOnAccess);
 
 		hdr = cast(Header*)createAddr(0,0,0,257);
 
@@ -66,8 +66,7 @@ class MinFS{
 					mode |= AccessMode.AllocOnAccess;
 				}
 
-				//ubyte[]
-				Syscall.create(f.ptr, f.length, mode | AccessMode.Global);
+				Syscall.create(f, mode | AccessMode.Global);
 			}
 		}else{
 			Syscall.map(null, f, null, mode | AccessMode.Global);

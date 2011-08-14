@@ -29,7 +29,7 @@ public:
 	// ubyte[] location = create(ubyte* location, ulong size, int mode);
 	SyscallError create(out ubyte[] ret, CreateArgs* params) {
 		// Create a new resource.
-		ret = VirtualMemory.createSegment(params.location, params.size, params.mode);
+		ret = VirtualMemory.createSegment(params.location, params.mode);
 
 		return SyscallError.Failcopter;
 	}

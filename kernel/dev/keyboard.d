@@ -17,7 +17,7 @@ class Keyboard {
 	ErrorVal initialize() {
 		segment = VirtualMemory.findFreeSegment(true, BUFFER_SIZE);
 
-		_buffer = cast(short[])VirtualMemory.createSegment(segment.ptr, BUFFER_SIZE, AccessMode.DefaultKernel);
+		_buffer = cast(short[])VirtualMemory.createSegment(segment, AccessMode.DefaultKernel);
 
 		_writeOffset = cast(ushort*)_buffer.ptr;
 		*_writeOffset = 0;

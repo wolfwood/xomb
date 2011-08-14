@@ -51,7 +51,7 @@ public:
 
 		_segment = VirtualMemory.findFreeSegment(true, ramSize+vramSize);
 
-		ubyte[] vid = VirtualMemory.createSegment(_segment.ptr, _segment.length, AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Device);
+		ubyte[] vid = VirtualMemory.createSegment(_segment, AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Device);
 
 		MetaData* videoMetaData = cast(MetaData*)vid.ptr;
 		*videoMetaData = info;
