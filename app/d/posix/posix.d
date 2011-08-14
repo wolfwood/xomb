@@ -10,9 +10,7 @@ import libos.keyboard;
 import libos.libdeepmajik.threadscheduler;
 import libos.fs.minfs;
 
-// exit
-import user.syscall;
-import user.environment;
+import user.ipc;
 
 void main(char[][] argv){
 	if(argv.length < 1){
@@ -101,7 +99,7 @@ void main(char[][] argv){
 			Console.putString("File ");
 			Console.putString(argv[1]);
 			Console.putString(" Does Not Exist!\n");
-			
+
 			exit(1);
 		}
 
@@ -110,10 +108,10 @@ void main(char[][] argv){
 			Console.putString("File ");
 			Console.putString(argv[2]);
 			Console.putString(" Does Not Exist!\n");
-			
+
 			exit(1);
 		}
-		
+
 		ulong* size = cast(ulong*)f.ptr;
 
 		memcpy(g.ptr, f.ptr, *size + ulong.sizeof);
@@ -169,7 +167,7 @@ void main(char[][] argv){
 			Console.putString("target already exists!\n");
 			//return(1);
 		}
-		
+
 		//return(0);
 		break;
 	case "ls":
@@ -191,7 +189,7 @@ void main(char[][] argv){
 			}
 		}
 		break;
-	default: 
+	default:
 		Console.putString("Posix: command '");
 		foreach(str; argv){
 			Console.putString(str);

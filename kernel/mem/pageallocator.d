@@ -24,12 +24,6 @@ import kernel.config : PageAllocatorImplementation;
 
 /*
 extern(C) void memset(void*, int, uint);
-
-align(4096) struct Bogo{
-	ubyte[4096*2] data;
-}
-
-Bogo foo;
 */
 
 struct PageAllocator {
@@ -46,7 +40,7 @@ public:
 		return PageAllocatorImplementation.reportCore();
 	}
 
-	void* allocPage() {
+	PhysicalAddress allocPage() {
 		if (!_initialized) {
 		  // Make _start appear somewhere reasonable
 		  // In this case, make sure it is at the start of a 16MB section of RAM
@@ -55,16 +49,16 @@ public:
 			if (_start is null) {
 
 				// Assume first that we need to start at the end of the kernel
-				_start = System.kernel.start + System.kernel.length;
-				_start = cast(ubyte*)(cast(ulong)_start / cast(ulong)VirtualMemory.pagesize());
-				_start = cast(ubyte*)((cast(ulong)_start+1) * cast(ulong)(VirtualMemory.pagesize()));
+				_start = cast(PhysicalAddress)System.kernel.start + System.kernel.length;
+				_start = cast(PhysicalAddress)(cast(ulong)_start / cast(ulong)VirtualMemory.pagesize());
+				_start = cast(PhysicalAddress)((cast(ulong)_start+1) * cast(ulong)(VirtualMemory.pagesize()));
 
 				// Now look for Modules that are in our way of that 16MB
 				for(size_t i = 0; i < System.numModules; i++) {
 					// Get the bounds of the module on a page alignment.
-					ubyte* regionAddr = cast(ubyte*)System.moduleInfo[i].start;
-					ubyte* regionEdge = cast(ubyte*)(cast(ulong)(regionAddr + System.moduleInfo[i].length) / cast(ulong)VirtualMemory.pagesize());
-					regionEdge = cast(ubyte*)((cast(ulong)regionEdge + 1) * cast(ulong)(VirtualMemory.pagesize()));
+					PhysicalAddress regionAddr = cast(PhysicalAddress)System.moduleInfo[i].start;
+					PhysicalAddress regionEdge = cast(PhysicalAddress)(cast(ulong)(regionAddr + System.moduleInfo[i].length) / cast(ulong)VirtualMemory.pagesize());
+					regionEdge = cast(PhysicalAddress)((cast(ulong)regionEdge + 1) * cast(ulong)(VirtualMemory.pagesize()));
 
 					if (_start + PREINITIALIZED_BUFFER_SIZE > regionAddr) {
 						// If it is intruding, place at the end of the Module
@@ -75,31 +69,22 @@ public:
 			}
 
 			// Simply allocate the next page
-			ubyte* ret = _curpos;
+			PhysicalAddress ret = _curpos;
 			_curpos += VirtualMemory.pagesize();
 
 			if((_start + PREINITIALIZED_BUFFER_SIZE) < _curpos){
-			  kprintfln!("{} {} {x}")(_start, _curpos, PREINITIALIZED_BUFFER_SIZE);
+			  kprintfln!("{} {} {x}")(cast(ubyte*)_start, cast(ubyte*)_curpos, PREINITIALIZED_BUFFER_SIZE);
 			  assert(1 == 0);
 			}
 			return ret;
 		}
 
-		//void* mapping = cast(void*)((cast(ulong)foo.data.ptr + 4096UL) & (0xFFFFFFFF_FFFFF000UL));
-
-		void* ptr = PageAllocatorImplementation.allocPage();
-
-		//VirtualMemory.mapRegion(null, ptr, 4096, mapping, true);
-		
-		//VirtualMemory.mapPage(ptr, mapping);
-
-		//void* mapping = VirtualMemory.mapKernelPage(ptr);
-		//memset(mapping, 0, 4096);
+		PhysicalAddress ptr = PageAllocatorImplementation.allocPage();
 
 		return ptr;
 	}
 
-	void* allocPage(void* virtualAddress) {
+	PhysicalAddress allocPage(void* virtualAddress) {
 		if (!_initialized) {
 			// Shouldn't invoke allocPage for virtual addresses
 			// until the allocator is initialized.
@@ -109,7 +94,7 @@ public:
 		return PageAllocatorImplementation.allocPage(virtualAddress);
 	}
 
-	ErrorVal freePage(void* physicalAddress) {
+	ErrorVal freePage(PhysicalAddress physicalAddress) {
 		if (!_initialized) {
 			// Cannot do anything.
 			return ErrorVal.Fail;
@@ -134,6 +119,6 @@ package:
 	// Whether or not this module has been initialized.
 	bool _initialized = false;
 
-	ubyte* _start = null;
-	ubyte* _curpos = null;
+	PhysicalAddress _start = null;
+	PhysicalAddress _curpos = null;
 }

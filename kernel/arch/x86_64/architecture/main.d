@@ -32,12 +32,12 @@ import kernel.system.info;
 struct Architecture {
 static:
 public:
-	
+
 	// This function will initialize the architecture upon boot
 	ErrorVal initialize() {
 		// Reading from the linker script
 		// We want the length of the kernel module
-		System.kernel.start = cast(ubyte*)0x0;
+		System.kernel.start = null;
 		System.kernel.length = LinkerScript.ekernel - LinkerScript.kernelVMA;
 		System.kernel.virtualStart = cast(ubyte*)LinkerScript.kernelVMA;
 
@@ -56,7 +56,7 @@ public:
 		Log.print("Cpu: Polling Cache Info");
 		Log.result(Cpu.getCacheInfo());
 
-		Console.virtualAddress = cast(void*)(cast(ubyte*)System.kernel.virtualStart + 0xB8000);
+		Console.switchToHigherHalfVirtualAddress();
 
 		// Everything must have succeeded
 		return ErrorVal.Success;

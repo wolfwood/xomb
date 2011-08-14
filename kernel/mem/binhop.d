@@ -38,16 +38,16 @@ ErrorVal initialize() {
 
 
 	 kprintfln!("PageColor: num_sets: {}")(num_sets);
-	 	 
+
 	 uint set_bits = 0;
 	 uint temp = num_sets;
 	 while(temp > 1) {
 	 	    set_bits++;
 		    temp = temp/2;
 	 }
-	 
+
 	 uint block_bits = 0;
-	 temp = System.processorInfo[Cpu.identifier].L2Cache.blockSize;	 
+	 temp = System.processorInfo[Cpu.identifier].L2Cache.blockSize;
 	 while(temp > 1) {
 	 	    block_bits++;
 		    temp = temp/2;
@@ -208,5 +208,5 @@ private {
 
 		return 0xffffffffffffffffUL;
 	}
-	
+
 }

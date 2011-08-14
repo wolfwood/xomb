@@ -18,7 +18,7 @@ static:
 
 	void videoMode(VideoMode mode) {
 		// Lock device and switch mode
-		
+
 		// Set mode
 		_mode = mode;
 

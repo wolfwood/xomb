@@ -20,7 +20,7 @@ template va_start(T)
 {
 	void va_start(out va_list ap, inout T parmn)
  	{
-	
+
 	}
 }
 

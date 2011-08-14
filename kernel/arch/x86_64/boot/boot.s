@@ -147,7 +147,9 @@ pml4_base:
 	dq (pml3_base + 0x7)
 	times 255 dq 0
 	dq (pml3_base + 0x7)
-	times 255 dq 0
+	times 253 dq 0
+	dq (pml4_base + 0x7) 					; paging trick
+	dq 0
 
 align 4096
 pml3_base:

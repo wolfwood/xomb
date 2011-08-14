@@ -1,9 +1,7 @@
 module libos.console;
 
-private import user.syscall;
-
 import user.console;
-import libos.ramfs;
+
 
 struct Console {
 static:
@@ -16,7 +14,7 @@ static:
 
 	void initialize(ubyte* vidgib) {
 
-		//video = RamFS.open("/devices/video", 0); 
+		//video = RamFS.open("/devices/video", 0);
 
 		videoBuffer = vidgib;
 
@@ -68,7 +66,7 @@ static:
 	void setPosition(uint x, uint y) {
 		videoInfo.xpos = x;
 		videoInfo.ypos = y;
-	
+
 		if (videoInfo.xpos >= videoInfo.width) {
 			videoInfo.xpos = videoInfo.width - 1;
 		}
@@ -105,9 +103,9 @@ static:
 		// Go through and shift the correct amount
 		for ( ; cury <= videoInfo.height - numLines; cury++) {
 			for (int curx = 0; curx < videoInfo.width; curx++) {
-				*(ptr + (curx + offset1) * 2) 
+				*(ptr + (curx + offset1) * 2)
 					= *(ptr + (curx + offset1 + offset2) * 2);
-				*(ptr + (curx + offset1) * 2 + 1) 
+				*(ptr + (curx + offset1) * 2 + 1)
 					= *(ptr + (curx + offset1 + offset2) * 2 + 1);
 			}
 
@@ -133,7 +131,7 @@ static:
 	}
 
 	void forecolor(Color clr) {
-		videoInfo.colorAttribute = (videoInfo.colorAttribute & 0xf0) | clr; 
+		videoInfo.colorAttribute = (videoInfo.colorAttribute & 0xf0) | clr;
 	}
 
 	Color forecolor() {
@@ -162,7 +160,7 @@ static:
 private:
 
 	MetaData* videoInfo;
-	
+
 	//Gib video;
 	ubyte* videoBuffer;
 }

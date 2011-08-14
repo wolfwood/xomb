@@ -20,6 +20,7 @@ import kernel.core.kprintf;
 
 // Bitfield!()
 import user.util;
+import user.types;
 
 // The Info struct holds all of the information we will enumerating
 import kernel.arch.x86_64.core.info;
@@ -87,7 +88,7 @@ public:
 			return ErrorVal.Fail;
 		}
 
-		Info.localAPICAddress = cast(void*)mpConfig.addressOfLocalAPIC;
+		Info.localAPICAddress = cast(PhysicalAddress)mpConfig.addressOfLocalAPIC;
 
 		// We need to map in the APIC register space info a separate
 		// kernel region.
@@ -139,7 +140,7 @@ public:
 					Info.IOAPICs[Info.numIOAPICs].ID = ioapic.ioAPICID;
 					Info.IOAPICs[Info.numIOAPICs].ver = ioapic.ioAPICVersion;
 					Info.IOAPICs[Info.numIOAPICs].enabled = cast(bool)ioapic.ioAPICEnabled;
-					Info.IOAPICs[Info.numIOAPICs].address = cast(void*)ioapic.ioAPICAddress;
+					Info.IOAPICs[Info.numIOAPICs].address = cast(PhysicalAddress)ioapic.ioAPICAddress;
 
 					// increment the count
 					Info.numIOAPICs++;

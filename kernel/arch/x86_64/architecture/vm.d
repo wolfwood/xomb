@@ -14,7 +14,7 @@ import kernel.arch.x86_64.core.paging;
 // Normal kernel modules
 import kernel.core.error;
 
-import user.environment;
+public import user.environment;
 
 class VirtualMemory {
 static:
@@ -35,22 +35,63 @@ public:
 
 	// Create a new segment that will fit the indicated size
 	// into the global address space.
-	ubyte[] createSegment(ubyte* location, ulong size, AccessMode flags) {
-		Paging.createGib(location, size, flags);
+	ubyte[] createSegment(ubyte[] location, AccessMode flags) {
+		bool success;
+		uint pagelevel = sizeToPageLevel(location.length);
 
-		return location[0 .. size];
+		switch(pagelevel){
+		case 1:
+			// create the segment in the AddressSpace
+			success = Paging.createGib!(PageLevel!(1))(location.ptr, flags);
+			break;
+		case 2:
+			success = Paging.createGib!(PageLevel!(2))(location.ptr, flags);
+			break;
+		case 3:
+			success = Paging.createGib!(PageLevel!(3))(location.ptr, flags);
+			break;
+		case 4:
+			success = Paging.createGib!(PageLevel!(4))(location.ptr, flags);
+			break;
+		}
+
+		if(success){
+			return location;
+		}else{
+			return null;
+		}
 	}
 
-	// Open a segment indicated by location into the
-	// virtual address space of dest.
-	bool openSegment(ubyte* location, AccessMode flags) {
-		// We should open this in our address space.
-		return Paging.openGib(location, flags);
-	}
+	bool mapSegment(AddressSpace dest, ubyte[] location, ubyte* destination, AccessMode flags) {
+		if(location is null){
+			return false;
+		}
 
-	bool mapSegment(AddressSpace dest, ubyte* location, ubyte* destination, AccessMode flags) {
-		Paging.mapGib(dest, location, destination, flags);
-		return false;
+		ErrorVal result;
+		uint pagelevel = sizeToPageLevel(location.length);
+
+		switch(pagelevel){
+			//case 1:
+			//result = Paging.mapGib!(PageLevel!(1))(dest, location.ptr, destination, flags);
+			//break;
+		case 2:
+			result = Paging.mapGib!(PageLevel!(2))(dest, location.ptr, destination, flags);
+			break;
+		case 3:
+			result = Paging.mapGib!(PageLevel!(3))(dest, location.ptr, destination, flags);
+			break;
+		case 4:
+			result = Paging.mapGib!(PageLevel!(4))(dest, location.ptr, destination, flags);
+			break;
+		default:
+			return false;
+		}
+
+		if(result == ErrorVal.Success){
+			return true;
+		}else{
+			return false;
+		}
 	}
 
 	bool closeSegment(ubyte* location) {
@@ -64,7 +105,7 @@ public:
 		return Paging.createAddressSpace();
 	}
 
-	ErrorVal switchAddressSpace(AddressSpace as, out ulong oldRoot){
+	ErrorVal switchAddressSpace(AddressSpace as, out PhysicalAddress oldRoot){
 		return Paging.switchAddressSpace(as, oldRoot);
 	}
 
@@ -75,26 +116,26 @@ public:
 		return Paging.PAGESIZE;
 	}
 
-	synchronized void* mapStack(void* physAddr) {
+	synchronized ubyte* mapStack(PhysicalAddress physAddr) {
 		if(stackSegment is null){
 			stackSegment = findFreeSegment();
-			Paging.createGib(stackSegment, oneGB, AccessMode.Writable);
+			createSegment(stackSegment, AccessMode.Writable|AccessMode.AllocOnAccess);
 		}
 
-		stackSegment += Paging.PAGESIZE;
+		stackSegment = stackSegment[Paging.PAGESIZE..$];
 
-		if(Paging.mapRegion(stackSegment, physAddr, Paging.PAGESIZE) == ErrorVal.Fail){
-			return null;
-		}else{
-			return stackSegment;
-		} 
+		return Paging.mapRegion(stackSegment.ptr, physAddr, Paging.PAGESIZE).ptr;
 	}
 
 	// --- OLD --- //
-	synchronized ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
-		return Paging.mapRegion(gib, physAddr, regionLength);
+	synchronized ErrorVal mapRegion(ubyte* gib, PhysicalAddress physAddr, ulong regionLength) {
+		if(Paging.mapRegion(gib, physAddr, regionLength) !is null){
+			return ErrorVal.Fail;
+		}
+
+		return ErrorVal.Success;
 	}
 
 private:
-	ubyte* stackSegment;
+	ubyte[] stackSegment;
 }

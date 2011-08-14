@@ -22,7 +22,6 @@ import kernel.core.kprintf;
 // Import arch foo
 import architecture.vm;
 
-import user.environment;
 
 ErrorVal initialize() {
 
@@ -30,7 +29,7 @@ ErrorVal initialize() {
 	totalPages = System.memory.length / VirtualMemory.pagesize();
 
 	// Get a gib for the page allocator
-	bitmapGib = cast(ulong*)VirtualMemory.createSegment(VirtualMemory.findFreeSegment(), oneGB, AccessMode.Writable).ptr;
+	bitmapGib = cast(ulong*)VirtualMemory.createSegment(VirtualMemory.findFreeSegment(), AccessMode.Writable|AccessMode.AllocOnAccess).ptr;
 
 	// Calculate how much we need for the bitmap.
 	// 8 bits per byte, 8 bytes for ulong.
@@ -45,56 +44,9 @@ ErrorVal initialize() {
 	// Zero out bitmap initially
 	for (size_t i = 0; i < bitmapSize; i++) {
 		bitmapGib[i] = 0;
-	}	
+	}
 
 	kprintfln!("BITMAP CREATED")();
-
-	//ulong* bitmapEdge = bitmap + (bitmapSize >> 3);
-
-/*	//kprintfln!("bitmap: {x} for {x} pages : totalpages {x}")(bitmap, bitmapPages, totalPages);
-
-	// Now, check to see if the bitmap can fit here
-	bool bitmapOk = false;
-	while(!bitmapOk) {
-		uint i;
-		for (i = 0; i < System.numRegions; i++) {
-			ulong* regionAddr = cast(ulong*)System.regionInfo[i].start;
-			ulong* regionEdge = cast(ulong*)(System.regionInfo[i].start + System.regionInfo[i].length);
-			if ((bitmap < regionEdge) && (bitmapEdge > regionAddr)) {
-				// overlap...
-				// move bitmap
-				//kprintfln!("Region Overlaps! Moving Heap")();
-				bitmap = regionEdge;
-				// align to page size
-				bitmap = cast(ulong*)(cast(ubyte*)bitmap + VirtualMemory.pagesize() - (cast(ulong)bitmap % VirtualMemory.pagesize()));
-				bitmapEdge = bitmap + (bitmapSize >> 3);
-				break;
-			}
-		}
-		if (i < System.numRegions) {
-			continue;
-		}
-
-		for (i = 0; i < System.numModules; i++) {
-			ulong* regionAddr = cast(ulong*)System.moduleInfo[i].start;
-			ulong* regionEdge = cast(ulong*)(System.moduleInfo[i].start + System.moduleInfo[i].length);
-			if ((bitmap < regionEdge) && (bitmapEdge > regionAddr)) {
-				// overlap...
-				// move bitmap
-				//kprintfln!("Module Overlaps! Moving Heap")();
-				bitmap = regionEdge;
-				// align to page size
-				bitmap = cast(ulong*)(cast(ubyte*)bitmap + VirtualMemory.pagesize() - (cast(ulong)bitmap % VirtualMemory.pagesize()));
-				bitmapEdge = bitmap + (bitmapSize >> 3);
-				//kprintfln!("(NEW) Bitmap location: {x}")(bitmap);
-				break;
-			}
-		}
-		if (i == System.numModules) {
-			bitmapOk = true;
-		}
-	}*/
-	//kprintfln!("Bitmap location: {x}")(bitmap);
 
 	// Set up the bitmap for the regions used by the system.
 
@@ -116,12 +68,6 @@ ErrorVal initialize() {
 		markOffRegion(System.moduleInfo[i].start, System.moduleInfo[i].length);
 	}
 
-	// Virtual Address for the heap is relative to the kernel
-//	bitmapPhys = bitmap;
-	//	kprintfln!("findPage: {x}")(allocPageNoMap());
-	//kprintfln!("findPage: {x}")(findPage());
-	//		kprintfln!("findPage: {x}")(findPage());
-	//		kprintfln!("findPage: {x}")(findPage());
 	kprintfln!("Success : ")();
 	// It succeeded!
 	return ErrorVal.Success;
@@ -131,11 +77,11 @@ ErrorVal reportCore() {
 	return ErrorVal.Success;
 }
 
-void* allocPage() {
+PhysicalAddress allocPage() {
 	return allocPage(null);
 }
 
-void* allocPage(void * virtAddr) {
+PhysicalAddress allocPage(void * virtAddr) {
 	// Find a page
 	ulong index = findPage(virtAddr);
 
@@ -144,10 +90,10 @@ void* allocPage(void * virtAddr) {
 	}
 
 	// Return the address
-	return cast(void*)(index * VirtualMemory.pagesize());
+	return cast(PhysicalAddress)(index * VirtualMemory.pagesize());
 }
 
-ErrorVal freePage(void* address) {
+ErrorVal freePage(PhysicalAddress address) {
 	// Find the page index
 	ulong pageIndex = cast(ulong)address;
 
@@ -287,5 +233,5 @@ package {
 
 		return 0xffffffffffffffffUL;
 	}
-	
+
 }

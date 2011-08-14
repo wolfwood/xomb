@@ -1,6 +1,6 @@
 module kernel.core.util;
 
-extern(C) void* memcpy(void*, void*, size_t); 
+extern(C) void* memcpy(void*, void*, size_t);
 
 /**
 Given a struct type, gives a tuple of strings of the names of fields in the struct.

@@ -6,6 +6,8 @@ module kernel.system.definitions;
 
 import kernel.dev.pci;
 
+import user.types;
+
 // This structure keeps track of information pertaining to onboard memory.
 struct Memory {
 	// The size of the RAM.
@@ -18,7 +20,7 @@ struct Memory {
 // This structure keeps track of modules loaded alongside the kernel.
 struct Module {
 	// The location and length of the module.
-	ubyte* start;
+	PhysicalAddress start;
 	ulong length;
 
 	// The name of the module, if given.
@@ -43,7 +45,7 @@ enum RegionType: ubyte {
 // This structure keeps track of special memory regions.
 struct Region {
 	// The location and length of the region
-	ubyte* start;
+	PhysicalAddress start;
 	ulong length;
 
 	// The virtual location of the region

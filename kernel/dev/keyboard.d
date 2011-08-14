@@ -3,7 +3,6 @@ module kernel.dev.keyboard;
 // Import the architecture specific keyboard driver
 import architecture.keyboard;
 import architecture.vm;
-import user.environment;
 
 import kernel.core.error;
 
@@ -11,29 +10,29 @@ import kernel.config;
 
 import user.keycodes;
 
-import kernel.dev.console;
 
 class Keyboard {
 	static:
 
 	ErrorVal initialize() {
-		address = VirtualMemory.findFreeSegment();
-		_buffer = cast(short[])VirtualMemory.createSegment(address, 2*1024*1024, AccessMode.DefaultKernel);
+		segment = VirtualMemory.findFreeSegment(true, BUFFER_SIZE);
+
+		_buffer = cast(short[])VirtualMemory.createSegment(segment, AccessMode.DefaultKernel);
 
 		_writeOffset = cast(ushort*)_buffer.ptr;
 		*_writeOffset = 0;
 		_readOffset = &((cast(ushort*)_buffer)[1]);
 		*_readOffset = 0;
-		
-		((cast(ushort*)_buffer)[2]) = cast(ushort)(3 * VirtualMemory.pagesize());
-		_maxOffset = ((3 * VirtualMemory.pagesize()) / 2) - 3;
+
+		((cast(ushort*)_buffer)[2]) = cast(ushort)BUFFER_SIZE;
+		_maxOffset = (BUFFER_SIZE / ushort.sizeof) - 3;
 
 		_buffer = _buffer[3..	_maxOffset];
 		ErrorVal ret = KeyboardImplementation.initialize(&putKey);
 		return ret;
 	}
-	
-	ubyte* address;
+
+	ubyte[] segment;
 private:
 
 	void putKey(Key nextKey, bool released) {
@@ -60,4 +59,6 @@ private:
 	ushort* _writeOffset;
 	ushort* _readOffset;
 	ushort _maxOffset;
+
+	const uint BUFFER_SIZE = 3 * VirtualMemory.pagesize();
 }

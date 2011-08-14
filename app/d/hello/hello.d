@@ -6,22 +6,20 @@
 
 module hello;
 
-import user.syscall;
-
 import console;
-import libos.keyboard;
-import user.environment;
 
+// requied by entry.
+import libos.keyboard;
 import libos.libdeepmajik.threadscheduler;
 
 void main(char[][] argv) {
-	Console.backcolor = Color.Black; 
+	Console.backcolor = Color.Black;
 	Console.forecolor = Color.Green;
 
 	Console.putString("\nHello, and Welcome to XOmB\n");
 	Console.putString(  "-=-=-=-=-=-=-=-\n\n");
 
-	Console.backcolor = Color.Black; 
+	Console.backcolor = Color.Black;
 	Console.forecolor = Color.LightGray;
 
 	foreach(str; argv){

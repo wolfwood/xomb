@@ -1,4 +1,4 @@
-/* 
+/*
  * segment.d
  *
  * This module describes a segment of an executable.

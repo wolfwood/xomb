@@ -33,9 +33,11 @@ static:
 	}
 
 	ErrorVal install() {
+		PhysicalAddress gdtPage = PageAllocator.allocPage();
+
 		// Create a new GDT structure
-		GlobalDescriptorTable* gdt = cast(GlobalDescriptorTable*)PageAllocator.allocPage();
-		gdt = cast(GlobalDescriptorTable*)Paging.mapRegion(cast(ubyte*)gdt, VirtualMemory.pagesize);
+		GlobalDescriptorTable* gdt = cast(GlobalDescriptorTable*)gdtPage;
+		gdt = cast(GlobalDescriptorTable*)Paging.mapRegion(gdtPage, VirtualMemory.pagesize);
 		*gdt = GlobalDescriptorTable.init;
 		tables[Cpu.identifier] = gdt;
 		initializeTable(Cpu.identifier);

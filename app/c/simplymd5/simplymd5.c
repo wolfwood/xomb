@@ -40,7 +40,7 @@ void MD5Transform(uint32 buf[4], uint32 const in[16]);
 int mdfile(char *fn, unsigned char *digest);
 int mdbinfile(char *fn, unsigned char *bindigest);
 
-/* These assume a little endian machine and return incorrect results! 
+/* These assume a little endian machine and return incorrect results!
  * They are here for compatibility with old (broken) versions of RPM */
 int mdfileBroken(char *fn, unsigned char *digest);
 int mdbinfileBroken(char *fn, unsigned char *bindigest);
@@ -173,7 +173,7 @@ void MD5Update(struct MD5Context *ctx, unsigned char const *buf, unsigned len)
 }
 
 /*
- * * Final wrapup - pad to 64-byte boundary with the bit pattern 
+ * * Final wrapup - pad to 64-byte boundary with the bit pattern
  * * 1 0* (64-bit count of bits processed, MSB-first)
  * */
 void MD5Final(unsigned char digest[16], struct MD5Context *ctx)

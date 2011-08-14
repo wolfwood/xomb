@@ -39,7 +39,7 @@ static:
 
 
 		while((status & 0x1) == 1) {
-			
+
 			code = Cpu.ioIn!(ubyte, "0x60")();
 
 			status = Cpu.ioIn!(ubyte, "0x64")();
@@ -88,7 +88,7 @@ static:
 		// bit 2 - Keyboard Power (0: normal, 1: no power)
 		// bit 3 - Unused
 		// bit 4 - RAM (0: 512KB, 1: 256KB)
-		// bit 5 - Manufacturing Jumper (0: installed, 1: not installed) 
+		// bit 5 - Manufacturing Jumper (0: installed, 1: not installed)
 		//   With jumper BIOS runs an infinite diagnostic loop.
 		// bit 6 - Display (0: CGA, 1: MDA)
 		// bit 7 - Keyboard Lock (0: locked, 1: unlocked)
@@ -99,7 +99,7 @@ static:
 		// bit 1 - A20 (0: line is forced, 1: A20 enabled)
 		// bit 2 - Mouse Data
 		// bit 3 - Mouse Clock
-		// bit 4 - IRQ 1 (0: active, 1: inactive)	
+		// bit 4 - IRQ 1 (0: active, 1: inactive)
 		//   commonly Keyboard IRQ, tells whether or not the IRQ is currently firing
 		// bit 5 - IRQ 12 (0: active, 1: inactive)	// commonly Mouse IRQ
 		// bit 6 - Keyboard Clock
@@ -140,7 +140,7 @@ private:
 		if (data == 0x00) {
 			return;
 		}
-		
+
 		Key key = Key.Null;
 
 		if (data == 0xe0) {

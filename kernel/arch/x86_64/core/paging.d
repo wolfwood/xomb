@@ -17,19 +17,19 @@ import kernel.mem.pageallocator;
 
 // Import some arch-dependent modules
 import kernel.arch.x86_64.linker;	// want linker info
-
 import kernel.arch.x86_64.core.idt;
 
 // Import information about the system
 // (we need to know where the kernel is)
 import kernel.system.info;
 
-// We need to restart the console driver
-import kernel.dev.console;
-
 import architecture.mutex;
 
+// for reporting userspacepage fault errors to parent
+import architecture.cpu;
+
 import user.environment;
+
 
 align(1) struct StackFrame{
 	StackFrame* next;
@@ -37,44 +37,34 @@ align(1) struct StackFrame{
 }
 
 void printStackTrace(StackFrame* start){
-	kprintfln!(" YOU LOOK SAD, SO I GOT YOU A STACK TRACE!")();
-
-	StackFrame* curr = start, limit = start;
-
-	limit += Paging.PAGESIZE;
-	limit = cast(StackFrame*) ( cast(ulong)limit & ~(Paging.PAGESIZE-1));
-
 	int count = 10;
 
-	//&& curr < limit
-	while(cast(ulong)curr > Paging.PAGESIZE && count > 0 && isValidAddress(cast(ubyte*)curr)){
-		kprintfln!("return addr: {x} rbp: {x}")(curr.returnAddr, curr);
-		curr = curr.next;
+	kprintfln!(" YOU LOOK SAD, SO I GOT YOU A STACK TRACE!")();
+
+	while(count > 0 && isValidAddress(cast(ubyte*)start)){
+		kprintfln!("return addr: {x} rbp: {x}")(start.returnAddr, start);
+		start = start.next;
 		count--;
 	}
 }
 
 class Paging {
 static:
-
-	// The page size we are using
-	const auto PAGESIZE = 4096;
-
-	// This function will initialize paging and install a core page table.
-	ErrorVal initialize() {
+  // --- Set Up ---
+	ErrorVal initialize(){
+		// Save the physical address for later
+		rootPhysical = PageAllocator.allocPage();
 		// Create a new page table.
-		root = cast(PageLevel4*)PageAllocator.allocPage();
-		PageLevel3* globalRoot = cast(PageLevel3*)PageAllocator.allocPage();
-
-		//kprintfln!("root: {} pl3: {} pl2: {}")(root, pl3, pl2);
+		PageLevel!(4)* newRoot = cast(PageLevel!(4)*)rootPhysical;
+		PageLevel!(3)* globalRoot = cast(PageLevel!(3)*)PageAllocator.allocPage();
 
 		// Initialize the structure. (Zero it)
-		*root = PageLevel4.init;
-		*globalRoot = PageLevel3.init;
+		*newRoot = (PageLevel!(4)).init;
+		*globalRoot = (PageLevel!(3)).init;
 
 		// Map entries 510 to the PML4
-		root.entries[510].pml = cast(ulong)root;
-		root.entries[510].setMode(AccessMode.Read|AccessMode.User);
+		newRoot.entries[510].pml = cast(ulong)rootPhysical;
+		newRoot.entries[510].setMode(AccessMode.Read|AccessMode.User);
 
 		/* currently the kernel isn't forced to respect the rw bit. if
 			 this is enabled, another paging trick will be needed with
@@ -82,129 +72,29 @@ static:
 		 */
 
 		// Map entry 509 to the global root
-		root.entries[509].pml = cast(ulong)globalRoot;
-		root.entries[509].setMode(AccessMode.Read);
+		newRoot.entries[509].pml = cast(ulong)globalRoot;
+		newRoot.entries[509].setMode(AccessMode.Read);
 
 		// The current position of the kernel space. All gets appended to this address.
-		heapAddress = LinkerScript.kernelVMA;
+		heapAddress = cast(ubyte*)LinkerScript.kernelVMA + System.kernel.length;
 
-		// We need to map the kernel
-		kernelAddress = heapAddress;
+		// map kernel into bootstrap root page table, so we can use paging trick
+		ubyte* addr = createAddress(0, 0, 0, 257);//findFreeSegment(true, 512*oneGB).ptr;
 
-		//kprintfln!("About to map kernel")();
-		mapRegion(System.kernel.start, System.kernel.length);
+		createGib!(PageLevel!(3))(addr, AccessMode.Writable|AccessMode.Executable);
+		mapRegion(addr, System.kernel.start, System.kernel.length);
 
-		void* bitmapLocation = heapAddress;
-		
-		// The first gib for the kernel
-		nextGib++;
+		// copy physical address to new root
+		ulong idx, frag = cast(ulong)addr;
+		getNextIndex(frag, idx);
+		newRoot.entries[256].pml = root.entries[idx].pml;
 
 		// Assign the page fault handler
-		IDT.assignHandler(&faultHandler, 14);
-
-		IDT.assignHandler(&gpfHandler, 13);
-
-		// We now have the kernel mapped
-		kernelMapped = true;
-
-		// Save the physical address for later
-		rootPhysical = cast(void*)root;
-
-		// This is the virtual address for the page table
-		root = cast(PageLevel4*)0xFFFFFF7F_BFDFE000;
+		IDT.assignHandler(&pageFaultHandler, 14);
+		IDT.assignHandler(&generalProtectionFaultHandler, 13);
 
 		// All is well.
 		return ErrorVal.Success;
-	}
-
-	void gpfHandler(InterruptStack* stack) {
-		stack.dump();
-
-		if (stack.rip < 0xf_0000_0000_0000) {
-			kprintfln!("User Mode General Protection Fault: instruction address {x}")(stack.rip);
-		}else{
-			kprintfln!("Kernel Mode Level 3 Page Fault: instruction address {x}")(stack.rip);
-		}
-
-		printStackTrace(cast(StackFrame*)stack.rbp);
-		
-		for(;;){}
-	}
-
-	void faultHandler(InterruptStack* stack) {
-		ulong cr2;
-
-		asm {
-			mov RAX, CR2;
-			mov cr2, RAX;
-		}
-
-		void* addr = cast(void*)cr2;
-
-		if((stack.errorCode & 7) == 7){
-			// XXX: 'kill' child and return to parent?
-			stack.dump();
-			kprintfln!("User Mode Write Fault at {x} on Read-only page {x}, Error Code {x}")(stack.rip, addr, stack.errorCode);
-			printStackTrace(cast(StackFrame*)stack.rbp);
-			for(;;){}
-		}
-
-
-		if(stack.errorCode == 3){
-			kprintfln!("Kernel Mode Write Fault at {x} on Read-only page {x}, Error Code {x}")(stack.rip, addr, stack.errorCode);
-			printStackTrace(cast(StackFrame*)stack.rbp);
-			for(;;){}
-		}
-
-
-		ulong indexL4, indexL3, indexL2, indexL1;
-		translateAddress(addr, indexL1, indexL2, indexL3, indexL4);
-
-		// check for gib status
-		PageLevel3* pl3 = root.getTable(indexL4);
-		if (pl3 is null) {
-			// NOT AVAILABLE
-
-				if (stack.rip < 0xf_0000_0000_0000) {
-					kprintfln!("User Mode Level 3 Page Fault: instruction address {x}")(stack.rip);
-				}else{
-					kprintfln!("Kernel Mode Level 3 Page Fault: instruction address {x}")(stack.rip);
-				}
-
-				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
-
-				printStackTrace(cast(StackFrame*)stack.rbp);
-
-				for(;;){}
-		}
-		else {
-			PageLevel2* pl2 = pl3.getTable(indexL3);
-			if (pl2 is null) {
-				// NOT AVAILABLE (FOR SOME REASON)
-
-				if (stack.rip < 0xf_0000_0000_0000) {
-					kprintfln!("User Mode Level 2 Page Fault {x}, Error Code {x}")(stack.rip, stack.errorCode);
-				}else{
-					kprintfln!("Kernel Mode Level 2 Page Fault {x}, Error Code {x}")(stack.rip, stack.errorCode);
-				}
-
-				kprintfln!("Non-Gib access.  looping 4eva. CR2 = {}")(addr);
-
-				printStackTrace(cast(StackFrame*)stack.rbp);
-				
-				for(;;){}
-			}
-			else {
-
-				// Allocate Page 
-				// XXX: only if gib is allocate on access!!
-				addr = cast(void*)(cast(ulong)addr & 0xffff_ffff_ffff_f000UL);
-
-				void* page = PageAllocator.allocPage();
-
-				mapRegion(null, page, PAGESIZE, addr, true);
-			}
-		}
 	}
 
 	ErrorVal install() {
@@ -213,75 +103,194 @@ static:
 			mov RAX, rootAddr;
 			mov CR3, RAX;
 		}
+
+		/*
+		if(heapAddress is null){
+
+			// put mapRegion heap into its own segment
+			heapAddress = findFreeSegment().ptr;
+
+			assert(heapAddress !is null);
+
+			bool success = createGib!(PageLevel!(3))(heapAddress, AccessMode.Writable);
+
+			assert(success);
+		}
+		*/
+
 		return ErrorVal.Success;
 	}
 
-	// This function will get the physical address that is mapped from the
-	// specified virtual address.
-	void* translateAddress(void* virtAddress) {
-		ulong vAddr = cast(ulong)virtAddress;
 
-		vAddr >>= 12;
-		uint indexLevel1 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		uint indexLevel2 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		uint indexLevel3 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		uint indexLevel4 = vAddr & 0x1ff;
+  // --- Handlers ---
+	void generalProtectionFaultHandler(InterruptStack* stack) {
+		bool recoverable;
 
-		return root.getTable(indexLevel4).getTable(indexLevel3).getTable(indexLevel2).physicalAddress(indexLevel1);
+		if (stack.rip < 0xf_0000_0000_0000) {
+			kprintf!("User Mode ")();
+			recoverable = true;
+		}else{
+			kprintf!("Kernel Mode ")();
+		}
+
+
+		kprintfln!("General Protection Fault: instruction address {x}")(stack.rip);
+
+		stack.dump();
+		printStackTrace(cast(StackFrame*)stack.rbp);
+
+
+		if(recoverable){
+			PhysicalAddress deadChild;
+
+			switchAddressSpace(null, deadChild);
+			Cpu.enterUserspace(3, deadChild);
+		}else{
+			for(;;){}
+		}
+		// >>> Never reached <<<
 	}
 
-	void translateAddress( void* virtAddress,
-							out ulong indexLevel1,
-							out ulong indexLevel2,
-							out ulong indexLevel3,
-							out ulong indexLevel4) {
-		ulong vAddr = cast(ulong)virtAddress;
+	void pageFaultHandler(InterruptStack* stack) {
+		ulong cr2;
 
-		vAddr >>= 12;
-		indexLevel1 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		indexLevel2 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		indexLevel3 = vAddr & 0x1ff;
-		vAddr >>= 9;
-		indexLevel4 = vAddr & 0x1ff;
-	}
+		asm {
+			mov RAX, CR2;
+			mov cr2, RAX;
+		}
 
-	Mutex pagingLock;
+		// page not present or privilege violation?
+		if((stack.errorCode & 1) == 0){
+			bool allocate;
+			root.walk!(pageFaultHelper)(cr2, allocate);
 
-	AddressSpace createAddressSpace() {
-		// XXX: the place where the address foo is stored is hard coded in context :(
-		// and now it is going to be hardcoded here :(
-
-		// Make a new root pagetable
-		ubyte* newRootPhysAddr = cast(ubyte*)PageAllocator.allocPage();
-
-		PageLevel3* addressRoot = root.getOrCreateTable(255);
-
-		PageLevel2* addressSpace;
-
-
-		uint idx = 0;
-		for(uint i = 1; i < 512; i++) {
-			if (addressRoot.getTable(i) is null) {
-				addressRoot.setTable(i, newRootPhysAddr, false);
-				addressRoot.entries[i].setMode(AccessMode.RootPageTable);
-				addressSpace = addressRoot.getTable(i);
-				idx = i;
-				break;
+			if(allocate){
+				return;
+			}else{
+				kprintf!("found incomplete page mapping without Alloc-On-Access permission on a ")();
 			}
 		}
 
-		if(idx == 0){
-			return null;
+		// --- an error has occured ---
+		bool recoverable;
+
+		if(stack.errorCode & 8){
+			kprintfln!("You look angry that I wrote some bits in a reserved field.  Have some PTEs.")();
+			uint depth = 4;
+			root.walk!(pageEntryPrinter)(cr2, depth);
+
+			kprintf!("Reserved bit ")();
+		}else{
+			if(stack.errorCode & 4){
+				kprintf!("User Mode ")();
+				recoverable = true;
+			}else{
+				kprintf!("Kernel Mode ")();
+			}
+			if(stack.errorCode & 16){
+				kprintf!("Instruction Fetch ")();
+			}else{
+				if(stack.errorCode & 2){
+					kprintf!("Write ")();
+				}else{
+					kprintf!("Read ")();
+				}
+			}
 		}
 
+		kprintfln!("Fault at instruction {x} to address {x}")(stack.rip, cast(ubyte*)cr2);
 
-		// Initialize the address space root page table
-		*(cast(PageLevel4*)addressSpace) = PageLevel4.init;
+		stack.dump();
+		printStackTrace(cast(StackFrame*)stack.rbp);
+
+		if(recoverable){
+			PhysicalAddress deadChild;
+
+			switchAddressSpace(null, deadChild);
+			Cpu.enterUserspace(3, deadChild);
+		}else{
+			for(;;){}
+		}
+		// >>> Never reached <<<
+	}
+
+	template pageFaultHelper(T){
+		bool pageFaultHelper(T table, uint idx, ref bool allocate){
+			const AccessMode allocatingSegment = AccessMode.AllocOnAccess | AccessMode.Segment;
+
+			if(table.entries[idx].present){
+				if((table.entries[idx].getMode() & allocatingSegment) == allocatingSegment){
+					allocate = true;
+				}
+
+				return true;
+			}else{
+				if(allocate){
+					static if(T.level == 1){
+						ubyte* page = PageAllocator.allocPage();
+
+						if(page is null){
+							allocate = false;
+						}else{
+							table.entries[idx].pml = cast(ulong)page;
+							table.entries[idx].pat = 1;
+							table.entries[idx].setMode(AccessMode.User|AccessMode.Writable|AccessMode.Executable);
+						}
+					}else{
+						auto intermediate = table.getOrCreateTable(idx, true);
+
+						if(intermediate is null){
+							allocate = false;
+							return false;
+						}
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+	}
+
+	bool pageEntryPrinter(T)(T table, uint idx, ref uint depth){
+		if(table.entries[idx].present){
+			kprintfln!("Level {}: {x}")(depth--, table.entries[idx].pml);
+
+			return true;
+		}
+
+		return false;
+	}
+
+
+	// --- AddressSpace Manipulation ---
+	AddressSpace createAddressSpace() {
+		// Make a new root pagetable
+		PhysicalAddress newRootPhysAddr = PageAllocator.allocPage();
+
+		bool success;
+		ulong idx, addrFrag;
+		ubyte* vAddr;
+		PageLevel!(3)* segmentParent;
+		AccessMode flags = AccessMode.RootPageTable|AccessMode.Writable;
+
+		// --- find a free slot to store the child's root, then map it in ---
+		root.traverse!(preorderFindFreeSegmentHelper, noop)(cast(ulong)createAddress(0,0,1,255), cast(ulong)createAddress(0,0,255,255), vAddr, segmentParent);
+
+		if(vAddr is null)
+			return null;
+
+		addrFrag = cast(ulong)vAddr;
+		root.walk!(mapSegmentHelper)(addrFrag, flags, success, segmentParent, newRootPhysAddr);
+
+		root.walk!(zeroPageTableHelper)(addrFrag, segmentParent);
+
+		getNextIndex(addrFrag, idx);
+		getNextIndex(addrFrag, idx);
+
+		PageLevel!(2)* addressSpace = root.getTable(255).getTable(idx);
+
+		// --- initialize root ---
+		*(cast(PageLevel!(4)*)addressSpace) = (PageLevel!(4)).init;
 
 		// Map in kernel pages
 		addressSpace.entries[256].pml = root.entries[256].pml;
@@ -290,19 +299,20 @@ static:
 		addressSpace.entries[510].pml = cast(ulong)newRootPhysAddr;
 		addressSpace.entries[510].setMode(AccessMode.User);
 
-
 		// insert parent into child
-		 PageLevel1* fakePl3 = addressSpace.getOrCreateTable(255);
+		PageLevel!(1)* fakePl3 = addressSpace.getOrCreateTable(255);
+
+		if(fakePl3 is null)
+			return null;
+
 		fakePl3.entries[0].pml = root.entries[510].pml;
 		// child should not be able to edit parent's root table
 		fakePl3.entries[0].setMode(AccessMode.RootPageTable);
 
-
 		return cast(AddressSpace)addressSpace;
 	}
 
-	synchronized ErrorVal switchAddressSpace(AddressSpace as, out ulong oldRoot){
-
+	ErrorVal switchAddressSpace(AddressSpace as, out PhysicalAddress oldRoot){
 		if(as is null){
 			// XXX - just decode phys addr directly?
 			as = cast(AddressSpace)root.getTable(255).getTable(0);
@@ -313,439 +323,243 @@ static:
 			return ErrorVal.Fail;
 		}
 
-
-		ulong indexL4, indexL3, indexL2, indexL1;
-				
-		translateAddress(cast(ubyte*)as, indexL1, indexL2, indexL3, indexL4);
-
-		PageLevel3* pl3 = root.getTable(indexL4);
-		PageLevel2* pl2 = pl3.getTable(indexL3);
-		PageLevel1* pl1 = pl2.getTable(indexL2);
-
-		ulong newPhysRoot = cast(ulong)pl1.entries[indexL1].location();
-
-		oldRoot = cast(ulong)root.entries[510].location();
-
-		asm{
-			mov RAX, newPhysRoot;
-			mov CR3, RAX;
-		}
-		
+		oldRoot = switchAddressSpace(findPhysicalAddressOfSegment(as));
 
 		return ErrorVal.Success;
-	}
-
-	synchronized ErrorVal mapGib(AddressSpace destinationRoot, ubyte* location, ubyte* destination, AccessMode flags) {
-
-		if(flags & AccessMode.Global){
-			ulong indexL1, indexL2, indexL3, indexL4;
-			PageLevel3* pl3 = root.getOrCreateTable(509, true);
-			PageLevel2* pl2;
-
-			translateAddress(location, indexL1, indexL2, indexL3, indexL4);
-			pl2 = pl3.getOrCreateTable(indexL4, true);
-			ubyte* locationAddr = cast(ubyte*)pl2.entries[indexL3].location();
-
-
-			indexL1 = indexL2 = indexL3 = indexL4 = 0;
-
-			translateAddress(destination, indexL1, indexL2, indexL3, indexL4);
-			pl2 = pl3.getOrCreateTable(indexL4, true);
-			pl2.setTable(indexL3, locationAddr, true);
-
-			return ErrorVal.Success;
-		}
-
-
-		PageLevel4* addressSpace;
-
-
-		if(destinationRoot is null){
-			addressSpace = root;
-			destinationRoot = cast(AddressSpace)addressSpace;
-		}else{
-			// verify destinationRoot is a valid root page table
-			if((modesForAddress(destinationRoot) & AccessMode.RootPageTable) == 0){
-				return ErrorVal.Fail;
-			}
-
-			addressSpace = cast(PageLevel4*)destinationRoot;
-		}
-
-
-		// So. destinationRoot is the virtual address of the destination
-		// root page table within the source (current) page table.
-		// Due to paging trick magic.
-		
-		ulong indexL4, indexL3, indexL2, indexL1;
-				
-		translateAddress(cast(ubyte*)destinationRoot, indexL1, indexL2, indexL3, indexL4);
-
-		PageLevel3* pl3 = root.getTable(indexL4);
-		PageLevel2* pl2 = pl3.getTable(indexL3);
-		PageLevel1* pl1 = pl2.getTable(indexL2);
-		ulong addr = cast(ulong)pl1.entries[indexL1].location();
-
-		ulong oldRoot = cast(ulong)root.entries[510].location();
-		
-		// Now, figure out the physical address of the gib root.
-
-		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
-		pl3 = root.getTable(indexL4);
-		ubyte* locationAddr = cast(ubyte*)pl3.entries[indexL3].location();
-
-		// Goto the other address space
-		// XXX: use switchAddressSpace() ?
-		asm {
-			mov RAX, addr;
-			mov CR3, RAX;
-		}
-
-		// Add an entry into the new address space that shares the gib of the old
-		translateAddress(destination, indexL1, indexL2, indexL3, indexL4);
-		pl3 = root.getOrCreateTable(indexL4, true);
-		pl3.setTable(indexL3, locationAddr, true);
-
-		// Return to our old address space
-		asm {
-			mov RAX, oldRoot;
-			mov CR3, RAX;
-		}
-
-		return ErrorVal.Success;
-	}
-
-
-	bool createGib(ubyte* location, ulong size, AccessMode flags) {
-		// Find page translation
-		ulong indexL4, indexL3, indexL2, indexL1;
-		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
-
-		bool usermode = (flags & AccessMode.User) != 0;
-
-		if (flags & AccessMode.Global) {
-			//XXX:  instead, getTable and isure this is created elsewhere for kernel/init
-			PageLevel3* globalRoot = root.getOrCreateTable(509);
-
-			PageLevel2* global_pl3 = globalRoot.getOrCreateTable(indexL4, usermode);
-			PageLevel1* global_pl2 = global_pl3.getOrCreateTable(indexL3, usermode);
-
-			// Now, global_pl2 is the global root of the gib!!!
-
-			// Allocate paging structures
-			PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
-			pl3.setTable(indexL3, cast(ubyte*)global_pl3.entries[indexL3].location(), usermode);
-		}
-		else {
-			PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
-			PageLevel2* pl2 = pl3.getOrCreateTable(indexL3, usermode);
-		}
-
-		// XXX: Check for errors, maybe handle flags?!
-		// XXX: return false if it is already there
-		return true;
-	}
-	
-	// XXX support multiple sizes
-	bool closeGib(ubyte* location) {
-		// Find page translation
-		ulong indexL4, indexL3, indexL2, indexL1;
-		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
-
-		PageLevel3* pl3 = root.getTable(indexL4);
-		if (pl3 is null) {
-			return false;
-		}
-
-		pl3.setTable(indexL3, null, false);
-		return true;
-	}
-
-
-	// OLD
-	// Return an address to a new gib (kernel)
-	ulong nextGib = (256 * 512);
-	const ulong MAX_GIB = (512 * 512);
-	const ulong GIB_SIZE = (512 * 512 * PAGESIZE);
-
-	ubyte* gibAddress(uint gibIndex) {
-		// Find initial address of gib
-		ubyte* gibAddr = cast(ubyte*)0x0;
-		gibAddr += (GIB_SIZE * cast(ulong)gibIndex);
-
-		// Make Canonical
-		if (cast(ulong)gibAddr >= 0x800000000000UL) {
-			gibAddr = cast(ubyte*)(cast(ulong)gibAddr | 0xffff000000000000UL);
-		}
-
-		return gibAddr;
-	}
-
-	bool openGib(ubyte* location, uint flags) {
-		// Find page translation
-		ulong indexL4, indexL3, indexL2, indexL1;
-		translateAddress(location, indexL1, indexL2, indexL3, indexL4);
-
-		bool usermode = (flags & AccessMode.User) != 0;
-		PageLevel3* pl3 = root.getOrCreateTable(indexL4, usermode);
-
-		pl3.setTable(indexL3, location, usermode);
-
-		return true;
-	}
-
-	ErrorVal mapRegion(void* gib, void* physAddr, ulong regionLength) {
-		mapRegion(null, physAddr, regionLength, gib, true);
-		return ErrorVal.Success;
-	}
-
-	// Using heapAddress, this will add a region to the kernel space
-	// It returns the virtual address to this region.
-	synchronized void* mapRegion(void* physAddr, ulong regionLength) {
-		// Sanitize inputs
-
-		// physAddr should be floored to the page boundary
-		// regionLength should be ceilinged to the page boundary
-		pagingLock.lock();
-		ulong curPhysAddr = cast(ulong)physAddr;
-		ulong diff = curPhysAddr % PAGESIZE;
-
-		regionLength += diff;
-		curPhysAddr -= diff;
-
-		// Set the new starting address
-		physAddr = cast(void*)curPhysAddr;
-
-		// Get the end address
-		curPhysAddr += regionLength;
-
-		// Align the end address
-		if ((curPhysAddr % PAGESIZE) > 0)
-		{
-			curPhysAddr += PAGESIZE - (curPhysAddr % PAGESIZE);
-		}
-
-		// Define the end address
-		void* endAddr = cast(void*)curPhysAddr;
-
-		// This region will be located at the current heapAddress
-		void* location = heapAddress;
-
-		if (kernelMapped) {
-			doHeapMap(physAddr, endAddr);
-		}
-		else {
-			heapMap!(true)(physAddr, endAddr);
-		}
-
-		// Return the position of this region
-		pagingLock.unlock();
-		return location + diff;
-	}
-
-	synchronized ulong mapRegion(PageLevel4* rootTable, void* physAddr, ulong regionLength, void* virtAddr = null, bool writeable = false) {
-		if (virtAddr is null) {
-			virtAddr = physAddr;
-		}
-		// Sanitize inputs
-
-		pagingLock.lock();
-		// physAddr should be floored to the page boundary
-		// regionLength should be ceilinged to the page boundary
-		ulong curPhysAddr = cast(ulong)physAddr;
-		regionLength += (curPhysAddr % PAGESIZE);
-		curPhysAddr -= (curPhysAddr % PAGESIZE);
-
-		// Set the new starting address
-		physAddr = cast(void*)curPhysAddr;
-
-		// Get the end address
-		curPhysAddr += regionLength;
-
-		// Align the end address
-		if ((curPhysAddr % PAGESIZE) > 0) {
-			curPhysAddr += PAGESIZE - (curPhysAddr % PAGESIZE);
-		}
-
-		// Define the end address
-		void* endAddr = cast(void*)curPhysAddr;
-
-		heapMap!(false, false)(physAddr, endAddr, virtAddr, writeable);
-		pagingLock.unlock();
-
-		return regionLength;
-	}
-
-	PageLevel4* kernelPageTable() {
-		return cast(PageLevel4*)0xfffffffffffff000;
 	}
 
 private:
+	PhysicalAddress switchAddressSpace(PhysicalAddress newRoot){
+		PhysicalAddress oldRoot = root.entries[510].location();
+
+		asm{
+			mov RAX, newRoot;
+			mov CR3, RAX;
+		}
+
+		return oldRoot;
+	}
+public:
 
 
-// -- Flags -- //
+	// --- Segment Manipulation ---
 
+	// dropped synchronized because of an ldc bug w/ templates
+	ErrorVal mapGib(T)(AddressSpace destinationRoot, ubyte* location, ubyte* destination, AccessMode flags) {
+		bool success;
 
-	bool systemMapped;
-	bool kernelMapped;
+		if(flags & AccessMode.Global){
+			PageLevel!(T.level -1)* globalSegmentParent;
 
+			PhysicalAddress locationAddr = getPhysicalAddressOfSegment!(typeof(globalSegmentParent))(cast(ubyte*)getGlobalAddress(cast(AddressFragment)location));
 
-// -- Positions -- //
+			if(locationAddr is null)
+				return ErrorVal.Fail;
 
-
-	void* systemAddress;
-	void* kernelAddress;
-	void* heapAddress;
-
-
-// -- Main Page Table -- //
-
-
-	PageLevel4* root;
-	void* rootPhysical;
-
-
-// -- Mapping Functions -- //
-
-	template heapMap(bool initialMapping = false, bool kernelLevel = true) {
-		void heapMap(void* physAddr, void* endAddr, void* virtAddr = heapAddress, bool writeable = true) {
-
-			// Do the mapping
-			PageLevel3* pl3;
-			PageLevel2* pl2;
-			PageLevel1* pl1;
-			ulong indexL1, indexL2, indexL3, indexL4;
-
-			void* startAddr = physAddr;
-
-			// Find the initial page
-			translateAddress(virtAddr, indexL1, indexL2, indexL3, indexL4);
-
-			// From there, map the region
-			ulong done = 0;
-			for ( ; indexL4 < 512 && physAddr < endAddr ; indexL4++ )
-			{
-				// get the L3 table
-				static if (initialMapping) {
-					if (root.entries[indexL4].present) {
-						pl3 = cast(PageLevel3*)(root.entries[indexL4].address << 12);
-					}
-					else {
-						pl3 = cast(PageLevel3*)PageAllocator.allocPage();
-						*pl3 = PageLevel3.init;
-						root.entries[indexL4].pml = cast(ulong)pl3;
-						root.entries[indexL4].present = 1;
-						root.entries[indexL4].rw = 1;
-						static if (!kernelLevel) {
-							root.entries[indexL4].us = 1;
-						}
-					}
-				}
-				else {
-					pl3 = root.getOrCreateTable(indexL4, !kernelLevel);
-					//static if (!kernelLevel) { kprintfln!("pl3 {}")(indexL4); }
-				}
-
-				for ( ; indexL3 < 512 ; indexL3++ )
-				{
-					// get the L2 table
-					static if (initialMapping) {
-						if (pl3.entries[indexL3].present) {
-							pl2 = cast(PageLevel2*)(pl3.entries[indexL3].address << 12);
-						}
-						else {
-							pl2 = cast(PageLevel2*)PageAllocator.allocPage();
-							*pl2 = PageLevel2.init;
-							pl3.entries[indexL3].pml = cast(ulong)pl2;
-							pl3.entries[indexL3].present = 1;
-							pl3.entries[indexL3].rw = 1;
-							static if (!kernelLevel) {
-								pl3.entries[indexL3].us = 1;
-							}
-						}
-					}
-					else {
-						pl2 = pl3.getOrCreateTable(indexL3, !kernelLevel);
-//						static if (!kernelLevel) { kprintfln!("pl2 {}")(indexL3); }
-					}
-
-					for ( ; indexL2 < 512 ; indexL2++ )
-					{
-						// get the L1 table
-						static if (initialMapping) {
-							if (pl2.entries[indexL2].present) {
-								pl1 = cast(PageLevel1*)(pl2.entries[indexL2].address << 12);
-							}
-							else {
-								pl1 = cast(PageLevel1*)PageAllocator.allocPage();
-								*pl1 = PageLevel1.init;
-								pl2.entries[indexL2].pml = cast(ulong)pl1;
-								pl2.entries[indexL2].present = 1;
-								pl2.entries[indexL2].rw = 1;
-								static if (!kernelLevel) {
-									pl2.entries[indexL2].us = 1;
-								}
-							}
-						}
-						else {
-							//static if (!kernelLevel) { kprintfln!("attempting pl1 {}")(indexL2); }
-							pl1 = pl2.getOrCreateTable(indexL2, !kernelLevel);
-							//static if (!kernelLevel) { kprintfln!("pl1 {}")(indexL2); }
-						}
-
-						for ( ; indexL1 < 512 ; indexL1++ )
-						{
-							// set the address
-							if (pl1.entries[indexL1].present) {
-								// Page already allocated
-								// XXX: Fail
-							}
-
-							pl1.entries[indexL1].pml = cast(ulong)physAddr;
-
-							pl1.entries[indexL1].present = 1;
-							pl1.entries[indexL1].rw = writeable;
-							pl1.entries[indexL1].pat = 1;
-							static if (!kernelLevel) {
-								pl1.entries[indexL1].us = 1;
-							}
-
-							physAddr += PAGESIZE;
-							done += PAGESIZE;
-
-							if (physAddr >= endAddr)
-							{
-								indexL2 = 512;
-								indexL3 = 512;
-								break;
-							}
-						}
-
-						indexL1 = 0;
-					}
-
-					indexL2 = 0;
-				}
-
-				indexL3 = 0;
+			if(destination is null){ // our open, segment mapped from global space to destination address
+				T* segmentParent;
+				root.walk!(mapSegmentHelper)(cast(ulong)location, flags, success, segmentParent, locationAddr);
+			}else{
+				root.walk!(mapSegmentHelper)(getGlobalAddress(cast(ulong)destination), flags, success, globalSegmentParent, locationAddr);
+			}
+		}else{
+			// verify destinationRoot is a valid root page table (or null for a local operation)
+			if((destinationRoot !is null) && ((modesForAddress(destinationRoot) & AccessMode.RootPageTable) == 0)){
+				return ErrorVal.Fail;
 			}
 
-			if (indexL4 >= 512)
-			{
-				// we have depleted our table!
-				assert(false, "Virtual Memory depleted");
+			T* segmentParent;
+			PhysicalAddress locationAddr = getPhysicalAddressOfSegment!(typeof(segmentParent))(location), oldRoot;
+
+			if(locationAddr is null)
+				return ErrorVal.Fail;
+
+			if(destinationRoot !is null){
+				// Goto the other address space
+				switchAddressSpace(destinationRoot, oldRoot);
 			}
 
-			// Recalculate the region length
-			ulong regionLength = cast(ulong)endAddr - cast(ulong)startAddr;
+			root.walk!(mapSegmentHelper)(cast(ulong)destination, flags, success, segmentParent, locationAddr);
 
-			// Relocate heap address
-			static if (kernelLevel) {
-				heapAddress += regionLength;
+			if(destinationRoot !is null){
+				// Return to our old address space
+				switchAddressSpace(oldRoot);
+			}
+		}
+
+		if(success){
+			return ErrorVal.Success;
+		}else{
+			return ErrorVal.Fail;
+		}
+	}
+
+	// dropped synchronized because of an ldc bug w/ templates
+	template createGib(T){
+		bool createGib(ubyte* location, AccessMode flags){
+			bool global = (flags & AccessMode.Global) != 0, success;
+
+			ulong vAddr = cast(ulong)location;
+			PhysicalAddress phys = PageAllocator.allocPage();
+
+			if(phys is null)
+				return false;
+
+			T* segmentParent;
+			root.walk!(mapSegmentHelper)(vAddr, flags, success, segmentParent, phys);
+
+			root.walk!(zeroPageTableHelper)(vAddr, segmentParent);
+
+			static if(T.level != 1){
+				// 'map' the segment into the Global Space
+				if(success && global){
+					PageLevel!(T.level -1)* globalSegmentParent;
+					success = false;
+
+					root.walk!(mapSegmentHelper)(getGlobalAddress(vAddr), flags, success, globalSegmentParent, phys);
+				}
+			}
+
+			return success;
+		}
+	}
+
+	template mapSegmentHelper(U, T){
+		bool mapSegmentHelper(T table, uint idx, ref AccessMode flags, ref bool success, ref U segmentParent, ref PhysicalAddress phys){
+			static if(is(T == U)){
+				if(table.entries[idx].present)
+					return false;
+
+				table.entries[idx].pml = cast(ulong)phys;
+				table.entries[idx].setMode(AccessMode.Segment | flags);
+
+				success = true;
+				return false;
+			}else{
+				static if(T.level != 1){
+					auto intermediate = table.getOrCreateTable(idx, true);
+
+					if(intermediate is null)
+						return false;
+
+				return true;
+				}else{
+					// will nevar happen
+					return false;
+				}
 			}
 		}
 	}
 
-	alias heapMap!(false) doHeapMap;
+	bool zeroPageTableHelper(U, T)(T table, uint idx, ref U segmentParent){
+		static if(is(T == U)){
+			static if(U.level > 1){
+				auto zeroTarget = table.getTable(idx);
 
+				if(zeroTarget !is null)
+					*zeroTarget = typeof(*zeroTarget).init;
+			}else{
+				// only matters if we allow 4k segment
+			}
+
+			return false;
+		}else{
+				static if(T.level != 1){
+					auto intermediate = table.getOrCreateTable(idx, true);
+
+					if(intermediate is null)
+						return false;
+				}
+				return true;
+		}
+	}
+
+	// XXX support multiple sizes
+	bool closeGib(ubyte* location) {
+		return true;
+	}
+
+
+	// --- Making Specific Physical Addresses Available ---
+
+	// Using heapAddress, this will add a region to the kernel space
+	// It returns the virtual address to this region. Use sparingly
+	ubyte[] mapRegion(PhysicalAddress physAddr, ulong regionLength) {
+
+		heapLock.lock();
+
+		// This region will be located at the current heapAddress
+		ubyte* location = heapAddress;
+
+		ubyte[] result = mapRegion(location, physAddr, regionLength);
+
+		if(result !is null){
+			heapAddress = result[$..$].ptr;
+		}
+
+		heapLock.unlock();
+
+		return result;
+	}
+
+	synchronized ubyte[] mapRegion(ubyte* virtAddr, PhysicalAddress physAddr, ulong regionLength) {
+		assert((cast(ulong)virtAddr % PAGESIZE) == 0);
+
+		// physAddr should be floored to the page boundary
+		// regionLength should be ceilinged to the page boundary
+		ulong diff = cast(ulong)physAddr % PAGESIZE;
+		regionLength += diff;
+		physAddr = physAddr - diff;
+
+		// Align the end address
+		if ((regionLength % PAGESIZE) > 0) {
+			regionLength += PAGESIZE - (regionLength % PAGESIZE);
+		}
+
+		// Define the end address
+		ubyte* endAddr = virtAddr + regionLength;
+
+		bool failed;
+		PhysicalAddress pAddr = cast(PhysicalAddress)physAddr;
+		root.traverse!(preorderMapPhysicalAddressHelper, noop)(cast(ulong)virtAddr, cast(ulong)endAddr, pAddr, failed);
+
+		if(failed){
+			return null;
+		}else{
+			return (virtAddr)[diff..regionLength];
+		}
+	}
+
+	template preorderMapPhysicalAddressHelper(T){
+		TraversalDirective preorderMapPhysicalAddressHelper(T table, uint idx, uint startIdx, uint endIdx, ref PhysicalAddress physAddr, ref bool failed){
+			static if(T.level != 1){
+				auto next = table.getOrCreateTable(idx, true);
+
+				if(next is null){
+					failed = true;
+					return TraversalDirective.Stop;
+				}
+
+				return TraversalDirective.Descend;
+			}else{
+				table.entries[idx].pml = cast(ulong)physAddr;
+				table.entries[idx].pat = 1;
+				table.entries[idx].setMode(AccessMode.User|AccessMode.Writable|AccessMode.Executable);
+
+				physAddr += PAGESIZE;
+
+				return TraversalDirective.Skip;
+			}
+		}
+	}
+
+	const auto PAGESIZE = 4096;
+
+private:
+	// XXX: should be an array, so we can check for overflow
+	ubyte* heapAddress;
+	Mutex heapLock;
+
+	// This is the physical address for the page table
+	PhysicalAddress rootPhysical;
 }
