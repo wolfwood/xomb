@@ -16,6 +16,7 @@ runtimes/mindrt/*.a
 *.o
 *~
 *.dump
+*.sym
 *-elf
 app/c/hello/chel
 app/d/hello/hello
