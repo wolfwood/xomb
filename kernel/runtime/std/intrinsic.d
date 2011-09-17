@@ -58,7 +58,7 @@ else
  * import std.intrinsic;
  *
  * int main()
- * {   
+ * {
  *     uint v;
  *     int x;
  *
@@ -68,7 +68,7 @@ else
  *     x = bsr(v);
  *     printf("bsr(x%x) = %d\n", v, x);
  *     return 0;
- * } 
+ * }
  * ---
  * Output:
  *  bsf(x21) = 0<br>
@@ -142,12 +142,12 @@ p[index / (uint.sizeof*8)] & (1 << (index & ((uint.sizeof*8) - 1)))
  * 	A non-zero value if the bit was set, and a zero
  *	if it was clear.
  *
- * Example: 
+ * Example:
  * ---
 import std.intrinsic;
 
 int main()
-{   
+{
     uint array[2];
 
     array[0] = 2;
@@ -169,7 +169,7 @@ int main()
     printf("array = [0]:x%x, [1]:x%x\n", array[0], array[1]);
 
     return 0;
-} 
+}
  * ---
  * Output:
 <pre>

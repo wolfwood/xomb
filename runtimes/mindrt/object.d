@@ -68,7 +68,7 @@ struct PointerMap {
 	// Conservative pointer mask (one word, scan it, we don't know if it's
 	 	    // really a pointer)
 		 	    size_t[] bits = [1, 1, 0];
-	 	
+
 		 	    size_t size();
 }
 
@@ -509,7 +509,7 @@ class TypeInfo_StaticArray : TypeInfo {
 				 this.value == c.value));
 	}
 
-	hash_t getHash(void *p) {	
+	hash_t getHash(void *p) {
 		size_t sz = value.tsize();
 		hash_t hash = 0;
 		for (size_t i = 0; i < len; i++)
@@ -572,7 +572,7 @@ class TypeInfo_StaticArray : TypeInfo {
 	}
 
 	uint flags() {
-		return value.flags(); 
+		return value.flags();
 	}
 
 	TypeInfo value;

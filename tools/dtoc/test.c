@@ -13,7 +13,7 @@ String printFoo(String s) {
 //	s.length = 11;
 
 	String s2 = newDString("HEY");
-   	printD(s2);	
+   	printD(s2);
 
 	return s;
 }

@@ -6,7 +6,7 @@
 
 module xsh;
 
-import user.syscall;
+import Syscall = user.syscall;
 
 import console;
 import libos.keyboard;
@@ -15,9 +15,11 @@ import user.keycodes;
 import libos.libdeepmajik.threadscheduler;
 
 import libos.fs.minfs;
+import user.ipc;
+
 
 void main() {
-	Console.backcolor = Color.Black; 
+	Console.backcolor = Color.Black;
 	Console.forecolor = Color.Green;
 
 	MinFS.initialize();
@@ -127,15 +129,15 @@ void interpret(char[] str) {
 	}
 	else if (streq(cmd, "run")) {
 		// Open the file, parse the ELF into a new address space, and execute
-		
+
 		if (argument.length > 0) {
 			createArgumentPath(arguments[1]);
 
-			AddressSpace child = createAddressSpace();
+			AddressSpace child = Syscall.createAddressSpace();
 
 			File f = MinFS.open(argumentPath, AccessMode.User|AccessMode.Writable|AccessMode.Executable);
 
-			if(f is null){Console.putString("Binary Not Found!\n"); return;} 
+			if(f is null){Console.putString("Binary Not Found!\n"); return;}
 
 			// trim path of or binary name for argv[0]
 			int i = 0;
@@ -145,7 +147,7 @@ void interpret(char[] str) {
 				}
 			}
 			arguments[1] = arguments[1][(i+1)..$];
-			
+
 
 			populateChild(arguments[1..argc], child, f);
 
@@ -200,21 +202,21 @@ void interpret(char[] str) {
 					Console.putString("xsh: cd: Path does not exist.\n");
 					return;
 				}
-			}			
+			}
 			}*/
 	}
 	else {
-		if (str.length > 0) {		
-			AddressSpace child = createAddressSpace();
+		if (str.length > 0) {
+			AddressSpace child = Syscall.createAddressSpace();
 			File infile = null, outfile = null;
 
 			// XXX: really lame redirects
 			if(argc > 2){
 				if(arguments[argc-2] == ">"){
-					outfile = MinFS.open(arguments[argc-1], AccessMode.Writable, true);	
+					outfile = MinFS.open(arguments[argc-1], AccessMode.Writable, true);
 					argc -= 2;
 				}else if(arguments[argc-2] == "<"){
-					infile = MinFS.open(arguments[argc-1], AccessMode.Read, true);		
+					infile = MinFS.open(arguments[argc-1], AccessMode.Read, true);
 					argc -= 2;
 				}
 			}
@@ -224,16 +226,16 @@ void interpret(char[] str) {
 			pathName[0..10] = "/binaries/";
 
 			uint pathNameLength = 10;
-			
+
 			bool fallback = true;
 			File f;
-			
+
 			uint idx;
-				
+
 			if(arguments[0][0] != '/'){
-				uint len = arguments[0].length < pathName.length - pathNameLength ? arguments[0].length : pathName.length - pathNameLength;				
+				uint len = arguments[0].length < pathName.length - pathNameLength ? arguments[0].length : pathName.length - pathNameLength;
 				char[] testPathName = pathName[0..(pathNameLength+len)];
-				
+
 				testPathName[pathNameLength..(pathNameLength+len)] = arguments[0];
 
 				if(testPathName == MinFS.findPrefix(testPathName, idx)){
@@ -254,8 +256,8 @@ void interpret(char[] str) {
 
 			assert(f !is null);
 
-			populateChild(arguments[0..argc], child, f, infile.ptr, outfile.ptr);
-			
+			populateChild(arguments[0..argc], child, f, infile, outfile);
+
 			XombThread.yieldToAddressSpace(child,0);
 		}
 	}

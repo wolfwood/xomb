@@ -7,12 +7,10 @@
  *
  */
 
-import user.syscall;
-
 import libos.libdeepmajik.threadscheduler;
 import libos.libdeepmajik.umm;
 
-import user.environment;
+import user.ipc;
 
 import libos.console;
 import libos.keyboard;
@@ -27,25 +25,13 @@ extern(C) ubyte _end;
 ubyte* startBSS = &_bss;
 ubyte* endBSS = &_end;
 
-// Upcall Vector Table
-void function()[3] UVT = [&start, &XombThread._enterThreadScheduler, &XombThread._enterThreadScheduler];
+// Upcall Vector Table -- first entry, cpu allocation, child exit, child error (from kernel)
+void function()[4] UVT = [&start, &XombThread._enterThreadScheduler, &XombThread._enterThreadScheduler, &XombThread._enterThreadScheduler];
 extern(C) ubyte* UVTbase = cast(ubyte*)UVT.ptr;
 
 ubyte[1024] tempStack;
 ubyte* tempStackTop = &tempStack[tempStack.length - 8];
 
-
-/*extern(C) void _start(int thing) {
-	asm{
-		naked;
-
-		//stackless equivalent of "UVT[thing]();"
-		movq RSI, UVTbase;
-		sal RDI, 3;
-		addq RSI, RDI;
-		jmp [RSI];
-	}
-	}*/
 
 void start(){
 	// Zero the BSS, equivalent to start2()
@@ -71,24 +57,12 @@ void start(){
 
 		// now set the stack
 		movq RSP, tempStackTop;
-		
+
 		call start3;
 	}
 }
 
-void start2(){
-	ubyte* startBSS = &_edata;
-	ubyte* endBSS = &_end;
-
-	for( ; startBSS != endBSS; startBSS++) {
-		*startBSS = 0x00;
-	}
-	start3();
-}
-
 void start3(){
-	//UsermodeMemoryManager.
-
 	char[][] argv = MessageInAbottle.getMyBottle().argv;
 
 	ulong argvlen = cast(ulong)argv.length;
@@ -99,14 +73,10 @@ void start3(){
 
 	if(bottle.stdoutIsTTY){
 		Console.initialize(bottle.stdout.ptr);
-	}else{
-		//assert(false);
 	}
 
 	if(bottle.stdinIsTTY){
 		Keyboard.initialize(cast(ushort*)bottle.stdin.ptr);
-	}else{
-		//assert(false);
 	}
 
 	UserspaceMemoryManager.initialize();

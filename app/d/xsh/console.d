@@ -43,7 +43,7 @@ static:
 
 	void putChar(char foo) {
 		return SysConsole.Console.putChar(foo);
-	}	
+	}
 
 	uint width() {
 		return SysConsole.Console.width();
@@ -278,7 +278,7 @@ string ftoa(float val, uint base = 10) {
 		ret ~= cast(char)((fracPart >> 24) + '0');
 		fracPart &= 0xffffff;
 	}
-	
+
 	// round last digit
 	bool roundUp = (ret[$-1] >= '5');
 	ret = ret[0..$-1];
@@ -373,7 +373,7 @@ string dtoa(double val, uint base = 10, bool doIntPart = true) {
 		ret ~= cast(char)((fracPart >> 53) + '0');
 		fracPart &= 0x1fffffffffffff;
 	}
-	
+
 	// round last digit
 	bool roundUp = (ret[$-1] >= '5');
 	ret = ret[0..$-1];
@@ -422,7 +422,7 @@ string rtoa(real val, uint base = 10) {
 		long mantissa;
 		long intPart;
 		long fracPart;
-	
+
 		long exp;
 
 		longReal iF;
@@ -441,7 +441,7 @@ string rtoa(real val, uint base = 10) {
 		mantissa = iF.l.frac;
 		fracPart = 0;
 		intPart = 0;
-	
+
 		if (exp >= 31) {
 			return "0";
 		}
@@ -463,18 +463,18 @@ string rtoa(real val, uint base = 10) {
 		if (iF.l.exp < 0) {
 			ret = "-";
 		}
-	
+
 		ret ~= itoa(intPart, base);
 		ret ~= ".";
 		for (uint k; k < 7; k++) {
 			fracPart *= 10;
 			ret ~= cast(char)((fracPart >> 64) + '0');
 		}
-		
+
 		// round last digit
 		bool roundUp = (ret[$-1] >= '5');
 		ret = ret[0..$-1];
-	
+
 		while (roundUp) {
 			if (ret.length == 0) {
 				return "0";
@@ -486,7 +486,7 @@ string rtoa(real val, uint base = 10) {
 			ret[$-1]++;
 			break;
 		}
-	
+
 		// get rid of useless zeroes (and point if necessary)
 		foreach_reverse(uint i, chr; ret) {
 			if (chr != '0' && chr != '.') {

@@ -29,9 +29,6 @@ import kernel.system.definitions;
 import architecture.syscall;
 import architecture.vm;
 
-// For stack tracing
-import user.environment;
-
 private {
 	extern(C) {
 		extern ubyte _stack;
@@ -46,11 +43,11 @@ public:
 	ErrorVal initialize() {
 		LocalAPIC.reportCore();
 
+		// enable NX bit support (has to happen before any kprintf for APs)
+		Cpu.writeMSR(0xC0000080, Cpu.readMSR(0xC0000080)|0x800UL);
+
 		Log.print("Cpu: Verifying");
 		Log.result(verify());
-
-		// enable NX bit support
-		Cpu.writeMSR(0xC0000080, Cpu.readMSR(0xC0000080)|0x800UL);
 
 		Log.print("Cpu: Installing Page Table");
 		Log.result(Paging.install());
@@ -189,7 +186,7 @@ public:
 	}
 
 	T ioIn(T)(uint port) {
-		// The argument is passed as RDI 
+		// The argument is passed as RDI
 		asm {
 			naked;
 			mov EDX, EDI;
@@ -264,7 +261,7 @@ public:
 		asm {
 			// move the MSR index to ECX
 			mov ECX, MSR;
-			
+
 			// read MSR
 			rdmsr;
 
@@ -279,7 +276,7 @@ public:
 
 		return ret;
 	}
-	
+
 	/*
 		added by pmcclory.
 		calls cpuid with EAX set as 0x2.
@@ -328,7 +325,7 @@ public:
 		 	ebx_ret = getBX();
 			ecx_ret = getCX();
 			edx_ret = getDX();
-		    i++;	     	     
+		    i++;
 	     } while (i < count);
 
 
@@ -337,12 +334,12 @@ public:
 		 return ErrorVal.Success;
 	}
 
-	void* stack() {
+	ubyte* stack() {
 		return _stacks[identifier];
 	}
 
 	//noreturn
-  void enterUserspace(ulong idx, ulong calleePhysAddr){
+  void enterUserspace(ulong idx, PhysicalAddress calleePhysAddr){
 		// use CPUid as vector index and sysret to 1 GB
 
 		// jump using sysret to 1GB for stackless entry
@@ -355,7 +352,7 @@ public:
 		asm{
 			movq R11, mySS;
 			pushq R11;
-			
+
 			movq R11, myRSP;
 			pushq R11;
 
@@ -374,7 +371,7 @@ public:
 			iretq;
 		}
   }
-			    
+
 private:
 
 	/*
@@ -385,7 +382,7 @@ private:
 	void examineRegister(uint reg) {
 	     uint i;
 	     uint temp;
-	
+
 	     for(i=0; i<4; i++) {
 	     	  temp = reg >> (8 * i);
 		      temp = temp & 0xFF;
@@ -675,19 +672,18 @@ private:
 		}
 	}
 
-	private void* _stacks[256];
+	private ubyte* _stacks[256];
 
 	// Will create and install a new kernel stack
 	// Note: You have to preserve the current stack
 	ErrorVal installStack() {
-		ubyte* stackSpace = cast(ubyte*)PageAllocator.allocPage();
-		stackSpace = cast(ubyte*)VirtualMemory.mapStack(stackSpace);
+		ubyte* stackSpace = VirtualMemory.mapStack(PageAllocator.allocPage());
 		ubyte* currentStack = cast(ubyte*)(&_stack-4096);
 
 		stackSpace[0..4096] = currentStack[0..4096];
 
-		_stacks[identifier] = cast(void*)stackSpace + 4096;
-		TSS.table.RSP0 = cast(void*)stackSpace + 4096;
+		_stacks[identifier] = cast(ubyte*)stackSpace + 4096;
+		TSS.table.RSP0 = cast(ubyte*)stackSpace + 4096;
 
 		StackFrame* curr = null;
 
@@ -715,7 +711,7 @@ private:
 
 		while(isValidAddress(cast(ubyte*)curr.next) && cast(ulong)curr.next > Paging.PAGESIZE) {
 			curr.next = cast(StackFrame*)(cast(ulong)curr.next & (Paging.PAGESIZE - 1));
-			curr.next = cast(StackFrame*)(cast(ulong)curr.next + stackSpace); 
+			curr.next = cast(StackFrame*)(cast(ulong)curr.next + stackSpace);
 			curr = curr.next;
 		}
 

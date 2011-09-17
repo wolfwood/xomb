@@ -7,14 +7,12 @@ import kernel.core.util;
 import kernel.core.syscall;
 
 import user.syscall;
-import user.environment;
 
 import kernel.mem.pageallocator;
 import architecture.vm;
-import kernel.core.kprintf;
 
-const ulong FSBASE_MSR = 0xc000_0100;                                                                                   
-const ulong GSBASE_MSR = 0xc000_0101;  
+const ulong FSBASE_MSR = 0xc000_0100;
+const ulong GSBASE_MSR = 0xc000_0101;
 
 
 struct Syscall {
@@ -70,7 +68,7 @@ static:
 		Cpu.writeMSR(SFMASK_MSR, 0);
 
 		// stash a syscall stack in GS.Base
-		void* stackPtr = PageAllocator.allocPage();
+		PhysicalAddress stackPtr = PageAllocator.allocPage();
 		ulong syscallStack = cast(ulong)VirtualMemory.mapStack(stackPtr) + 4096;
 
 		asm{
@@ -103,7 +101,7 @@ void syscallHandler() {
 		swapgs;
 		mov R8, 0;
 		lea R8, GS:[R8];
-		
+
 		// new stack
 		mov RSP, R8;
 		*/

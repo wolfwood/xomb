@@ -30,7 +30,7 @@ public:
 		printToLog(message);
 
 		logDepth++;
-	
+
 		return ErrorVal.Success;
 	}
 

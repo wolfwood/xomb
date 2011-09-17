@@ -46,8 +46,10 @@ static:
 	// To reset the TSS, you will need to reset the Segment Type to
 	// AvailableTSS.
 	ErrorVal install() {
-		TaskStateSegment* tss = cast(TaskStateSegment*)PageAllocator.allocPage();
-		tss = cast(TaskStateSegment*)Paging.mapRegion(cast(ubyte*)tss, VirtualMemory.pagesize);
+		PhysicalAddress tssPage = PageAllocator.allocPage();
+
+		TaskStateSegment* tss = cast(TaskStateSegment*)tssPage;
+		tss = cast(TaskStateSegment*)Paging.mapRegion(tssPage, VirtualMemory.pagesize);
 		*tss = TaskStateSegment.init;
 		segments[Cpu.identifier] = tss;
 		GDT.tables[Cpu.identifier].setSystemSegment((tssBase >> 3), 0x67, (cast(ulong)tss), SystemSegmentType.AvailableTSS, 0, true, false, false);

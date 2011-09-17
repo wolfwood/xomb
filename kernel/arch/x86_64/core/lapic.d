@@ -21,6 +21,9 @@ import kernel.core.log;
 
 import kernel.system.info;
 
+import user.types;
+
+
 struct LocalAPIC {
 static:
 public:
@@ -117,7 +120,7 @@ private:
 	uint[256] logicalIDToAPICId = 0;
 	uint[256] APICIdToLogicalID = 0;
 
-	void initLocalApic(void* localAPICAddr) {
+	void initLocalApic(PhysicalAddress localAPICAddr) {
 		ubyte* apicRange;
 
 		ulong MSRValue = Cpu.readMSR(0x1B);
@@ -134,7 +137,7 @@ private:
 
 		// Map in the first megabyte of space
 		ubyte* bootRange;
-		bootRange = cast(ubyte*)Paging.mapRegion(cast(void*)0x0, trampolineLength);
+		bootRange = cast(ubyte*)Paging.mapRegion(null, trampolineLength);
 
 		//kprintfln!("bootRange: {} trampolineLength: {} trampolineCode: {x} trampoline: {x} Kernel: {x}")(bootRange, trampolineLength, trampolineCode, LinkerScript.trampoline, System.kernel.start);
 
@@ -151,7 +154,7 @@ private:
 		if (apicRegisters is null) {
 			return 0;
 		}
-		
+
 		uint ID = apicRegisters.localApicId;
 		return ID >> 24;
 	}

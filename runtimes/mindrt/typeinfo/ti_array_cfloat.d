@@ -64,7 +64,7 @@ class TypeInfo_Aq : TypeInfo {
 
 		for (size_t u = 0; u < len; u++) {
 			int c = TypeInfo_q._compare(s1[u], s2[u]);
-			
+
 			if (c) {
 				return c;
 			}

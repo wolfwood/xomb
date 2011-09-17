@@ -23,19 +23,20 @@ import architecture.vm;
 // enterUserspace()
 import architecture.cpu;
 
-// AccessMode, why is this here?
-import user.environment;
+// bottle
+import user.ipc;
+
 
 struct InitProcess{
 	static:
 
-	// rather than creating a new AddressSpace, since the kernel is mapped in to all, 
+	// rather than creating a new AddressSpace, since the kernel is mapped in to all,
 	// we instead map init into the lower half of the current AddressSpace
 	ErrorVal install(){
 		uint idx, j;
 
 		char[] initname = "init";
-				
+
 		// XXX: create null gib without alloc on access
 
 		// --- * turn module into segment ---
@@ -45,20 +46,18 @@ struct InitProcess{
 
 		if(!testForMagicNumber()){
 			kprintfln!("Bad magic cookie from Init. Blech -- XOmB only work for 0xdeadbeefcafe cookies")();
-			return ErrorVal.Fail; 
+			return ErrorVal.Fail;
 		}
 
 		MessageInAbottle* bottle = MessageInAbottle.getMyBottle();
 
-		// XXX: replace fixed values with findFreeGib()
-		bottle.stdout = (cast(ubyte*)findFreeSegment!(false))[0..oneGB];
-		bottle.stdin = (cast(ubyte*)findFreeSegment!(false))[0..oneGB];
-
 		// * map in video and keyboard segments
-		VirtualMemory.mapSegment(null, Console.virtualAddress(), bottle.stdout.ptr, AccessMode.Writable|AccessMode.User);
+		bottle.stdout = findFreeSegment(false, Console.segment.length);
+		VirtualMemory.mapSegment(null, Console.segment, bottle.stdout.ptr, AccessMode.Writable|AccessMode.User);
 		bottle.stdoutIsTTY = true;
 
-		VirtualMemory.mapSegment(null, Keyboard.address, bottle.stdin.ptr, AccessMode.Writable|AccessMode.User);
+		bottle.stdin = findFreeSegment(false, Keyboard.segment.length);
+		VirtualMemory.mapSegment(null, Keyboard.segment, bottle.stdin.ptr, AccessMode.Writable|AccessMode.User);
 		bottle.stdinIsTTY = true;
 
 		bottle.setArgv("init and args");
@@ -67,12 +66,12 @@ struct InitProcess{
     root.getOrCreateTable(255).entries[0].pml = root.entries[510].pml;
 		root.getTable(255).entries[0].setMode(AccessMode.RootPageTable);
 
-		return ErrorVal.Success; 
+		return ErrorVal.Success;
 	}
 
 	void enterFromBSP(){
 		// init shouldn't care where its entered from
-		ulong physAddr = 0;
+		PhysicalAddress physAddr;
 
 		// jump using sysret to 1GB for stackless entry
 		Cpu.enterUserspace(0, physAddr);
@@ -83,7 +82,7 @@ struct InitProcess{
 		for(;;){}
 
 
-		ulong physAddr = 0;
+		PhysicalAddress physAddr;
 
 		Cpu.enterUserspace(1, physAddr);
 	}
@@ -120,11 +119,12 @@ private:
 
 		//kprintfln!("Init found at module index {} with start {} and length{}")(idx, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
 
-		ubyte[] segmentBytes =
-			VirtualMemory.createSegment(cast(ubyte*)(segidx*oneGB), oneGB, AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Executable);
+		ubyte[] segmentBytes = (cast(ubyte*)(segidx*oneGB))[0..oneGB];
+
+		VirtualMemory.createSegment(segmentBytes, AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.Executable);
 
 		VirtualMemory.mapRegion(segmentBytes.ptr, System.moduleInfo[idx].start, System.moduleInfo[idx].length);
-		
+
 		// set module length in first ulong of segment
 		*cast(ulong*)segmentBytes.ptr = System.moduleInfo[idx].length;
 

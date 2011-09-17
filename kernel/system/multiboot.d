@@ -9,6 +9,8 @@ import kernel.core.util;
 import kernel.system.definitions;
 import kernel.system.info;
 
+import user.types;
+
 /* These two magic numbers are
  * defined in the multiboot spec, we use them
  * to verify that our environment is sane.
@@ -145,7 +147,7 @@ ErrorVal verifyBootInformation(int id, void *data) {
 
 		System.cmdlineStorage[0..len] = cmd[0..len];
 		System.cmdline = System.cmdlineStorage[0..len];
-	}	
+	}
 
 	//are the modules valid?
 	if(checkFlag(info.flags, 3)) {
@@ -156,7 +158,7 @@ ErrorVal verifyBootInformation(int id, void *data) {
 		int mod_count = info.mods_count;
 
 		for(int i = 0; i < mod_count && i < System.moduleInfo.length; i++, mod++) {
-			System.moduleInfo[i].start = cast(ubyte *)(mod.mod_start);
+			System.moduleInfo[i].start = cast(PhysicalAddress)(mod.mod_start);
 			System.moduleInfo[i].length = cast(uint)(mod.mod_end - mod.mod_start);
 
 			int len = strlen(cast(char *)mod.string);
@@ -195,7 +197,7 @@ ErrorVal verifyBootInformation(int id, void *data) {
 			else {
 				// This is a reserved region
 				if (System.numRegions < System.regionInfo.length) {
-					System.regionInfo[System.numRegions].start = cast(ubyte*)baseAddr;
+					System.regionInfo[System.numRegions].start = cast(PhysicalAddress)baseAddr;
 					System.regionInfo[System.numRegions].length = length;
 					System.numRegions++;
 				}
