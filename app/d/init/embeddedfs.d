@@ -2,21 +2,18 @@ module embeddedfs;
 
 import mindrt.util;
 import libos.elf.loader;
+import libos.elf.elf;
 import libos.fs.minfs;
+
+import filelist;
 
 struct EmbeddedFS{
 	static:
 	void makeFS(){
 		MinFS.format();
 
-		// binaries
-		xsh = makeFile!("binaries/xsh", true)();
-		makeFile!("binaries/hello", true)();
-		makeFile!("binaries/simplymm", true)();
-
-		makeFile!("binaries/chel", true)();
-		//makeFile!("binaries/fhel", true)();
-		makeFile!("binaries/posix", true)();
+		// binaries + data files
+		fileList();
 
 		// symlinks
 		MinFS.link("/binaries/posix", "/binaries/cat");
@@ -25,18 +22,18 @@ struct EmbeddedFS{
 		MinFS.link("/binaries/posix", "/binaries/ls");
 		MinFS.link("/binaries/posix", "/binaries/ln");
 
-		// data
-		makeFile!("LICENSE", false)();
+		// ensure init knows what to run next
+		xsh = MinFS.open("/binaries/xsh", AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.User|AccessMode.Executable);
 	}
 
 	ubyte[] shell(){
 		return xsh;
 	}
 
-private:
+	//private:
 	File xsh;
 
-	template makeFile(char[] filename, bool exe){
+	template makeFile(char[] filename){
 		File makeFile(){
 			const char[] actualFilename = "/" ~ filename;
 
@@ -47,7 +44,7 @@ private:
 			File f =  MinFS.open(actualFilename, AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.User|AccessMode.Executable, true);
 
 			// populate
-			if(exe){
+			if(Elf.isValid(data.ptr)){
 				Loader.load(data, f);
 			}else{
 				int spacer = ulong.sizeof;
