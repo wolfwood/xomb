@@ -48,6 +48,10 @@ void start(){
 		mov RCX, endBSS;
 		//mov RCX, [RCX];
 
+		// if bss is zero size, skip
+		cmp RCX, RDX;
+		je setupstack;
+
 		// zero, one byte at a time
 	loop:
 		movb [RDX], 0;
@@ -55,6 +59,7 @@ void start(){
 		cmp RCX, RDX;
 		jne loop;
 
+	setupstack:
 		// now set the stack
 		movq RSP, tempStackTop;
 

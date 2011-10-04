@@ -1,9 +1,13 @@
 DFLAGS = -I../. -I../../. -O2 -release
 
-drt0.a: entry.d mindrt.a
+drt0.a: entry.d mindrt.a libd.a
 	yasm -g stabs -felf64 entry.S -o dsss_objs/O/runtime.Sentry.o
 	ldc -nodefaultlib -I../../. ${DFLAGS} -c entry.d -ofdsss_objs/O/runtime.entry.o;
 	ar rcs drt0.a dsss_objs/O/*.o
+
+libd.a: libd.d
+	ldc -nodefaultlib ${DFLAGS} -c libd.d -oflibd.o
+	ar rcs libd.a libd.o
 
 mindrt.a: object.d dinvariant.d dstubs.d util.d dstatic.d error.d exception.d
 	mkdir -p dsss_imports;

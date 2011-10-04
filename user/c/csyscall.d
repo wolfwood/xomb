@@ -123,7 +123,7 @@ void perfPoll(int event) {
 	return Syscall.perfPoll(event);
 }
 
-void exit(ulong val) {
+void __exit(ulong val) {
 	return Sched.exit(val);
 }
 
@@ -143,11 +143,11 @@ int rmdir(char *pathname){
 }
 
 //char *getcwd(char *buf, size_t size)
-char *getcwd(char *buf, ulong size){
+char *getwd(char *buf){
 	// XXX: get CWD from key value store in bottle
 	char[] name = "/postmark";
 
-	uint len = ((size-1) > name.length) ? name.length : size;
+	uint len = name.length;
 
 	buf[0..len] = name[0..len];
 	buf[len] = '\0';
