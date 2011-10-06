@@ -21,23 +21,33 @@ make || exit
 cd ../../..
 
 cd app/d/hello
-dsss clean && rm dsss.last && dsss build || exit
+dsss clean
+rm dsss.last
+dsss build || exit
 cd ../../..
 
 cd app/d/posix
-dsss clean && rm dsss.last && dsss build || exit
+dsss clean
+rm dsss.last
+dsss build || exit
 cd ../../..
 
 cd app/d/xsh
-dsss clean && rm dsss.last && dsss build || exit
+dsss clean
+rm dsss.last
+dsss build || exit
 cd ../../..
 
 cd app/d/init
-dsss clean && rm dsss.last && dsss build || exit
+dsss clean
+rm dsss.last
+dsss build || exit
 cd ../../..
 
 
 cd build
-dsss clean && rm dsss.last && dsss build || exit
+dsss clean
+rm dsss.last
+dsss build || exit
 
 bochs -q
