@@ -13,9 +13,9 @@ import core.unicode;
 import data.iterable;
 
 import runtime.common;
-import math.random;
+//import math.random;
 
-import core.util;
+//import core.util;
 
 // Arrays in D are represented as such:
 
@@ -132,10 +132,10 @@ ubyte[] _adSort(ubyte[] array, TypeInfo ti) {
 }
 
 // Special quicksort implementation
-private void _qsort(ubyte[] array, size_t size, TypeInfo ti, Random rnd = null) {
-	if (rnd is null) {
+private void _qsort(ubyte[] array, size_t size, TypeInfo ti/*, Random rnd = null*/) {
+	/*if (rnd is null) {
 		rnd = new Random();
-	}
+		}*/
 
 	// Base case
 	if ((array.length/size) < 2) {
@@ -144,7 +144,7 @@ private void _qsort(ubyte[] array, size_t size, TypeInfo ti, Random rnd = null) 
 
 	// Selecting a pivot
 	size_t length = array.length / size;
-	size_t element = cast(size_t)rnd.nextLong(length);
+	size_t element = 0; //cast(size_t)rnd.nextLong(length);
 	element *= size;
 	//Console.putln("pivot: ", element/size, " array.length: ", array.length/size);
 
@@ -205,8 +205,8 @@ private void _qsort(ubyte[] array, size_t size, TypeInfo ti, Random rnd = null) 
 		}
 	}
 
-	_qsort(array[0..element], size, ti, rnd);
-	_qsort(array[element+size..$], size, ti, rnd);
+	_qsort(array[0..element], size, ti/*, rnd*/);
+	_qsort(array[element+size..$], size, ti/*, rnd*/);
 }//*/
 
 // Description: This runtime function sorts a char array and is invoked with
@@ -311,7 +311,7 @@ ubyte[] _d_arraycast(size_t toElementSize, size_t fromElementSize, ubyte[] array
 		// Error
 		throw new Exception("Array cast misalignment");
 	}
-	
+
 	size_t newLength = numbytes / toElementSize;
 
 	// Return the updated array length
@@ -346,7 +346,7 @@ void _d_array_slice_copy(ubyte* dst, size_t dstLength, ubyte* src, size_t srcLen
 	if (dstLength != srcLength) {
 		throw new Exception("Length mismatch for array copy");
 	}
-	
+
 	if (dst + dstLength > src && src + srcLength > dst) {
 		// Overlapping copy
 		throw new Exception("Array copy overlaps");

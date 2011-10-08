@@ -93,3 +93,8 @@ extern(C) void memset(void *addr, int val, uint numBytes){
           data[i] = cast(ubyte)val;
      }
 }
+
+import mindrt.dstubs;
+extern(C):
+mixin(Stub!("void abort()"));
+

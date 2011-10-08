@@ -12,7 +12,7 @@ import runtime.common;
 
 import core.unicode;
 
-import io.console;
+//import io.console;
 
 extern(D) typedef int delegate(void*) apply_dg_t;
 extern(D) typedef int delegate(size_t*, void*) apply_dg2_t;
@@ -27,7 +27,7 @@ private {
 		foreach(size_t idx, ref chr; array) {
 			// Call the loop body of the foreach, passing the pointer to the character
 			result = loopBody(&array[idx]);
-	
+
 			// It will return nonzero when it breaks out of the loop early
 			if (result) {
 				return result;
@@ -45,7 +45,7 @@ private {
 		foreach(size_t idx, ref chr; array) {
 			// Call the loop body of the foreach, passing the pointer to the character and index
 			result = loopBody(&idx, &array[idx]);
-	
+
 			// It will return nonzero when it breaks out of the loop early
 			if (result) {
 				return result;
@@ -62,7 +62,7 @@ private {
 		foreach_reverse(size_t idx, ref chr; array) {
 			// Call the loop body of the foreach, passing the pointer to the character and index
 			result = loopBody(&array[idx]);
-	
+
 			// It will return nonzero when it breaks out of the loop early
 			if (result) {
 				return result;
@@ -78,7 +78,7 @@ private {
 		foreach_reverse(size_t idx, ref chr; array) {
 			// Call the loop body of the foreach, passing the pointer to the character and index
 			result = loopBody(&idx, &array[idx]);
-	
+
 			// It will return nonzero when it breaks out of the loop early
 			if (result) {
 				return result;
@@ -250,14 +250,14 @@ int _aApplyRwd2(wchar[] input, apply_dg2_t loopBody) {
 }
 
 // Description: This runtime function will decode a UTF32 string into char
-// elements. Used with a foreach_reverse loop of the form: 
+// elements. Used with a foreach_reverse loop of the form:
 // foreach_reverse(i, char ; dchar[]).
 int _aApplyRdc2(dchar[] input, apply_dg2_t loopBody) {
 	mixin(_apply!(char, indexedApplyReverseCode));
 }
 
 // Description: This runtime function will decode a UTF32 string into wchar
-// elements. Used with a foreach_reverse loop of the form: 
+// elements. Used with a foreach_reverse loop of the form:
 // foreach_reverse(i, wchar ; dchar[]).
 int _aApplyRdw2(dchar[] input, apply_dg2_t loopBody) {
 	mixin(_apply!(wchar, indexedApplyReverseCode));

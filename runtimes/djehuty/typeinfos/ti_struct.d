@@ -9,7 +9,7 @@ module runtime.typeinfos.ti_struct;
 
 import runtime.util;
 
-import binding.c;
+//import binding.c;
 
 class TypeInfo_Struct : TypeInfo {
 	char[] toString() {

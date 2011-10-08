@@ -7,7 +7,7 @@
 
 module runtime.error;
 
-import core.definitions;
+//import core.definitions;
 import core.exception;
 import core.error;
 

@@ -12,8 +12,8 @@ import runtime.gc;
 
 import synch.atomic;
 
-import binding.c;
-import io.console;
+//import binding.c;
+//import io.console;
 
 extern(C):
 
@@ -242,7 +242,7 @@ ubyte[] _aaKeys(ref AssocArray aa, size_t keysize) {
 	ubyte[] ret;
 	foreach(bucket; aa.buckets) {
 		if (bucket.usedCount == 0) {
-			continue;	
+			continue;
 		}
 
 		foreach(entry; bucket.entries) {
@@ -266,7 +266,7 @@ ubyte[] _aaValues(ref AssocArray aa, size_t keysize, size_t valuesize) {
 	ubyte[] ret;
 	foreach(bucket; aa.buckets) {
 		if (bucket.usedCount == 0) {
-			continue;	
+			continue;
 		}
 		foreach(entry; bucket.entries) {
 			if (entry.key !is null) {
@@ -302,7 +302,7 @@ AssocArray* _aaRehash(ref AssocArray* aa, TypeInfo keyti) {
 				foreach(ref newElement; aa.buckets[newBucketIndex].entries) {
 					if (newElement.key is null) {
 						newElement = element;
-						
+
 						// We found one, break
 						// Otherwise, we end up moving element twice :P
 						break;

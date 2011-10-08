@@ -100,7 +100,7 @@ version(HP_LIBUNWIND)
     alias __libunwind_Unwind_SetGR _Unwind_SetGR;
     alias __libunwind_Unwind_GetRegionStart _Unwind_GetRegionStart;
 }
-else version(X86_UNWIND) 
+else version(X86_UNWIND)
 {
     void _Unwind_Resume(_Unwind_Exception*);
     _Unwind_Reason_Code _Unwind_RaiseException(_Unwind_Exception*);
@@ -401,6 +401,12 @@ private void _d_getLanguageSpecificTables(_Unwind_Context_Ptr context, ref ubyte
 }
 
 } // end of x86 Linux specific implementation
+
+version(PlatformXOmB){
+	 import mindrt.dstubs;
+
+	 extern(C) mixin(Stub!("void _d_eh_personality()"));
+}
 
 
 extern(C) void _d_throw_exception(Object e)

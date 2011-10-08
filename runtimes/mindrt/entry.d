@@ -15,8 +15,8 @@ import user.ipc;
 import libos.console;
 import libos.keyboard;
 
-// Will be linked to the user's main function
-int main(char[][]);
+extern(C) void start3(char[][]);
+
 
 extern(C) ubyte _edata;
 extern(C) ubyte _bss;
@@ -33,6 +33,7 @@ ubyte[1024] tempStack;
 ubyte* tempStackTop = &tempStack[tempStack.length - 8];
 
 
+// zeros BSS and gives us a temporary (statically allocated) stack
 void start(){
 	// Zero the BSS, equivalent to start2()
 
@@ -63,11 +64,12 @@ void start(){
 		// now set the stack
 		movq RSP, tempStackTop;
 
-		call start3;
+		call start2;
 	}
 }
 
-void start3(){
+// initializes console and keyboard, umm and threading, chain loads a thread
+void start2(){
 	char[][] argv = MessageInAbottle.getMyBottle().argv;
 
 	ulong argvlen = cast(ulong)argv.length;
@@ -87,9 +89,11 @@ void start3(){
 	UserspaceMemoryManager.initialize();
 	XombThread.initialize();
 
-	XombThread* mainThread = XombThread.threadCreate(&main, argvlen, argvptr);
+	XombThread* mainThread = XombThread.threadCreate(&start3, argvlen, argvptr);
 
 	mainThread.schedule();
 
 	XombThread._enterThreadScheduler();
+
+	// >>> Never reached <<<
 }

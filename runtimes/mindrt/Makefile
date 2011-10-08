@@ -15,6 +15,7 @@ mindrt.a: object.d dinvariant.d dstubs.d util.d dstatic.d error.d exception.d
 	mkdir -p dsss_objs/G;
 	mkdir -p dsss_objs/O;
 	mkdir -p dsss_objs/dynamic;
+	ldc -nodefaultlib ${DFLAGS} -c entry2.d -ofdsss_objs/G/runtime.entry2.o;
 	ldc -nodefaultlib ${DFLAGS} -c object.d -ofdsss_objs/G/runtime.object.o;
 	ldc -nodefaultlib ${DFLAGS} -c ../../user/architecture/mutex.d -ofdsss_objs/G/runtime.mutex.o;
 	ldc -nodefaultlib ${DFLAGS} -c dinvariant.d -ofdsss_objs/G/runtime.dinvariant.o;

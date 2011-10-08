@@ -10,9 +10,28 @@ module runtime.gc;
 
 import synch.atomic;
 
-import System = scaffold.system;
+//import System = scaffold.system;
 
-import binding.c;
+//import binding.c;
+
+import Syscall = user.syscall;
+import user.environment;
+
+private ubyte[] gcSegment;
+
+ubyte[] System_malloc(ulong size){
+	if(gcSegment is null){
+		gcSegment = Syscall.create(findFreeSegment(false, oneGB*512), AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
+	}
+
+	ubyte[] val = gcSegment[0..size];
+
+	// XXX: lockfree update
+	gcSegment = gcSegment[size..$];
+
+	return val;
+}
+
 
 extern(C):
 
@@ -100,7 +119,7 @@ static:
 private:
 
 	void _initialize() {
-		ubyte[] foo = System.malloc(1);
+		ubyte[] foo = System_malloc(1);
 		_heapStart = cast(size_t*)foo.ptr;
 		_heapEnd = cast(size_t*)(foo.ptr + 1);
 		_inited = 1;
@@ -131,7 +150,7 @@ public:
 	}
 
 	ubyte[] malloc(size_t length) {
-		ubyte[] ret = System.malloc(length + size_t.sizeof);
+		ubyte[] ret = System_malloc(length + size_t.sizeof);
 		size_t* len = cast(size_t*)ret.ptr;
 		*len = length;
 		ubyte* end = ret.ptr + length + size_t.sizeof;

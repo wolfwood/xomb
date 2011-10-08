@@ -10,16 +10,9 @@ module runtime.main;
 import runtime.gc;
 import runtime.moduleinfo;
 
-import analyzing.debugger;
-
 import core.error;
-import core.arguments;
+import user.ipc;
 
-import synch.thread;
-
-import synch.atomic;
-
-import scaffold.console;
 
 // The user supplied D entry
 int main(char[][] args);
@@ -30,11 +23,6 @@ int main(char[][] args);
 // Returns: The error code for the application.
 import binding.c;
 
-// Silly DMD bullshits
-version(Windows) {
-	extern(C) ModuleInfo[] _moduleinfo_array;
-	extern(C) void _minit();
-}
 
 // Initializes data structures to aid in calling module constructors
 private void moduleInfoInitialize() {
@@ -142,38 +130,9 @@ private size_t strlen(char* cstr) {
 	return ret;
 }
 
-version(Windows) {
-	extern(System) wchar* GetCommandLineW();
-	extern(System) wchar* CommandLineToArgvW(wchar*, int*);
-
-	private extern(System)
-	int WinMain(int hInstance, int hPrevInstance, char* lpCmdLine, int nCmdShow) {
-			wchar* cmdline = GetCommandLineW();
-
-		// count the number of arguments
-		// and convert to utf8 arguments
-		char*[] argv;
-		int pos = 0;
-		int start = 0;
-		while(cmdline[pos] != '\0') {
-			if (cmdline[pos] == '\n' || cmdline[pos] == ' ' || cmdline[pos] == '\t') {
-				char[] str = new char[pos - start];
-				str = cast(char[])cmdline[start..pos];
-				argv ~= str.ptr;
-				start = pos+1;
-			}
-			pos++;
-		}
-
-		return main(argv.length, argv.ptr);
-	}
-}
-
-private extern(C) int main(int argc, char** argv) {
+extern(C) void start3(char[][] argv) {
 	// Initialize the garbage collector
 	gc_init();
-
-	int exitCode = -1;
 
 	try {
 		moduleInfoInitialize();
@@ -184,26 +143,7 @@ private extern(C) int main(int argc, char** argv) {
 
 		ModuleInfo._dtors = ModuleInfo._dtors[0..numDtors];
 
-		// Gather arguments
-		Arguments argList = Arguments.instance();
-
-		auto arglist = argv[0..argc];
-		foreach(cstr; arglist) {
-			string arg = cstr[0..strlen(cstr)];
-			argList.add(arg);
-		}
-
-		// Initialize the console
-		ConsoleInit();
-
-		// Make an instance for the main thread
-		Thread mainThread = new Thread();
-
-		// Run main
-		exitCode = main(argList.array);
-
-		// Uninitialize the console
-		ConsoleUninit();
+		MessageInAbottle.getMyBottle().exitCode = main(argv);
 
 		// Run the module destructors
 		moduleDestructors();
@@ -218,5 +158,5 @@ private extern(C) int main(int argc, char** argv) {
 	gc_term();
 
 	// End the application
-	return exitCode;
+	//return exitCode;
 }
