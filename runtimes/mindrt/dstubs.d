@@ -28,7 +28,6 @@ private template Stub(char[] signature) {
  Random stubs (they'll go somewhere eventually)
 **************************************************/
 
-mixin(Stub!("void abort()"));
 mixin(Stub!("bool rt_isHalting()"));
 mixin(Stub!("bool runModuleUnitTests()"));
 mixin(Stub!("void _d_monitordelete(Object h, bool det = true)"));
@@ -98,25 +97,9 @@ mixin(Stub!("void _d_throw_exception(Object e)"));*/
 mixin(Stub!("void _gdc_cleanupException()"));
 mixin(Stub!("void _d_throw(Object obj)"));
 mixin(Stub!("int __gdc_personality_v0()"));
-mixin(Stub!("void _Unwind_RaiseException ()"));
-mixin(Stub!("void _Unwind_ForcedUnwind ()"));
-mixin(Stub!("void _Unwind_DeleteException ()"));
-mixin(Stub!("void _Unwind_Resume()"));
-mixin(Stub!("void _Unwind_Resume_or_Rethrow ()"));
-mixin(Stub!("void _Unwind_Backtrace ()"));
-mixin(Stub!("void _Unwind_GetGR ()"));
-mixin(Stub!("void _Unwind_SetGR ()"));
-mixin(Stub!("void _Unwind_GetIP ()"));
-mixin(Stub!("void _Unwind_SetIP ()"));
-mixin(Stub!("void _Unwind_GetCFA ()"));
-mixin(Stub!("void *_Unwind_GetLanguageSpecificData ()"));
-mixin(Stub!("void _Unwind_GetRegionStart ()"));
 mixin(Stub!("void _Unwind_SjLj_RaiseException()"));
 mixin(Stub!("void _Unwind_SjLj_ForcedUnwind()"));
 mixin(Stub!("void _Unwind_SjLj_Resume ()"));
-mixin(Stub!("void _Unwind_GetDataRelBase ()"));
-mixin(Stub!("void _Unwind_GetTextRelBase ()"));
-mixin(Stub!("uint size_of_encoded_value (ubyte encoding)"));
 mixin(Stub!("void base_of_encoded_value ()"));
 mixin(Stub!("void read_uleb128()"));
 mixin(Stub!("void read_sleb128()"));
