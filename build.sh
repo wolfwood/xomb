@@ -8,6 +8,11 @@ rm -r dsss* *.a
 make || exit
 cd ../..
 
+cd runtimes/dyndrt
+rm -r dsss* *.a
+make || exit
+cd ../..
+
 cd user/c
 make || exit
 cd ../..
