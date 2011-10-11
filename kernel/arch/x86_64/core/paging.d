@@ -50,7 +50,7 @@ void printStackTrace(StackFrame* start){
 
 class Paging {
 static:
-  // --- Set Up ---
+	// --- Set Up ---
 	ErrorVal initialize(){
 		// Save the physical address for later
 		rootPhysical = PageAllocator.allocPage();
@@ -122,32 +122,33 @@ static:
 	}
 
 
-  // --- Handlers ---
+	// --- Handlers ---
 	void generalProtectionFaultHandler(InterruptStack* stack) {
 		bool recoverable;
 
 		if (stack.rip < 0xf_0000_0000_0000) {
 			kprintf!("User Mode ")();
 			recoverable = true;
-		}else{
+		}
+		else {
 			kprintf!("Kernel Mode ")();
 		}
-
 
 		kprintfln!("General Protection Fault: instruction address {x}")(stack.rip);
 
 		stack.dump();
 		printStackTrace(cast(StackFrame*)stack.rbp);
 
-
-		if(recoverable){
+		if(recoverable) {
 			PhysicalAddress deadChild;
 
 			switchAddressSpace(null, deadChild);
 			Cpu.enterUserspace(3, deadChild);
-		}else{
+		}
+		else {
 			for(;;){}
 		}
+
 		// >>> Never reached <<<
 	}
 
