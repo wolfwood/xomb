@@ -1,4 +1,4 @@
-module user.c.csyscall;
+module user.c.cbindings;
 
 import Syscall = user.syscall;
 
