@@ -30,10 +30,7 @@ struct EmbeddedFS{
 		return xsh;
 	}
 
-	//private:
-	File xsh;
-
-	template makeFile(char[] filename){
+	template makeFile(char[] filename, bool autodetect = true, bool iself = true){
 		File makeFile(){
 			const char[] actualFilename = "/" ~ filename;
 
@@ -41,10 +38,25 @@ struct EmbeddedFS{
 			ubyte[] data = cast(ubyte[])import(filename);
 
 			// create minFS file
-			File f =  MinFS.open(actualFilename, AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.User|AccessMode.Executable, true);
+			File f;
+			bool elf;
+			AccessMode accessmode = AccessMode.Writable|AccessMode.AllocOnAccess|AccessMode.User;
+
+			// figure out if its an elf binary
+			static if(autodetect){
+				elf = Elf.isValid(data.ptr);
+			}else{
+				elf = iself;
+			}
+
+			if(elf){
+				accessmode |= AccessMode.Executable;
+			}
+
+			f =  MinFS.open(actualFilename, accessmode, true);
 
 			// populate
-			if(Elf.isValid(data.ptr)){
+			if(elf){
 				Loader.load(data, f);
 			}else{
 				int spacer = ulong.sizeof;
@@ -60,4 +72,7 @@ struct EmbeddedFS{
 			return f;
 		}
 	}
+
+private:
+	File xsh;
 }
