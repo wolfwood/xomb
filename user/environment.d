@@ -40,8 +40,8 @@ template PageTableEntry(char[] T){
 											"pat", 1,
 											"g", 1,
 											"avl", 3,
-											"address", 41,
-											"available", 10,
+											"address", 40,
+											"available", 11,
 											"nx", 1));
 		}else static if(T == "secondary"){
 				mixin(Bitfield!(pml,
@@ -54,8 +54,8 @@ template PageTableEntry(char[] T){
 												"ign", 1,
 												"mbz", 2,
 												"avl", 3,
-												"address", 41,
-												"available", 10,
+												"address", 40,
+												"available", 11,
 												"nx", 1));
 			}else{
 				static assert(false);
