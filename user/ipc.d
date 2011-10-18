@@ -166,5 +166,7 @@ template populateChild(T){
 		// map stdin/out into child process
 		Syscall.map(child, stdout, childBottle.stdout.ptr, stdoutMode);
 		Syscall.map(child, stdin, childBottle.stdin.ptr, AccessMode.Writable|AccessMode.User);
+
+		Syscall.map(child, Syscall.create(findFreeSegment(false, 2*1024*1024), AccessMode.AllocOnAccess|AccessMode.User), cast(ubyte*)(oneGB -(1024*1024*2)), AccessMode.AllocOnAccess|AccessMode.User);
 	}
 }

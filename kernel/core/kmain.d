@@ -17,30 +17,23 @@ import architecture.timing;
 
 // This module contains our powerful kprintf function
 import kernel.core.kprintf;
+import kernel.core.log;
 import kernel.core.error;
 
 //handle everything that the boot loader gives us
 import kernel.system.bootinfo;
-
-// get basic info about the system
 import kernel.system.info;
-
-//we need to print log stuff to the screen
-import kernel.core.log;
 
 // kernel heap
 import kernel.mem.pageallocator;
 
-// console device
 import kernel.dev.console;
-
-// keyboard driver
 import kernel.dev.keyboard;
-
-// PCI
 import kernel.dev.pci;
 
-import kernel.core.syscall;
+//import kernel.core.syscall;
+import kernel.core.dispatcher;
+
 
 // init process
 import kernel.core.initprocess;
@@ -59,8 +52,7 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 		// 0xcd -- double horiz line
 		kprintf!("{}")(cast(char)0xcd);
 	}
-	//kprintfln!("--------------------------------------------------------------------------------")();
-	//Log.print(hr);
+
 
 	// 1. Bootloader Validation
 	Log.print("BootInfo: initialize()");
@@ -78,9 +70,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.print("VirtualMemory: install()");
 	Log.result(VirtualMemory.install());
 
-	Log.print("Timing: initialize()");
-	Log.result(Timing.initialize());
-
 	Log.print("PerfMon: initialize()");
 	Log.result(PerfMon.initialize());
 
@@ -97,7 +86,8 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.result(Console.initialize());
 
 	// 5. Timer Initialization
-	// LATER
+	Log.print("Timing: initialize()");
+	Log.result(Timing.initialize());
 
 	// 6. Multiprocessor Initialization
 	Log.print("Multiprocessor: initialize()");
@@ -117,14 +107,6 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 	Log.print("PCI: initialize()");
 	Log.result(PCI.initialize());
 
-	// 7. Schedule
-	//Scheduler.initialize();
-
-	//Loader.loadModules();
-
-	//Scheduler.kmainComplete();
-
-	//Scheduler.idleLoop();
 
 	Log.print("Init Process: install()");
 	auto fail = InitProcess.install();
@@ -132,8 +114,11 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 
 	if(fail != ErrorVal.Fail){
 		Date dt;
+
 		Timing.currentDate(dt);
 		kprintfln!("\nDate: {} {} {}")(dt.day, dt.month, dt.year);
+
+		Dispatcher.initialize();
 
 		InitProcess.enterFromBSP();
 	}else{

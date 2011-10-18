@@ -66,6 +66,9 @@ struct InitProcess{
     root.getOrCreateTable(255).entries[0].pml = root.entries[510].pml;
 		root.getTable(255).entries[0].setMode(AccessMode.RootPageTable);
 
+		// activations segment
+		VirtualMemory.createSegment((cast(ubyte*)(oneGB-(1024*1024*2)))[0..1024*1024*2], AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
+
 		return ErrorVal.Success;
 	}
 

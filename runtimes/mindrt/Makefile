@@ -3,7 +3,9 @@ DFLAGS = -I../. -I../../. -mattr=-sse -m64 -O2 -release -g
 drt0.a: entry.d mindrt.a libd.a objs
 	yasm -g stabs -felf64 entry.S -o objs/runtime.Sentry.o
 	ldc -nodefaultlib -I../../. ${DFLAGS} -c entry.d -ofobjs/runtime.entry.o;
-	ar rcs drt0.a objs/runtime.Sentry.o objs/runtime.entry.o
+	ldc -nodefaultlib -I../../. ${DFLAGS} -c ../../user/activation.d -ofobjs/user.activation.o;
+	ldc -nodefaultlib -I../../. ${DFLAGS} -c ../../synch/atomic.d -ofobjs/synch.atomic.o;
+	ar rcs drt0.a objs/runtime.Sentry.o objs/runtime.entry.o objs/synch.atomic.o objs/user.activation.o
 
 libd.a: ../libd.d objs
 	ldc -nodefaultlib ${DFLAGS} -c ../libd.d -oflibd.o

@@ -14,8 +14,11 @@ import user.util;	// For BitField!()
 import kernel.core.error;	// For ErrorVal so errors can be indicated
 import kernel.core.kprintf;	// For printing the stack dump
 
+public  import user.activation;
+
 // This structure represents the appearance of the stack
 // upon receiving an interrupt on this architecture.
+/*
 struct InterruptStack {
 	// Registers
 	ulong r15, r14, r13, r12, r11, r10, r9, r8;
@@ -37,7 +40,7 @@ struct InterruptStack {
 		kprintfln!(" ss:{x}|rsp:{x}| cs:{x}")(ss,rsp,cs);
 	}
 }
-
+*/
 struct IDT {
 static:
 public:
