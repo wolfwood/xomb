@@ -11,9 +11,6 @@ import user.syscall;
 import kernel.mem.pageallocator;
 import architecture.vm;
 
-const ulong FSBASE_MSR = 0xc000_0100;
-const ulong GSBASE_MSR = 0xc000_0101;
-
 
 struct Syscall {
 static:

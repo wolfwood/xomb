@@ -35,6 +35,10 @@ private {
 	}
 }
 
+const ulong FSBASE_MSR = 0xc000_0100;
+const ulong GSBASE_MSR = 0xc000_0101;
+
+
 struct Cpu {
 static:
 public:
@@ -370,6 +374,8 @@ public:
 
 			iretq;
 		}
+
+		// >>> Never reached <<<
   }
 
 private:
