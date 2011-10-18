@@ -7,7 +7,7 @@ header:
 
 global _start
 _start:
-				mov rsi, [UVTbase]
+				mov rax, [UVTbase]
 				sal rdi, 3
-				add rsi, rdi
-				jmp [rsi]
+				add rax, rdi
+				jmp [rax]
