@@ -15,6 +15,8 @@ import architecture.cpu;
 import kernel.arch.x86_64.core.paging;
 import kernel.arch.x86_64.core.info;
 
+import kernel.arch.x86_64.core.idt;
+
 import kernel.core.error;
 import kernel.core.kprintf;
 import kernel.core.log;
@@ -32,8 +34,6 @@ public:
 		initLocalApic(Info.localAPICAddress);
 
 		install();
-
-	//	startAPs();
 
 		return ErrorVal.Success;
 	}
@@ -111,6 +111,18 @@ public:
 
 	void EOI() {
 		apicRegisters.EOI = 0;
+	}
+
+	void initTimer(IDT.InterruptHandler handle, ulong periodInMS){
+		//XXX: find a free vector index
+		uint interruptNumber = 38;
+
+		IDT.assignHandler(handle, interruptNumber);
+
+		apicRegisters.tmrLocalVectorTable = interruptNumber | 0x20000; // bit makes it periodic
+
+		apicRegisters.tmrDivideConfiguration = 0x3; // divider is 16
+		apicRegisters.tmrInitialCount = 0xFFFFFF;
 	}
 
 private:

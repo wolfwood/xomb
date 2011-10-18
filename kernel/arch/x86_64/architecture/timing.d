@@ -11,6 +11,9 @@ module architecture.timing;
 import kernel.core.kprintf;
 import kernel.core.error;
 
+import kernel.arch.x86_64.core.idt;
+import kernel.arch.x86_64.core.lapic;
+
 struct Time {
 	uint seconds;
 	uint minutes;
@@ -40,10 +43,14 @@ struct Date {
 }
 
 struct Timing {
-static:
+	static:
 
 	ErrorVal initialize() {
 		return ErrorVal.Success;
+	}
+
+	void startTimer(IDT.InterruptHandler handle, ulong periodInMS = 100){
+		LocalAPIC.initTimer(handle, periodInMS);
 	}
 
 	void sleep(uint seconds) {
@@ -77,7 +84,7 @@ static:
 
 			// Get Day of Month (1 to 31)
 			mov AL, 0x07;
-			out 0x70, AL;
+ 			out 0x70, AL;
 			in AL, 0x71;
 			mov day, AL;
 
