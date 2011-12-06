@@ -18,6 +18,8 @@ import mindrt.error;
 
 import user.architecture.mutex;
 
+extern(C) Object _d_allocclass(ClassInfo ci);
+
 //import std.moduleinit;
 
 // Based in part on object.d provided with Phobos. The original copyright is as follows:
