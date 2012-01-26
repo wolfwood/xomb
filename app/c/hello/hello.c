@@ -34,7 +34,7 @@ int main(int argc, char** argv){
 
 	printf("\n");
 
-	int wfd =  open("/out", O_WRONLY);
+	int wfd =  open("/out", O_WRONLY|O_CREAT);
 
 	char* moo = "The quick brown w0lfwood jumped over the lazy cl0ckw0rk.\n";
 
@@ -53,5 +53,14 @@ int main(int argc, char** argv){
 
 	printf("/ARGV\n");
 
+	printf("stat size: %d\n", sizeof(struct stat));
+	printf("dev_t size: %d\n", sizeof(dev_t));
+	printf("ino_t size: %d\n", sizeof(ino_t));
+	printf("mode_t size: %d\n", sizeof(mode_t));
+	printf("nlink_t size: %d\n", sizeof(nlink_t));
+	printf("uid_t size: %d\n", sizeof(uid_t));
+	printf("gid_t size: %d\n", sizeof(gid_t));
+	printf("off_t size: %d\n", sizeof(off_t));
+	printf("time_t size: %d\n", sizeof(time_t));
 	return 0;
 }
