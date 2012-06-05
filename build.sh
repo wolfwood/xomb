@@ -31,6 +31,12 @@ rm dsss.last
 dsss build || exit
 cd ../../..
 
+cd app/d/dynhello
+dsss clean
+rm dsss.last
+dsss build || exit
+cd ../../..
+
 cd app/d/posix
 dsss clean
 rm dsss.last

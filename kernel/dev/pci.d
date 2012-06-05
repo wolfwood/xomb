@@ -244,14 +244,14 @@ struct PCIBridge {
 		return read16(PCI.BridgeOffset.MemoryBase);
 	}
 
-	uint prefetchableMemoryLimit() {
-		return cast(uint)read16(PCI.BridgeOffset.PrefetchableMemoryLimit)
-			| (read32(PCI.BridgeOffset.PrefetchableLimitUpper32) << 32);
+	ulong prefetchableMemoryLimit() {
+		return cast(ulong)read16(PCI.BridgeOffset.PrefetchableMemoryLimit)
+			| (cast(ulong)read32(PCI.BridgeOffset.PrefetchableLimitUpper32) << 32);
 	}
 
-	uint prefetchableMemoryBase() {
-		return cast(uint)read16(PCI.BridgeOffset.PrefetchableMemoryBase)
-			| (read32(PCI.BridgeOffset.PrefetchableBaseUpper32) << 32);
+	ulong prefetchableMemoryBase() {
+		return cast(ulong)read16(PCI.BridgeOffset.PrefetchableMemoryBase)
+			| (cast(ulong)read32(PCI.BridgeOffset.PrefetchableBaseUpper32) << 32);
 	}
 
 	uint expansionRomBaseAddress() {
