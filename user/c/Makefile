@@ -1,4 +1,4 @@
-DFLAGS = -I ../../. -I../../runtimes/mindrt -I../../runtimes -O0 --stack-alignment=4
+DFLAGS = -I ../../. -I../../runtimes/mindrt -I../../runtimes -O0
 
 
 syscall.a: clean

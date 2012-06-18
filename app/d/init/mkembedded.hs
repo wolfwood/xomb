@@ -2,7 +2,7 @@
 
 import System.Directory
 import System.FilePath
-import Monad
+import Control.Monad
 
 main = do
     path <-getCurrentDirectory
