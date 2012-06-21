@@ -31,12 +31,27 @@ public:
 		// Create a new resource.
 		ret = VirtualMemory.createSegment(params.location, params.mode);
 
-		return SyscallError.Failcopter;
+		return SyscallError.OK;
+	}
+
+	SyscallError makeDeviceGib(out bool ret, MakeDeviceGibArgs* params){
+		ret = true;
+
+		ubyte[] gib = VirtualMemory.createSegment(params.gib[0..params.regionLength], AccessMode.User|AccessMode.Device|AccessMode.Segment|AccessMode.Writable);
+
+		if(gib is null){
+			ret = false;
+			return SyscallError.Failcopter;
+		}
+
+		VirtualMemory.mapRegion(params.gib, params.physAddr, params.regionLength);
+
+		return SyscallError.OK;
 	}
 
 	SyscallError map(MapArgs* params) {
 		VirtualMemory.mapSegment(params.dest, params.location, params.destination, params.mode);
-		return SyscallError.Failcopter;
+		return SyscallError.OK;
 	}
 
 	// close(ubyte* location);
@@ -54,7 +69,7 @@ public:
 
 		ret = VirtualMemory.createAddressSpace();
 
-		return SyscallError.Failcopter;
+		return SyscallError.OK;
 	}
 
 	SyscallError yield(YieldArgs* params){
@@ -110,4 +125,3 @@ public:
 		}
 	}
 }
-
