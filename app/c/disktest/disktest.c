@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 
-#include "lib/pci.h"
+#include <pci/pci.h>
 
 int main(void)
 {
