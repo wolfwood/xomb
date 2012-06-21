@@ -416,6 +416,15 @@ char *getwd(char *buf){
 }
 
 
+/* --- for PRIVILEGED drivers --- */
+ubyte* mapdev(PhysicalAddress phys, ulong size){
+	ubyte[] gib = findFreeSegment(false, size);
+
+	Syscall.makeDeviceGib(gib.ptr, phys, size);
+
+	return gib.ptr;
+}
+
 /* --- Old --- */
 
 /* Setup */
