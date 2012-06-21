@@ -107,6 +107,12 @@ template PageTableEntry(char[] T){
 				}else{
 					nx = 1;
 				}
+
+				static if(T == "primary"){
+					if(mode & AccessMode.Device){
+						pcd = 1;
+					}
+				}
 			}
 		}
 	}
