@@ -412,7 +412,8 @@ ubyte* mapdev(PhysicalAddress phys, ulong size){
 
 
 PhysicalAddress virt2phys(ubyte* virtAddy){
-	return getPhysicalAddressOfPage(virtAddy);
+	ulong bits = cast(ulong)virtAddy & 0xFFF;
+	return cast(PhysicalAddress)(cast(ulong)getPhysicalAddressOfPage(virtAddy) | bits);
 }
 
 /* --- Old --- */
