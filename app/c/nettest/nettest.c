@@ -11,6 +11,23 @@
 #include <pci/pci.h>
 
 
+typedef unsigned long long ulong;
+typedef unsigned short ushort;
+typedef unsigned int uint;
+
+struct __attribute__((packed)) e1000_mem{
+	ulong CTRL;
+	ulong STATUS;
+	uint EERD;
+	uint CTRL_EXT;
+	uint FLA;
+	ulong MDIC;
+	uint FCAL;
+	uint FCAH;
+	ulong FCT;
+	ulong VET;
+}
+
 void* mapdev(unsigned long long, unsigned long long);
 
 int main(int argc, char** argv) {
