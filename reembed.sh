@@ -10,4 +10,6 @@ cd ../../..
 cd build
 ./buildiso.sh
 
-bochs -q
+#bochs -q
+cd ..
+./run.sh

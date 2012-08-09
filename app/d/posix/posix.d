@@ -10,6 +10,9 @@ import libos.keyboard;
 import libos.libdeepmajik.threadscheduler;
 import libos.fs.minfs;
 
+import libos.keyboard;
+import user.keycodes;
+
 import user.ipc;
 
 void main(char[][] argv){
@@ -152,8 +155,62 @@ void main(char[][] argv){
 		break;
 	case "less":
 	case "more":
+	case "most":
+		char[] space = " ", newline = "\n";
 
+	  if(bottle.stdoutIsTTY){
+			foreach(file; argv[1..$]){
+				File f;
 
+				if(file == "-"){
+					f = bottle.stdin.ptr[0..oneGB];
+				}else{
+					f = MinFS.open(file, AccessMode.Read);
+				}
+
+				if (f is null){
+					Console.putString("File ");
+					Console.putString(file);
+					Console.putString(" Does Not Exist!\n");
+
+					continue;
+				}
+
+				ulong* size = cast(ulong*)f.ptr;
+				char[] data = (cast(char*)f.ptr)[ulong.sizeof..(ulong.sizeof + *size)];
+
+				ulong j = Console.height();
+
+				while(data.length != 0){
+					ulong i = 0;
+
+					while(i < data.length && data[i] != '\n'){i++;}
+
+					Console.putString(data[0..(i+1)]);
+					data = data[(i+1)..$];
+
+					j--;
+
+					if(j <= 0){
+						bool released;
+						while(true){
+							Key key = Keyboard.nextKey(released);
+							if (!released) {
+								if (key == Key.Space || key == Key.N || key == Key.Down) {
+									j++;
+									break;
+								}else if(key == Key.PageDown || key == Key.Return){
+									j += Console.height();
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+		}else{
+
+		}
 		break;
 	case "ln":
 	  if(argv.length < 3){

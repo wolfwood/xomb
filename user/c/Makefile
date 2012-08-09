@@ -1,4 +1,4 @@
-DFLAGS = -I ../../. -I../../runtimes/mindrt -I../../runtimes -O2 --stack-alignment=4 -release
+DFLAGS = -I ../../. -I../../runtimes/mindrt -I../../runtimes -O2
 
 syscall.a: clean
 	ldc ${DFLAGS} -c cbindings.d
