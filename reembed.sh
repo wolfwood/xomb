@@ -11,4 +11,4 @@ cd build
 
 #bochs -q
 cd ..
-./run.sh
+#./run.sh --sata
