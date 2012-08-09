@@ -425,6 +425,11 @@ ubyte* mapdev(PhysicalAddress phys, ulong size){
 	return gib.ptr;
 }
 
+
+PhysicalAddress virt2phys(ubyte* virtAddy){
+	return getPhysicalAddressOfPage(virtAddy);
+}
+
 /* --- Old --- */
 
 /* Setup */

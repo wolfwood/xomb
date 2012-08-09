@@ -413,6 +413,30 @@ template modesForAddressHelper(T){
 	}
 }
 
+// --- Templated Helpers ---
+PhysicalAddress getPhysicalAddressOfPage(ubyte* vAddr){
+	PhysicalAddress physAddr;
+
+	root.walk!( getPhysicalAddressOfPageHelper)(cast(ulong)vAddr, physAddr);
+
+	return physAddr;
+}
+
+template getPhysicalAddressOfPageHelper(T){
+	bool getPhysicalAddressOfPageHelper(T table, uint idx, ref PhysicalAddress physAddr){
+		if(table.entries[idx].present){
+			if(T.level == 1){
+				physAddr = table.entries[idx].location();
+				return false;
+			}
+
+			return true;
+		}
+		return false;
+	}
+}
+
+
 // gets the physical address of a segment of a known size (regardless of nesting)
 template getPhysicalAddressOfSegment(T){
 	PhysicalAddress getPhysicalAddressOfSegment(ubyte* vAddr){
