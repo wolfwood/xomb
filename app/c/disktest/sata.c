@@ -1,10 +1,27 @@
 // much love to OSdev's http://wiki.osdev.org/AHCI
 
-/* --- missing pieces --- */
+/* --- from:  http://wiki.osdev.org/IDE --- */
+#define ATA_CMD_READ_PIO          0x20
+#define ATA_CMD_READ_PIO_EXT      0x24
+#define ATA_CMD_READ_DMA          0xC8
+#define ATA_CMD_READ_DMA_EXT      0x25
+#define ATA_CMD_WRITE_PIO         0x30
+#define ATA_CMD_WRITE_PIO_EXT     0x34
+#define ATA_CMD_WRITE_DMA         0xCA
+#define ATA_CMD_WRITE_DMA_EXT     0x35
+#define ATA_CMD_CACHE_FLUSH       0xE7
+#define ATA_CMD_CACHE_FLUSH_EXT   0xEA
+#define ATA_CMD_PACKET            0xA0
+#define ATA_CMD_IDENTIFY_PACKET   0xA1
+#define ATA_CMD_IDENTIFY          0xEC
+
+/* --- missing pieces I supplied --- */
 typedef unsigned char BYTE;
 typedef unsigned char BOOL;
 typedef unsigned int DWORD;
 typedef unsigned short WORD;
+
+typedef unsigned long long physAddr;
 
 typedef enum {
 	AHCI_DEV_NULL = 0x0,
@@ -19,6 +36,23 @@ typedef enum {
 
 #define trace_ahci printf
 
+#define HBA_PxCMD_CR (1 <<15)
+#define HBA_PxCMD_FR (1 <<14)
+#define HBA_PxCMD_FRE (1 <<4)
+#define HBA_PxCMD_ST (1)
+
+#define cmdslots 8
+
+#define LOBYTE(x) (x & 0xFF)
+#define HIBYTE(x) ((x >> 8) & 0xFF)
+
+#define TRUE 1
+#define FALSE 0
+
+#define HBA_PxIS_TFES (1 << 30)
+#define HBA_PxIS_DHRS (1)
+
+#define HBA_MEM_CAP_S64A (1 << 31)
 /* their stuffs */
 
 typedef enum {
@@ -306,6 +340,11 @@ static int check_type(HBA_PORT *port){
 }
 
 void probe_port(HBA_MEM *abar){
+	if(HBA_MEM_CAP_S64A & abar->cap){
+		trace_ahci(" AHCI controller supports 64-bit addresses!\n");
+	}else{
+		trace_ahci(" 32-bit addresses only!!!!!!!!1111!!!11elventy1!!11\n");
+	}
 	// Search disk in impelemented ports
 	DWORD pi = abar->pi;
 	int i = 0;
@@ -330,9 +369,83 @@ void probe_port(HBA_MEM *abar){
 	}
 }
 
-#define	AHCI_BASE	0x400000	// 4M
-/*
-void port_rebase(HBA_PORT *port, int portno){
+//#define	AHCI_BASE	0x400000	// 4M
+
+
+// Start command engine
+void start_cmd(HBA_PORT *port){
+	trace_ahci(" Starting!\n");
+
+	// Wait until CR (bit15) is cleared
+	while (port->cmd & HBA_PxCMD_CR);
+
+	// Set FRE (bit4) and ST (bit0)
+	port->cmd |= HBA_PxCMD_FRE;
+	port->cmd |= HBA_PxCMD_ST;
+
+	trace_ahci(" Started!\n");
+}
+
+// Stop command engine
+void stop_cmd(HBA_PORT *port){
+	trace_ahci(" Stopping!\n");
+
+	// Clear ST (bit0)
+	port->cmd &= ~HBA_PxCMD_ST;
+
+	// Clear FRE (bit4)
+	port->cmd &= ~HBA_PxCMD_FRE;
+
+	// Wait until FR (bit14), CR (bit15) are cleared
+	while(1){
+		if (port->cmd & HBA_PxCMD_FR){
+			trace_ahci("  FR\n");
+			continue;
+		}
+		if (port->cmd & HBA_PxCMD_CR){
+			trace_ahci("   CR\n");
+			continue;
+		}
+		break;
+	}
+
+	trace_ahci(" Stopped!\n");
+}
+
+// Find a free command list slot
+int find_cmdslot(HBA_PORT *m_port){
+	// If not set in SACT and CI, the slot is free
+	DWORD slots = (m_port->sact | m_port->ci);
+	for (int i=0; i<cmdslots; i++){
+		if ((slots&1) == 0){
+			printf("   Found Free Slot: %d\n", i);
+			return i;
+		}
+		slots >>= 1;
+	}
+	trace_ahci("Cannot find free command list entry\n");
+	return -1;
+}
+
+void* rebasePhysAddr(unsigned long long phys, void* virt){
+	void* rebased = virt + (phys % 4096);
+
+	//printf(" BASED: %llx %llx %llx\n", phys, virt, rebased);
+
+	return rebased;
+}
+
+void port_rebase(HBA_PORT *port, void* mem){
+	physAddr AHCI_BASE = virt2phys(mem);
+
+
+	printf("is: %x ie: %x\n ssts: %x serr: %x sctl: %x sact: %x sntf: %x\n", port->is, port->ie, port->ssts, port->serr, port->sctl, port->sact, port->sntf);
+
+	printf("\ntfd: %x\n", port->tfd);
+
+
+	const unsigned int numPorts = 1;
+	const unsigned int portno = 0;
 	stop_cmd(port);	// Stop command engine
 
 	// Command list offset: 1K*portno
@@ -341,84 +454,104 @@ void port_rebase(HBA_PORT *port, int portno){
 	// Command list maxim size = 32*32 = 1K per port
 	port->clb = AHCI_BASE + (portno<<10);
 	port->clbu = 0;
-	memset((void*)(port->clb), 0, 1024);
+	memset(rebasePhysAddr((void*)(port->clb), mem), 0, 1024);
 
 	// FIS offset: 32K+256*portno
 	// FIS entry size = 256 bytes per port
-	port->fb = AHCI_BASE + (32<<10) + (portno<<8);
+	port->fb = AHCI_BASE + (numPorts<<10) + (portno<<8);
 	port->fbu = 0;
-	memset((void*)(port->fb), 0, 256);
+	memset(rebasePhysAddr((void*)(port->fb), mem), 0, 256);
 
 	// Command table offset: 40K + 8K*portno
 	// Command table size = 256*32 = 8K per port
-	HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER*)(port->clb);
-	for (int i=0; i<32; i++){
+	HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER*)rebasePhysAddr((port->clb), mem);
+	for (int i=0; i<cmdslots; i++){
 		cmdheader[i].prdtl = 8;	// 8 prdt entries per command table
 					// 256 bytes per command table, 64+16+48+16*8
 		// Command table offset: 40K + 8K*portno + cmdheader_index*256
-		cmdheader[i].ctba = AHCI_BASE + (40<<10) + (portno<<13) + (i<<8);
+		cmdheader[i].ctba = AHCI_BASE + (numPorts<<10) + (numPorts<<8) + (portno<<(8 + 3)) + (i<<8);
 		cmdheader[i].ctbau = 0;
-		memset((void*)cmdheader[i].ctba, 0, 256);
+		memset(rebasePhysAddr((void*)cmdheader[i].ctba, mem), 0, 256);
 	}
 
 	start_cmd(port);	// Start command engine
 }
 
-// Start command engine
-void start_cmd(HBA_PORT *port){
-	// Wait until CR (bit15) is cleared
-	while (port->cmd & HBA_PxCMD_CR);
+unsigned char bitflipper(unsigned char i){
+	unsigned char o = 0;
 
-	// Set FRE (bit4) and ST (bit0)
-	port->cmd |= HBA_PxCMD_FRE;
-	port->cmd |= HBA_PxCMD_ST;
-}
-
-// Stop command engine
-void stop_cmd(HBA_PORT *port){
-	// Clear ST (bit0)
-	port->cmd &= ~HBA_PxCMD_ST;
-
-	// Wait until FR (bit14), CR (bit15) are cleared
-	while(1){
-		if (port->cmd & HBA_PxCMD_FR)
-			continue;
-		if (port->cmd & HBA_PxCMD_CR)
-			continue;
-		break;
+	if(i & 1){
+		o |= 128;
 	}
 
-	// Clear FRE (bit4)
-	port->cmd &= ~HBA_PxCMD_FRE;
+	if(i & 2){
+		o |= 64;
+	}
+
+	if(i & 4){
+		o |= 32;
+	}
+
+	if(i & 8){
+		o |= 16;
+	}
+
+	if(i & 16){
+		o |= 8;
+	}
+
+	if(i & 32){
+		o |= 4;
+	}
+
+	if(i & 64){
+		o |= 2;
+	}
+
+	if(i & 128){
+		o |= 1;
+	}
+
+	return o;
 }
 
-BOOL read(HBA_PORT *port, DWORD startl, DWORD starth, DWORD count, WORD *buf){
+
+BOOL sata_read(HBA_PORT *port, DWORD startl, DWORD starth, DWORD count, WORD *buf, WORD *mem){
 	port->is = (DWORD)-1;		// Clear pending interrupt bits
+
+	printf("is: %x ie: %x\n ssts: %x serr: %x sctl: %x sact: %x sntf: %x\n", port->is, port->ie, port->ssts, port->serr, port->sctl, port->sact, port->sntf);
+
+	printf("\ntfd: %x\n", port->tfd);
 
 	int slot = find_cmdslot(port);
 	if (slot == -1)
 		return FALSE;
 
-	HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER*)port->clb;
+	HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER*)rebasePhysAddr((port->clb), mem);
 	cmdheader += slot;
 	cmdheader->cfl = sizeof(FIS_REG_H2D)/sizeof(DWORD);	// Command FIS size
 	cmdheader->w = 0;		// Read from device
-	cmdheader->prdtl = (WORD)((count-1)>>4) + 1;	// PRDT entries count
+	cmdheader->prdtl = (WORD)((count-1)>>3) + 1;	// PRDT entries count
 
-	HBA_CMD_TBL *cmdtbl = (HBA_CMD_TBL*)(cmdheader->ctba);
+	HBA_CMD_TBL *cmdtbl = (HBA_CMD_TBL*)rebasePhysAddr((cmdheader->ctba), mem);
 	memset(cmdtbl, 0, sizeof(HBA_CMD_TBL) +
  		(cmdheader->prdtl-1)*sizeof(HBA_PRDT_ENTRY));
 
-	// 8K bytes (16 sectors) per PRDT
-	for (int i=0; i<cmdheader->prdtl-1; i++){
-		cmdtbl->prdt_entry[i].dba = (DWORD)buf;
-		cmdtbl->prdt_entry[i].dbc = 8*1024;	// 8K bytes
+	int i;
+	// 4K bytes (8 sectors) per PRDT
+	for (i=0; i < cmdheader->prdtl-1; i++){
+		cmdtbl->prdt_entry[i].dba = (DWORD)virt2phys(buf);
+		printf("  <- %llx %llx\n", buf,	cmdtbl->prdt_entry[i].dba);
+
+		cmdtbl->prdt_entry[i].dbc = 4*1024;	// 4K bytes
 		cmdtbl->prdt_entry[i].i = 1;
-		buf += 4*1024;	// 4K words
-		count -= 16;	// 16 sectors
+		buf += 1024;	// 1K words
+		count -= 8;	// 8 sectors
 	}
+
 	// Last entry
-	cmdtbl->prdt_entry[i].dba = (DWORD)buf;
+	cmdtbl->prdt_entry[i].dba = (DWORD)virt2phys(buf);
+	printf("  <- %llx %llx\n", buf,	cmdtbl->prdt_entry[i].dba);
 	cmdtbl->prdt_entry[i].dbc = count<<9;	// 512 bytes per sector
 	cmdtbl->prdt_entry[i].i = 1;
 
@@ -427,7 +560,8 @@ BOOL read(HBA_PORT *port, DWORD startl, DWORD starth, DWORD count, WORD *buf){
 
 	cmdfis->fis_type = FIS_TYPE_REG_H2D;
 	cmdfis->c = 1;	// Command
-	cmdfis->command = ATA_CMD_READ_DMA_EX;
+	cmdfis->command = ATA_CMD_READ_DMA;
+	//cmdfis->featurel = 1;
 
 	cmdfis->lba0 = (BYTE)startl;
 	cmdfis->lba1 = (BYTE)(startl>>8);
@@ -443,35 +577,50 @@ BOOL read(HBA_PORT *port, DWORD startl, DWORD starth, DWORD count, WORD *buf){
 
 	port->ci = 1<<slot;	// Issue command
 
+
+	uint err = 0;
+
 	// Wait for completion
 	while (1){
 		if ((port->ci & (1<<slot)) == 0)
 			break;
 		if (port->is & HBA_PxIS_TFES){	// Task file error
-			trace_ahci("Read disk error\n");
-			return FALSE;
+			trace_ahci("Read disk error 1\n");
+			err = 1;
 		}
 	}
 
 	// Check again
 	if (port->is & HBA_PxIS_TFES){
-		trace_ahci("Read disk error\n");
+		trace_ahci("Read disk error 2\n");
+		err = 1;
+	}
+
+	if(err){
+		printf("is: %x ie: %x\n ssts: %x serr: %x sctl: %x sact: %x sntf: %x\n", port->is, port->ie, port->ssts, port->serr, port->sctl, port->sact, port->sntf);
+
+		printf("\ntfd: %x\n", port->tfd);
+
+		if(port->is & HBA_PxIS_DHRS){
+			void* receivedFIS = rebasePhysAddr((void*)(port->fb), mem);
+
+			FIS_REG_D2H* d2h = receivedFIS + 0x40;
+
+			char* dataz = receivedFIS + 0x40;
+
+			if(d2h->fis_type != FIS_TYPE_REG_D2H){
+				printf("Device said it gave us an error D2H FIS, but it lied!\n");
+			}else{
+				printf("Device gave us a D2H FIS\n");
+
+				for(int i = 0; i < 24; i++){
+					printf(" %x", dataz[i]);
+				}
+			}
+		}
+
 		return FALSE;
 	}
 
 	return TRUE;
 }
-
-// Find a free command list slot
-int find_cmdslot(HBA_PORT *port){
-	// If not set in SACT and CI, the slot is free
-	DWORD slots = (m_port->sact | m_port->ci);
-	for (int i=0; i<cmdslots; i++){
-		if ((slots&1) == 0)
-			return i;
-		slots >>= 1;
-	}
-	trace_ahci("Cannot find free command list entry\n");
-	return -1;
-}
-*/
