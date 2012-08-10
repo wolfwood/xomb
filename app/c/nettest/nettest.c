@@ -12,19 +12,20 @@
 
 
 typedef unsigned long long ulong;
-typedef unsigned short ushort;
-typedef unsigned int uint;
+typedef unsigned int       uint;
+typedef unsigned short     ushort;
+typedef unsigned char      ubyte;
 
 struct __attribute__((packed)) e1000_mem {
 	ulong CTRL;
 	ulong STATUS;
-  uint EECD;
-  uint EERD;
-	uint CTRL_EXT;
-	uint FLA;
+  uint  EECD;
+  uint  EERD;
+	uint  CTRL_EXT;
+	uint  FLA;
 	ulong MDIC;
-	uint FCAL;
-	uint FCAH;
+	uint  FCAL;
+	uint  FCAH;
 	ulong FCT;
 	ulong VET;
 };
@@ -59,7 +60,7 @@ int main(int argc, char** argv) {
 					 dev->device_class, dev->irq, c, (long) dev->base_addr[0]);
 
 		/* Look up and print the full name of the device */
-		if(dev->device_class == 0x0300){
+		if(dev->device_class == 0x0200){
 			name = pci_lookup_name(pacc, namebuf, sizeof(namebuf), PCI_LOOKUP_DEVICE, dev->vendor_id, dev->device_id);
 			printf(" (%s)\n", name);
 
@@ -71,14 +72,22 @@ int main(int argc, char** argv) {
 
 			printf("win maybe: %llx\n", abar);
 
-      uint data[3];
-      data[0] = read_eeprom(abar, 0x00);
-      data[1] = read_eeprom(abar, 0x01);
-      data[2] = read_eeprom(abar, 0x02);
-      data[2] = read_eeprom(abar, 0x04);
-      data[2] = read_eeprom(abar, 0x0a);
+      ubyte  mac[6];
+      ushort read;
 
-      printf("data: %x.%x.%x\n", data[0], data[1], data[2]);
+      read = read_eeprom(abar, 0x00);
+      mac[0] = read & 0xff;
+      mac[1] = read >> 8;
+
+      read = read_eeprom(abar, 0x01);
+      mac[2] = read & 0xff;
+      mac[3] = read >> 8;
+
+      read = read_eeprom(abar, 0x02);
+      mac[4] = read & 0xff;
+      mac[5] = read >> 8;
+
+      printf("mac: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 		}
 	}
 
