@@ -15,10 +15,11 @@ typedef unsigned long long ulong;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 
-struct __attribute__((packed)) e1000_mem{
+struct __attribute__((packed)) e1000_mem {
 	ulong CTRL;
 	ulong STATUS;
-	uint EERD;
+  uint EECD;
+  uint EERD;
 	uint CTRL_EXT;
 	uint FLA;
 	ulong MDIC;
@@ -26,9 +27,19 @@ struct __attribute__((packed)) e1000_mem{
 	uint FCAH;
 	ulong FCT;
 	ulong VET;
-}
+};
 
 void* mapdev(unsigned long long, unsigned long long);
+
+ushort read_eeprom(struct e1000_mem* abar, unsigned int offset) {
+  abar->EERD = (offset << 8) | 0x1;
+  uint read;
+  while(!((read = abar->EERD) & (1 << 4))) {
+    printf("%x\n", read);
+  }
+  ushort data = read >> 16;
+  return data;
+}
 
 int main(int argc, char** argv) {
   struct pci_access *pacc;
@@ -52,15 +63,22 @@ int main(int argc, char** argv) {
 			name = pci_lookup_name(pacc, namebuf, sizeof(namebuf), PCI_LOOKUP_DEVICE, dev->vendor_id, dev->device_id);
 			printf(" (%s)\n", name);
 
-			unsigned long long physaddr = dev->base_addr[0];
+			ulong physaddr = dev->base_addr[0] & ~0xf;
 
 			printf("e1000 PCI config space phys addr: %llx\n", physaddr);
 
-			void* abar = mapdev(physaddr, 2*4096);
+			struct e1000_mem* abar = (struct e1000_mem*)mapdev(physaddr, 8 * 1024);
 
 			printf("win maybe: %llx\n", abar);
 
+      uint data[3];
+      data[0] = read_eeprom(abar, 0x00);
+      data[1] = read_eeprom(abar, 0x01);
+      data[2] = read_eeprom(abar, 0x02);
+      data[2] = read_eeprom(abar, 0x04);
+      data[2] = read_eeprom(abar, 0x0a);
 
+      printf("data: %x.%x.%x\n", data[0], data[1], data[2]);
 		}
 	}
 
