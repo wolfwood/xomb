@@ -7,11 +7,11 @@ for arg in $@; do
 	case $arg in
 		-X) CURSES="";;
 		--sata) SATA="-drive id=disk,file=/home/wolfwood/repos/xomb/disk0.raw,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0";;
-			--nic) NIC="-device e1000";;
+		--nic) NIC="-device e1000,mac=ab:cd:ef:01:02:03";;
 	esac
 done
 
-qemu-system-x86_64 -enable-kvm $CURSES $SATA $CD
+qemu-system-x86_64 -enable-kvm $CURSES $SATA $CD $NIC
 
 exit
 
