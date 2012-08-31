@@ -210,48 +210,33 @@ int lseek(int file, C.off_t ptr, C.Whence dir) {
 
 
 int fstat(int file, C.stat *st) {
-	logError("FSTAT!\n");
-
 	if(fdTable[file].valid){
-		logError("A\n");
 		st.st_mode = C.mode_t.init;
-		logError("B");
 		if(fdTable[file].device){
-			logError("C\n");
 			st.st_mode = C.mode_t.S_IFCHR|C.mode_t.ACCESSPERMS;
-			logError("D\n");
 		}else if(fdTable[file].dir){
-			logError("J\n");
 			st.st_mode = C.mode_t.S_IFDIR|C.mode_t.ACCESSPERMS;
-			logError("K\n");
-
 		}else{
-			logError("E\n");
 			st.st_mode = C.mode_t.S_IFREG|C.mode_t.ACCESSPERMS;
-
-			logError("F\n");
 
 			if(fdTable[file].len is null){
 				logError("null len\n");
 				for(int i = 0; i <= file; i++){
 					logError("F");
 				}
+
+				errno = C.Errno.EBADF;
+				return -1;
 			}
 
 			//st.st_ino = cast((fdTable[fd].data);
 			st.st_size = *(fdTable[file].len);
 
-			logError("G\n");
-
 			st.st_blocks = ((*fdTable[file].len) / 512) + (((*fdTable[file].len)%512) == 0 ? 0 : 1);
-
-			logError("H\n");
-
 		}
 
 		return 0;
 	}else{
-		logError("I\n");
 		errno = C.Errno.EBADF;
 		return -1;
 	}
