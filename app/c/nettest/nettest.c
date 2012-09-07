@@ -30,13 +30,40 @@ struct __attribute__((packed)) e1000_mem {
 	ulong VET;
 };
 
+struct __attribute__((packed)) I350_mem {
+	ulong CTRL; // 0x0000
+	ulong STATUS; // 0x0008
+  uint  EEC;
+  uint  EERD; //0x14
+	uint  CTRL_EXT;
+	uint  FLA;
+	ulong MDIC;
+	uint  FCAL;
+	uint  FCAH;
+	uint  FCT;
+	uint  CONNSW;
+	ulong VET;
+};
+
 void* mapdev(unsigned long long, unsigned long long);
 
-ushort read_eeprom(struct e1000_mem* abar, unsigned int offset) {
+ushort read_eeprom(struct e1000_mem* abar, uint offset) {
   abar->EERD = (offset << 8) | 0x1;
   uint read;
   while(!((read = abar->EERD) & (1 << 4))) {
     printf("%x\n", read);
+  }
+  ushort data = read >> 16;
+  return data;
+}
+
+ushort read_eeprom_I350(struct I350_mem* abar, uint offset) {
+  abar->EERD = ((offset << 2) | 0x0001);
+  uint read;
+  while(!((read = abar->EERD) & (0x0002))) {
+		if(read != 0){
+			printf("%x\n", read);
+		}
   }
   ushort data = read >> 16;
   return data;
@@ -64,30 +91,110 @@ int main(int argc, char** argv) {
 			name = pci_lookup_name(pacc, namebuf, sizeof(namebuf), PCI_LOOKUP_DEVICE, dev->vendor_id, dev->device_id);
 			printf(" (%s)\n", name);
 
-			ulong physaddr = dev->base_addr[0] & ~0xf;
+			if(dev->vendor_id == 0x8086 && dev->device_id == 0x100e){
+				ulong physaddr = dev->base_addr[0] & ~0xf;
 
-			printf("e1000 PCI config space phys addr: %llx\n", physaddr);
 
-			struct e1000_mem* abar = (struct e1000_mem*)mapdev(physaddr, 8 * 1024);
+				printf("e1000 PCI config space phys addr: %llx\n", physaddr);
 
-			printf("win maybe: %llx\n", abar);
+				struct e1000_mem* abar = (struct e1000_mem*)mapdev(physaddr, 8 * 1024);
 
-      ubyte  mac[6];
-      ushort read;
+				printf("win maybe: %llx\n", abar);
 
-      read = read_eeprom(abar, 0x00);
-      mac[0] = read & 0xff;
-      mac[1] = read >> 8;
+				ubyte  mac[6];
+				ushort read;
 
-      read = read_eeprom(abar, 0x01);
-      mac[2] = read & 0xff;
-      mac[3] = read >> 8;
+				read = read_eeprom(abar, 0x00);
+				mac[0] = read & 0xff;
+				mac[1] = read >> 8;
 
-      read = read_eeprom(abar, 0x02);
-      mac[4] = read & 0xff;
-      mac[5] = read >> 8;
+				read = read_eeprom(abar, 0x01);
+				mac[2] = read & 0xff;
+				mac[3] = read >> 8;
 
-      printf("mac: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+				read = read_eeprom(abar, 0x02);
+				mac[4] = read & 0xff;
+				mac[5] = read >> 8;
+
+				printf("mac: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+
+				// set link UP flag
+				abar->CTRL |= 1<< 6;
+
+
+
+
+
+			}else if(dev->vendor_id == 0x8086 && dev->device_id == 0x1520){
+				printf("\tFOUND DAT VF\n");
+				ulong physaddr = dev->base_addr[0] & ~0xf;
+
+				printf("I350 PCIe config space phys addr: %llx\n", physaddr);
+				struct I350_mem* abar = (struct I350_mem*)mapdev(physaddr, 8 * 1024);
+
+				// MAC
+				printf("win maybe: %llx CTRL: %llx STS: %llx\n", abar, abar->CTRL, abar->STATUS);
+
+				ubyte  mac[6];
+				ushort read;
+
+				uint lanOffset = ((abar->STATUS >> 2) & 0x3);
+
+				switch(lanOffset){
+				case 1:
+					lanOffset = 0x80;
+					break;
+				case 2:
+					lanOffset = 0xC0;
+					break;
+				case 3:
+					lanOffset = 0x100;
+					break;
+				default:
+					lanOffset = 0;
+				}
+
+
+				printf("  Port offset: %x\n",lanOffset);
+
+				read = read_eeprom_I350(abar, lanOffset + 0x00);
+				mac[0] = read & 0xff;
+				mac[1] = read >> 8;
+
+				read = read_eeprom_I350(abar, lanOffset + 0x01);
+				mac[2] = read & 0xff;
+				mac[3] = read >> 8;
+
+				read = read_eeprom_I350(abar, lanOffset + 0x02);
+				mac[4] = read & 0xff;
+				mac[5] = read >> 8;
+
+				printf("mac: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+
+				// disable interrupts
+
+
+				// Global Reset
+
+				// disable interrupts
+
+				// Configuration
+
+
+				// Set up PHY and link
+
+
+				// Init rx
+
+
+				// Init tx
+
+
+				// enable interrupts
+
+			}
 		}
 	}
 
