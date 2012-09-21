@@ -508,6 +508,24 @@ void logError(char[] err){
 	write(2, cast(ubyte*)err.ptr, err.length);
 }
 
+void logUlong(ulong val){
+	logError("0x");
+
+	for(int i = 15; i >= 0; i--){
+		char[1] alpha;
+		ubyte tmp = ((val >> (i*4)) & 0xF);
+
+		if(tmp < 10){
+			alpha[0] = cast(char)('0' + tmp);
+		}else if(tmp < 16){
+			alpha[0] = cast(char)('a' + tmp);
+		}
+
+		logError(alpha);
+	}
+
+}
+
 int gibWrite(int fd, ubyte* buf, uint len){
 	int posfd = fd + fdTable[fd].posoffset;
 
