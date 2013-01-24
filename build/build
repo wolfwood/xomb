@@ -1,9 +1,11 @@
+#!/bin/sh
+
 CC=x86_64-pc-elf-gcc
 DC=ldc
 
 if [ -e build_arch.sh ]
 then
-  source build_arch.sh
+  source ./build_arch.sh
 else
   echo "You have not configured the target architecture. Please use ./configure"
   exit
@@ -79,5 +81,4 @@ echo Compiling ISO
 echo
 echo Creating Kernel Symbol File
 echo '--> xomb.sym'
-source mkldsym.sh iso/boot/xomb xomb.sym
-
+source ./mkldsym.sh iso/boot/xomb xomb.sym
