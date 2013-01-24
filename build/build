@@ -1,7 +1,13 @@
 CC=x86_64-pc-elf-gcc
 DC=ldc
 
-source build_arch.sh
+if [ -e build_arch.sh ]
+then
+  source build_arch.sh
+else
+  echo "You have not configured the target architecture. Please use ./configure"
+  exit
+fi
 
 RUNTIME_PATH=../kernel/runtime
 
@@ -68,10 +74,10 @@ ld -nostdlib -nodefaultlibs -b elf64-x86-64 -T ${ARCH_PATH}/linker.ld -o iso/boo
 
 echo
 echo Compiling ISO
-./buildiso.sh
+./makeiso
 
 echo
 echo Creating Kernel Symbol File
 echo '--> xomb.sym'
-./mkldsym.sh iso/boot/xomb xomb.sym
+source mkldsym.sh iso/boot/xomb xomb.sym
 
