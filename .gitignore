@@ -1,13 +1,11 @@
-build/dsss_objs/*
-build/dsss_imports/*
-build/dsss.last
+build/objs
 build/xomb.dump
 build/xomb.iso
 build/iso/binaries
 build/iso/LICENSE
 build/iso/boot/xomb
 build/root/*
-build/dsss.conf
+build/build_arch.sh
 user/nativecall.d
 libos/penguinhat
 runtimes/mindrt/*.a

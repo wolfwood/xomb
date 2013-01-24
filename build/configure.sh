@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 render_usage()
 {
 	echo "USAGE: ./configure [TARGET]"
@@ -18,5 +17,5 @@ then
 else
 	FILE=confs/$1.conf
 	echo "Targetting $1"
-	cp $FILE dsss.conf
+	cp $FILE build_arch.sh
 fi
