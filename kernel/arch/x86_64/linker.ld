@@ -34,7 +34,7 @@ SECTIONS
 	/* boot.S is ran in linear addresses */
 	.text_boot :
 	{
-		dsss_objs/O/kernel.arch.x86_64.boot.boot.o (.text)
+		objs/kernel.arch.x86_64.boot.boot.o (.text)
 	}
 
 	_eboot = .;
@@ -43,7 +43,7 @@ SECTIONS
 	{
 		PROVIDE(_trampoline = .);
 
-		dsss_objs/O/kernel.arch.x86_64.boot.trampoline.o (.text)
+		objs/kernel.arch.x86_64.boot.trampoline.o (.text)
 	}
 
 	PROVIDE(_etrampoline = .);
