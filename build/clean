@@ -1,0 +1,4 @@
+if [ -e objs ]
+then
+  rm -rf objs
+fi

@@ -1,0 +1,16 @@
+source clean
+
+if [ -e xomb.iso ]
+then
+  rm xomb.iso
+fi
+
+if [ -e xomb.sym ]
+then
+  rm xomb.sym
+fi
+
+if [ -e xomb.dump ]
+then
+  rm xomb.dump
+fi
