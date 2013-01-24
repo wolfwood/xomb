@@ -98,6 +98,8 @@ struct Monitor
  */
 class Object
 {
+  void dispose() {
+  }
 
 	/**
 	 * Convert Object to a human readable string.
