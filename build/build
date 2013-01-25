@@ -40,7 +40,7 @@ ${DC} ${KERNEL_BUILDFLAGS} -I${RUNTIME_PATH} -c ../kernel/runtime/invariant.d -o
 # Runtime Types
 for item in ${RUNTIME_PATH}/std/typeinfo/*.d;
 do
-	echo "--> ${item:3:${#item}}"
+	echo "--> ${item:3}"
   ${DC} ${KERNEL_BUILDFLAGS} -I${RUNTIME_PATH} -c ${item} -oq -odobjs
 done
 
@@ -56,12 +56,12 @@ echo Compiling Kernel Proper with flags: ${KERNEL_BUILDFLAGS}
 
 ROOT_FILE=../kernel/core/kmain.d
 
-echo "--> ${ROOT_FILE:3:${#ROOT_FILE}}"
+echo "--> ${ROOT_FILE:3}"
 ${DC} ${ROOT_FILE} ${KERNEL_BUILDFLAGS} -c -oq -odobjs
 
 for item in `${DC} ${ROOT_FILE} -c -o- -oq -v ${KERNEL_BUILDFLAGS} | sed 's/import\s*\(tango\|object\|ldc\)//' | grep "import " | sed 's/import\s*\S*\s*[(]\([^)]*\)[)]/\1/'`
 do
-	echo "--> ${item:3:${#item}}"
+	echo "--> ${item:3}"
 	${DC} ${item} ${KERNEL_BUILDFLAGS} -c -oq -odobjs
 done
 
