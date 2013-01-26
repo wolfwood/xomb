@@ -1,4 +1,4 @@
-source clean
+source ./clean
 
 if [ -e xomb.iso ]
 then
