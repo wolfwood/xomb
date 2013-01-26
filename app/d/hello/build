@@ -1,0 +1,39 @@
+#!/bin/sh
+
+ROOT=../../..
+TARGET=hello
+ROOT_FILE=${TARGET}.d
+
+DC=ldc
+DFLAGS="-nodefaultlib -code-model=large -I${ROOT} -I${ROOT}/runtimes/mindrt -I${ROOT}/runtimes -J${ROOT}/build/root -mattr=-sse -m64 -O2 -release"
+
+cp ${ROOT}/LICENSE ${ROOT}/build/root
+
+echo Preparing Filesystem
+mkdir -p objs
+rm objs/*.o
+
+echo
+echo Creating Application Executable
+echo "--> ${TARGET}"
+
+echo
+echo "--> ${ROOT_FILE}"
+${DC} ${ROOT_FILE} ${DFLAGS} -c -oq -odobjs
+
+for item in `${DC} ${ROOT_FILE} -c -o- -oq -v ${DFLAGS} | sed 's/import\s*\(tango\|object\|ldc\)//' | grep "import " | sed 's/import\s*\S*\s*[(]\([^)]*\)[)]/\1/'`
+do
+        echo "--> ${item#$ROOT/}"
+        ${DC} ${item} ${DFLAGS} -c -oq -odobjs
+done
+
+ld -nostdlib -nodefaultlibs -T${ROOT}/app/build/elf.ld -o ${TARGET} `ls objs/*.o` ${ROOT}/runtimes/mindrt/drt0.a ${ROOT}/runtimes/mindrt/mindrt.a
+
+echo
+echo Copying
+cp ${TARGET} ../../../build/root/binaries/
+
+echo
+echo Creating App Symbol File
+echo "--> ${TARGET}.sym"
+../../../build/mkldsym.sh ${TARGET} ${TARGET}.sym
