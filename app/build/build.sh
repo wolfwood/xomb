@@ -1,17 +1,16 @@
-#!/bin/sh
-
-ROOT=../../..
-TARGET=init
-ROOT_FILE=${TARGET}.d
-
+# --- Define Vars ---
 DC=ldc
 DFLAGS="-nodefaultlib -code-model=large -I${ROOT} -I${ROOT}/runtimes/mindrt -I${ROOT}/runtimes -J${ROOT}/build/root -mattr=-sse -m64 -O2 -release"
 
-cp ${ROOT}/LICENSE ${ROOT}/build/root
+# if not defined, provide defau;lt name for ROOT_FILE based on TARGET
+if [ -z "${ROOT_FILE}" ]; then
+		ROOT_FILE=${TARGET}.d
+fi
 
+# --- Build App ---
 echo Preparing Filesystem
 mkdir -p objs
-rm objs/*
+rm objs/*.o
 
 echo
 echo Creating Application Executable
@@ -27,14 +26,13 @@ do
         ${DC} ${item} ${DFLAGS} -c -oq -odobjs
 done
 
-ld -nostdlib -T../../build/flat.ld -o ${TARGET} `ls objs/*.o` ${ROOT}/runtimes/mindrt/drt0.a ${ROOT}/runtimes/mindrt/mindrt.a
-ld -nostdlib -T../../build/elf.ld -o ${TARGET}-elf `ls objs/*.o` ${ROOT}/runtimes/mindrt/drt0.a ${ROOT}/runtimes/mindrt/mindrt.a
+ld -nostdlib -nodefaultlibs -T${ROOT}/app/build/elf.ld -o ${TARGET} `ls objs/*.o` ${ROOT}/runtimes/mindrt/drt0.a ${ROOT}/runtimes/mindrt/mindrt.a
 
 echo
 echo Copying
-cp ${TARGET} ../../../build/iso/binaries/
+cp ${TARGET} ../../../build/root/binaries/
 
 echo
 echo Creating App Symbol File
 echo "--> ${TARGET}.sym"
-${ROOT}/build/mkldsym.sh ${TARGET}-elf ${TARGET}.sym
+../../../build/mkldsym.sh ${TARGET} ${TARGET}.sym

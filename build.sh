@@ -26,27 +26,33 @@ make || exit
 cd ../../..
 
 cd app/d/hello
+rm -r objs
 ./build || exit
 cd ../../..
 
 cd app/d/dynhello
+rm -r objs
 ./build || exit
 cd ../../..
 
 cd app/d/posix
+rm -r objs
 ./build || exit
 cd ../../..
 
 cd app/d/xsh
+rm -r objs
 ./build || exit
 cd ../../..
 
 cd app/d/init
+rm -r objs
 ./build || exit
 cd ../../..
 
 
 cd build
+./clean
 ./build || exit
 
 bochs -q
