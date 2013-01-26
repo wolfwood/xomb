@@ -15,11 +15,6 @@ RUNTIME_PATH=../kernel/runtime
 
 KERNEL_BUILDFLAGS="-d-version=KERNEL -I.. -I${ARCH_PATH} -nodefaultlib ${ARCH_FLAGS}"
 
-# what the target is
-TARGET=xomb.iso
-
-# compile the assembly for the target
-
 echo
 echo Setting up filesystem for target
 mkdir -p root/binaries
