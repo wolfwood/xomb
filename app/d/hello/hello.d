@@ -12,6 +12,9 @@ import console;
 import libos.keyboard;
 import libos.libdeepmajik.threadscheduler;
 
+// why is this required?
+import libos.fs.minfs;
+
 void main(char[][] argv) {
 	Console.backcolor = Color.Black;
 	Console.forecolor = Color.Green;
