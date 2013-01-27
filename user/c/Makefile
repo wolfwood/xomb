@@ -1,4 +1,4 @@
-DFLAGS = -I ../../. -I../../runtimes/mindrt -I../../runtimes -O2 -oq -odobjs
+DFLAGS = -I ../../. -I../../runtimes/mindrt -I../../runtimes -mattr=-sse -m64 -O2 -release -g  -oq -odobjs
 
 syscall.a: clean
 	mkdir -p objs

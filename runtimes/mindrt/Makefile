@@ -1,4 +1,4 @@
-DFLAGS = -I../. -I../../. -O2 -release
+DFLAGS = -I../. -I../../. -mattr=-sse -m64 -O2 -release -g
 
 drt0.a: entry.d mindrt.a libd.a
 	yasm -g stabs -felf64 entry.S -o dsss_objs/O/runtime.Sentry.o
@@ -78,4 +78,3 @@ mindrt.a: object.d dinvariant.d dstubs.d util.d dstatic.d error.d exception.d
 	ldc -nodefaultlib ${DFLAGS} -c typeinfo/ti_void.d -ofdsss_objs/G/runtime.std.typeinfo.ti_void.o;
 	ldc -nodefaultlib ${DFLAGS} -c typeinfo/ti_wchar.d -ofdsss_objs/G/runtime.std.typeinfo.ti_wchar.o;
 	ar rcs mindrt.a dsss_objs/G/*.o
-

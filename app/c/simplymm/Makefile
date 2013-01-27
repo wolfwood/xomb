@@ -3,8 +3,7 @@ CC = x86_64-pc-xomb-gcc
 
 all: clean
 	$(CC) -O2 -T../../build/elf.ld -o simplymm -static simplymm.c ${LDFLAGS}
-	cp simplymm ../../../build/root/binaries/.
+	strip -s simplymm -o ../../../build/root/binaries/simplymm
 
 clean:
 	rm -f simplymm.o simplymm
-

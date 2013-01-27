@@ -52,7 +52,7 @@ cd ../../..
 
 
 cd build
-./clean
+./veryclean
 ./build || exit
 
 bochs -q
