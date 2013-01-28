@@ -26,7 +26,7 @@ do
         ${DC} ${item} ${DFLAGS} -c -oq -odobjs
 done
 
-ld -nostdlib -nodefaultlibs -T${ROOT}/app/build/elf.ld -o ${TARGET} `ls objs/*.o` ${ROOT}/runtimes/mindrt/drt0.a ${ROOT}/runtimes/mindrt/mindrt.a
+x86_64-pc-xomb-ld -nostdlib -nodefaultlibs -T${ROOT}/app/build/elf.ld -o ${TARGET} `ls objs/*.o` ${ROOT}/runtimes/mindrt/drt0.a ${ROOT}/runtimes/mindrt/mindrt.a
 
 echo
 echo Copying

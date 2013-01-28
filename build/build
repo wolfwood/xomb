@@ -67,7 +67,7 @@ echo Creating Kernel Executable
 echo '--> xomb'
 #llvm-ld -native -Xlinker=-nostdlib -Xlinker=-Tlinker.ld -Xlinker="-b elf64-x86-64" `ls dsss_objs/G/*.o` -o iso/boot/xomb
 #llvm-ld -nodefaultlib -g -I.. -I../kernel/runtime/. `ls dsss_objs/G/*.o`
-ld -nostdlib -nodefaultlibs -b elf64-x86-64 -T ${ARCH_PATH}/linker.ld -o iso/boot/xomb `ls objs/*.o`
+x86_64-pc-xomb-ld -nostdlib -nodefaultlibs -b elf64-x86-64 -T ${ARCH_PATH}/linker.ld -o iso/boot/xomb `ls objs/*.o`
 
 echo
 echo Compiling ISO
@@ -77,3 +77,4 @@ echo
 echo Creating Kernel Symbol File
 echo '--> xomb.sym'
 source ./mkldsym.sh iso/boot/xomb xomb.sym
+strip -s iso/boot/xomb
