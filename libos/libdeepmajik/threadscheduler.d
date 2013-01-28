@@ -473,7 +473,7 @@ align(1) struct XombThread {
 
 	//XXX: this are dumb.  should go away when 16 byte struct alignment works properly
 	void initialize(){
-		queuePtr = (cast(ulong)(&schedQueueStorage) % 16) != 0 ? (&schedQueueStorage + 8) : (&schedQueueStorage);
+		queuePtr = (cast(ulong)(&schedQueueStorage) % 16) != 0 ? cast(Queue*)(cast(ulong)(&schedQueueStorage) + 8) : (&schedQueueStorage);
 	}
 
 private:
