@@ -210,56 +210,34 @@ int lseek(int file, C.off_t ptr, C.Whence dir) {
 
 
 int fstat(int file, C.stat *st) {
-	logError("FSTAT!\n");
-
 	if(fdTable[file].valid){
-		logError("A\n");
 		st.st_mode = C.mode_t.init;
-		logError("B");
-		if(fdTable[file].device){
-			logError("C\n");
-			st.st_mode = C.mode_t.S_IFCHR|C.mode_t.ACCESSPERMS;
-			logError("D\n");
-		}else if(fdTable[file].dir){
-			logError("J\n");
-			st.st_mode = C.mode_t.S_IFDIR|C.mode_t.ACCESSPERMS;
-			logError("K\n");
 
+		if(fdTable[file].device){
+			st.st_mode = C.mode_t.S_IFCHR|C.mode_t.ACCESSPERMS;
+		}else if(fdTable[file].dir){
+			st.st_mode = C.mode_t.S_IFDIR|C.mode_t.ACCESSPERMS;
 		}else{
-			logError("E\n");
 			st.st_mode = C.mode_t.S_IFREG|C.mode_t.ACCESSPERMS;
 
-			logError("F\n");
-
 			if(fdTable[file].len is null){
-				logError("null len\n");
-				for(int i = 0; i <= file; i++){
-					logError("F");
-				}
+				logError("FSTAT on file with null length pointer!\n");
 			}
 
 			//st.st_ino = cast((fdTable[fd].data);
 			st.st_size = *(fdTable[file].len);
 
-			logError("G\n");
-
 			st.st_blocks = ((*fdTable[file].len) / 512) + (((*fdTable[file].len)%512) == 0 ? 0 : 1);
-
-			logError("H\n");
-
 		}
 
 		return 0;
 	}else{
-		logError("I\n");
 		errno = C.Errno.EBADF;
 		return -1;
 	}
 }
 
 int stat(char *file, C.stat *st){
-	logError("STAT!\n");
-
 	int fd = open(file, C.Mode.O_RDONLY);
 
 	if(fd >= 0){
