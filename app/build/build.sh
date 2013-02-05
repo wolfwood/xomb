@@ -1,6 +1,6 @@
 # --- Define Vars ---
 DC=ldc
-DFLAGS="-nodefaultlib -code-model=large -I${ROOT} -I${ROOT}/runtimes/mindrt -I${ROOT}/runtimes -J${ROOT}/build/root -mattr=-sse -m64 -O2 -release -g"
+DFLAGS="-nodefaultlib -code-model=large -I${ROOT} -I${ROOT}/runtimes/mindrt -I${ROOT}/runtimes -J${ROOT}/build/root -mattr=-sse -m64 -O0 -release -g"
 
 # if not defined, provide defau;lt name for ROOT_FILE based on TARGET
 if [ -z "${ROOT_FILE}" ]; then
