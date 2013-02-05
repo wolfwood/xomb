@@ -1,4 +1,4 @@
-DFLAGS = -I../. -I../../. -O2 -release -od=dsss_objs/O -oq -d-version=PlatformXOmB
+DFLAGS = -I../. -I../../. -O2 -release -g -od=dsss_objs/O -oq -d-version=PlatformXOmB
 
 dyndrt.a: *.d typeinfos/*.d binding/*.d core/*.d data/*.d synch/*.d
 	mkdir -p dsss_objs/G;

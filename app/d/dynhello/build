@@ -5,7 +5,7 @@ TARGET=dynhello
 ROOT_FILE=hello.d
 
 DC=ldc
-DFLAGS="-nodefaultlib -code-model=large -I${ROOT} -I${ROOT}/runtimes/dyndrt -mattr=-sse -m64 -O2 -release"
+DFLAGS="-nodefaultlib -code-model=large -I${ROOT} -I${ROOT}/runtimes/dyndrt -I${ROOT}/runtimes -mattr=-sse -m64 -O2 -release -g"
 
 cp ${ROOT}/LICENSE ${ROOT}/build/root
 
