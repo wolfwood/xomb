@@ -35,9 +35,9 @@ fi
 
 echo
 echo Copying
-strip -s ${TARGET} -o ../../../build/root/binaries/${TARGET}
+strip -s ${TARGET} -o ${ROOT}/build/root/binaries/${TARGET}
 
 echo
 echo Creating App Symbol File
 echo "--> ${TARGET}.sym"
-../../../build/mkldsym.sh ${TARGET} ${TARGET}.sym
+${ROOT}/build/mkldsym.sh ${TARGET} ${TARGET}.sym
