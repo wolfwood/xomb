@@ -1,7 +1,8 @@
 #!/bin/sh
 
 ROOT=../../..
-TARGET=hello
+ROOT_FILE=hello.d
+TARGET=dynhello
 DYNAMIC_RUNTIME=true
 
 source ${ROOT}/app/build/build.sh
