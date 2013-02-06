@@ -212,6 +212,7 @@ int lseek(int file, C.off_t ptr, C.Whence dir) {
 int fstat(int file, C.stat *st) {
 	if(fdTable[file].valid){
 		st.st_mode = C.mode_t.init;
+
 		if(fdTable[file].device){
 			st.st_mode = C.mode_t.S_IFCHR|C.mode_t.ACCESSPERMS;
 		}else if(fdTable[file].dir){
@@ -227,6 +228,7 @@ int fstat(int file, C.stat *st) {
 
 				errno = C.Errno.EBADF;
 				return -1;
+				logError("FSTAT on file with null length pointer!\n");
 			}
 
 			//st.st_ino = cast((fdTable[fd].data);
@@ -243,8 +245,6 @@ int fstat(int file, C.stat *st) {
 }
 
 int stat(char *file, C.stat *st){
-	logError("STAT!\n");
-
 	int fd = open(file, C.Mode.O_RDONLY);
 
 	if(fd >= 0){
