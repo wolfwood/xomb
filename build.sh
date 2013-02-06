@@ -30,6 +30,11 @@ rm -r objs
 ./build || exit
 cd ../../..
 
+cd app/d/nettest
+rm -r objs
+./build || exit
+cd ../../..
+
 cd app/d/dynhello
 rm -r objs
 ./build || exit
