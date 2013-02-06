@@ -1,0 +1,8 @@
+#!/bin/sh
+
+ROOT=../../..
+TARGET=nettest
+EXTRA_LIBS="../../../../buildtools/xomb-local/lib/libpci.a ../../../../buildtools/local/x86_64-pc-xomb/lib/libc-base.a"
+DYNAMIC_RUNTIME=true
+
+source ${ROOT}/app/build/build.sh
