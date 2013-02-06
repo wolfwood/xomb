@@ -7,7 +7,7 @@
 
 module dyndrt.typeinfos.ti_staticarray;
 
-import dyndrt.util;
+import util;
 
 class TypeInfo_StaticArray : TypeInfo {
 	char[] toString() {

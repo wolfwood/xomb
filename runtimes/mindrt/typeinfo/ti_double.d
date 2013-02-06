@@ -9,7 +9,7 @@
 
 module mindrt.typeinfo.ti_double;
 
-import mindrt.util;
+import util;
 
 class TypeInfo_d : TypeInfo {
 	char[] toString() {

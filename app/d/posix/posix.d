@@ -3,7 +3,7 @@
 module posix;
 
 //memcpy
-import mindrt.util;
+import util;
 
 import libos.console;
 import libos.keyboard;

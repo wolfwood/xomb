@@ -7,8 +7,8 @@
 
 module object;
 
-import dyndrt.util;
 public import dyndrt.types;
+import util;
 
 // Description: The base class inherited by all classes.
 class Object {

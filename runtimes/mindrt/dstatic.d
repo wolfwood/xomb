@@ -9,7 +9,7 @@
 
 module mindrt.dstatic;
 
-import mindrt.util;
+import util;
 import mindrt.common;
 
 extern(C):

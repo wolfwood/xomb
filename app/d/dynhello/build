@@ -1,38 +1,7 @@
 #!/bin/sh
 
 ROOT=../../..
-TARGET=dynhello
-ROOT_FILE=hello.d
+TARGET=hello
+DYNAMIC_RUNTIME=true
 
-DC=ldc
-DFLAGS="-nodefaultlib -code-model=large -I${ROOT} -I${ROOT}/runtimes/dyndrt -mattr=-sse -m64 -O2 -release"
-
-cp ${ROOT}/LICENSE ${ROOT}/build/root
-
-echo Preparing Filesystem
-mkdir -p objs
-
-echo
-echo Creating Application Executable
-echo "--> ${TARGET}"
-
-echo
-echo "--> ${ROOT_FILE}"
-${DC} ${ROOT_FILE} ${DFLAGS} -c -oq -odobjs
-
-for item in `${DC} ${ROOT_FILE} -c -o- -oq -v ${DFLAGS} | sed 's/import\s*\(tango\|object\|ldc\)//' | grep "import " | sed 's/import\s*\S*\s*[(]\([^)]*\)[)]/\1/'`
-do
-        echo "--> ${item#$ROOT/}"
-        ${DC} ${item} ${DFLAGS} -c -oq -odobjs
-done
-
-ld -nostdlib -nodefaultlibs -T${ROOT}/app/build/elf.ld -o ${TARGET} `ls objs/*.o` ${ROOT}/runtimes/mindrt/drt0.a ${ROOT}/runtimes/mindrt/libd.a ${ROOT}/runtimes/dyndrt/dyndrt.a
-
-echo
-echo Copying
-cp ${TARGET} ../../../build/root/binaries/
-
-echo
-echo Creating App Symbol File
-echo "--> ${TARGET}.sym"
-../../../build/mkldsym.sh ${TARGET} ${TARGET}.sym
+source ${ROOT}/app/build/build.sh

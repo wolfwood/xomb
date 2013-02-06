@@ -9,7 +9,7 @@
 
 module mindrt.typeinfo.ti_real;
 
-import mindrt.util;
+import util;
 
 class TypeInfo_e : TypeInfo {
 	char[] toString() { return "real"; }

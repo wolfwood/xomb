@@ -1,6 +1,6 @@
 module embeddedfs;
 
-import mindrt.util;
+import util;
 import libos.elf.loader;
 import libos.elf.elf;
 import libos.fs.minfs;

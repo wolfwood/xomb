@@ -18,10 +18,10 @@ extern(C):
 Object _d_allocclass(ClassInfo ci) {
 	byte[] mem = cast(byte[])GarbageCollector.malloc(ci.init.length);
 
-    // Initialize it
-    mem[0..$] = ci.init[];
+  // Initialize it
+  mem[0..$] = ci.init[];
 
-    return cast(Object)mem.ptr;
+  return cast(Object)mem.ptr;
 }
 
 void* _d_allocmemoryT(TypeInfo ti) {

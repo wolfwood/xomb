@@ -9,7 +9,7 @@
 
 module mindrt.typeinfo.ti_array;
 
-import mindrt.util;
+import util;
 
 class ArrayInfo(char[] TYPE) : TypeInfo {
 	mixin("alias " ~ TYPE ~ " T;");

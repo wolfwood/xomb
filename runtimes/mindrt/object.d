@@ -10,7 +10,7 @@
 module object;
 
 // Imports necessary routines used by the runtime
-import mindrt.util;
+import util;
 import mindrt.dstatic;
 import mindrt.dstubs;
 import mindrt.exception;

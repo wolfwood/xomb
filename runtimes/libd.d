@@ -5,9 +5,7 @@
  *
  */
 
-module mindrt.libd;
-
-
+module libd;
 
 /**
 This function copies data from a source piece of memory to a destination piece of memory.

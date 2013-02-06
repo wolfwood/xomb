@@ -7,7 +7,7 @@
 
 module libos.elf.loader;
 
-import mindrt.util;
+import util;
 
 import libos.elf.elf;
 import libos.elf.segment;

@@ -9,7 +9,7 @@
 
 module mindrt.typeinfo.ti_float;
 
-import mindrt.util;
+import util;
 
 class TypeInfo_f : TypeInfo {
     char[] toString() {

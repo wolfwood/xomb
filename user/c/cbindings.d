@@ -6,7 +6,7 @@ import libos.console;
 
 import libos.fs.minfs;
 
-import mindrt.util;
+import util;
 
 import libos.libdeepmajik.umm;
 import Sched = libos.libdeepmajik.threadscheduler;

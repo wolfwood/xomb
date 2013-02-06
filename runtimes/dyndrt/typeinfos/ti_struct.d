@@ -7,7 +7,7 @@
 
 module dyndrt.typeinfos.ti_struct;
 
-import dyndrt.util;
+import util;
 
 //import binding.c;
 
