@@ -382,15 +382,15 @@ static:
 	void scanBus(ushort bus) {
 		// There are a maximum of 32 slots due to the address field layout
 		PCIDevice current;
-		kprintfln!("Scanning PCI Bus {}")(bus);
+//		kprintfln!("Scanning PCI Bus {}")(bus);
 
 		void printDevice() {
-			kprintfln!("PCI Address: {x} Device ID: {x} Vendor ID: {x}")
+//			kprintfln!("PCI Address: {x} Device ID: {x} Vendor ID: {x}")
 				(current.address, current.deviceID, current.vendorID);
 		}
 
 		void vga_w(ubyte* base, ushort reg, ubyte val) {
-			kprintfln!("vga write port {x} value {x}")(reg, val);
+//			kprintfln!("vga write port {x} value {x}")(reg, val);
 			Cpu.ioOut!(ubyte)(reg, val);
 //			*(base + reg) = val;
 		}
@@ -402,7 +402,7 @@ static:
 				// Bochs Video
 				ubyte* addr = dev.bus.pci._entries[0].address;
 				addr --;
-				kprintfln!("Video card found: Bochs Video")();
+//				kprintfln!("Video card found: Bochs Video")();
 			}
 		}
 
@@ -429,7 +429,7 @@ static:
 
 			System.deviceInfo[System.numDevices].type = Device.BusType.PCI;
 			System.deviceInfo[System.numDevices].bus.pci = current;
-			kprintfln!("Assigned Device ID {} isIO: {} address: {}")(System.numDevices, current._entries[0].isIO, current._entries[0].address);
+//			kprintfln!("Assigned Device ID {} isIO: {} address: {}")(System.numDevices, current._entries[0].isIO, current._entries[0].address);
 			System.numDevices++;
 
 			loadDevice(System.numDevices-1);
@@ -453,7 +453,7 @@ static:
 			current._address = address(bus, device, 0);
 			if (current.vendorID != 0xffff) {
 				// Check the header
-				kprintfln!("device: {}, function: {}")(device, 0);
+//				kprintfln!("device: {}, function: {}")(device, 0);
 				checkForBridge();
 
 				bool hasFunctions = true;
@@ -468,11 +468,11 @@ static:
 					// this is true when bit 7 is set
 
 					// Yet again, the functions are limited by the address field layout
-					kprintfln!("Checking functions")();
+//					kprintfln!("Checking functions")();
 					for (uint func = 1; func < 8; func++) {
 						current._address = address(bus, device, func);
 						if (current.vendorID != 0xffff) {
-							kprintfln!("device: {}, function: {}")(device, func);
+	//						kprintfln!("device: {}, function: {}")(device, func);
 							checkForBridge();
 						}
 					}

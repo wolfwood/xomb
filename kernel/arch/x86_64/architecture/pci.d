@@ -16,7 +16,7 @@ static:
 protected:
 
 	T read(T)(uint address) {
-		synchronized {
+//		synchronized {
 			_setAddress(address);
 
 			// get offset
@@ -24,18 +24,18 @@ protected:
 
 //			return cast(T)(Cpu.ioIn!(uint)(0xcfc) >> (cast(uint)offset * 8));
 			return Cpu.ioIn!(T)(0xcfc + offset);
-		}
+//		}
 	}
 
 	void write(T)(uint address, T value) {
-		synchronized {
+//		synchronized {
 			_setAddress(address);
 
 			// get offset
 			ushort offset = cast(ushort)(address & 0x3);
 
 			Cpu.ioOut!(T)(0xcfc + offset, value);
-		}
+//		}
 	}
 
 private:
