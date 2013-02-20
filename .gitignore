@@ -22,5 +22,6 @@ app/fortran/hello/fhel
 app/d/init/init
 app/d/posix/posix
 app/c/simplymm/simplymm
-app/d/dynhello/hello
+app/c/simplyfft/simplyfft
+app/d/dynhello/dynhello
 app/d/nettest/nettest
