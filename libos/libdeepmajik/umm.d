@@ -11,7 +11,7 @@ class UserspaceMemoryManager{
 	const uint pageSize = 4096;
 
 	synchronized void initialize(){
-		stacks = Syscall.create(findFreeSegment(), AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
+		stacks = Syscall.create(findFreeSegment(false), AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
 	}
 
 	synchronized ubyte* getPage(bool spacer = false){
