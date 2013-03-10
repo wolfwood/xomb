@@ -232,7 +232,7 @@ align(1) struct XombThread {
 	XombThread* threadCreate(void* functionPointer){
 		ubyte* stackptr = UserspaceMemoryManager.getPage(true);
 
-		XombThread* thread = cast(XombThread*)(stackptr + 4096 - XombThread.sizeof);
+		XombThread* thread = cast(XombThread*)(stackptr - XombThread.sizeof);
 
 		thread.rsp = cast(ubyte*)thread - ulong.sizeof;
 		*(cast(ulong*)thread.rsp) = cast(ulong) &threadExit;
