@@ -42,6 +42,7 @@ enum AccessMode : uint {
 	// Default policies
 	DefaultUser = Writable | AllocOnAccess | User,
 	DefaultKernel = Writable | AllocOnAccess,
+	Tombstone = User, // access will fault and be directed to userspace
 
 	// flags that are always permitted in syscalls
 	SyscallStrictMask = Global | AllocOnAccess | MapOnce | CopyOnWrite | Writable

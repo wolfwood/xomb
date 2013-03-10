@@ -7,23 +7,18 @@ import user.types;
 
 class UserspaceMemoryManager{
 	static:
-	ubyte[] stacks;
 	const uint pageSize = 4096;
 
 	synchronized void initialize(){
-		stacks = Syscall.create(findFreeSegment(false), AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
+
 	}
 
 	synchronized ubyte* getPage(bool spacer = false){
+		ubyte[] stacks = Syscall.create(findFreeSegment(false, oneGB/512), AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
 		if(stacks.length < pageSize){return null;}
 
-		ubyte[] stack = stacks[(length - pageSize).. length];
-
-		stacks = stacks[0..(length -pageSize)];
-
-		if(spacer){stacks = stacks[0..(length -pageSize)];}
-
-		return stack.ptr;
+		Syscall.create(stacks[0..4096], AccessMode.Tombstone);
+		return &stacks[$];
 	}
 
 	synchronized void freePage(ubyte* page){
