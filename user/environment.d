@@ -413,7 +413,11 @@ template modesForAddressHelper(T){
 	}
 }
 
-// --- Templated Helpers ---
+PhysicalAddress virt2phys(ubyte* virtAddy){
+	ulong bits = cast(ulong)virtAddy & 0xFFF;
+	return cast(PhysicalAddress)(cast(ulong)getPhysicalAddressOfPage(virtAddy) | bits);
+}
+
 PhysicalAddress getPhysicalAddressOfPage(ubyte* vAddr){
 	PhysicalAddress physAddr;
 
