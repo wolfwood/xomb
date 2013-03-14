@@ -248,7 +248,7 @@ align(1) struct XombThread {
 	}
 
 	// WARNING: deep magic will fail silently if there is no thread
-	// Based on the assumption of a 4kstack and that the thread struct is at the top of the stack
+	// Based on the assumption of a fixed-size stack and that the thread struct is at the top of the stack
 	XombThread* getCurrentThread(){
 		XombThread* thread;
 
@@ -256,7 +256,7 @@ align(1) struct XombThread {
 			mov thread,RSP;
 		}
 
-		thread = cast(XombThread*)( (cast(ulong)thread & ~0xFFFUL) | (4096 - XombThread.sizeof) );
+		thread = cast(XombThread*)( (cast(ulong)thread & ~(UserspaceMemoryManager.stackSize-1)) | (UserspaceMemoryManager.stackSize - XombThread.sizeof) );
 
 		return thread;
 	}
