@@ -17,6 +17,10 @@ cd user/c
 make || exit
 cd ../..
 
+cd ../buildtools
+./embedlibs.sh
+cd -
+
 cd app/c/hello
 make || exit
 cd ../../..

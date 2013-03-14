@@ -5,19 +5,23 @@ import Syscall = user.syscall;
 import user.environment;
 import user.types;
 
+
 class UserspaceMemoryManager{
 	static:
-	const uint pageSize = 4096;
+
+	const ulong stackSize = twoMB;
 
 	synchronized void initialize(){
 
 	}
 
 	synchronized ubyte* getPage(bool spacer = false){
-		ubyte[] stacks = Syscall.create(findFreeSegment(false, oneGB/512), AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
-		if(stacks.length < pageSize){return null;}
+		ubyte[] stacks = Syscall.create(findFreeSegment(false, UserspaceMemoryManager.stackSize), AccessMode.User|AccessMode.Writable|AccessMode.AllocOnAccess);
 
-		Syscall.create(stacks[0..4096], AccessMode.Tombstone);
+		if(stacks.length < UserspaceMemoryManager.stackSize){return null;}
+
+		Syscall.create(stacks[0..fourKB], AccessMode.Read);
+
 		return &stacks[$];
 	}
 

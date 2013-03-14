@@ -2,6 +2,8 @@ module user.types;
 
 // --- Constants ---
 const ulong oneGB = 1024*1024*1024UL;
+const ulong fourKB = 4096UL;
+const ulong twoMB = fourKB*512;
 
 // --- Special Types, casting to one of these means you are doing it wrong :) ---
 typedef ubyte* AddressSpace;
