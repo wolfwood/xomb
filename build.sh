@@ -63,5 +63,3 @@ cd ../../..
 cd build
 ./veryclean
 ./build || exit
-
-bochs -q
