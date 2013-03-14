@@ -53,7 +53,7 @@ ubyte* startBSS = &_bss;
 ubyte* endBSS = &_end;
 
 // temporary stack
-ubyte[1024] tempStack;
+ubyte[4096*4] tempStack;
 ubyte* tempStackTop = &tempStack[tempStack.length - 8];
 
 
