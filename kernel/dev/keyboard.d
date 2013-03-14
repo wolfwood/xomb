@@ -19,6 +19,10 @@ class Keyboard {
 
 		_buffer = cast(short[])VirtualMemory.createSegment(segment, AccessMode.DefaultKernel);
 
+		// allocs
+		_buffer[fourKB/ushort.sizeof] = 0;
+		_buffer[2*fourKB/ushort.sizeof] = 0;
+
 		_writeOffset = cast(ushort*)_buffer.ptr;
 		*_writeOffset = 0;
 		_readOffset = &((cast(ushort*)_buffer)[1]);
