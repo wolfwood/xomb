@@ -45,12 +45,13 @@ void _entry(){
 		popq R8;
 		popq RBP;
 		popq RDI;
+		popq RSI;
 		popq RDX;
 		popq RCX;
 		popq RBX;
 		popq RAX;
 
-		add RSP, 24;
+		add RSP, 16;
 
 		iretq;
 	}
@@ -105,4 +106,3 @@ uint findFreeActivation(){
 		}
 	}
 }
-
