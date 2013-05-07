@@ -62,7 +62,7 @@ static:
 
 		// Set the SF_MASK register.  Top should be 0, bottom is our mask,
 		// but we're not masking anything (yet).
-		Cpu.writeMSR(SFMASK_MSR, 0);
+		Cpu.writeMSR(SFMASK_MSR, 0xFFFFFFFF);
 
 		// stash a syscall stack in GS.Base
 		PhysicalAddress stackPtr = PageAllocator.allocPage();
