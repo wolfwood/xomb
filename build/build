@@ -13,7 +13,7 @@ fi
 
 RUNTIME_PATH=../kernel/runtime
 
-KERNEL_BUILDFLAGS="-d-version=KERNEL -I.. -I${ARCH_PATH} -nodefaultlib ${ARCH_FLAGS}"
+KERNEL_BUILDFLAGS="-d-version=KERNEL -I.. -I${ARCH_PATH} -I../kernel/runtime -nodefaultlib ${ARCH_FLAGS}"
 
 echo
 echo Setting up filesystem for target
