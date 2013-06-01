@@ -1,9 +1,12 @@
 module libos.libdeepmajik.threadscheduler;
 
 import libos.libdeepmajik.umm;
+import libos.libdeepmajik.interrupthandler;
 import Syscall = user.syscall;
 
 import user.types;
+
+import user.activation;
 
 // bottle for error code
 import user.ipc;
@@ -471,9 +474,76 @@ align(1) struct XombThread {
 		}
 	}
 
+	ulong* a_ptr;
+	ulong* b_ptr;
+
 	//XXX: this are dumb.  should go away when 16 byte struct alignment works properly
 	void initialize(){
 		queuePtr = (cast(ulong)(&schedQueueStorage) % 16) != 0 ? cast(Queue*)(cast(ulong)(&schedQueueStorage) + 8) : (&schedQueueStorage);
+
+		// XXX: this is a additional stupid hack due to ldc/linker limitations :(
+		a_ptr = cast(ulong*)&_entry;
+		b_ptr = cast(ulong*)&XombThread.argShim;
+	}
+
+	/*
+		 RSI - the base of the ActivationFrame allocated by the kernel
+		 RDI - the upcall vector index (shifted left by 8, used to call this function)
+		 R15 - used as a temp
+	*/
+	void _activationToThread(){
+		asm{
+			naked;
+
+			// the stack for the thread we are creating begins right below the XombThread struct
+			mov R15, ActivationFrame.t.offsetof;
+			add R15, RSI;
+			mov RSP, R15;
+
+			// push the activation resume function and the shim + args to restore the upcall args
+			mov R15, [a_ptr];
+			pushq R15;
+			mov R15, [b_ptr];
+			pushq R15;
+			pushq 0;
+			pushq 0;
+			pushq 0;
+			pushq 0;
+			pushq RSI;
+			pushq RDI;
+
+			// set the XombThread's rsp to the current RSP
+			mov R15, ActivationFrame.t.offsetof + XombThread.rsp.offsetof;
+			add R15, RSI;
+			mov [R15], RSP;
+
+
+			// enqueue the thread
+			/*
+				R10 - base address of the SchedQueue struct
+				R11 - address for the XombThread being enqueued (from getCurrentThread)
+
+				RAX - address for the XombThread pointed to by tail, belongs in R11's next pointer
+			*/
+			mov R10, [queuePtr];
+			mov R11, ActivationFrame.t.offsetof;
+			add R11, RSI;
+
+			// stuff old thread onto schedQueueTail
+		start_enqueue:
+			mov RAX, [R10 + tailOffset];
+
+		restart_enqueue:
+			mov [R11 + XombThread.next.offsetof], RAX;
+
+			lock;
+			cmpxchg [R10 + tailOffset], R11;
+			jnz restart_enqueue;
+
+
+			// dispatch interrupt
+			jmp Handler.interrupt;
+		}
 	}
 
 private:
