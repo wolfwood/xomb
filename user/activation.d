@@ -1,10 +1,13 @@
 module user.activation;
 
+import user.types;
 import synch.atomic;
 
 version(KERNEL){
 	import kernel.core.kprintf;	// For printing the stack dump
-}
+}else{
+	import libos.libdeepmajik.threadscheduler;
+ }
 
 struct InterruptStack {
 	// Registers
@@ -74,31 +77,32 @@ void _entry(){
  *
  */
 
-struct activation{
-	/*	ubyte* rip;
-	ulong rdi;
-	ulong rsi;
-	*/
-
+struct Activation{
 	InterruptStack stash;
-
-	ulong prevRIP;
-
-	ulong FSbase;
-	uint FSsel;
 
 	bool valid;
 }
 
-const uint numberOfActivations = 4096 / activation.sizeof;
+struct ActivationFrame {
+	Activation act;
+
+	version(KERNEL){
+		ubyte stack[fourKB - Activation.sizeof];
+	}else{
+		ubyte stack[fourKB - Activation.sizeof -  XombThread.sizeof];
+		XombThread t;
+	}
+}
+
+const uint numberOfActivations = twoMB / ActivationFrame.sizeof;
 
 uint findFreeActivation(){
-	activation[] activations = (cast(activation*)((1024*1024*1024) - 4096))[0..numberOfActivations];
+	ActivationFrame[] activations = (cast(ActivationFrame*)((1024*1024*1024) - twoMB))[0..numberOfActivations];
 
 	while(1){
 		for(int i = 0; i < numberOfActivations; i++){
-			if(!activations[i].valid){
-				activations[i].valid = true;
+			if(!activations[i].act.valid){
+				activations[i].act.valid = true;
 				//if(Atomic.compareExchange(activations[i].valid,false, true)){
 				return i;
 				//}

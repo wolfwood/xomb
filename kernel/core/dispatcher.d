@@ -26,7 +26,7 @@ private:
 
 	void hpetHandler(InterruptStack* s){
 		kprintfln!(">!<\n")();
-		activation[] activations = (cast(activation*)((1024*1024*1024) - 4096))[0..numberOfActivations];
+		ActivationFrame[] activations = (cast(ActivationFrame*)((1024*1024*1024) - twoMB))[0..numberOfActivations];
 
 		// find a free activation
 		uint idx = findFreeActivation();
@@ -37,7 +37,7 @@ private:
 			activations[idx].rdi = s.rdi;
 			activations[idx].rsi = s.rsi;
 		*/
-		activations[idx].stash = *s;
+		activations[idx].act.stash = *s;
 
 
 		// communicate the activation to userspace
@@ -57,6 +57,6 @@ private:
 		//   b) read only user mapping of activation, directly use activation as interrupt stack
 		//   c) vector memcpy, write an entire cacheline to avoid a read?
 
-		Cpu.enterUserspace(4,cast(PhysicalAddress)&(activations[idx].stash));
+		Cpu.enterUserspace(4,cast(PhysicalAddress)&(activations[idx].act.stash));
 	}
 }
