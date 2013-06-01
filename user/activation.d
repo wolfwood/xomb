@@ -56,6 +56,8 @@ void _entry(){
 
 		add RSP, 16;
 
+		// XXX: this prevents race condition, but IOPL should probably be 0 and prevent this
+		cli;
 		// XXX: race between this intruction and the next, interrupt may take and overwrite activation
 		mov [RSP + 0x28], 0;
 
