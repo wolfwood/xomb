@@ -52,19 +52,12 @@ void _entry(){
 		popq RDX;
 		popq RCX;
 		popq RBX;
-
-		// use last free register to compute address of activation and mark it free
-		mov RAX, RSP;
-		shr RAX, 12;
-		shl RAX, 12;
-		add RAX, Activation.valid.offsetof;
-
-		// XXX: race condition between here and iretq
-		mov [RAX], 0;
-
 		popq RAX;
 
 		add RSP, 16;
+
+		// XXX: race between this intruction and the next, interrupt may take and overwrite activation
+		mov [RSP + 0x28], 0;
 
 		iretq;
 	}
