@@ -62,7 +62,7 @@ public:
 		// They will be the equivalent of this function call:
 		//   setInterruptGate(0, &isr0);
 		// But done across the entire array
-		mixin(generateIDT!(40));
+		mixin(generateIDT!(64));
 
 		// Now, set the IDT entries that differ from the norm
 		setSystemGate(3, &isr3, StackType.Debug);
@@ -249,7 +249,7 @@ private:
 	mixin(generateISR!(12, false));
 	mixin(generateISR!(13, false));
 	mixin(generateISR!(14, false));
-	mixin(generateISRs!(15,39));
+	mixin(generateISRs!(15,63));
 
 	void isrIgnore() {
 		asm {
