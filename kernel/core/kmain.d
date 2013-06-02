@@ -32,7 +32,6 @@ import kernel.dev.keyboard;
 import kernel.dev.pci;
 
 //import kernel.core.syscall;
-import kernel.core.dispatcher;
 
 
 // init process
@@ -118,7 +117,8 @@ extern(C) void kmain(int bootLoaderID, void *data) {
 		Timing.currentDate(dt);
 		kprintfln!("\nDate: {} {} {}")(dt.day, dt.month, dt.year);
 
-		Dispatcher.initialize();
+		// this is the quantuum
+		Timing.startTimer(null, 100);
 
 		InitProcess.enterFromBSP();
 	}else{

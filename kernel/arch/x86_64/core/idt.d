@@ -9,12 +9,15 @@
 module kernel.arch.x86_64.core.idt;
 
 import kernel.arch.x86_64.core.descriptor;
+import kernel.arch.x86_64.core.lapic;
+import architecture.cpu;
 
 import user.util;	// For BitField!()
 import kernel.core.error;	// For ErrorVal so errors can be indicated
 import kernel.core.kprintf;	// For printing the stack dump
 
 public  import user.activation;
+import user.types;
 
 // This structure represents the appearance of the stack
 // upon receiving an interrupt on this architecture.
@@ -265,9 +268,25 @@ private:
 			handlers[stack.intNumber](stack);
 			return;
 		}
-//		kprintfln!("Interrupt: {} @ {x}")(stack.intNumber, stack.rip);
+		//kprintfln!("Interrupt: {} @ {x}")(stack.intNumber, stack.rip);
 
 		// common interrupt handling
+		userspaceHandler(stack);
+	}
+
+
+	void userspaceHandler(InterruptStack* s){
+		ActivationFrame[] activations = (cast(ActivationFrame*)((1024*1024*1024) - twoMB))[0..numberOfActivations];
+
+		// find a free activation
+		uint idx = findFreeActivation();
+
+		activations[idx].act.stash = *s;
+
+		// acknowledge the interrupt
+		LocalAPIC.EOI();
+
+		Cpu.enterUserspace(4,cast(PhysicalAddress)&(activations[idx].act.stash));
 	}
 
 	extern(C) void isr_common() {
