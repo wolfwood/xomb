@@ -586,3 +586,7 @@ void exit(int err){
 
 	XombThread.threadExit();
 }
+
+extern(C) void abort(){
+	exit(1);
+}
