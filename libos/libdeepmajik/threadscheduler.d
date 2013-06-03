@@ -474,16 +474,13 @@ align(1) struct XombThread {
 		}
 	}
 
-	ulong* a_ptr;
-	ulong* b_ptr;
+		// XXX: this is a additional stupid hack due to ldc/linker limitations :(
+	ulong* a_ptr = cast(ulong*)&_entry;
+	ulong* b_ptr = cast(ulong*)&XombThread.argShim;;
 
 	//XXX: this are dumb.  should go away when 16 byte struct alignment works properly
 	void initialize(){
 		queuePtr = (cast(ulong)(&schedQueueStorage) % 16) != 0 ? cast(Queue*)(cast(ulong)(&schedQueueStorage) + 8) : (&schedQueueStorage);
-
-		// XXX: this is a additional stupid hack due to ldc/linker limitations :(
-		a_ptr = cast(ulong*)&_entry;
-		b_ptr = cast(ulong*)&XombThread.argShim;
 	}
 
 	/*
