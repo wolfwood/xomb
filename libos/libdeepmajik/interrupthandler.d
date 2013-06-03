@@ -21,24 +21,29 @@ struct Handler{
 	}
 
 	// this function MUST not return
-	// NB: RSI is the second argument normally, but this function thinks its the first
-	void interrupt( ActivationFrame* activation, ulong upcallId){
-		char[8] temp;
+	void interrupt(){
+		asm{
+			naked;
 
-		Console.putString(itoa(temp, 'd', activation.act.stash.intNumber));
-		Console.putString("<!>");
 
-		// if its a registered interrupt, we can grab it, otherwise give to init
-		if(handlers[activation.act.stash.intNumber] !is null){
-			handlers[activation.act.stash.intNumber]();
+			mov R15, [RSI + ActivationFrame.act.stash.intNumber.offsetof];
+			mov R11, [a_ptr];
+
+			mov R14, [R11 + R15 * 8];
+
+			//if(handlers[activation.act.stash.intNumber] !is null){
+			cmp R14, 0;
+			je resume;
+			//	handlers[activation.act.stash.intNumber]();
+			jmp R14;
+
+		resume:
+		  // return is not an option
+			jmp XombThread._enterThreadScheduler;
 		}
-		// else {pass to parent}
-
-
-		// return is not an option
-		XombThread._enterThreadScheduler();
 	}
 
 private:
 	void function()[256] handlers;
+	ulong* a_ptr = cast(ulong*)&handlers[0];
 }
