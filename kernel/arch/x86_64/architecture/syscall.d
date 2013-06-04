@@ -139,12 +139,10 @@ void syscallHandler() {
 		// vars used by syscall
 		pushq RCX;
 		pushq R11;
-		pushq RAX;
 
 		// call dispatcher
 		call syscallDispatcher;
 
-		popq RAX;
 		popq R11;
 		popq RCX;
 

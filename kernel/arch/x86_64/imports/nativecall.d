@@ -14,15 +14,10 @@ extern(C) int nativeSyscall(uint ID, void* ret, void* params)
 		naked;
 		pushq RCX;
 		pushq R11;
-		pushq RAX;
 		syscall;
-		popq RAX;
 		popq R11;
 		popq RCX;
 
 		ret;
 	}
 }
-
-
-
