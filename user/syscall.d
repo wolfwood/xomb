@@ -11,7 +11,7 @@ enum SyscallError : ulong {
 }
 
 // IDs of the system calls
-enum SyscallID : ulong {
+enum SyscallID : uint {
 	PerfPoll,
 	Create,
 	Map,
@@ -20,6 +20,8 @@ enum SyscallID : ulong {
 	Yield,
   MakeDeviceGib,
 }
+
+const uint StacklessYieldID = SyscallID.max;
 
 // Names of system calls
 alias Tuple! (

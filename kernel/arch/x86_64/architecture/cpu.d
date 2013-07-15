@@ -343,7 +343,7 @@ public:
 	}
 
 	//noreturn
-  void enterUserspace(ulong idx, PhysicalAddress calleePhysAddr){
+  void enterUserspace(ulong idx, PhysicalAddress calleePhysAddr, ulong RR8 = 0, ulong RR9 = 0){
 		// use CPUid as vector index and sysret to 1 GB
 
 		// jump using sysret to 1GB for stackless entry
@@ -371,6 +371,8 @@ public:
 
 			movq RDI, idx;
 			movq RSI, calleePhysAddr;
+			movq R8, RR8;
+			movq R9, RR9;
 
 			iretq;
 		}

@@ -83,11 +83,61 @@ static:
 }
 
 
+/*
+  --yield args --
+	RDI - syscall ID, always == StacklessYieldID -> becomes Upcall Vector ID
+	RSI - destination AddressSpace virtual address -> source AdressSpace physical address
+	RDX - the upcall vector ID to use
+
+	-- traditional payload args - untouched --
+	RCX - XXX see below
+	R8 - Interrupt #
+	R9 - payload
+
+	-- Remaining args --
+	R10 - shadow copy of RDX
+
+	-- clobbered registers --
+	RCX - clobberd by syscall instruction
+	R11 - clobberd by syscall instruction
+  */
+void stacklessYield(){
+	asm {
+		naked;
+
+		// --- establish stack ---
+		mov R10, RDX;
+
+		// zero RAX higher bits, cuz rdmsr doc doesn't mention if it zeros it
+		mov RAX, 0;
+
+		// read the CPU stack address to RDX
+		mov ECX, GSBASE_MSR;
+		rdmsr;
+
+		shl RDX, 32;
+		or RDX, RAX;
+
+		mov RSP, RDX;
+
+
+		// --- save the important parts ---
+		mov RDX, R10;
+
+		call SyscallImplementations.alt_yield;
+	}
+}
+
+
 // alright, so %rdi, %rsi, %rdx are the registers loaded by NativeSyscall()
 //
 void syscallHandler() {
 	asm {
 		naked;
+
+		//stackless yield
+		cmp RDI, StacklessYieldID;
+		jz stacklessYield;
 
 		// XXX: use swapgs rather than rdmsr
 		/*

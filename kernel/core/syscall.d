@@ -73,8 +73,12 @@ public:
 	}
 
 	SyscallError yield(YieldArgs* params){
+		return alt_yield(params.idx, params.dest, 0,0,0,0);
+	}
+
+	SyscallError alt_yield(ulong RDI, AddressSpace dest, ulong RDX, ulong RCX, ulong R8, ulong R9){
 		// lol... do this BEFORE switching address spaces
-		ulong idx = params.idx;
+		ulong idx = RDX;
 
 		if(idx == 0 || idx == 2){
 			// XXX: ensure current address space is params.dest's parent
@@ -86,11 +90,11 @@ public:
 
 		PhysicalAddress physAddr;
 
-		if(VirtualMemory.switchAddressSpace(params.dest, physAddr) == ErrorVal.Fail){
+		if(VirtualMemory.switchAddressSpace(dest, physAddr) == ErrorVal.Fail){
 			return SyscallError.Failcopter;
 		}
 
-		Cpu.enterUserspace(idx, physAddr);
+		Cpu.enterUserspace(idx, physAddr, R8, R9);
 	}
 
 
