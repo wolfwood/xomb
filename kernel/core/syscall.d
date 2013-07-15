@@ -73,7 +73,7 @@ public:
 	}
 
 	SyscallError yield(YieldArgs* params){
-		return alt_yield(params.idx, params.dest, 0,0,0,0);
+		return alt_yield(0, params.dest, params.idx,0,0,0);
 	}
 
 	SyscallError alt_yield(ulong RDI, AddressSpace dest, ulong RDX, ulong RCX, ulong R8, ulong R9){
