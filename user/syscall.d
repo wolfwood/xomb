@@ -21,7 +21,7 @@ enum SyscallID : uint {
   MakeDeviceGib,
 }
 
-const uint StacklessYieldID = SyscallID.max;
+const uint StacklessYieldID = SyscallID.max +1;
 
 // Names of system calls
 alias Tuple! (

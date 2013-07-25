@@ -382,7 +382,12 @@ align(1) struct XombThread {
 		if(numThreads == 0){
 			assert(schedQueueStorage.head == schedQueueStorage.tail && schedQueueStorage.tail == schedQueueStorage.tail2);
 
-			Syscall.yield(null, 2UL);
+			asm{
+				mov RDI, Syscall.StacklessYieldID;
+				mov RSI, 0;
+				mov RDX, 2;
+				syscall;
+			}
 		}else{
 			//freePage(cast(ubyte*)(cast(ulong)thread & (~ 0xFFFUL)));
 
@@ -425,10 +430,12 @@ align(1) struct XombThread {
 			// if tail is also null, cpu is uneeded, so yield
 			// FUTURE: might decide to _create_ a thread for task queue or idle/background work
 			cmp RDX, 0;
-			// XXX: requires a stack?
-			mov RDI, 0;
-			mov RSI, 1;
-			jz Syscall.yield;
+			jnz swap_and_dequeue;
+
+			mov RDI, Syscall.StacklessYieldID;
+			mov RSI, 0;
+			mov RDX, 1;
+			syscall;
 
 
 			// assumes RAX and RDX are set

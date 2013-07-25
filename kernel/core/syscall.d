@@ -76,16 +76,12 @@ public:
 		return alt_yield(0, params.dest, params.idx,0,0,0);
 	}
 
-	SyscallError alt_yield(ulong RDI, AddressSpace dest, ulong RDX, ulong RCX, ulong R8, ulong R9){
+	extern(C)	SyscallError alt_yield(ulong RDI, AddressSpace dest, ulong RDX, ulong RCX, ulong R8, ulong R9){
 		// lol... do this BEFORE switching address spaces
 		ulong idx = RDX;
 
 		if(idx == 0 || idx == 2){
 			// XXX: ensure current address space is params.dest's parent
-		}
-
-		if(idx > 2){
-			return SyscallError.Failcopter;
 		}
 
 		PhysicalAddress physAddr;
