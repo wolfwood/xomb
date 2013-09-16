@@ -312,7 +312,10 @@ template PageLevel(ushort L){
 AccessMode combineModes(AccessMode a, AccessMode b){
 	AccessMode and, or;
 
+	// flags with hardware fields (write, user, execute) must be set at every level to be true
 	and = a & b & ~AccessMode.AvailableMask;
+
+	// flags software tracks in the available bits are true if set in any single level
 	or = (a | b) & AccessMode.AvailableMask;
 
 	return and | or;
