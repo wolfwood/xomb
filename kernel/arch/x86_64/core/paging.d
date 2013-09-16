@@ -272,7 +272,7 @@ static:
 		ulong idx, addrFrag;
 		ubyte* vAddr;
 		PageLevel!(3)* segmentParent;
-		AccessMode flags = AccessMode.RootPageTable|AccessMode.Writable;
+		AccessMode flags = AccessMode.RootPageTable|AccessMode.User;
 
 		// --- find a free slot to store the child's root, then map it in ---
 		root.traverse!(preorderFindFreeSegmentHelper, noop)(cast(ulong)createAddress(0,0,1,255), cast(ulong)createAddress(0,0,255,255), vAddr, segmentParent);
@@ -301,7 +301,7 @@ static:
 		addressSpace.entries[510].setMode(AccessMode.User);
 
 		// insert parent into child
-		PageLevel!(1)* fakePl3 = addressSpace.getOrCreateTable(255);
+		PageLevel!(1)* fakePl3 = addressSpace.getOrCreateTable(255, true);
 
 		if(fakePl3 is null)
 			return null;
