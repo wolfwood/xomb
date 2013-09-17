@@ -55,3 +55,17 @@ enum AccessMode : uint {
 	  PrivilegedGlobal | PrivilegedExecutable | Segment | RootPageTable |
 	  Device | Delete
 }
+
+
+enum UpcallIndex{
+	Initial,
+	DonateCpu,
+	ChildExit,
+	ChildError,
+	Activation,
+
+	InterruptReserve,
+	InterruptResponse,
+	InterruptReport,
+	InterruptDispatch
+}

@@ -17,22 +17,37 @@ import libos.keyboard;
 
 import user.activation;
 
+import libos.libdeepmajik.interrupthandler;
+
 /*
  * --- Upcall Vector Table ---
- * all control transfers jump to _start (in entry.S).  it redirects control, based on RAX
+ * all control transfers jump to _start (in entry.S).  it redirects control, based on RDI
  *
+   ======= OS required =======
  * 0 - Initial Entry (from parent, should only happen once)
  * 1 - CPU Allocation/Donation (give cpu to thread scheduler)
  * 2 - Child Exit (should trigger cleanup, along with the next one)
  * 3 - Child Error (from kernel, rather than yield)
  * 4 - Scheduler Activation
+
+   ======= Userspace Convention =======
+ * 5 - interrupt reservation
+ * 6 - reservation response
+ * 7 - interrupt report
+ * 8 - interrupt dispatch
+
+ XXX: teardown and response
+
  * ? - Inter Process Communication
 */
-void function()[5] UVT = [&start,
+
+void function()[7] UVT = [&start,
 													&XombThread._enterThreadScheduler,
 													&XombThread._enterThreadScheduler,
 													&XombThread._enterThreadScheduler,
-													&XombThread._activationToThread];
+													&XombThread._activationToThread,
+													&Handler.tmp_reservation_handler,
+													&Handler.tmp_response_handler];
 
 // used by asm function _start to route upcalls
 extern(C) ubyte* UVTbase = cast(ubyte*)UVT.ptr;
