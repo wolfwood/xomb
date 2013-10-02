@@ -12,21 +12,38 @@ import user.environment;
 struct Handler{
 	static:
 	bool register( ulong id, void function() fun){
-		// XXX request interrupt from init
-		register_helper(id);
+		// request interrupt from init
+		bool ret = register_helper(id);
 
-		// XXX somehow resume this thread when we hear back
+		// thread is resumed when we hear back
 
-		// do it
-		handlers[id] = fun;
+		if(ret){
+			// do it
+			handlers[id] = fun;
+		}
 
-		return true;
+		return ret;
 	}
 
-	void register_helper(ulong id){
+	/* only returns if reservation fails locally, otherwise control
+		 returns from reservation_response handler
+	 */
+	bool register_helper(ulong id){
 		asm{
 			naked;
 
+			// check if reservation is taken (or has an outstanding request)
+			mov R10, [reservation_ptr];
+			mov AL, 0;
+			mov BL, 1;
+			cmpxchg [R10 + RDI], BL;
+			jz keepgoing;
+
+			// --- error, interrupt is already reserved ---
+			mov RAX, 0; // false
+			ret;
+
+		keepgoing:
 			// save argument so it isn't wiped by fucntion call
 			pushq RDI;
 
@@ -62,6 +79,25 @@ struct Handler{
 	}
 
 	/*
+		--yield args --
+		RDI - syscall ID, always == StacklessYieldID -> becomes Upcall Vector ID
+		RSI - destination AddressSpace virtual address -> source AdressSpace physical address
+		RDX - the upcall vector ID to use
+
+		-- traditional payload args - untouched --
+		RCX - XXX see below
+		R8 - Interrupt #
+		R9 - payload
+
+		-- Remaining args --
+		R10 - shadow copy of RDX
+
+		-- clobbered registers --
+		RCX - clobberd by syscall instruction
+		R11 - clobberd by syscall instruction
+	*/
+
+	/*
 		R11 - base address for mapped in child process root page tables
 		R12 - address of the currently investigated child
 		R13 - index of child
@@ -69,11 +105,9 @@ struct Handler{
 		R15 - base of constructed address for return value
 	*/
 
-	void tmp_reservation_handler(){
+	void reservation_handler(){
 		asm{
 			naked;
-
-			// XXX reply 'yes' to child
 
 			// find child
 			mov R11, base_addr;
@@ -96,23 +130,114 @@ struct Handler{
 			sal RSI, 12;
 			or RSI, R15;
 
-			//respond
-			mov RDI, Syscall.StacklessYieldID;
-			//mov RSI, 0;
-			mov RDX, UpcallIndex.InterruptResponse;
+			/*
+				at this point:
+				RSI - child addr
+				R8 - still the interrupt #
+			*/
 
-			mov R9, 1;
+			// --- request processing ---
+
+			// check if reservation is taken (or has an outstanding request)
+			mov R10, [reservation_ptr];
+			mov AL, 0;
+			mov BL, 1;
+			cmpxchg [R10 + R8], BL;
+			jz reserve_it;
+
+			// already reserved, deny request
+			mov RDX, UpcallIndex.InterruptResponse;
+			mov R9, 0; // denied
+			// RSI from search above
+
+			jmp reply;
+
+		reserve_it:
+
+			// remember which child requested for later routing
+			mov R10, [c_ptr];
+			mov [R10 + R8*8], RSI;
+		}
+		version(INIT){
+			asm{
+				mov RDX, UpcallIndex.InterruptResponse;
+				// RSI from search above
+				mov R9, 1; // success
+			}
+		}else{
+			asm{
+				mov RDX, UpcallIndex.InterruptReserve;
+				mov RSI, 0;
+				// no R9 payload
+			}
+		}
+		asm{
+		reply:
+			// respond
+			mov RDI, Syscall.StacklessYieldID;
 
 			syscall;
 		}
 	}
 
-	void tmp_response_handler(){
+	void response_handler(){
 		asm{
 			naked;
 
-			// XXX assume response is for me, and resume thread
+			// make sure this interrupt was reserved
+			mov R10, [reservation_ptr];
+			mov R11, [R10 + R8];
+			cmp R11, 0;
+			jnz noerror;
 
+			/* no such outstanding reservation... pass control to thread
+				 scheduler, because an error IPC message is kind of pointless
+			 */
+			jmp XombThread._enterThreadScheduler;
+
+		noerror:
+			// --- if affirmative, complete reservation, else remove ---
+			cmp R9, 0;
+			jz rollback;
+
+			mov BL, 2;
+			jz setreservation;
+		rollback:
+			mov BL, 0;
+
+		setreservation:
+			// R10 from above
+			mov [R10 + R8], BL; // doesn't need to be atomic, should only get one reply
+
+			// --- check if response is for me ---
+			mov R10, [b_ptr];
+			mov R11, [R10 + R8 * 8];
+			cmp R11, 0;
+			jz notlocal;
+			// response is for us, return to thread
+
+			// XXX: wipe save spot?
+
+			jmp local_response_handler; // stackless function call
+
+			// else pass to appropriate child
+		notlocal:
+			// get appropriate child from prior save
+			mov R10, [c_ptr];
+			mov RSI, [R10 + R8*8];
+
+			mov RDX, UpcallIndex.InterruptResponse;
+			// R8 and R9 are untouched
+
+			mov RDI, Syscall.StacklessYieldID;
+
+			syscall;
+		}
+	}
+
+	void local_response_handler(){
+		asm{
+			naked;
 			// payload is return value
 			mov RAX, R9;
 
@@ -131,29 +256,6 @@ struct Handler{
 			popq RBX;
 
 			ret;
-		}
-	}
-
-
-	void reservation_handler(){
-		asm{
-			naked;
-
-			// XXX check if reservation is taken (or has an outstanding request)
-
-			// XXX else remember which child requested for later routing
-
-			// XXX and pass to parent
-		}
-	}
-
-	void response_handler(){
-		asm{
-			naked;
-
-			// XXX check if response is for me
-
-			// XXX else pass to appropriate child
 		}
 	}
 
@@ -193,12 +295,34 @@ struct Handler{
 	}
 
 private:
+	// if the interrupt is owned locally, this is the registered handler
 	void function()[256] handlers;
+
+	/*
+		if the interrupt has been (or is being) reserved by a child
+		process, this is its root page table's virtual address
+	*/
+	ulong[256] childaddrs;
+
+	/*
+		just used as a preallocated place to stash the thread to be
+		resumed when we hear back about an interrupt resevation
+	*/
 	ulong[256] savespot;
 
-	// XXX: yes these are opaque, thats the point.  the inline asm should be rich enough to avoid this
+	/*
+		reservation indicator fro synchronization purposes
+		0 = free
+		1 = reservation requested
+		2 = reservation acknowledged
+	*/
+	ubyte[256] reservations;
+
+	// XXX: yes these are opaque, thats the point.  the inline asm should be rich enough to avoid this?
 	ulong* a_ptr = cast(ulong*)&handlers[0];
 	ulong* b_ptr = cast(ulong*)&savespot[0];
+	ulong* c_ptr = cast(ulong*)&childaddrs[0];
+	ulong* reservation_ptr = cast(ulong*)&reservations[0];
 
 	/* value that SHOULD be the result of
 		 cast(ulong*)(root.getTable(255).entries.ptr) but that produces a

@@ -46,8 +46,8 @@ void function()[7] UVT = [&start,
 													&XombThread._enterThreadScheduler,
 													&XombThread._enterThreadScheduler,
 													&XombThread._activationToThread,
-													&Handler.tmp_reservation_handler,
-													&Handler.tmp_response_handler];
+													&Handler.reservation_handler,
+													&Handler.response_handler];
 
 // used by asm function _start to route upcalls
 extern(C) ubyte* UVTbase = cast(ubyte*)UVT.ptr;
