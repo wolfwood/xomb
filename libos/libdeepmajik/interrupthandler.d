@@ -186,9 +186,9 @@ struct Handler{
 
 			// make sure this interrupt was reserved
 			mov R10, [reservation_ptr];
-			mov R11, [R10 + R8];
-			cmp R11, 0;
-			jnz noerror;
+			mov BL, [R10 + R8];
+			cmp BL, 1;
+			je noerror;
 
 			/* no such outstanding reservation... pass control to thread
 				 scheduler, because an error IPC message is kind of pointless
@@ -198,10 +198,11 @@ struct Handler{
 		noerror:
 			// --- if affirmative, complete reservation, else remove ---
 			cmp R9, 0;
-			jz rollback;
+			je rollback;
 
 			mov BL, 2;
-			jz setreservation;
+			jmp setreservation;
+
 		rollback:
 			mov BL, 0;
 
@@ -213,7 +214,7 @@ struct Handler{
 			mov R10, [b_ptr];
 			mov R11, [R10 + R8 * 8];
 			cmp R11, 0;
-			jz notlocal;
+			je notlocal;
 			// response is for us, return to thread
 
 			// XXX: wipe save spot?
