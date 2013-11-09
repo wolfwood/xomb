@@ -66,6 +66,5 @@ enum UpcallIndex{
 
 	InterruptReserve,
 	InterruptResponse,
-	InterruptReport,
 	InterruptDispatch
 }

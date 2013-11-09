@@ -260,38 +260,42 @@ struct Handler{
 		}
 	}
 
-  void report_handler(){
-		// XXX check if interrupt belongs to one of my children
-
-		// XXX else pass to parent
-	}
-
   void dispatch_handler(){
-		// XXX check if interrupt belongs to me
-
-		// XXX else pass to appropriate child
-	}
-
-	// this function MUST not return
-	void interrupt(){
 		asm{
 			naked;
 
+			// if interrupt is unknown, or reservation is outstanding, pass to parent
+			mov R10, [reservation_ptr];
+			mov BL, [R10 + R8];
+			cmp BL, 2;
+			je reserved;
 
-			mov R15, [RSI + ActivationFrame.act.stash.intNumber.offsetof];
-			mov R11, [a_ptr];
+			// pass to parent
+			mov RSI, 0;
 
-			mov R14, [R11 + R15 * 8];
+			jmp notmine;
 
-			//if(handlers[activation.act.stash.intNumber] !is null){
-			cmp R14, 0;
-			je resume;
-			//	handlers[activation.act.stash.intNumber]();
-			jmp R14;
+		reserved:
+			// check if interrupt belongs to me
+			mov R10, [a_ptr];
+			mov R11, [R10 + R8*8];
+			cmp R11, 0;
+			je notmine_child;
 
-		resume:
-		  // return is not an option
-			jmp XombThread._enterThreadScheduler;
+			// interrupt is mine, call handler
+			jmp R11;
+
+		notmine_child:
+			// lookup child
+			mov R10, [c_ptr];
+			mov RSI, [R10 + R8*8];
+
+		notmine:
+			mov RDX, UpcallIndex.InterruptDispatch;
+			// R8 is untouched
+			mov RDI, Syscall.StacklessYieldID;
+
+			syscall;
 		}
 	}
 

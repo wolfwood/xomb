@@ -544,9 +544,10 @@ align(1) struct XombThread {
 			cmpxchg [R10 + tailOffset], R11;
 			jnz restart_enqueue;
 
-
 			// dispatch interrupt
-			jmp Handler.interrupt;
+			mov R8, [RSI + ActivationFrame.act.stash.intNumber.offsetof];
+
+			jmp Handler.dispatch_handler;
 		}
 	}
 

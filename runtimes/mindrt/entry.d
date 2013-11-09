@@ -33,21 +33,21 @@ import libos.libdeepmajik.interrupthandler;
    ======= Userspace Convention =======
  * 5 - interrupt reservation
  * 6 - reservation response
- * 7 - interrupt report
- * 8 - interrupt dispatch
+ * 7 - interrupt dispatch
 
  XXX: teardown and response
 
  * ? - Inter Process Communication
 */
 
-void function()[7] UVT = [&start,
+void function()[8] UVT = [&start,
 													&XombThread._enterThreadScheduler,
 													&XombThread._enterThreadScheduler,
 													&XombThread._enterThreadScheduler,
 													&XombThread._activationToThread,
 													&Handler.reservation_handler,
-													&Handler.response_handler];
+													&Handler.response_handler,
+													&Handler.dispatch_handler,];
 
 // used by asm function _start to route upcalls
 extern(C) ubyte* UVTbase = cast(ubyte*)UVT.ptr;
