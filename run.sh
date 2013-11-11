@@ -8,6 +8,7 @@ for arg in $@; do
 		-X) CURSES="";;
 		--sata) SATA="-drive id=disk,file=/home/wolfwood/repos/xomb/disk0.raw,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0";;
 		--nic) NIC="-net none -device e1000,vlan=0,mac=ab:cd:ef:01:02:03";;
+    --tap) NIC="-net nic,model=e1000,macaddr=ab:cd:ef:01:02:03 -net tap,ifname=tap0,script=no";;
 	esac
 done
 
